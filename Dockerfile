@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-RUN npm run build
+RUN npm run build 2>&1 || (echo "=== BUILD FAILED ===" && cat /root/.npm/_logs/*.log 2>/dev/null; exit 1)
 
 FROM node:20-alpine AS production
 WORKDIR /app
