@@ -402,20 +402,20 @@ export default function ZhihuiTiDashboard() {
   const selectedAgent = agents.find(a => a.id === selected);
   const selectedConns = connections.filter(c => c.from === selected || c.to === selected);
 
-  const econ = data.economy || {};
-  const mem = data.memory || {};
-  const ins = data.inspection || {};
-  const cb = data.circuit_breaker || {};
-  const bh = data.behavior || {};
-  const au = data.auctions || {};
-  const ln = data.loans || {};
-  const mk = data.market || {};
-  const ft = data.futures || {};
-  const ar = data.arbitration || {};
-  const fa = data.factory || {};
-  const msg = data.messaging || {};
+  const econ = data.economy;
+  const mem = data.memory;
+  const ins = data.inspection;
+  const cb = data.circuit_breaker;
+  const bh = data.behavior;
+  const au = data.auctions;
+  const ln = data.loans;
+  const mk = data.market;
+  const ft = data.futures;
+  const ar = data.arbitration;
+  const fa = data.factory;
+  const msg = data.messaging;
   const goals = data.goal_history || [];
-  const bl = data.bloodline || {};
+  const bl = data.bloodline;
 
   const econHistory = Array.from({ length: 20 }, (_, i) => ({
     day: i + 1,
