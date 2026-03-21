@@ -30,6 +30,7 @@ interface Agent {
   life_state: string;
   generation: number;
   tasks: number;
+  parentId?: string;
 }
 
 interface Connection {
@@ -57,13 +58,13 @@ const DEMO_DATA = {
   agents: [
     { id: "5a4be6b0a3ea", role: "researcher", budget: 133.7, avg_score: 0.85, alive: true, realm: "research", life_state: "active", generation: 0, tasks: 2 },
     { id: "e0dec0f20a49", role: "researcher", budget: 148.5, avg_score: 0.86, alive: true, realm: "research", life_state: "active", generation: 0, tasks: 2 },
-    { id: "072cca2a612b", role: "researcher", budget: 85.0, avg_score: 0.5, alive: true, realm: "research", life_state: "active", generation: 1, tasks: 0 },
+    { id: "072cca2a612b", role: "researcher", budget: 85.0, avg_score: 0.5, alive: true, realm: "research", life_state: "active", generation: 1, tasks: 0, parentId: "5a4be6b0a3ea" },
     { id: "a4fdafbed41c", role: "analyst", budget: 120.5, avg_score: 0.86, alive: true, realm: "research", life_state: "active", generation: 0, tasks: 1 },
     { id: "fe17430249d9", role: "analyst", budget: 134.5, avg_score: 0.86, alive: true, realm: "research", life_state: "active", generation: 0, tasks: 1 },
     { id: "35449823fa40", role: "custom", budget: 95.0, avg_score: 0.75, alive: true, realm: "execution", life_state: "active", generation: 0, tasks: 1 },
-    { id: "6858f471ef49", role: "custom", budget: 128.2, avg_score: 0.75, alive: true, realm: "execution", life_state: "active", generation: 1, tasks: 1 },
-    { id: "719d49a43ed7", role: "researcher", budget: 85.0, avg_score: 0.5, alive: true, realm: "research", life_state: "active", generation: 1, tasks: 0 },
-    { id: "69ef96b5ed3e", role: "analyst", budget: 85.0, avg_score: 0.5, alive: true, realm: "research", life_state: "active", generation: 1, tasks: 0 },
+    { id: "6858f471ef49", role: "custom", budget: 128.2, avg_score: 0.75, alive: true, realm: "execution", life_state: "active", generation: 1, tasks: 1, parentId: "35449823fa40" },
+    { id: "719d49a43ed7", role: "researcher", budget: 85.0, avg_score: 0.5, alive: true, realm: "research", life_state: "active", generation: 1, tasks: 0, parentId: "e0dec0f20a49" },
+    { id: "69ef96b5ed3e", role: "analyst", budget: 85.0, avg_score: 0.5, alive: true, realm: "research", life_state: "active", generation: 1, tasks: 0, parentId: "a4fdafbed41c" },
   ],
   realms: {
     research: { budget_allocated: 2500, budget_remaining: 2200, agents_active: 6, agents_frozen: 0, agents_bankrupt: 0, tasks_completed: 3, tasks_failed: 0, avg_score: 0.86 },
@@ -604,13 +605,293 @@ function TaskFeed({ events, onSelectAgent }: { events: TaskEvent[]; onSelectAgen
   );
 }
 
-// ── Agent Detail Panel ──────────────────────────────────────────
-function AgentDetail({ agent, connections, agents, onClose }: {
-  agent: Agent; connections: Connection[]; agents: Agent[]; onClose: () => void;
+// ── Realm Health Bars ───────────────────────────────────────────
+function RealmHealthBars({ realms }: { realms: typeof DEMO_DATA["realms"] }) {
+  const realmEntries = Object.entries(realms) as [string, typeof realms["research"]][];
+  return (
+    <div className="flex gap-4 px-6 py-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.01)" }}>
+      {realmEntries.map(([key, r]) => {
+        const color = REALM_COLORS[key] || "#888";
+        const energy = r.budget_allocated > 0 ? r.budget_remaining / r.budget_allocated : 0;
+        const agentHealth = r.agents_active / Math.max(r.agents_active + r.agents_frozen + r.agents_bankrupt, 1);
+        const combined = energy * 0.6 + agentHealth * 0.2 + r.avg_score * 0.2;
+        return (
+          <div key={key} className="flex-1">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color }}>
+                {REALM_LABELS[key]?.split(" ").slice(0, 2).join(" ")}
+              </span>
+              <span className="text-[10px] font-mono" style={{ color: "rgba(255,255,255,0.4)" }}>
+                {(combined * 100).toFixed(0)}%
+              </span>
+            </div>
+            <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+              <div className="h-full rounded-full transition-all duration-1000" style={{
+                width: `${combined * 100}%`,
+                background: `linear-gradient(90deg, ${color}90, ${color})`,
+                boxShadow: `0 0 8px ${color}40`,
+              }} />
+            </div>
+            <div className="flex justify-between mt-0.5">
+              <span className="text-[9px]" style={{ color: "rgba(255,255,255,0.25)" }}>
+                ⚡ {r.budget_remaining.toLocaleString()}/{r.budget_allocated.toLocaleString()} ◆
+              </span>
+              <span className="text-[9px]" style={{ color: "rgba(255,255,255,0.25)" }}>
+                {r.agents_active} active · {r.tasks_completed} tasks
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Bloodline Tree ──────────────────────────────────────────────
+function BloodlineTree({ agent, agents, onSelect }: { agent: Agent; agents: Agent[]; onSelect: (id: string) => void }) {
+  // Build lineage: walk up from agent to root
+  const lineage: Agent[] = [];
+  let current: Agent | undefined = agent;
+  const visited = new Set<string>();
+  while (current) {
+    if (visited.has(current.id)) break;
+    visited.add(current.id);
+    lineage.unshift(current);
+    current = current.parentId ? agents.find(a => a.id === current!.parentId) : undefined;
+  }
+
+  // Find children of the selected agent
+  const children = agents.filter(a => a.parentId === agent.id);
+
+  return (
+    <div className="mt-3 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+      <div className="text-xs uppercase tracking-wider mb-3" style={{ color: "rgba(255,255,255,0.3)" }}>🧬 Bloodline</div>
+      <div className="relative pl-4">
+        {/* Vertical line */}
+        <div className="absolute left-[7px] top-0 bottom-0 w-px" style={{ background: "rgba(255,255,255,0.08)" }} />
+
+        {lineage.map((a, i) => {
+          const isSelected = a.id === agent.id;
+          const color = REALM_COLORS[a.realm] || "#888";
+          return (
+            <button
+              key={a.id}
+              onClick={() => onSelect(a.id)}
+              className="relative flex items-center gap-2 py-1.5 w-full text-left cursor-pointer hover:bg-white/5 rounded px-1 transition-colors"
+            >
+              {/* Node dot on the vertical line */}
+              <div className="absolute -left-3 w-3 h-3 rounded-full flex items-center justify-center" style={{
+                background: isSelected ? color : "rgba(255,255,255,0.1)",
+                border: `2px solid ${isSelected ? color : "rgba(255,255,255,0.15)"}`,
+                boxShadow: isSelected ? `0 0 8px ${color}60` : "none",
+              }}>
+                {isSelected && <div className="w-1 h-1 rounded-full" style={{ background: "#fff" }} />}
+              </div>
+              <span className="text-[10px] font-mono" style={{ color: isSelected ? color : "rgba(255,255,255,0.4)" }}>
+                Gen {a.generation}
+              </span>
+              <span className="text-xs" style={{ color: isSelected ? "#fff" : "rgba(255,255,255,0.5)" }}>
+                {ROLE_ICONS[a.role] || "🤖"} {a.role}
+              </span>
+              {i < lineage.length - 1 && (
+                <span className="text-[9px]" style={{ color: "rgba(255,255,255,0.2)" }}>→</span>
+              )}
+            </button>
+          );
+        })}
+
+        {/* Children */}
+        {children.length > 0 && (
+          <div className="ml-3 mt-1 pl-3" style={{ borderLeft: `1px dashed ${REALM_COLORS[agent.realm]}30` }}>
+            <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "rgba(255,255,255,0.2)" }}>offspring</div>
+            {children.map(child => (
+              <button
+                key={child.id}
+                onClick={() => onSelect(child.id)}
+                className="flex items-center gap-2 py-1 w-full text-left cursor-pointer hover:bg-white/5 rounded px-1 transition-colors"
+              >
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: REALM_COLORS[child.realm] }} />
+                <span className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
+                  {ROLE_ICONS[child.role] || "🤖"} {child.role}
+                </span>
+                <span className="text-[10px] font-mono" style={{ color: "rgba(255,255,255,0.3)" }}>
+                  Gen {child.generation}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Collision Engine Panel ───────────────────────────────────────
+const THEORIES = [
+  { id: "darwinian", name: "🧬 Darwinian Selection", desc: "Survival of the fittest agents", weights: { score: 0.7, budget: 0.2, gen: 0.1 } },
+  { id: "lamarckian", name: "📚 Lamarckian Inheritance", desc: "Acquired traits pass to offspring", weights: { score: 0.3, budget: 0.5, gen: 0.2 } },
+  { id: "symbiotic", name: "🤝 Symbiotic Mutualism", desc: "Cooperation amplifies both", weights: { score: 0.4, budget: 0.4, gen: 0.2 } },
+  { id: "punctuated", name: "💥 Punctuated Equilibrium", desc: "Long stasis, sudden shifts", weights: { score: 0.5, budget: 0.1, gen: 0.4 } },
+  { id: "redqueen", name: "♛ Red Queen", desc: "Constant adaptation to compete", weights: { score: 0.6, budget: 0.3, gen: 0.1 } },
+  { id: "neutral", name: "🎲 Neutral Drift", desc: "Random walk dominates", weights: { score: 0.1, budget: 0.1, gen: 0.8 } },
+];
+
+interface CollisionResult {
+  dominant: string;
+  emergence: string;
+  stability: number;
+  mutationRate: number;
+  prediction: string;
+}
+
+function collideTheories(a: typeof THEORIES[0], b: typeof THEORIES[0]): CollisionResult {
+  const tension = Math.abs(a.weights.score - b.weights.score) + Math.abs(a.weights.budget - b.weights.budget);
+  const stability = Math.max(0, 1 - tension);
+  const mutationRate = tension * 0.5 + Math.random() * 0.1;
+  const dominant = a.weights.score + a.weights.budget > b.weights.score + b.weights.budget ? a.name : b.name;
+  const emergences = [
+    "Hybrid vigor — both theories reinforce each other",
+    "Antagonistic interference — unstable oscillation",
+    "Novel synthesis — emergent strategy detected",
+    "Dominant absorption — weaker theory subsumed",
+    "Phase transition — system enters new regime",
+    "Epistatic lock — neither can dominate alone",
+  ];
+  const emergence = emergences[Math.floor(tension * 5.99) % emergences.length];
+  const predictions = [
+    "Agents will converge toward cooperative equilibrium",
+    "Expect divergent specialization across realms",
+    "High mutation pressure — generational turnover accelerates",
+    "Stable attractor detected — system will resist perturbation",
+    "Chaotic regime — outcomes become unpredictable",
+    "Gradual drift toward budgetary optimization",
+  ];
+  const prediction = predictions[Math.floor((stability + mutationRate) * 3) % predictions.length];
+  return { dominant, emergence, stability, mutationRate, prediction };
+}
+
+function CollisionEngine({ show, onClose }: { show: boolean; onClose: () => void }) {
+  const [theoryA, setTheoryA] = useState(THEORIES[0].id);
+  const [theoryB, setTheoryB] = useState(THEORIES[2].id);
+  const [result, setResult] = useState<CollisionResult | null>(null);
+  const [animating, setAnimating] = useState(false);
+
+  const runCollision = () => {
+    const a = THEORIES.find(t => t.id === theoryA)!;
+    const b = THEORIES.find(t => t.id === theoryB)!;
+    setAnimating(true);
+    setResult(null);
+    setTimeout(() => {
+      setResult(collideTheories(a, b));
+      setAnimating(false);
+    }, 800);
+  };
+
+  if (!show) return null;
+
+  return (
+    <div className="absolute bottom-48 left-1/2 -translate-x-1/2 w-[420px] rounded-xl p-5 z-30" style={{
+      background: "rgba(10,10,20,0.97)", border: "1px solid rgba(255,255,255,0.08)",
+      boxShadow: "0 0 60px rgba(0,0,0,0.5)", backdropFilter: "blur(12px)",
+    }}>
+      <div className="flex justify-between items-center mb-4">
+        <div className="text-sm font-bold" style={{ color: "#f472b6" }}>⚛️ Theory Collision Engine</div>
+        <button onClick={onClose} className="text-white opacity-40 hover:opacity-100 cursor-pointer">✕</button>
+      </div>
+
+      <div className="flex gap-3 mb-3">
+        {[
+          { value: theoryA, onChange: setTheoryA, label: "Theory A" },
+          { value: theoryB, onChange: setTheoryB, label: "Theory B" },
+        ].map(({ value, onChange, label }) => (
+          <div key={label} className="flex-1">
+            <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>{label}</div>
+            <select
+              value={value}
+              onChange={e => onChange(e.target.value)}
+              className="w-full text-xs rounded-lg px-2 py-2 cursor-pointer"
+              style={{
+                background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                color: "#fff", outline: "none",
+              }}
+            >
+              {THEORIES.map(t => (
+                <option key={t.id} value={t.id} style={{ background: "#1a1a2e" }}>{t.name}</option>
+              ))}
+            </select>
+            <div className="text-[9px] mt-1" style={{ color: "rgba(255,255,255,0.25)" }}>
+              {THEORIES.find(t => t.id === value)?.desc}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={runCollision}
+        disabled={animating || theoryA === theoryB}
+        className="w-full py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+        style={{
+          background: animating ? "rgba(244,114,182,0.15)" : theoryA === theoryB ? "rgba(255,255,255,0.03)" : "linear-gradient(135deg, #f472b6, #a855f7)",
+          color: theoryA === theoryB ? "rgba(255,255,255,0.2)" : "#fff",
+          border: "1px solid rgba(255,255,255,0.1)",
+        }}
+      >
+        {animating ? "⚡ Colliding..." : theoryA === theoryB ? "Pick two different theories" : "💥 Collide Theories"}
+      </button>
+
+      {result && (
+        <div className="mt-4 space-y-2" style={{ animation: "fadeSlideIn 0.4s ease-out" }}>
+          <div className="p-3 rounded-lg" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>Emergence</div>
+            <div className="text-xs" style={{ color: "#f472b6" }}>{result.emergence}</div>
+          </div>
+          <div className="flex gap-2">
+            <div className="flex-1 p-2 rounded-lg" style={{ background: "rgba(255,255,255,0.03)" }}>
+              <div className="text-[9px] uppercase" style={{ color: "rgba(255,255,255,0.3)" }}>Stability</div>
+              <div className="flex items-center gap-1 mt-1">
+                <div className="flex-1 h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <div className="h-full rounded-full" style={{
+                    width: `${result.stability * 100}%`,
+                    background: result.stability > 0.6 ? "#22c55e" : result.stability > 0.3 ? "#eab308" : "#ef4444",
+                  }} />
+                </div>
+                <span className="text-[10px] font-mono text-white">{(result.stability * 100).toFixed(0)}%</span>
+              </div>
+            </div>
+            <div className="flex-1 p-2 rounded-lg" style={{ background: "rgba(255,255,255,0.03)" }}>
+              <div className="text-[9px] uppercase" style={{ color: "rgba(255,255,255,0.3)" }}>Mutation Rate</div>
+              <div className="flex items-center gap-1 mt-1">
+                <div className="flex-1 h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <div className="h-full rounded-full" style={{
+                    width: `${result.mutationRate * 100}%`,
+                    background: "#a855f7",
+                  }} />
+                </div>
+                <span className="text-[10px] font-mono text-white">{(result.mutationRate * 100).toFixed(0)}%</span>
+              </div>
+            </div>
+          </div>
+          <div className="p-2 rounded-lg" style={{ background: "rgba(255,255,255,0.02)" }}>
+            <div className="text-[9px] uppercase" style={{ color: "rgba(255,255,255,0.3)" }}>Dominant</div>
+            <div className="text-xs text-white mt-0.5">{result.dominant}</div>
+          </div>
+          <div className="p-2 rounded-lg" style={{ background: "rgba(168,85,247,0.05)", border: "1px solid rgba(168,85,247,0.1)" }}>
+            <div className="text-[9px] uppercase" style={{ color: "#a855f7" }}>🔮 Prediction</div>
+            <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.7)" }}>{result.prediction}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+function AgentDetail({ agent, connections, agents, onClose, onSelect }: {
+  agent: Agent; connections: Connection[]; agents: Agent[]; onClose: () => void; onSelect: (id: string) => void;
 }) {
   const color = REALM_COLORS[agent.realm];
   return (
-    <div className="absolute top-4 right-4 w-80 rounded-xl p-5 z-20" style={{
+    <div className="absolute top-4 right-4 w-80 rounded-xl p-5 z-20 max-h-[calc(100%-2rem)] overflow-y-auto" style={{
       background: "rgba(10,10,20,0.95)", border: `1px solid ${color}40`, boxShadow: `0 0 40px ${color}20`,
       backdropFilter: "blur(10px)",
     }}>
@@ -673,6 +954,7 @@ function AgentDetail({ agent, connections, agents, onClose }: {
           })}
         </div>
       )}
+      <BloodlineTree agent={agent} agents={agents} onSelect={onSelect} />
     </div>
   );
 }
@@ -682,6 +964,7 @@ export default function ZhihuiTiDashboard() {
   const [data, setData] = useState<typeof DEMO_DATA | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [live, setLive] = useState(true);
+  const [showCollision, setShowCollision] = useState(false);
 
   const handleSelect = useCallback((id: string) => setSelected(prev => prev === id ? null : id), []);
 
@@ -776,7 +1059,10 @@ export default function ZhihuiTiDashboard() {
         </div>
       </div>
 
-      <div className="flex" style={{ height: "calc(100vh - 57px)" }}>
+      {/* Realm Health Bars */}
+      <RealmHealthBars realms={data.realms} />
+
+      <div className="flex" style={{ height: "calc(100vh - 97px)" }}>
         {/* Left sidebar */}
         <div className="w-72 p-4 space-y-3 overflow-y-auto" style={{ borderRight: "1px solid rgba(255,255,255,0.05)" }}>
           <Stat label="Money Supply" value={`${(econ.money_supply || 0).toLocaleString()} ◆`} sub={`Treasury: ${(econ.treasury_balance || 0).toLocaleString()}`} color="#eab308" />
@@ -860,12 +1146,24 @@ export default function ZhihuiTiDashboard() {
         <div className="flex-1 flex flex-col relative">
           <div className="flex-1 relative">
             <ThreeGraph agents={agents} connections={connections} onSelect={handleSelect} selectedId={selected} events={events} />
-            <div className="absolute bottom-4 left-4 text-xs" style={{ color: "rgba(255,255,255,0.15)" }}>
-              drag to rotate · click node for details
+            <div className="absolute bottom-4 left-4 flex items-center gap-3">
+              <span className="text-xs" style={{ color: "rgba(255,255,255,0.15)" }}>drag to rotate · click node for details</span>
+              <button
+                onClick={() => setShowCollision(s => !s)}
+                className="text-[10px] px-2 py-1 rounded cursor-pointer transition-colors"
+                style={{
+                  background: showCollision ? "rgba(244,114,182,0.15)" : "rgba(255,255,255,0.05)",
+                  color: showCollision ? "#f472b6" : "rgba(255,255,255,0.4)",
+                  border: `1px solid ${showCollision ? "rgba(244,114,182,0.3)" : "rgba(255,255,255,0.08)"}`,
+                }}
+              >
+                ⚛️ Collision Engine
+              </button>
             </div>
             {selectedAgent && (
-              <AgentDetail agent={selectedAgent} connections={selectedConns} agents={agents} onClose={() => setSelected(null)} />
+              <AgentDetail agent={selectedAgent} connections={selectedConns} agents={agents} onClose={() => setSelected(null)} onSelect={handleSelect} />
             )}
+            <CollisionEngine show={showCollision} onClose={() => setShowCollision(false)} />
           </div>
 
           {/* Bottom charts */}
