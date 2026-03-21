@@ -270,7 +270,9 @@ def dashboard(db: str, model: str | None, port: int):
     console.print(BANNER, style="bold cyan")
     try:
         orch = Orchestrator(db_path=db, model=model)
-        console.print(f"  [green]LLM backend ready:[/green] {orch.llm._backend} ({orch.llm.model})")
+        backend = getattr(orch.llm, '_backend', 'unknown')
+        model_name = getattr(orch.llm, 'model', 'unknown')
+        console.print(f"  [green]LLM backend ready:[/green] {backend} ({model_name})")
     except Exception as e:
         console.print(f"[yellow]Warning:[/yellow] Orchestrator init failed: {e}")
         traceback.print_exc()
