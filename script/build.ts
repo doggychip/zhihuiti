@@ -19,7 +19,13 @@ async function buildAll() {
   await rm("dist", { recursive: true, force: true });
 
   console.log("building client...");
-  await viteBuild();
+  try {
+    await viteBuild();
+  } catch (err: any) {
+    console.error("=== VITE BUILD ERROR ===");
+    console.error(err.message || err);
+    process.exit(1);
+  }
 
   console.log("building server...");
   const pkg = JSON.parse(await readFile("package.json", "utf-8"));
