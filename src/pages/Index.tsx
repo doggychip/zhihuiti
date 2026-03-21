@@ -1160,8 +1160,6 @@ export default function ZhihuiTiDashboard() {
                 ⚛️ Collision Engine
               </button>
             </div>
-              drag to rotate · click node for details
-            </div>
             {selectedAgent && (
               <AgentDetail agent={selectedAgent} connections={selectedConns} agents={agents} onClose={() => setSelected(null)} onSelect={handleSelect} />
             )}
