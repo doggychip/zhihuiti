@@ -1029,13 +1029,53 @@ export default function ZhihuiTiDashboard() {
       background: "linear-gradient(135deg, #0a0a14 0%, #0d0d1a 50%, #0a0f18 100%)",
       fontFamily: "'Inter', system-ui, sans-serif",
     }}>
-      {/* CSS for feed animation */}
+      {/* CSS for effects */}
       <style>{`
         @keyframes fadeSlideIn {
           from { opacity: 0; transform: translateY(-8px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes crtFlicker {
+          0%, 100% { opacity: 1; }
+          3% { opacity: 0.97; }
+          6% { opacity: 1; }
+          42% { opacity: 0.98; }
+          44% { opacity: 1; }
+          92% { opacity: 0.96; }
+          94% { opacity: 1; }
+        }
+        @keyframes tronGrid {
+          0% { background-position: 0px 0px; }
+          100% { background-position: 0px 40px; }
+        }
+        .crt-overlay {
+          pointer-events: none;
+          position: fixed;
+          inset: 0;
+          z-index: 9999;
+          background: repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 0, 0, 0.06) 2px,
+            rgba(0, 0, 0, 0.06) 4px
+          );
+          animation: crtFlicker 4s infinite;
+        }
+        .tron-grid {
+          pointer-events: none;
+          position: fixed;
+          inset: 0;
+          z-index: 0;
+          background-image:
+            linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+          background-size: 40px 40px;
+          animation: tronGrid 8s linear infinite;
+        }
       `}</style>
+      <div className="crt-overlay" />
+      <div className="tron-grid" />
 
       {/* Header */}
       <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
