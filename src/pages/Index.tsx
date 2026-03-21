@@ -244,7 +244,10 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events }: {
     scene.add(world);
 
     // Realm rings
-    [2.5, 5.5, 7.5].forEach((r, ri) => {
+    const realmRadii = [2.5, 5.5, 7.5];
+    const realmKeys = ["central", "research", "execution"];
+    const realmChineseLabels: Record<string, string> = { central: "中枢界", research: "研发界", execution: "执行界" };
+    realmRadii.forEach((r, ri) => {
       const pts: THREE.Vector3[] = [];
       for (let a = 0; a < Math.PI * 2; a += 0.05) {
         pts.push(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r));
@@ -253,6 +256,28 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events }: {
       const geo = new THREE.BufferGeometry().setFromPoints(pts);
       const mat = new THREE.LineBasicMaterial({ color: Object.values(REALM_COLORS)[ri], transparent: true, opacity: 0.06 });
       world.add(new THREE.Line(geo, mat));
+
+      // Floating Chinese label sprite
+      const canvas = document.createElement("canvas");
+      canvas.width = 256; canvas.height = 64;
+      const ctx = canvas.getContext("2d")!;
+      ctx.clearRect(0, 0, 256, 64);
+      ctx.font = "bold 32px 'Inter', system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const realmColor = Object.values(REALM_COLORS)[ri];
+      ctx.shadowColor = realmColor;
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = realmColor;
+      ctx.fillText(realmChineseLabels[realmKeys[ri]], 128, 32);
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+      const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.4, depthWrite: false });
+      const sprite = new THREE.Sprite(spriteMat);
+      const labelAngle = ri * (Math.PI * 2 / 3) + 0.5;
+      sprite.position.set(Math.cos(labelAngle) * (r + 0.8), 2.2, Math.sin(labelAngle) * (r + 0.8));
+      sprite.scale.set(3, 0.75, 1);
+      world.add(sprite);
     });
 
     // Position agents
@@ -1025,17 +1050,57 @@ export default function ZhihuiTiDashboard() {
   }));
 
   return (
-    <div className="min-h-screen text-white" style={{
+    <div className="min-h-screen text-white relative" style={{
       background: "linear-gradient(135deg, #0a0a14 0%, #0d0d1a 50%, #0a0f18 100%)",
       fontFamily: "'Inter', system-ui, sans-serif",
     }}>
-      {/* CSS for feed animation */}
+      {/* CSS for effects */}
       <style>{`
         @keyframes fadeSlideIn {
           from { opacity: 0; transform: translateY(-8px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes crtFlicker {
+          0%, 100% { opacity: 1; }
+          3% { opacity: 0.97; }
+          6% { opacity: 1; }
+          42% { opacity: 0.98; }
+          44% { opacity: 1; }
+          92% { opacity: 0.96; }
+          94% { opacity: 1; }
+        }
+        @keyframes tronGrid {
+          0% { background-position: 0px 0px; }
+          100% { background-position: 0px 40px; }
+        }
+        .crt-overlay {
+          pointer-events: none;
+          position: fixed;
+          inset: 0;
+          z-index: 9999;
+          background: repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 0, 0, 0.06) 2px,
+            rgba(0, 0, 0, 0.06) 4px
+          );
+          animation: crtFlicker 4s infinite;
+        }
+        .tron-grid {
+          pointer-events: none;
+          position: fixed;
+          inset: 0;
+          z-index: 0;
+          background-image:
+            linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+          background-size: 40px 40px;
+          animation: tronGrid 8s linear infinite;
+        }
       `}</style>
+      <div className="crt-overlay" />
+      <div className="tron-grid" />
 
       {/* Header */}
       <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
