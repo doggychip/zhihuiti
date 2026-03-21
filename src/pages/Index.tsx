@@ -446,6 +446,20 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events }: {
       const t = frameRef.current * 0.008;
       const now = performance.now();
 
+      // Animate dust
+      const dustPos = dustGeo.attributes.position as THREE.BufferAttribute;
+      for (let i = 0; i < dustCount; i++) {
+        let x = dustPos.getX(i) + dustVelArr[i * 3];
+        let y = dustPos.getY(i) + dustVelArr[i * 3 + 1];
+        let z = dustPos.getZ(i) + dustVelArr[i * 3 + 2];
+        if (Math.abs(x) > 12) dustVelArr[i * 3] *= -1;
+        if (Math.abs(y) > 6) dustVelArr[i * 3 + 1] *= -1;
+        if (Math.abs(z) > 12) dustVelArr[i * 3 + 2] *= -1;
+        dustPos.setXYZ(i, x, y, z);
+      }
+      dustPos.needsUpdate = true;
+      dustMat.opacity = 0.25 + Math.sin(t * 0.5) * 0.1;
+
       // Animate nodes
       Object.entries(nodesRef.current).forEach(([id, n]) => {
         const off = parseInt(id.replace(/\D/g, ""), 10) || 0;
