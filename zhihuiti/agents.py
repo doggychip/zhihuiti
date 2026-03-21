@@ -31,6 +31,7 @@ ROLE_MAP = {
     "analyst": AgentRole.ANALYST,
     "coder": AgentRole.CODER,
     "trader": AgentRole.TRADER,
+    "alphaarena_trader": AgentRole.ALPHAARENA_TRADER,
     "custom": AgentRole.CUSTOM,
 }
 

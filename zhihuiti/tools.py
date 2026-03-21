@@ -95,6 +95,8 @@ class ToolExecutor:
     # Whitelisted POST endpoints (specific URLs that agents can POST to)
     ALLOWED_POST_URLS = [
         "/api/generate-activity",  # CriticAI: trigger agent activity
+        "/api/trades",             # AlphaArena: submit trades
+        "/api/auth/register",      # AlphaArena: register new agent
     ]
 
     def validate(self, command: str) -> tuple[bool, str]:
