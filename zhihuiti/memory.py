@@ -462,20 +462,20 @@ class Memory:
     def get_loan_stats(self) -> dict:
         row = self._query_one(
             """SELECT COUNT(*) as total,
-                      SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
-                      SUM(CASE WHEN status = 'repaid' THEN 1 ELSE 0 END) as repaid,
-                      SUM(CASE WHEN status = 'defaulted' THEN 1 ELSE 0 END) as defaulted,
+                      COALESCE(SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END), 0) as active,
+                      COALESCE(SUM(CASE WHEN status = 'repaid' THEN 1 ELSE 0 END), 0) as repaid,
+                      COALESCE(SUM(CASE WHEN status = 'defaulted' THEN 1 ELSE 0 END), 0) as defaulted,
                       COALESCE(SUM(principal), 0) as total_principal,
                       COALESCE(SUM(amount_repaid), 0) as total_repaid
                FROM loans"""
         )
         return {
             "total_loans": row["total"],
-            "active": row["active"],
-            "repaid": row["repaid"],
-            "defaulted": row["defaulted"],
-            "total_principal": round(row["total_principal"], 2),
-            "total_repaid": round(row["total_repaid"], 2),
+            "active": row["active"] or 0,
+            "repaid": row["repaid"] or 0,
+            "defaulted": row["defaulted"] or 0,
+            "total_principal": round(row["total_principal"] or 0, 2),
+            "total_repaid": round(row["total_repaid"] or 0, 2),
         }
 
     # --- Economy methods ---
