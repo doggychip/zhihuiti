@@ -9,6 +9,7 @@ from .models import Realm, SimState
 from .agents import create_agents, agent_decide, agent_act
 from .economy import distribute_staking_rewards, get_summary
 from .realms import REALM_TICK_FNS
+from .visualization import plot_simulation
 
 
 def load_config(path: str) -> dict:
@@ -103,7 +104,29 @@ def print_final_report(state: SimState):
     print("=" * 50)
 
 
-def run(config_path: str) -> SimState:
+def collect_history(state: SimState) -> dict:
+    """Collect a snapshot of the current tick for visualization."""
+    summary = get_summary(state)
+    # Strategy average wealth
+    strat_wealth = {}
+    strat_count = {}
+    for a in state.agents.values():
+        w = a.balance + a.staked
+        strat_wealth[a.strategy] = strat_wealth.get(a.strategy, 0) + w
+        strat_count[a.strategy] = strat_count.get(a.strategy, 0) + 1
+    strat_avg = {s: strat_wealth[s] / strat_count[s] for s in strat_wealth}
+
+    return {
+        "total_supply": summary["total_supply"],
+        "circulating": summary["circulating"],
+        "staked": summary["total_staked"],
+        "gini": summary["gini"],
+        "realm_population": dict(summary["realm_population"]),
+        "strategy_wealth": strat_avg,
+    }
+
+
+def run(config_path: str, plot: bool = True) -> SimState:
     config = load_config(config_path)
     state = init_state(config)
     create_agents(config, state)
@@ -113,6 +136,16 @@ def run(config_path: str) -> SimState:
 
     print("Silicon Realms - Three-Realm Agent Civilization")
     print(f"Running {ticks} ticks with {len(state.agents)} agents...\n")
+
+    history = {
+        "ticks": [],
+        "total_supply": [],
+        "circulating": [],
+        "staked": [],
+        "gini": [],
+        "realm_population": [],
+        "strategy_wealth": [],
+    }
 
     for tick in range(ticks):
         state.tick = tick
@@ -138,9 +171,20 @@ def run(config_path: str) -> SimState:
         # 5. Energy management
         update_energy(state)
 
-        # 6. Periodic summary
+        # 6. Collect history snapshot
+        snapshot = collect_history(state)
+        history["ticks"].append(tick)
+        for key in ("total_supply", "circulating", "staked", "gini",
+                     "realm_population", "strategy_wealth"):
+            history[key].append(snapshot[key])
+
+        # 7. Periodic summary
         if tick % log_interval == 0:
             print_summary(state)
 
     print_final_report(state)
+
+    if plot:
+        plot_simulation(history)
+
     return state
