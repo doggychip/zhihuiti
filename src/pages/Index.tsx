@@ -891,7 +891,7 @@ function AgentDetail({ agent, connections, agents, onClose }: {
 }) {
   const color = REALM_COLORS[agent.realm];
   return (
-    <div className="absolute top-4 right-4 w-80 rounded-xl p-5 z-20" style={{
+    <div className="absolute top-4 right-4 w-80 rounded-xl p-5 z-20 max-h-[calc(100%-2rem)] overflow-y-auto" style={{
       background: "rgba(10,10,20,0.95)", border: `1px solid ${color}40`, boxShadow: `0 0 40px ${color}20`,
       backdropFilter: "blur(10px)",
     }}>
