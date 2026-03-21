@@ -1166,21 +1166,21 @@ export default function ZhihuiTiDashboard() {
         <div className="hud-corner hud-corner-tr" />
         <div className="hud-corner hud-corner-bl" />
         <div className="hud-corner hud-corner-br" />
-        <svg className="w-full h-full" style={{ position: "absolute", inset: 0 }}>
+        <svg width="100%" height="100%" style={{ position: "absolute", inset: 0 }}>
           {/* Top edge */}
-          <line x1="38" y1="7" x2="calc(100% - 38)" y2="7"
+          <line x1="38" y1="7" x2="99%" y2="7"
             stroke="rgba(99,102,241,0.2)" strokeWidth="1"
             strokeDasharray="8 4" style={{ animation: "hudDash 2s linear infinite" }} />
           {/* Bottom edge */}
-          <line x1="38" y1="calc(100% - 7)" x2="calc(100% - 38)" y2="calc(100% - 7)"
+          <line x1="38" y1="99.5%" x2="99%" y2="99.5%"
             stroke="rgba(59,130,246,0.2)" strokeWidth="1"
             strokeDasharray="8 4" style={{ animation: "hudDash 2s linear infinite" }} />
           {/* Left edge */}
-          <line x1="7" y1="38" x2="7" y2="calc(100% - 38)"
+          <line x1="7" y1="38" x2="7" y2="99%"
             stroke="rgba(99,102,241,0.15)" strokeWidth="1"
             strokeDasharray="6 6" style={{ animation: "hudDash 3s linear infinite" }} />
           {/* Right edge */}
-          <line x1="calc(100% - 7)" y1="38" x2="calc(100% - 7)" y2="calc(100% - 38)"
+          <line x1="99.5%" y1="38" x2="99.5%" y2="99%"
             stroke="rgba(168,85,247,0.15)" strokeWidth="1"
             strokeDasharray="6 6" style={{ animation: "hudDash 3s linear infinite" }} />
         </svg>
