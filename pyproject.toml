@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "zhihuiti"
+version = "0.1.0"
+description = "Autonomous multi-agent orchestration system (智慧体)"
+requires-python = ">=3.9"
+dependencies = [
+    "anthropic>=0.25",
+    "rich>=13",
+    "click>=8",
+]
+
+[project.scripts]
+zhihuiti = "zhihuiti.cli:main"
