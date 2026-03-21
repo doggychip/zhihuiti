@@ -1124,6 +1124,13 @@ export default function ZhihuiTiDashboard() {
   const [booted, setBooted] = useState(false);
   const handleBootComplete = useCallback(() => setBooted(true), []);
 
+  // Run Goal state
+  const [goalInput, setGoalInput] = useState("");
+  const [goalRunning, setGoalRunning] = useState(false);
+
+  // Live jobs feed
+  const [jobs, setJobs] = useState<any[]>([]);
+
   const handleSelect = useCallback((id: string) => setSelected(prev => prev === id ? null : id), []);
 
   const fetchData = useCallback(() => {
@@ -1132,6 +1139,37 @@ export default function ZhihuiTiDashboard() {
       .then(d => { setData(d); setLive(true); })
       .catch(() => { setData(DEMO_DATA); setLive(false); });
   }, []);
+
+  // Poll jobs every 5s
+  useEffect(() => {
+    const fetchJobs = () => {
+      fetch("https://zhihuiti.zeabur.app/api/jobs")
+        .then(r => r.json())
+        .then(d => setJobs(Array.isArray(d) ? d : d.jobs || []))
+        .catch(() => {});
+    };
+    fetchJobs();
+    const interval = setInterval(fetchJobs, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleRunGoal = useCallback(async () => {
+    if (!goalInput.trim() || goalRunning) return;
+    setGoalRunning(true);
+    try {
+      await fetch("https://zhihuiti.zeabur.app/api/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goal: goalInput.trim() }),
+      });
+      setGoalInput("");
+      fetchData();
+    } catch (e) {
+      console.error("Run goal failed:", e);
+    } finally {
+      setGoalRunning(false);
+    }
+  }, [goalInput, goalRunning, fetchData]);
 
   useEffect(() => {
     fetchData();
