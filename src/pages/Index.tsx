@@ -1059,7 +1059,10 @@ export default function ZhihuiTiDashboard() {
         </div>
       </div>
 
-      <div className="flex" style={{ height: "calc(100vh - 57px)" }}>
+      {/* Realm Health Bars */}
+      <RealmHealthBars realms={data.realms} />
+
+      <div className="flex" style={{ height: "calc(100vh - 97px)" }}>
         {/* Left sidebar */}
         <div className="w-72 p-4 space-y-3 overflow-y-auto" style={{ borderRight: "1px solid rgba(255,255,255,0.05)" }}>
           <Stat label="Money Supply" value={`${(econ.money_supply || 0).toLocaleString()} ◆`} sub={`Treasury: ${(econ.treasury_balance || 0).toLocaleString()}`} color="#eab308" />
