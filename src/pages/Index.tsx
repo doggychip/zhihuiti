@@ -1128,8 +1128,13 @@ export default function ZhihuiTiDashboard() {
   const [goalInput, setGoalInput] = useState("");
   const [goalRunning, setGoalRunning] = useState(false);
 
-  // Live jobs feed
-  const [jobs, setJobs] = useState<any[]>([]);
+  // Live jobs feed — store as Record<jobId, jobData>
+  const [jobsMap, setJobsMap] = useState<Record<string, any>>({});
+
+  // Results panel state
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [jobResult, setJobResult] = useState<any>(null);
+  const [jobResultLoading, setJobResultLoading] = useState(false);
 
   const handleSelect = useCallback((id: string) => setSelected(prev => prev === id ? null : id), []);
 
@@ -1145,13 +1150,54 @@ export default function ZhihuiTiDashboard() {
     const fetchJobs = () => {
       fetch("https://zhihuiti.zeabur.app/api/jobs")
         .then(r => r.json())
-        .then(d => setJobs(Array.isArray(d) ? d : d.jobs || []))
+        .then(d => {
+          if (d && typeof d === "object" && !Array.isArray(d)) {
+            setJobsMap(d);
+          }
+        })
         .catch(() => {});
     };
     fetchJobs();
     const interval = setInterval(fetchJobs, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  // Poll selected job result until done
+  useEffect(() => {
+    if (!selectedJobId) { setJobResult(null); return; }
+    let cancelled = false;
+    const poll = () => {
+      setJobResultLoading(true);
+      fetch(`https://zhihuiti.zeabur.app/api/job/${selectedJobId}`)
+        .then(r => r.json())
+        .then(d => {
+          if (cancelled) return;
+          setJobResult(d);
+          setJobResultLoading(false);
+          if (d?.status === "done" || d?.status === "completed") {
+            // done, stop polling
+          } else {
+            // keep polling
+            setTimeout(() => { if (!cancelled) poll(); }, 5000);
+          }
+        })
+        .catch(() => {
+          if (cancelled) return;
+          // fallback: use data from jobsMap
+          const fromMap = jobsMap[selectedJobId];
+          if (fromMap) setJobResult(fromMap);
+          setJobResultLoading(false);
+        });
+    };
+    poll();
+    return () => { cancelled = true; };
+  }, [selectedJobId]);
+
+  // Derive jobs array for sidebar feed
+  const jobs = useMemo(() =>
+    Object.entries(jobsMap).map(([id, job]) => ({ id, ...job })),
+    [jobsMap]
+  );
 
   const handleRunGoal = useCallback(async () => {
     if (!goalInput.trim() || goalRunning) return;
