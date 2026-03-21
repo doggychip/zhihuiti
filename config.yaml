@@ -1,0 +1,28 @@
+simulation:
+  ticks: 100
+  seed: 42
+  log_interval: 10
+
+realms:
+  compute:
+    capacity: 50
+    base_reward: 10
+    difficulty_growth: 0.02
+  memory:
+    capacity: 40
+    base_reward: 8
+    decay_rate: 0.01
+  network:
+    capacity: 30
+    base_reward: 12
+    routing_fee: 0.05
+
+economy:
+  initial_supply: 10000
+  mint_rate: 50
+  stake_min: 10
+  stake_reward_rate: 0.03
+  transfer_fee: 0.01
+
+agents:
+  initial_count: 30
