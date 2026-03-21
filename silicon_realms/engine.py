@@ -10,6 +10,7 @@ from .agents import create_agents, agent_decide, agent_act
 from .economy import distribute_staking_rewards, get_summary
 from .realms import REALM_TICK_FNS
 from .visualization import plot_simulation
+from .dynamics import tick_dynamics, strategy_frequencies, is_near_critical
 
 
 def load_config(path: str) -> dict:
@@ -145,6 +146,11 @@ def run(config_path: str, plot: bool = True) -> SimState:
         "gini": [],
         "realm_population": [],
         "strategy_wealth": [],
+        "temperature": [],
+        "entropy": [],
+        "avalanche": [],
+        "strategy_freq": [],
+        "realm_values": [],
     }
 
     for tick in range(ticks):
@@ -171,12 +177,20 @@ def run(config_path: str, plot: bool = True) -> SimState:
         # 5. Energy management
         update_energy(state)
 
-        # 6. Collect history snapshot
+        # 6. Theoretical dynamics (replicator, thermodynamics, Bellman, SOC)
+        tick_dynamics(state)
+
+        # 7. Collect history snapshot
         snapshot = collect_history(state)
         history["ticks"].append(tick)
         for key in ("total_supply", "circulating", "staked", "gini",
                      "realm_population", "strategy_wealth"):
             history[key].append(snapshot[key])
+        history["temperature"].append(state.temperature)
+        history["entropy"].append(state.entropy)
+        history["avalanche"].append(state.last_avalanche_size)
+        history["strategy_freq"].append(strategy_frequencies(state))
+        history["realm_values"].append(dict(state.realm_values))
 
         # 7. Periodic summary
         if tick % log_interval == 0:
