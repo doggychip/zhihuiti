@@ -3,7 +3,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-RUN npm run build 2>&1 || (echo "=== BUILD FAILED ===" && cat /root/.npm/_logs/*.log 2>/dev/null; exit 1)
+RUN npx vite build --outDir dist/public 2>&1; echo "VITE EXIT: $?"
+RUN npx esbuild server/index.ts --platform=node --bundle --format=cjs --outfile=dist/index.cjs --minify --external:pg --external:ws --external:express --external:cors 2>&1; echo "ESBUILD EXIT: $?"
 
 FROM node:20-alpine AS production
 WORKDIR /app
