@@ -20,9 +20,34 @@ def main():
     crew_parser.add_argument("--llm", default=None, help="LLM model to use (default: Claude Sonnet)")
     crew_parser.add_argument("--quiet", action="store_true", help="Reduce CrewAI output verbosity")
 
+    # --- collide ---
+    collide_parser = sub.add_parser("collide", help="Theory collision engine: find mathematical isomorphisms")
+    collide_parser.add_argument("theory_a", nargs="?", help="First theory key (omit to list all)")
+    collide_parser.add_argument("theory_b", nargs="?", help="Second theory key")
+    collide_parser.add_argument("--top", type=int, default=0,
+                                help="Show top N strongest collisions across all theory pairs")
+    collide_parser.add_argument("--list", action="store_true", help="List available theory keys")
+
     args = parser.parse_args()
 
-    if args.command == "crew":
+    if args.command == "collide":
+        from .theory.collision_engine import collide, top_collisions, list_theories
+        if getattr(args, "list", False):
+            print("Available theories:")
+            for t in list_theories():
+                print(f"  {t}")
+        elif args.top:
+            reports = top_collisions(args.top)
+            for r in reports:
+                print(r)
+        elif args.theory_a and args.theory_b:
+            r = collide(args.theory_a, args.theory_b)
+            print(r)
+        else:
+            print("Usage: silicon-realms collide <theory_a> <theory_b>")
+            print("       silicon-realms collide --top 10")
+            print("       silicon-realms collide --list")
+    elif args.command == "crew":
         from .crews.realms import run_three_realms
         run_three_realms(args.task, llm=args.llm, verbose=not args.quiet)
     else:

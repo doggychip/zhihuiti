@@ -91,12 +91,15 @@ def agent_act(state: SimState, agent: Agent, action: str):
         unstake(state, agent.id, amount)
 
     elif action == "migrate":
-        # Pick the least crowded realm
-        realm_pops = {}
-        for a in state.agents.values():
-            realm_pops[a.realm] = realm_pops.get(a.realm, 0) + 1
-
-        best_realm = min(REALM_NAMES, key=lambda r: realm_pops.get(r, 0))
+        # Use Bellman value estimates if available, else fall back to population
+        if state.realm_values:
+            from .dynamics import best_realm_by_value
+            best_realm = best_realm_by_value(state)
+        else:
+            realm_pops = {}
+            for a in state.agents.values():
+                realm_pops[a.realm] = realm_pops.get(a.realm, 0) + 1
+            best_realm = min(REALM_NAMES, key=lambda r: realm_pops.get(r, 0))
         migrate_agent(state, agent, best_realm)
 
     elif action == "rest":

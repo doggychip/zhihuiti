@@ -15,6 +15,7 @@ class Agent:
     energy: int = 100
     created_tick: int = 0
     migration_cooldown: int = 0
+    fitness_history: list = field(default_factory=list)  # for replicator dynamics
 
 
 @dataclass
@@ -51,3 +52,10 @@ class SimState:
     total_supply: float = 0.0
     rng: random.Random = field(default_factory=lambda: random.Random(42))
     config: dict = field(default_factory=dict)
+    # Statistical mechanics
+    temperature: float = 1.0        # economic temperature (controls wealth spread)
+    entropy: float = 0.0            # Shannon entropy of wealth distribution
+    # Control theory
+    realm_values: dict = field(default_factory=dict)   # Bellman value per realm
+    # SOC
+    last_avalanche_size: float = 0.0  # largest wealth drop this tick
