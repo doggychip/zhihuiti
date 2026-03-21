@@ -1127,7 +1127,7 @@ export default function ZhihuiTiDashboard() {
   const handleSelect = useCallback((id: string) => setSelected(prev => prev === id ? null : id), []);
 
   const fetchData = useCallback(() => {
-    fetch("/api/data")
+    fetch("https://zhihuiti.zeabur.app/api/data")
       .then(r => r.json())
       .then(d => { setData(d); setLive(true); })
       .catch(() => { setData(DEMO_DATA); setLive(false); });
