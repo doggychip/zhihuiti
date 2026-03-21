@@ -27,7 +27,7 @@ def main():
 @main.command()
 @click.argument("goal")
 @click.option("--db", default="zhihuiti.db", help="SQLite database path")
-@click.option("--model", default=None, help="OpenRouter model ID")
+@click.option("--model", default=None, help="Model name (Ollama: llama3, mistral… / OpenRouter: anthropic/claude-sonnet-4…)")
 def run(goal: str, db: str, model: str | None):
     """Execute a goal through the agent swarm."""
     from zhihuiti.orchestrator import Orchestrator
@@ -50,7 +50,7 @@ def run(goal: str, db: str, model: str | None):
 
 @main.command()
 @click.option("--db", default="zhihuiti.db", help="SQLite database path")
-@click.option("--model", default=None, help="OpenRouter model ID")
+@click.option("--model", default=None, help="Model name (Ollama: llama3, mistral… / OpenRouter: anthropic/claude-sonnet-4…)")
 def repl(db: str, model: str | None):
     """Interactive REPL mode — enter goals one at a time."""
     from zhihuiti.orchestrator import Orchestrator
@@ -235,7 +235,7 @@ def auctions(db: str):
 
 @main.command()
 @click.option("--db", default="zhihuiti.db", help="SQLite database path")
-@click.option("--model", default=None, help="OpenRouter model ID")
+@click.option("--model", default=None, help="Model name (Ollama: llama3, mistral… / OpenRouter: anthropic/claude-sonnet-4…)")
 @click.option("--port", default=8377, help="Dashboard port")
 def dashboard(db: str, model: str | None, port: int):
     """Launch the web dashboard."""

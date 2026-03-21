@@ -34,9 +34,7 @@ class Orchestrator:
     """Top-level controller that decomposes goals and manages the agent swarm."""
 
     def __init__(self, db_path: str = "zhihuiti.db", model: str | None = None):
-        from zhihuiti.llm import DEFAULT_MODEL
-
-        self.llm = LLM(model=model or DEFAULT_MODEL)
+        self.llm = LLM(model=model)
         self.memory = Memory(db_path=db_path)
         self.economy = Economy(self.memory)
         self.bloodline = Bloodline(self.memory)
