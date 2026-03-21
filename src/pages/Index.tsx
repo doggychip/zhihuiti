@@ -954,6 +954,7 @@ function AgentDetail({ agent, connections, agents, onClose }: {
           })}
         </div>
       )}
+      <BloodlineTree agent={agent} agents={agents} onSelect={onSelect} />
     </div>
   );
 }
