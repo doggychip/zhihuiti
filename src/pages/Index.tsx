@@ -280,6 +280,27 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events }: {
       world.add(sprite);
     });
 
+    // Ambient particle dust
+    const dustCount = 200;
+    const dustPosArr = new Float32Array(dustCount * 3);
+    const dustVelArr = new Float32Array(dustCount * 3);
+    for (let i = 0; i < dustCount; i++) {
+      dustPosArr[i * 3] = (Math.random() - 0.5) * 24;
+      dustPosArr[i * 3 + 1] = (Math.random() - 0.5) * 12;
+      dustPosArr[i * 3 + 2] = (Math.random() - 0.5) * 24;
+      dustVelArr[i * 3] = (Math.random() - 0.5) * 0.003;
+      dustVelArr[i * 3 + 1] = (Math.random() - 0.5) * 0.002;
+      dustVelArr[i * 3 + 2] = (Math.random() - 0.5) * 0.003;
+    }
+    const dustGeo = new THREE.BufferGeometry();
+    dustGeo.setAttribute("position", new THREE.BufferAttribute(dustPosArr, 3));
+    const dustMat = new THREE.PointsMaterial({
+      color: "#6366f1", size: 0.04, transparent: true, opacity: 0.35,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const dustPoints = new THREE.Points(dustGeo, dustMat);
+    world.add(dustPoints);
+
     // Position agents
     const realmIdx: Record<string, number> = { central: 0, research: 0, execution: 0 };
     const realmCounts: Record<string, number> = {};
