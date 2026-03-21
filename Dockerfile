@@ -1,7 +1,7 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY zhihuiti/ ./
-RUN npm ci
+RUN npm install
 RUN npm run build
 
 FROM node:20-alpine AS production
