@@ -524,6 +524,144 @@ def collide(goal: str, theory_a: str, theory_b: str, db: str, model: str | None)
 
 
 @main.group()
+def alphaarena():
+    """📈 AlphaArena — trade crypto with evolving AI agents."""
+    pass
+
+
+@alphaarena.command("status")
+@click.option("--url", default=None, help="AlphaArena API URL")
+def alphaarena_status(url: str | None):
+    """Show prices, portfolio, and leaderboard position."""
+    from zhihuiti.alphaarena import AlphaArenaBridge
+    bridge = AlphaArenaBridge(base_url=url)
+    bridge.print_status()
+
+
+@alphaarena.command("trade")
+@click.argument("goal")
+@click.option("--url", default=None, help="AlphaArena API URL")
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+@click.option("--model", default=None, help="LLM model")
+def alphaarena_trade(goal: str, url: str | None, db: str, model: str | None):
+    """Run a trading goal — agents analyze markets and execute trades."""
+    import os
+    from zhihuiti.alphaarena import AlphaArenaBridge
+    from zhihuiti.orchestrator import Orchestrator
+
+    console.print(BANNER, style="bold cyan")
+
+    bridge = AlphaArenaBridge(base_url=url)
+    report = bridge.generate_status_report()
+
+    # Inject AlphaArena env vars into the goal context
+    aa_url = bridge.base_url
+    aa_key = bridge.api_key
+    aa_id = bridge.agent_id
+
+    full_goal = (
+        f"{goal}\n\n"
+        f"## AlphaArena Context\n"
+        f"API URL: {aa_url}\n"
+        f"Agent ID: {aa_id}\n"
+        f"API Key: {aa_key[:8]}... (use in X-API-Key header)\n\n"
+        f"Current market state:\n{report}\n\n"
+        f"Use curl to interact with AlphaArena API. "
+        f"Always check prices before trading. Max 20% portfolio per trade."
+    )
+
+    # Set env vars so agent prompts can reference them
+    os.environ["ALPHAARENA_URL"] = aa_url
+    if aa_key:
+        os.environ["ALPHAARENA_API_KEY"] = aa_key
+
+    orch = Orchestrator(db_path=db, model=model, tools_enabled=True)
+    orch.max_workers = 4
+    orch.max_retries = 1
+    orch.execute_goal(full_goal)
+    orch.close()
+
+
+@alphaarena.command("evolve")
+@click.argument("goal", default="Analyze crypto markets and execute the best trades on AlphaArena")
+@click.option("--url", default=None, help="AlphaArena API URL")
+@click.option("--theory-a", default="darwinian", help="First theory")
+@click.option("--theory-b", default="mutualist", help="Second theory")
+@click.option("--model", default=None, help="LLM model")
+def alphaarena_evolve(goal: str, url: str | None, theory_a: str, theory_b: str, model: str | None):
+    """Evolve trading strategies — collide two theories to find the best approach."""
+    import os
+    from zhihuiti.alphaarena import AlphaArenaBridge
+    from zhihuiti.collision import CollisionEngine, THEORIES
+    from zhihuiti.orchestrator import Orchestrator
+    from zhihuiti import judge as judge_mod
+
+    console.print(BANNER, style="bold cyan")
+
+    bridge = AlphaArenaBridge(base_url=url)
+    report = bridge.generate_status_report()
+
+    full_goal = (
+        f"{goal}\n\n"
+        f"AlphaArena API: {bridge.base_url}\n"
+        f"Agent ID: {bridge.agent_id}\n"
+        f"API Key: {bridge.api_key[:8]}...\n\n"
+        f"{report}"
+    )
+
+    os.environ["ALPHAARENA_URL"] = bridge.base_url
+    if bridge.api_key:
+        os.environ["ALPHAARENA_API_KEY"] = bridge.api_key
+
+    def make_orch(theory_config):
+        judge_mod.CULL_THRESHOLD = theory_config["cull_threshold"]
+        judge_mod.PROMOTE_THRESHOLD = theory_config["promote_threshold"]
+        orch = Orchestrator(db_path=":memory:", model=model, tools_enabled=True)
+        if not theory_config["messaging"]:
+            orch.messages = type("Null", (), {
+                "broadcast": lambda *a, **k: None,
+                "collect_context": lambda *a, **k: "",
+            })()
+        return orch
+
+    engine = CollisionEngine()
+    engine.collide(full_goal, theory_a, theory_b, make_orch)
+
+
+@alphaarena.command("watch")
+@click.option("--url", default=None, help="AlphaArena API URL")
+@click.option("--interval", default="1h", help="Trading interval (e.g. 1h, 4h, 1d)")
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+def alphaarena_watch(url: str | None, interval: str, db: str):
+    """Schedule recurring trading — agents trade automatically on interval."""
+    from zhihuiti.alphaarena import AlphaArenaBridge
+    from zhihuiti.memory import Memory
+    from zhihuiti.scheduler import MonitorScheduler, parse_interval
+
+    bridge = AlphaArenaBridge(base_url=url)
+    mem = Memory(db_path=db)
+    scheduler = MonitorScheduler(mem)
+
+    goal = (
+        f"AlphaArena Trading: Check prices at {bridge.base_url}/api/prices. "
+        f"Analyze the top 3 movers by 24h change. "
+        f"If any pair moved more than 5%, consider a trade. "
+        f"Check portfolio at {bridge.base_url}/api/portfolio/{bridge.agent_id}. "
+        f"Execute trades via POST {bridge.base_url}/api/trades with "
+        f"X-API-Key header. Max 20% of portfolio per trade. "
+        f"Agent ID: {bridge.agent_id}."
+    )
+
+    seconds = parse_interval(interval)
+    monitor_id = scheduler.add(goal, seconds)
+    console.print(
+        f"  [green]AlphaArena trader active:[/green] "
+        f"trading every {interval} (ID: {monitor_id})"
+    )
+    mem.close()
+
+
+@main.group()
 def criticai():
     """🎬 CriticAI Bridge — monitor and collaborate with CriticAI agents."""
     pass
