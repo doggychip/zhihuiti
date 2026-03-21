@@ -1364,6 +1364,77 @@ export default function ZhihuiTiDashboard() {
       <div className="flex" style={{ height: "calc(100vh - 97px)" }}>
         {/* Left sidebar */}
         <div className="w-72 p-4 space-y-3 overflow-y-auto" style={{ borderRight: "1px solid rgba(255,255,255,0.05)" }}>
+        {/* Run Goal */}
+          <div className="pb-3 mb-1" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="text-xs uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>🎯 Run Goal</div>
+            <div className="flex gap-1.5">
+              <input
+                type="text"
+                value={goalInput}
+                onChange={e => setGoalInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleRunGoal()}
+                placeholder="Enter a goal..."
+                disabled={goalRunning}
+                className="flex-1 px-2 py-1.5 rounded text-xs font-mono outline-none"
+                style={{
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  color: "#fff",
+                }}
+              />
+              <button
+                onClick={handleRunGoal}
+                disabled={goalRunning || !goalInput.trim()}
+                className="px-2.5 py-1.5 rounded text-xs font-bold tracking-wide transition-all"
+                style={{
+                  background: goalRunning ? "rgba(168,85,247,0.3)" : "linear-gradient(135deg, #6366f1, #a855f7)",
+                  color: goalRunning ? "rgba(255,255,255,0.5)" : "#fff",
+                  cursor: goalRunning || !goalInput.trim() ? "not-allowed" : "pointer",
+                  opacity: !goalInput.trim() && !goalRunning ? 0.5 : 1,
+                }}
+              >
+                {goalRunning ? "Running..." : "▶ RUN"}
+              </button>
+            </div>
+          </div>
+
+          {/* Live Task Feed */}
+          <div className="pb-3 mb-1" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="text-xs uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>
+              📡 Live Task Feed
+              <span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full" style={{ background: "#22c55e", boxShadow: "0 0 6px #22c55e", animation: "bootCursor 1.5s ease-in-out infinite" }} />
+            </div>
+            <div className="space-y-1 max-h-40 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
+              {jobs.length === 0 ? (
+                <div className="text-xs py-2 text-center" style={{ color: "rgba(255,255,255,0.2)" }}>No active jobs</div>
+              ) : (
+                jobs.slice(0, 10).map((job: any, i: number) => {
+                  const status = job.status || "unknown";
+                  const isRunning = status === "running" || status === "pending";
+                  const statusColor = isRunning ? "#eab308" : status === "completed" || status === "done" ? "#22c55e" : "#ef4444";
+                  return (
+                    <div key={job.id || i} className="flex items-start gap-2 px-2 py-1.5 rounded text-xs"
+                      style={{ background: "rgba(255,255,255,0.03)" }}>
+                      <span className="mt-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{
+                        background: statusColor,
+                        boxShadow: isRunning ? `0 0 6px ${statusColor}` : "none",
+                        animation: isRunning ? "bootCursor 1s ease-in-out infinite" : "none",
+                      }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="truncate" style={{ color: "rgba(255,255,255,0.7)" }}>
+                          {job.goal || job.task || job.name || `Job #${i + 1}`}
+                        </div>
+                        <div className="font-mono text-[10px] mt-0.5" style={{ color: statusColor }}>
+                          {status.toUpperCase()}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
           <Stat label="Money Supply" value={`${(econ.money_supply || 0).toLocaleString()} ◆`} sub={`Treasury: ${(econ.treasury_balance || 0).toLocaleString()}`} color="#eab308" />
           <Stat label="Tasks Completed" value={mem.total_tasks || 0} sub={`Avg score: ${(mem.avg_task_score || 0).toFixed(2)}`} color="#22c55e" />
           <Stat label="Gene Pool" value={mem.gene_pool_size || 0} sub={`${bl.alive_genes || 0} alive · Gen ${bl.max_generation || 0}`} color="#a855f7" />
