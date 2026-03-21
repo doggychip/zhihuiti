@@ -1,8 +1,7 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY zhihuiti/package.json zhihuiti/package-lock.json ./
+COPY zhihuiti/ ./
 RUN npm ci
-COPY zhihuiti/ .
 RUN npm run build
 
 FROM node:20-alpine AS production
