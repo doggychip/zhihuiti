@@ -1239,6 +1239,18 @@ export default function ZhihuiTiDashboard() {
           0%, 100% { opacity: 0.4; }
           50% { opacity: 0.7; }
         }
+        @keyframes bootLogoPulse {
+          0%, 100% { box-shadow: 0 0 40px rgba(99,102,241,0.3), 0 0 80px rgba(168,85,247,0.15); transform: scale(1); }
+          50% { box-shadow: 0 0 60px rgba(99,102,241,0.5), 0 0 120px rgba(168,85,247,0.25); transform: scale(1.05); }
+        }
+        @keyframes bootLineIn {
+          from { opacity: 0; transform: translateX(-12px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes bootCursor {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
         .hud-border {
           pointer-events: none;
           position: fixed;
