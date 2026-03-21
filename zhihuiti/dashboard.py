@@ -423,16 +423,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
     def _send_json(self, data: dict, status: int = 200) -> None:
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self._add_cors()
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
 
     def do_OPTIONS(self):
         """Handle CORS preflight for Lovable."""
         self.send_response(200)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self._add_cors()
         self.end_headers()
 
     def _serve_html(self):
@@ -443,11 +441,17 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(html.encode())
 
+    def _add_cors(self):
+        """Add CORS headers to every response for Lovable cross-origin access."""
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+
     def _serve_json(self):
         data = _gather_data(self.orchestrator) if self.orchestrator else {}
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self._add_cors()
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
 
