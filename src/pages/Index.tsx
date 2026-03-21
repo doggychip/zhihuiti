@@ -30,6 +30,7 @@ interface Agent {
   life_state: string;
   generation: number;
   tasks: number;
+  parentId?: string;
 }
 
 interface Connection {
