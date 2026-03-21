@@ -665,6 +665,191 @@ function TaskFeed({ events, onSelectAgent }: { events: TaskEvent[]; onSelectAgen
   );
 }
 
+// ── Results Panel ───────────────────────────────────────────────
+function ResultsPanel({ jobId, result, loading, onClose }: {
+  jobId: string;
+  result: any;
+  loading: boolean;
+  onClose: () => void;
+}) {
+  if (!jobId) return null;
+
+  const isDone = result?.status === "done" || result?.status === "completed";
+  const jobData = result?.result || result;
+  const tasks = jobData?.tasks || [];
+  const goal = jobData?.goal || result?.goal || "";
+  const economy = jobData?.economy || {};
+  const stats = jobData?.stats || {};
+
+  return (
+    <div className="w-80 flex flex-col overflow-hidden" style={{ borderLeft: "1px solid rgba(255,255,255,0.05)" }}>
+      <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+        <div className="text-xs uppercase tracking-widest flex items-center gap-2" style={{ color: "rgba(255,255,255,0.4)" }}>
+          <span>📋 Job Results</span>
+        </div>
+        <button onClick={onClose} className="text-white opacity-40 hover:opacity-100 cursor-pointer text-sm">✕</button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ scrollbarWidth: "thin" }}>
+        {/* Loading state */}
+        {(loading || !isDone) && !result ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "rgba(99,102,241,0.4)", borderTopColor: "transparent" }} />
+            <div className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+              {loading ? "Loading job data..." : "Waiting for results..."}
+            </div>
+            <div className="text-[10px] font-mono" style={{ color: "rgba(255,255,255,0.2)" }}>
+              Polling every 5s...
+            </div>
+          </div>
+        ) : !isDone && result ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "#eab308", borderTopColor: "transparent" }} />
+            <div className="text-xs font-bold" style={{ color: "#eab308" }}>Job Running...</div>
+            <div className="text-xs text-center px-2" style={{ color: "rgba(255,255,255,0.5)" }}>{goal}</div>
+            <div className="text-[10px] font-mono" style={{ color: "rgba(255,255,255,0.2)" }}>
+              Auto-refreshing...
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Goal */}
+            <div className="p-3 rounded-lg" style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}>
+              <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "rgba(99,102,241,0.7)" }}>Goal</div>
+              <div className="text-sm text-white leading-snug">{goal}</div>
+            </div>
+
+            {/* Job ID */}
+            <div className="text-[10px] font-mono" style={{ color: "rgba(255,255,255,0.2)" }}>
+              ID: {jobId}
+            </div>
+
+            {/* Tasks */}
+            {tasks.length > 0 && (
+              <div>
+                <div className="text-xs uppercase tracking-wider mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>
+                  Tasks ({tasks.length})
+                </div>
+                <div className="space-y-2">
+                  {tasks.map((task: any, i: number) => {
+                    const scoreColor = (task.score || 0) >= 0.85 ? "#22c55e" : (task.score || 0) >= 0.7 ? "#eab308" : "#ef4444";
+                    return (
+                      <div key={i} className="p-2.5 rounded-lg" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs">{ROLE_ICONS[task.role] || "🤖"}</span>
+                            <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: REALM_COLORS[task.role === "researcher" ? "research" : "execution"] || "#a855f7" }}>
+                              {task.role}
+                            </span>
+                          </div>
+                          <span className="text-xs font-mono font-bold" style={{ color: scoreColor }}>
+                            {((task.score || 0) * 100).toFixed(0)}%
+                          </span>
+                        </div>
+
+                        {/* Task description - truncated */}
+                        <div className="text-[11px] leading-snug mb-2" style={{ color: "rgba(255,255,255,0.6)" }}>
+                          {(task.task || "").split("\n")[0].slice(0, 80)}{(task.task || "").length > 80 ? "..." : ""}
+                        </div>
+
+                        {/* Score bar */}
+                        <div className="w-full h-1.5 rounded-full mb-1.5" style={{ background: "rgba(255,255,255,0.06)" }}>
+                          <div className="h-full rounded-full transition-all" style={{
+                            width: `${(task.score || 0) * 100}%`,
+                            background: scoreColor,
+                          }} />
+                        </div>
+
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="font-mono" style={{ color: "rgba(255,255,255,0.3)" }}>
+                            Agent: {(task.agent_id || "").slice(0, 8)}
+                          </span>
+                          {task.reward && (
+                            <span style={{ color: "#eab308" }}>
+                              +{task.reward.net?.toFixed(1) || task.reward.gross?.toFixed(1)} ◆
+                            </span>
+                          )}
+                        </div>
+
+                        {task.num_bids && (
+                          <div className="text-[10px] mt-1" style={{ color: "rgba(255,255,255,0.2)" }}>
+                            Bid: {task.bid?.toFixed(1)} ◆ · {task.num_bids} bidders
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Economy Summary */}
+            {economy.treasury_balance != null && (
+              <div className="p-3 rounded-lg" style={{ background: "rgba(234,179,8,0.05)", border: "1px solid rgba(234,179,8,0.15)" }}>
+                <div className="text-[10px] uppercase tracking-wider mb-2" style={{ color: "#eab308" }}>💰 Economy</div>
+                <div className="space-y-1">
+                  {[
+                    ["Treasury", `${economy.treasury_balance?.toLocaleString()} ◆`],
+                    ["Rewards Paid", `${economy.total_rewards_paid?.toFixed(1)} ◆`],
+                    ["Taxes Collected", `${economy.total_taxes_collected?.toFixed(1)} ◆`],
+                    ["Tax Rate", economy.tax_rate || "15%"],
+                  ].map(([label, value], i) => (
+                    <div key={i} className="flex justify-between text-xs">
+                      <span style={{ color: "rgba(255,255,255,0.4)" }}>{label}</span>
+                      <span className="font-mono text-white">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Stats Summary */}
+            {stats.total_tasks != null && (
+              <div className="p-3 rounded-lg" style={{ background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.15)" }}>
+                <div className="text-[10px] uppercase tracking-wider mb-2" style={{ color: "#22c55e" }}>📊 Stats</div>
+                <div className="space-y-1">
+                  {[
+                    ["Total Tasks", stats.total_tasks],
+                    ["Total Agents", stats.total_agents],
+                    ["Avg Score", stats.avg_task_score?.toFixed(3)],
+                    ["Gene Pool", stats.gene_pool_size],
+                  ].map(([label, value], i) => (
+                    <div key={i} className="flex justify-between text-xs">
+                      <span style={{ color: "rgba(255,255,255,0.4)" }}>{label}</span>
+                      <span className="font-mono text-white">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Winning Agents */}
+            {tasks.length > 0 && (
+              <div className="p-3 rounded-lg" style={{ background: "rgba(168,85,247,0.05)", border: "1px solid rgba(168,85,247,0.15)" }}>
+                <div className="text-[10px] uppercase tracking-wider mb-2" style={{ color: "#a855f7" }}>🏆 Winning Agents</div>
+                <div className="space-y-1">
+                  {tasks.map((task: any, i: number) => (
+                    <div key={i} className="flex items-center gap-2 text-xs">
+                      <span>{ROLE_ICONS[task.role] || "🤖"}</span>
+                      <span className="font-mono text-[10px]" style={{ color: "rgba(255,255,255,0.5)" }}>
+                        {(task.agent_id || "").slice(0, 12)}
+                      </span>
+                      <span className="flex-1" />
+                      <span className="font-mono" style={{ color: task.alive ? "#22c55e" : "#ef4444" }}>
+                        {task.alive ? "●" : "○"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Realm Health Bars ───────────────────────────────────────────
 function RealmHealthBars({ realms }: { realms: typeof DEMO_DATA["realms"] }) {
   const realmEntries = Object.entries(realms) as [string, typeof realms["research"]][];
@@ -1128,8 +1313,13 @@ export default function ZhihuiTiDashboard() {
   const [goalInput, setGoalInput] = useState("");
   const [goalRunning, setGoalRunning] = useState(false);
 
-  // Live jobs feed
-  const [jobs, setJobs] = useState<any[]>([]);
+  // Live jobs feed — store as Record<jobId, jobData>
+  const [jobsMap, setJobsMap] = useState<Record<string, any>>({});
+
+  // Results panel state
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [jobResult, setJobResult] = useState<any>(null);
+  const [jobResultLoading, setJobResultLoading] = useState(false);
 
   const handleSelect = useCallback((id: string) => setSelected(prev => prev === id ? null : id), []);
 
@@ -1145,13 +1335,54 @@ export default function ZhihuiTiDashboard() {
     const fetchJobs = () => {
       fetch("https://zhihuiti.zeabur.app/api/jobs")
         .then(r => r.json())
-        .then(d => setJobs(Array.isArray(d) ? d : d.jobs || []))
+        .then(d => {
+          if (d && typeof d === "object" && !Array.isArray(d)) {
+            setJobsMap(d);
+          }
+        })
         .catch(() => {});
     };
     fetchJobs();
     const interval = setInterval(fetchJobs, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  // Poll selected job result until done
+  useEffect(() => {
+    if (!selectedJobId) { setJobResult(null); return; }
+    let cancelled = false;
+    const poll = () => {
+      setJobResultLoading(true);
+      fetch(`https://zhihuiti.zeabur.app/api/job/${selectedJobId}`)
+        .then(r => r.json())
+        .then(d => {
+          if (cancelled) return;
+          setJobResult(d);
+          setJobResultLoading(false);
+          if (d?.status === "done" || d?.status === "completed") {
+            // done, stop polling
+          } else {
+            // keep polling
+            setTimeout(() => { if (!cancelled) poll(); }, 5000);
+          }
+        })
+        .catch(() => {
+          if (cancelled) return;
+          // fallback: use data from jobsMap
+          const fromMap = jobsMap[selectedJobId];
+          if (fromMap) setJobResult(fromMap);
+          setJobResultLoading(false);
+        });
+    };
+    poll();
+    return () => { cancelled = true; };
+  }, [selectedJobId]);
+
+  // Derive jobs array for sidebar feed
+  const jobs = useMemo(() =>
+    Object.entries(jobsMap).map(([id, job]) => ({ id, ...job })),
+    [jobsMap]
+  );
 
   const handleRunGoal = useCallback(async () => {
     if (!goalInput.trim() || goalRunning) return;
@@ -1413,8 +1644,12 @@ export default function ZhihuiTiDashboard() {
                   const isRunning = status === "running" || status === "pending";
                   const statusColor = isRunning ? "#eab308" : status === "completed" || status === "done" ? "#22c55e" : "#ef4444";
                   return (
-                    <div key={job.id || i} className="flex items-start gap-2 px-2 py-1.5 rounded text-xs"
-                      style={{ background: "rgba(255,255,255,0.03)" }}>
+                    <button key={job.id || i} className="w-full flex items-start gap-2 px-2 py-1.5 rounded text-xs text-left transition-colors cursor-pointer hover:bg-white/5"
+                      onClick={() => setSelectedJobId(job.id || null)}
+                      style={{
+                        background: selectedJobId === job.id ? "rgba(99,102,241,0.1)" : "rgba(255,255,255,0.03)",
+                        border: selectedJobId === job.id ? "1px solid rgba(99,102,241,0.3)" : "1px solid transparent",
+                      }}>
                       <span className="mt-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{
                         background: statusColor,
                         boxShadow: isRunning ? `0 0 6px ${statusColor}` : "none",
@@ -1428,7 +1663,7 @@ export default function ZhihuiTiDashboard() {
                           {status.toUpperCase()}
                         </div>
                       </div>
-                    </div>
+                    </button>
                   );
                 })
               )}
@@ -1654,8 +1889,12 @@ export default function ZhihuiTiDashboard() {
           </div>
         </div>
 
-        {/* Right — Live Task Feed */}
-        <TaskFeed events={events} onSelectAgent={handleSelect} />
+        {/* Right — Results Panel or Live Task Feed */}
+        {selectedJobId ? (
+          <ResultsPanel jobId={selectedJobId} result={jobResult} loading={jobResultLoading} onClose={() => setSelectedJobId(null)} />
+        ) : (
+          <TaskFeed events={events} onSelectAgent={handleSelect} />
+        )}
       </div>
     </div>
   );
