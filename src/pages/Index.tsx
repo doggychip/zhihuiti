@@ -1146,7 +1146,20 @@ export default function ZhihuiTiDashboard() {
         <div className="flex-1 flex flex-col relative">
           <div className="flex-1 relative">
             <ThreeGraph agents={agents} connections={connections} onSelect={handleSelect} selectedId={selected} events={events} />
-            <div className="absolute bottom-4 left-4 text-xs" style={{ color: "rgba(255,255,255,0.15)" }}>
+            <div className="absolute bottom-4 left-4 flex items-center gap-3">
+              <span className="text-xs" style={{ color: "rgba(255,255,255,0.15)" }}>drag to rotate · click node for details</span>
+              <button
+                onClick={() => setShowCollision(s => !s)}
+                className="text-[10px] px-2 py-1 rounded cursor-pointer transition-colors"
+                style={{
+                  background: showCollision ? "rgba(244,114,182,0.15)" : "rgba(255,255,255,0.05)",
+                  color: showCollision ? "#f472b6" : "rgba(255,255,255,0.4)",
+                  border: `1px solid ${showCollision ? "rgba(244,114,182,0.3)" : "rgba(255,255,255,0.08)"}`,
+                }}
+              >
+                ⚛️ Collision Engine
+              </button>
+            </div>
               drag to rotate · click node for details
             </div>
             {selectedAgent && (
