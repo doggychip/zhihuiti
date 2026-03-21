@@ -1,9 +1,8 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
 COPY . .
-RUN ls -la && ls -la zhihuiti/ 2>/dev/null || echo "no zhihuiti dir" && find . -name "package.json" -maxdepth 3
-RUN if [ -f zhihuiti/package.json ]; then cp -r zhihuiti/* .; fi
-RUN npm install
 RUN npm run build
 
 FROM node:20-alpine AS production
