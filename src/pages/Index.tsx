@@ -1889,8 +1889,12 @@ export default function ZhihuiTiDashboard() {
           </div>
         </div>
 
-        {/* Right — Live Task Feed */}
-        <TaskFeed events={events} onSelectAgent={handleSelect} />
+        {/* Right — Results Panel or Live Task Feed */}
+        {selectedJobId ? (
+          <ResultsPanel jobId={selectedJobId} result={jobResult} loading={jobResultLoading} onClose={() => setSelectedJobId(null)} />
+        ) : (
+          <TaskFeed events={events} onSelectAgent={handleSelect} />
+        )}
       </div>
     </div>
   );
