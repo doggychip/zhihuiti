@@ -1020,11 +1020,109 @@ function AgentDetail({ agent, connections, agents, onClose, onSelect }: {
 }
 
 // ── Main Dashboard ──────────────────────────────────────────────
+// ── Boot Sequence ───────────────────────────────────────────────
+const BOOT_LINES = [
+  { text: "ZHIHUITI KERNEL v3.1.7 — initializing...", delay: 0, color: "#6366f1" },
+  { text: "Loading neural mesh topology ████████████ OK", delay: 400, color: "#a855f7" },
+  { text: "Spawning agent runtime (9 cores) ··· ONLINE", delay: 900, color: "#22c55e" },
+  { text: "Mounting realm partitions: 研发界 · 执行界 · 中枢界", delay: 1400, color: "#3b82f6" },
+  { text: "Calibrating auction engine ░░░░░░░░░░░░ READY", delay: 1900, color: "#eab308" },
+  { text: "Bloodline index built — 9 genes mapped", delay: 2300, color: "#f472b6" },
+  { text: "Circuit breaker armed — 4 laws active", delay: 2600, color: "#ef4444" },
+  { text: "Token economy linked — 10,000 ◆ supply", delay: 2900, color: "#eab308" },
+  { text: "All subsystems nominal. Entering dashboard ▸", delay: 3300, color: "#22c55e" },
+];
+
+function BootSequence({ onComplete }: { onComplete: () => void }) {
+  const [visibleLines, setVisibleLines] = useState(0);
+  const [fading, setFading] = useState(false);
+
+  useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    BOOT_LINES.forEach((line, i) => {
+      timers.push(setTimeout(() => setVisibleLines(i + 1), line.delay));
+    });
+    // Start fade out after last line
+    timers.push(setTimeout(() => setFading(true), 3800));
+    timers.push(setTimeout(() => onComplete(), 4400));
+    return () => timers.forEach(clearTimeout);
+  }, [onComplete]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[99999] flex flex-col items-center justify-center"
+      style={{
+        background: "#0a0a14",
+        opacity: fading ? 0 : 1,
+        transition: "opacity 0.6s ease-out",
+      }}
+    >
+      {/* Logo pulse */}
+      <div className="mb-8 flex flex-col items-center">
+        <div
+          className="w-16 h-16 rounded-xl flex items-center justify-center text-3xl font-bold mb-3"
+          style={{
+            background: "linear-gradient(135deg, #6366f1, #a855f7)",
+            boxShadow: "0 0 40px rgba(99,102,241,0.3), 0 0 80px rgba(168,85,247,0.15)",
+            animation: "bootLogoPulse 1.5s ease-in-out infinite",
+          }}
+        >
+          慧
+        </div>
+        <div className="text-xs uppercase tracking-[0.3em] font-bold" style={{ color: "rgba(255,255,255,0.3)" }}>
+          ZHIHUITI SYSTEM
+        </div>
+      </div>
+
+      {/* Terminal lines */}
+      <div className="w-[480px] max-w-[90vw] font-mono text-xs space-y-1.5">
+        {BOOT_LINES.slice(0, visibleLines).map((line, i) => (
+          <div
+            key={i}
+            style={{
+              color: line.color,
+              opacity: 0,
+              animation: "bootLineIn 0.3s ease-out forwards",
+              textShadow: `0 0 8px ${line.color}40`,
+            }}
+          >
+            <span style={{ color: "rgba(255,255,255,0.15)", marginRight: 8 }}>
+              {String(i).padStart(2, "0")}
+            </span>
+            {line.text}
+          </div>
+        ))}
+        {/* Blinking cursor */}
+        {visibleLines < BOOT_LINES.length && (
+          <span style={{ color: "#6366f1", animation: "bootCursor 0.6s step-end infinite" }}>▌</span>
+        )}
+      </div>
+
+      {/* Progress bar */}
+      <div className="mt-8 w-[480px] max-w-[90vw]">
+        <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}>
+          <div
+            className="h-full rounded-full"
+            style={{
+              width: `${(visibleLines / BOOT_LINES.length) * 100}%`,
+              background: "linear-gradient(90deg, #6366f1, #a855f7)",
+              boxShadow: "0 0 12px rgba(99,102,241,0.4)",
+              transition: "width 0.4s ease-out",
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ZhihuiTiDashboard() {
   const [data, setData] = useState<typeof DEMO_DATA | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [live, setLive] = useState(true);
   const [showCollision, setShowCollision] = useState(false);
+  const [booted, setBooted] = useState(false);
+  const handleBootComplete = useCallback(() => setBooted(true), []);
 
   const handleSelect = useCallback((id: string) => setSelected(prev => prev === id ? null : id), []);
 
@@ -1089,6 +1187,8 @@ export default function ZhihuiTiDashboard() {
       background: "linear-gradient(135deg, #0a0a14 0%, #0d0d1a 50%, #0a0f18 100%)",
       fontFamily: "'Inter', system-ui, sans-serif",
     }}>
+      {/* Boot sequence overlay */}
+      {!booted && <BootSequence onComplete={handleBootComplete} />}
       {/* CSS for effects */}
       <style>{`
         @keyframes fadeSlideIn {
@@ -1140,6 +1240,18 @@ export default function ZhihuiTiDashboard() {
         @keyframes hudGlow {
           0%, 100% { opacity: 0.4; }
           50% { opacity: 0.7; }
+        }
+        @keyframes bootLogoPulse {
+          0%, 100% { box-shadow: 0 0 40px rgba(99,102,241,0.3), 0 0 80px rgba(168,85,247,0.15); transform: scale(1); }
+          50% { box-shadow: 0 0 60px rgba(99,102,241,0.5), 0 0 120px rgba(168,85,247,0.25); transform: scale(1.05); }
+        }
+        @keyframes bootLineIn {
+          from { opacity: 0; transform: translateX(-12px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes bootCursor {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
         }
         .hud-border {
           pointer-events: none;
