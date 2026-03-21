@@ -32,9 +32,33 @@ console = Console()
 DEFAULT_PORT = 8377  # 慧体 pinyin abbreviation
 
 
-def _gather_data(orch: Orchestrator) -> dict:
+def _gather_data(orch) -> dict:
     """Gather all system data into a single dict for the dashboard."""
     data: dict = {}
+
+    # Handle minimal orchestrator (no LLM available)
+    if not hasattr(orch, "economy"):
+        data["economy"] = {"money_supply": 0, "total_minted": 0, "total_burned": 0, "treasury_balance": 0, "total_taxes_collected": 0, "total_rewards_paid": 0, "total_spawn_costs": 0, "transactions": 0, "tax_rate": "15%"}
+        data["memory"] = orch.memory.get_stats() if hasattr(orch, "memory") else {}
+        data["agents"] = []
+        data["realms"] = {}
+        data["bloodline"] = orch.memory.get_lineage_stats() if hasattr(orch, "memory") else {}
+        data["auctions"] = orch.memory.get_auction_stats() if hasattr(orch, "memory") else {}
+        data["transactions"] = {}
+        data["inspection"] = {"total_inspections": 0, "accepted": 0, "rejected": 0, "acceptance_rate": 0, "avg_score": 0}
+        data["circuit_breaker"] = {"total_trips": 0, "emergencies": 0, "halts": 0, "warnings": 0, "overridden": 0, "laws_active": 0}
+        data["behavior"] = {"total_violations": 0, "agents_flagged": 0, "total_penalties": 0, "by_type": {}}
+        data["relationships"] = {"total_relationships": 0, "agents_connected": 0, "by_type": {}}
+        data["loans"] = {"total_loans": 0, "active": 0, "repaid": 0, "defaulted": 0, "total_principal": 0, "total_repaid": 0}
+        data["market"] = {"total_orders": 0, "total_trades": 0, "total_volume": 0}
+        data["futures"] = {"total_stakes": 0, "active": 0, "won": 0, "lost": 0, "total_staked": 0}
+        data["arbitration"] = {"total_disputes": 0, "open": 0, "resolved": 0, "dismissed": 0}
+        data["factory"] = {"total_orders": 0, "shipped": 0, "qa_fail": 0, "in_progress": 0, "total_revenue": 0}
+        data["goal_history"] = orch.memory.get_recent_goals(limit=10) if hasattr(orch, "memory") else []
+        data["messaging"] = {"total_messages": 0, "unread": 0}
+        from zhihuiti.collision import THEORIES
+        data["theories"] = {k: {"label": v["label"], "description": v["description"]} for k, v in THEORIES.items()}
+        return data
 
     # Economy
     data["economy"] = orch.economy.get_report()
