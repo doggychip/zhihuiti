@@ -886,8 +886,8 @@ function CollisionEngine({ show, onClose }: { show: boolean; onClose: () => void
 }
 
 
-function AgentDetail({ agent, connections, agents, onClose }: {
-  agent: Agent; connections: Connection[]; agents: Agent[]; onClose: () => void;
+function AgentDetail({ agent, connections, agents, onClose, onSelect }: {
+  agent: Agent; connections: Connection[]; agents: Agent[]; onClose: () => void; onSelect: (id: string) => void;
 }) {
   const color = REALM_COLORS[agent.realm];
   return (
