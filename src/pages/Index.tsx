@@ -1459,8 +1459,12 @@ export default function ZhihuiTiDashboard() {
                   const isRunning = status === "running" || status === "pending";
                   const statusColor = isRunning ? "#eab308" : status === "completed" || status === "done" ? "#22c55e" : "#ef4444";
                   return (
-                    <div key={job.id || i} className="flex items-start gap-2 px-2 py-1.5 rounded text-xs"
-                      style={{ background: "rgba(255,255,255,0.03)" }}>
+                    <button key={job.id || i} className="w-full flex items-start gap-2 px-2 py-1.5 rounded text-xs text-left transition-colors cursor-pointer hover:bg-white/5"
+                      onClick={() => setSelectedJobId(job.id || null)}
+                      style={{
+                        background: selectedJobId === job.id ? "rgba(99,102,241,0.1)" : "rgba(255,255,255,0.03)",
+                        border: selectedJobId === job.id ? "1px solid rgba(99,102,241,0.3)" : "1px solid transparent",
+                      }}>
                       <span className="mt-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{
                         background: statusColor,
                         boxShadow: isRunning ? `0 0 6px ${statusColor}` : "none",
@@ -1474,7 +1478,7 @@ export default function ZhihuiTiDashboard() {
                           {status.toUpperCase()}
                         </div>
                       </div>
-                    </div>
+                    </button>
                   );
                 })
               )}
