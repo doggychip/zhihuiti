@@ -266,13 +266,15 @@ def dashboard(db: str, model: str | None, port: int):
     from zhihuiti.dashboard import start_dashboard
     from zhihuiti.orchestrator import Orchestrator
 
+    import traceback
     console.print(BANNER, style="bold cyan")
     try:
         orch = Orchestrator(db_path=db, model=model)
+        console.print(f"  [green]LLM backend ready:[/green] {orch.llm._backend} ({orch.llm.model})")
     except Exception as e:
-        console.print(f"[yellow]Warning:[/yellow] LLM not available ({e})")
+        console.print(f"[yellow]Warning:[/yellow] Orchestrator init failed: {e}")
+        traceback.print_exc()
         console.print("[dim]Dashboard will serve data but cannot run goals.[/dim]")
-        # Create a minimal orchestrator with just memory for data serving
         from zhihuiti.memory import Memory
         orch = type("MinimalOrch", (), {"memory": Memory(db_path=db), "close": lambda self: self.memory.close()})()
     start_dashboard(orch, port=port, background=False)
@@ -517,6 +519,103 @@ def collide(goal: str, theory_a: str, theory_b: str, db: str, model: str | None)
 
     engine = CollisionEngine()
     engine.collide(goal, theory_a, theory_b, make_orchestrator)
+
+
+@main.group()
+def criticai():
+    """🎬 CriticAI Bridge — monitor and collaborate with CriticAI agents."""
+    pass
+
+
+@criticai.command("status")
+@click.option("--url", default="http://localhost:5000", help="CriticAI base URL")
+def criticai_status(url: str):
+    """Check CriticAI system status."""
+    from zhihuiti.criticai_bridge import CriticAIBridge
+    bridge = CriticAIBridge(base_url=url)
+    bridge.print_status()
+
+
+@criticai.command("report")
+@click.option("--url", default="http://localhost:5000", help="CriticAI base URL")
+def criticai_report(url: str):
+    """Generate a full CriticAI status report."""
+    from zhihuiti.criticai_bridge import CriticAIBridge
+    bridge = CriticAIBridge(base_url=url)
+    report = bridge.generate_status_report()
+    console.print(report)
+
+
+@criticai.command("trigger")
+@click.option("--url", default="http://localhost:5000", help="CriticAI base URL")
+def criticai_trigger(url: str):
+    """Trigger a CriticAI agent to generate a new activity."""
+    from zhihuiti.criticai_bridge import CriticAIBridge
+    bridge = CriticAIBridge(base_url=url)
+    result = bridge.trigger_activity()
+    if result:
+        agent_name = result.get("agent", {}).get("name", "Unknown")
+        console.print(f"  [green]✓[/green] {agent_name}: [{result.get('activityType', '?')}] {result.get('content', '')[:80]}")
+    else:
+        console.print("  [red]Failed to trigger activity[/red]")
+
+
+@criticai.command("watch")
+@click.option("--url", default="http://localhost:5000", help="CriticAI base URL")
+@click.option("--interval", default="30m", help="Check interval (e.g. 10m, 1h)")
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+def criticai_watch(url: str, interval: str, db: str):
+    """Set up a recurring monitor that watches CriticAI agent health."""
+    from zhihuiti.memory import Memory
+    from zhihuiti.scheduler import MonitorScheduler, parse_interval
+
+    mem = Memory(db_path=db)
+    scheduler = MonitorScheduler(mem)
+
+    goal = (
+        f"Monitor CriticAI at {url}: "
+        f"1) curl -s {url}/api/agents to check if the system is online and count agents. "
+        f"2) curl -s {url}/api/leaderboard to check agent rankings and activity. "
+        f"3) curl -s '{url}/api/activity-feed?limit=3' to check recent activity. "
+        f"Report: system status (online/offline), agent count, top critic name and score, "
+        f"latest activity timestamp. Flag if: system offline, no recent activity in 1h, "
+        f"or any agent's avg score dropped below 5.0."
+    )
+
+    interval_s = parse_interval(interval)
+    monitor_id = scheduler.add(goal, interval_s)
+    console.print(f"  [green]CriticAI watcher active:[/green] checking every {interval} (ID: {monitor_id})")
+    mem.close()
+
+
+@criticai.command("analyze")
+@click.option("--url", default="http://localhost:5000", help="CriticAI base URL")
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+@click.option("--model", default=None, help="Model name")
+def criticai_analyze(url: str, db: str, model: str | None):
+    """Run zhihuiti agents to deeply analyze CriticAI's critic ecosystem."""
+    from zhihuiti.orchestrator import Orchestrator
+    from zhihuiti.criticai_bridge import CriticAIBridge
+
+    console.print(BANNER, style="bold cyan")
+    bridge = CriticAIBridge(base_url=url)
+    report = bridge.generate_status_report()
+
+    goal = (
+        f"Analyze the CriticAI entertainment review platform. Here is the current status:\n\n"
+        f"{report}\n\n"
+        f"Tasks:\n"
+        f"1) Evaluate the critic agent ecosystem: Are agents diverse enough? Is any agent dominating? "
+        f"Are rivalries balanced or one-sided?\n"
+        f"2) Analyze content coverage: What content types are well-reviewed vs under-represented?\n"
+        f"3) Check agent activity health: Are agents generating fresh content? Is the activity feed active?\n"
+        f"4) Provide actionable recommendations: What new agent personas would add value? "
+        f"What content categories need attention? How can debates be more engaging?\n"
+        f"Use tools to fetch more data from {url} if needed."
+    )
+
+    orch = Orchestrator(db_path=db, model=model)
+    orch.execute_goal(goal)
 
 
 if __name__ == "__main__":
