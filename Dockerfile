@@ -1,6 +1,7 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY zhihuiti/ ./
+COPY . /repo
+RUN cp -r /repo/zhihuiti/* /repo/zhihuiti/.* . 2>/dev/null || cp -r /repo/zhihuiti/* .
 RUN npm install
 RUN npm run build
 
