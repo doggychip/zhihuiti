@@ -1147,8 +1147,9 @@ export default function ZhihuiTiDashboard() {
               drag to rotate · click node for details
             </div>
             {selectedAgent && (
-              <AgentDetail agent={selectedAgent} connections={selectedConns} agents={agents} onClose={() => setSelected(null)} />
+              <AgentDetail agent={selectedAgent} connections={selectedConns} agents={agents} onClose={() => setSelected(null)} onSelect={handleSelect} />
             )}
+            <CollisionEngine show={showCollision} onClose={() => setShowCollision(false)} />
           </div>
 
           {/* Bottom charts */}
