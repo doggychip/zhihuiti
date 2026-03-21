@@ -1187,6 +1187,8 @@ export default function ZhihuiTiDashboard() {
       background: "linear-gradient(135deg, #0a0a14 0%, #0d0d1a 50%, #0a0f18 100%)",
       fontFamily: "'Inter', system-ui, sans-serif",
     }}>
+      {/* Boot sequence overlay */}
+      {!booted && <BootSequence onComplete={handleBootComplete} />}
       {/* CSS for effects */}
       <style>{`
         @keyframes fadeSlideIn {
