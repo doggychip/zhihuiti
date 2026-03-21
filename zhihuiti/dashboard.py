@@ -390,6 +390,15 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._serve_json()
         elif self.path == "/api/theories":
             self._serve_theories()
+        elif self.path.startswith("/api/job/"):
+            job_id = self.path.split("/api/job/")[1]
+            job = DashboardHandler._jobs.get(job_id)
+            if job:
+                self._send_json(job)
+            else:
+                self._send_json({"error": "job not found"}, 404)
+        elif self.path == "/api/jobs":
+            self._send_json(DashboardHandler._jobs)
         else:
             self._serve_html()
 
@@ -524,12 +533,18 @@ class DashboardHandler(BaseHTTPRequestHandler):
         result = engine.collide(goal, theory_a, theory_b, make_orch)
         self._send_json(result.to_dict())
 
+    # Class-level storage for background job status
+    _jobs: dict = {}
+
     def _handle_run(self):
-        """POST /api/run — execute a goal.
+        """POST /api/run — execute a goal in the background.
 
         Body: {"goal": "..."}
-        Returns execution result as JSON.
+        Returns job ID immediately. Poll /api/job/<id> for results.
         """
+        import threading as _t
+        import uuid as _uuid
+
         content_length = int(self.headers.get("Content-Length", 0))
         body = json.loads(self.rfile.read(content_length)) if content_length else {}
         goal = body.get("goal", "")
@@ -538,12 +553,22 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "goal is required"}, 400)
             return
 
-        if not self.orchestrator:
-            self._send_json({"error": "no orchestrator"}, 500)
+        if not self.orchestrator or not hasattr(self.orchestrator, "execute_goal"):
+            self._send_json({"error": "no orchestrator — set DEEPSEEK_API_KEY"}, 500)
             return
 
-        result = self.orchestrator.execute_goal(goal)
-        self._send_json(result)
+        job_id = _uuid.uuid4().hex[:12]
+        DashboardHandler._jobs[job_id] = {"status": "running", "goal": goal, "result": None}
+
+        def _run():
+            try:
+                result = self.orchestrator.execute_goal(goal)
+                DashboardHandler._jobs[job_id] = {"status": "done", "goal": goal, "result": result}
+            except Exception as e:
+                DashboardHandler._jobs[job_id] = {"status": "error", "goal": goal, "error": str(e)}
+
+        _t.Thread(target=_run, daemon=True).start()
+        self._send_json({"job_id": job_id, "status": "running", "goal": goal})
 
     def log_message(self, format, *args):
         pass  # Suppress access logs
