@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import * as THREE from "three";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -38,7 +38,19 @@ interface Connection {
   type: string;
 }
 
-// ── Demo data (used when API is unavailable) ────────────────────
+interface TaskEvent {
+  id: string;
+  type: "bid" | "assigned" | "completed" | "transfer" | "bankrupt";
+  agentId: string;
+  agentRole: string;
+  realm: string;
+  detail: string;
+  amount?: number;
+  targetAgentId?: string;
+  timestamp: number;
+}
+
+// ── Demo data ───────────────────────────────────────────────────
 const DEMO_DATA = {
   economy: { money_supply: 10000, total_minted: 10000, total_burned: 0, treasury_balance: 8969, total_taxes_collected: 23, total_rewards_paid: 154, total_spawn_costs: 900, transactions: 1, tax_rate: "15%" },
   memory: { total_tasks: 4, total_agents: 9, gene_pool_size: 2, avg_task_score: 0.833 },
@@ -76,12 +88,115 @@ const DEMO_DATA = {
   transactions: {},
 };
 
-// ── 3D Agent Graph ──────────────────────────────────────────────
-function ThreeGraph({ agents, connections, onSelect, selectedId }: {
+const EVENT_ICONS: Record<string, string> = {
+  bid: "🏷️", assigned: "📋", completed: "✅", transfer: "💸", bankrupt: "💀",
+};
+const EVENT_COLORS: Record<string, string> = {
+  bid: "#eab308", assigned: "#60a5fa", completed: "#22c55e", transfer: "#a78bfa", bankrupt: "#ef4444",
+};
+
+// ── Simulated live task feed generator ──────────────────────────
+function useSimulatedFeed(agents: Agent[]): TaskEvent[] {
+  const [events, setEvents] = useState<TaskEvent[]>([]);
+
+  useEffect(() => {
+    if (!agents.length) return;
+    const taskGoals = [
+      "Analyze market trends", "Compile research report", "Optimize token flow",
+      "Validate auction results", "Benchmark agent scores", "Review inspection data",
+      "Process bloodline merge", "Execute trade order", "Audit tax records",
+      "Train sub-model", "Rank candidate genes", "Assess risk factors",
+    ];
+    const genEvent = (): TaskEvent => {
+      const types: TaskEvent["type"][] = ["bid", "assigned", "completed", "transfer", "bankrupt"];
+      const weights = [30, 25, 25, 18, 2]; // bankrupt is rare
+      let r = Math.random() * 100;
+      let type: TaskEvent["type"] = "bid";
+      for (let i = 0; i < types.length; i++) {
+        r -= weights[i];
+        if (r <= 0) { type = types[i]; break; }
+      }
+      const agent = agents[Math.floor(Math.random() * agents.length)];
+      const goal = taskGoals[Math.floor(Math.random() * taskGoals.length)];
+      let detail = "";
+      let targetAgentId: string | undefined;
+      let amount: number | undefined;
+      switch (type) {
+        case "bid":
+          amount = Math.round(8 + Math.random() * 30);
+          detail = `Bidding ${amount} ◆ on "${goal}"`;
+          break;
+        case "assigned":
+          detail = `Assigned to "${goal}"`;
+          break;
+        case "completed": {
+          const score = (0.5 + Math.random() * 0.5).toFixed(2);
+          amount = Math.round(10 + Math.random() * 40);
+          detail = `Completed "${goal}" — score ${score}, earned ${amount} ◆`;
+          break;
+        }
+        case "transfer": {
+          const target = agents.filter(a => a.id !== agent.id)[Math.floor(Math.random() * (agents.length - 1))];
+          targetAgentId = target?.id;
+          amount = Math.round(5 + Math.random() * 25);
+          detail = `Transferred ${amount} ◆ to ${ROLE_ICONS[target?.role || ""] || "🤖"} ${target?.role || "agent"}`;
+          break;
+        }
+        case "bankrupt":
+          detail = `Budget depleted — agent going bankrupt!`;
+          break;
+      }
+      return {
+        id: Math.random().toString(36).slice(2, 10),
+        type, agentId: agent.id, agentRole: agent.role,
+        realm: agent.realm, detail, amount, targetAgentId,
+        timestamp: Date.now(),
+      };
+    };
+
+    // Seed initial events
+    const initial: TaskEvent[] = [];
+    for (let i = 0; i < 6; i++) initial.push({ ...genEvent(), timestamp: Date.now() - (6 - i) * 3000 });
+    setEvents(initial);
+
+    const interval = setInterval(() => {
+      setEvents(prev => [genEvent(), ...prev].slice(0, 50));
+    }, 2500 + Math.random() * 2000);
+    return () => clearInterval(interval);
+  }, [agents]);
+
+  return events;
+}
+
+// ── 3D Effect types ─────────────────────────────────────────────
+interface RippleEffect {
+  agentId: string;
+  startTime: number;
+  ring: THREE.Mesh;
+}
+
+interface ParticleTrail {
+  fromId: string;
+  toId: string;
+  startTime: number;
+  particles: THREE.Points;
+  curve: THREE.QuadraticBezierCurve3;
+}
+
+interface BankruptEffect {
+  agentId: string;
+  startTime: number;
+  particles: THREE.Points;
+  flash: THREE.PointLight;
+}
+
+// ── 3D Agent Graph (with effects) ───────────────────────────────
+function ThreeGraph({ agents, connections, onSelect, selectedId, events }: {
   agents: Agent[];
   connections: Connection[];
   onSelect: (id: string) => void;
   selectedId: string | null;
+  events: TaskEvent[];
 }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const nodesRef = useRef<Record<string, { mesh: THREE.Mesh; glow: THREE.Mesh; baseY: number; size: number }>>({});
@@ -90,6 +205,11 @@ function ThreeGraph({ agents, connections, onSelect, selectedId }: {
   const rotRef = useRef({ x: 0.3, y: 0 });
   const raycasterRef = useRef(new THREE.Raycaster());
   const mouseVec = useRef(new THREE.Vector2());
+  const worldRef = useRef<THREE.Group | null>(null);
+  const ripplesRef = useRef<RippleEffect[]>([]);
+  const trailsRef = useRef<ParticleTrail[]>([]);
+  const bankruptRef = useRef<BankruptEffect[]>([]);
+  const processedEventsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const container = mountRef.current;
@@ -98,6 +218,10 @@ function ThreeGraph({ agents, connections, onSelect, selectedId }: {
     const w = container.clientWidth;
     const h = container.clientHeight;
     nodesRef.current = {};
+    ripplesRef.current = [];
+    trailsRef.current = [];
+    bankruptRef.current = [];
+    processedEventsRef.current = new Set();
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(55, w / h, 0.1, 1000);
@@ -115,9 +239,10 @@ function ThreeGraph({ agents, connections, onSelect, selectedId }: {
     const pl3 = new THREE.PointLight(0xa855f7, 0.6, 35); pl3.position.set(0, 8, -5); scene.add(pl3);
 
     const world = new THREE.Group();
+    worldRef.current = world;
     scene.add(world);
 
-    // Realm ring particles
+    // Realm rings
     [2.5, 5.5, 7.5].forEach((r, ri) => {
       const pts: THREE.Vector3[] = [];
       for (let a = 0; a < Math.PI * 2; a += 0.05) {
@@ -129,7 +254,7 @@ function ThreeGraph({ agents, connections, onSelect, selectedId }: {
       world.add(new THREE.Line(geo, mat));
     });
 
-    // Position agents by realm
+    // Position agents
     const realmIdx: Record<string, number> = { central: 0, research: 0, execution: 0 };
     const realmCounts: Record<string, number> = {};
     agents.forEach(a => { realmCounts[a.realm] = (realmCounts[a.realm] || 0) + 1; });
@@ -143,18 +268,16 @@ function ThreeGraph({ agents, connections, onSelect, selectedId }: {
       const r = a.realm === "central" ? 2.5 : a.realm === "research" ? 5.5 : 7.5;
       const y = (Math.random() - 0.5) * 3;
       positions[a.id] = new THREE.Vector3(
-        Math.cos(angle) * r + (Math.random() - 0.5),
-        y,
+        Math.cos(angle) * r + (Math.random() - 0.5), y,
         Math.sin(angle) * r + (Math.random() - 0.5)
       );
     });
 
-    // Connections
+    // Connection lines
     connections.forEach((c) => {
       const p1 = positions[c.from], p2 = positions[c.to];
       if (!p1 || !p2) return;
-      const mid = p1.clone().lerp(p2, 0.5);
-      mid.y += 0.5;
+      const mid = p1.clone().lerp(p2, 0.5); mid.y += 0.5;
       const curve = new THREE.QuadraticBezierCurve3(p1, mid, p2);
       const pts = curve.getPoints(20);
       const geo = new THREE.BufferGeometry().setFromPoints(pts);
@@ -173,39 +296,168 @@ function ThreeGraph({ agents, connections, onSelect, selectedId }: {
       const glowGeo = new THREE.SphereGeometry(size * 2, 16, 16);
       const glowMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: a.alive ? 0.06 : 0.02 });
       const glow = new THREE.Mesh(glowGeo, glowMat);
-      glow.position.copy(pos);
-      world.add(glow);
+      glow.position.copy(pos); world.add(glow);
 
       const geo = new THREE.SphereGeometry(size, 32, 32);
       const mat = new THREE.MeshStandardMaterial({
-        color: a.alive ? color : "#333",
-        emissive: a.alive ? color : "#111",
-        emissiveIntensity: a.alive ? 0.5 : 0.1,
-        metalness: 0.6, roughness: 0.2,
+        color: a.alive ? color : "#333", emissive: a.alive ? color : "#111",
+        emissiveIntensity: a.alive ? 0.5 : 0.1, metalness: 0.6, roughness: 0.2,
       });
       const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.copy(pos);
-      mesh.userData = { agentId: a.id };
+      mesh.position.copy(pos); mesh.userData = { agentId: a.id };
       world.add(mesh);
 
       nodesRef.current[a.id] = { mesh, glow, baseY: pos.y, size };
     });
+
+    // ── Helper: spawn ripple ring ───────────────────────────────
+    const spawnRipple = (agentId: string) => {
+      const node = nodesRef.current[agentId];
+      if (!node) return;
+      const color = new THREE.Color(REALM_COLORS[agents.find(a => a.id === agentId)?.realm || "research"] || "#3b82f6");
+      const ringGeo = new THREE.RingGeometry(0.01, 0.08, 32);
+      const ringMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.position.copy(node.mesh.position);
+      ring.lookAt(camera.position);
+      world.add(ring);
+      ripplesRef.current.push({ agentId, startTime: performance.now(), ring });
+    };
+
+    // ── Helper: spawn particle trail ────────────────────────────
+    const spawnTrail = (fromId: string, toId: string) => {
+      const fromNode = nodesRef.current[fromId];
+      const toNode = nodesRef.current[toId];
+      if (!fromNode || !toNode) return;
+      const p1 = fromNode.mesh.position.clone();
+      const p2 = toNode.mesh.position.clone();
+      const mid = p1.clone().lerp(p2, 0.5); mid.y += 1.5;
+      const curve = new THREE.QuadraticBezierCurve3(p1, mid, p2);
+
+      const count = 20;
+      const posArr = new Float32Array(count * 3);
+      const alphaArr = new Float32Array(count);
+      for (let i = 0; i < count; i++) { alphaArr[i] = 1 - i / count; }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(posArr, 3));
+
+      const mat = new THREE.PointsMaterial({
+        color: "#a78bfa", size: 0.12, transparent: true, opacity: 0.9,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      });
+      const particles = new THREE.Points(geo, mat);
+      world.add(particles);
+      trailsRef.current.push({ fromId, toId, startTime: performance.now(), particles, curve });
+    };
+
+    // ── Helper: spawn bankruptcy explosion ──────────────────────
+    const spawnBankruptcy = (agentId: string) => {
+      const node = nodesRef.current[agentId];
+      if (!node) return;
+      const count = 40;
+      const posArr = new Float32Array(count * 3);
+      const velArr = new Float32Array(count * 3);
+      for (let i = 0; i < count; i++) {
+        posArr[i * 3] = node.mesh.position.x;
+        posArr[i * 3 + 1] = node.mesh.position.y;
+        posArr[i * 3 + 2] = node.mesh.position.z;
+        velArr[i * 3] = (Math.random() - 0.5) * 0.15;
+        velArr[i * 3 + 1] = (Math.random() - 0.5) * 0.15;
+        velArr[i * 3 + 2] = (Math.random() - 0.5) * 0.15;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(posArr, 3));
+      geo.setAttribute("velocity", new THREE.BufferAttribute(velArr, 3));
+      const mat = new THREE.PointsMaterial({
+        color: "#ef4444", size: 0.15, transparent: true, opacity: 1,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      });
+      const particles = new THREE.Points(geo, mat);
+      world.add(particles);
+
+      const flash = new THREE.PointLight(0xef4444, 3, 8);
+      flash.position.copy(node.mesh.position);
+      world.add(flash);
+
+      bankruptRef.current.push({ agentId, startTime: performance.now(), particles, flash });
+
+      // Fade out the node
+      (node.mesh.material as THREE.MeshStandardMaterial).color.set("#1a0000");
+      (node.mesh.material as THREE.MeshStandardMaterial).emissive.set("#330000");
+      (node.glow.material as THREE.MeshBasicMaterial).opacity = 0.01;
+    };
+
+    // Expose helpers via ref-accessible closure
+    (container as any).__spawnRipple = spawnRipple;
+    (container as any).__spawnTrail = spawnTrail;
+    (container as any).__spawnBankruptcy = spawnBankruptcy;
 
     let running = true;
     const animate = () => {
       if (!running) return;
       frameRef.current++;
       const t = frameRef.current * 0.008;
+      const now = performance.now();
 
+      // Animate nodes
       Object.entries(nodesRef.current).forEach(([id, n]) => {
         const off = parseInt(id.replace(/\D/g, ""), 10) || 0;
         n.mesh.position.y = n.baseY + Math.sin(t + off * 0.7) * 0.12;
         n.glow.position.y = n.mesh.position.y;
-
         if (id === selectedId) {
           n.glow.scale.setScalar(1 + Math.sin(t * 4) * 0.35);
           (n.mesh.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.6 + Math.sin(t * 4) * 0.2;
         }
+      });
+
+      // Animate ripples
+      ripplesRef.current = ripplesRef.current.filter(r => {
+        const elapsed = (now - r.startTime) / 1000;
+        if (elapsed > 1.5) { world.remove(r.ring); r.ring.geometry.dispose(); return false; }
+        const scale = 1 + elapsed * 12;
+        r.ring.scale.setScalar(scale);
+        (r.ring.material as THREE.MeshBasicMaterial).opacity = Math.max(0, 0.7 * (1 - elapsed / 1.5));
+        const node = nodesRef.current[r.agentId];
+        if (node) { r.ring.position.copy(node.mesh.position); r.ring.lookAt(camera.position); }
+        return true;
+      });
+
+      // Animate particle trails
+      trailsRef.current = trailsRef.current.filter(tr => {
+        const elapsed = (now - tr.startTime) / 1000;
+        if (elapsed > 2) { world.remove(tr.particles); tr.particles.geometry.dispose(); return false; }
+        const progress = Math.min(elapsed / 1.5, 1);
+        const positions = tr.particles.geometry.attributes.position as THREE.BufferAttribute;
+        const count = positions.count;
+        for (let i = 0; i < count; i++) {
+          const t2 = Math.max(0, progress - (i / count) * 0.4);
+          const pt = tr.curve.getPoint(Math.min(t2, 1));
+          positions.setXYZ(i, pt.x, pt.y, pt.z);
+        }
+        positions.needsUpdate = true;
+        (tr.particles.material as THREE.PointsMaterial).opacity = Math.max(0, 0.9 * (1 - elapsed / 2));
+        return true;
+      });
+
+      // Animate bankruptcy explosions
+      bankruptRef.current = bankruptRef.current.filter(b => {
+        const elapsed = (now - b.startTime) / 1000;
+        if (elapsed > 2) {
+          world.remove(b.particles); b.particles.geometry.dispose();
+          world.remove(b.flash);
+          return false;
+        }
+        const positions = b.particles.geometry.attributes.position as THREE.BufferAttribute;
+        const velocities = b.particles.geometry.attributes.velocity as THREE.BufferAttribute;
+        for (let i = 0; i < positions.count; i++) {
+          positions.setX(i, positions.getX(i) + velocities.getX(i));
+          positions.setY(i, positions.getY(i) + velocities.getY(i));
+          positions.setZ(i, positions.getZ(i) + velocities.getZ(i));
+        }
+        positions.needsUpdate = true;
+        (b.particles.material as THREE.PointsMaterial).opacity = Math.max(0, 1 - elapsed / 1.5);
+        b.flash.intensity = Math.max(0, 3 * (1 - elapsed / 0.5));
+        return true;
       });
 
       world.rotation.x = rotRef.current.x;
@@ -220,8 +472,7 @@ function ThreeGraph({ agents, connections, onSelect, selectedId }: {
       if (!mouseRef.current.down) return;
       rotRef.current.y += (e.clientX - mouseRef.current.prevX) * 0.005;
       rotRef.current.x = Math.max(-1.2, Math.min(1.2, rotRef.current.x + (e.clientY - mouseRef.current.prevY) * 0.005));
-      mouseRef.current.prevX = e.clientX;
-      mouseRef.current.prevY = e.clientY;
+      mouseRef.current.prevX = e.clientX; mouseRef.current.prevY = e.clientY;
     };
     const onUp = () => { mouseRef.current.down = false; };
     const onClick = (e: MouseEvent) => {
@@ -239,9 +490,7 @@ function ThreeGraph({ agents, connections, onSelect, selectedId }: {
 
     const onResize = () => {
       const nw = container.clientWidth, nh = container.clientHeight;
-      camera.aspect = nw / nh;
-      camera.updateProjectionMatrix();
-      renderer.setSize(nw, nh);
+      camera.aspect = nw / nh; camera.updateProjectionMatrix(); renderer.setSize(nw, nh);
     };
     window.addEventListener("resize", onResize);
 
@@ -256,6 +505,25 @@ function ThreeGraph({ agents, connections, onSelect, selectedId }: {
       renderer.dispose();
     };
   }, [agents, connections, selectedId, onSelect]);
+
+  // React to new events and trigger 3D effects
+  useEffect(() => {
+    const container = mountRef.current;
+    if (!container) return;
+    const spawnRipple = (container as any).__spawnRipple;
+    const spawnTrail = (container as any).__spawnTrail;
+    const spawnBankruptcy = (container as any).__spawnBankruptcy;
+    if (!spawnRipple) return;
+
+    events.forEach(ev => {
+      if (processedEventsRef.current.has(ev.id)) return;
+      processedEventsRef.current.add(ev.id);
+
+      if (ev.type === "completed") spawnRipple(ev.agentId);
+      if (ev.type === "transfer" && ev.targetAgentId) spawnTrail(ev.agentId, ev.targetAgentId);
+      if (ev.type === "bankrupt") spawnBankruptcy(ev.agentId);
+    });
+  }, [events]);
 
   return <div ref={mountRef} style={{ width: "100%", height: "100%" }} />;
 }
@@ -285,12 +553,60 @@ function SystemCard({ icon, title, items }: { icon: string; title: string; items
   );
 }
 
+// ── Live Task Feed Panel ────────────────────────────────────────
+function TaskFeed({ events, onSelectAgent }: { events: TaskEvent[]; onSelectAgent: (id: string) => void }) {
+  const feedRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <div className="w-64 flex flex-col overflow-hidden" style={{ borderLeft: "1px solid rgba(255,255,255,0.05)" }}>
+      <div className="px-4 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+        <div className="text-xs uppercase tracking-widest flex items-center gap-2" style={{ color: "rgba(255,255,255,0.4)" }}>
+          <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#22c55e" }} />
+          Live Task Feed
+        </div>
+      </div>
+      <div ref={feedRef} className="flex-1 overflow-y-auto p-2 space-y-1">
+        {events.map((ev, idx) => (
+          <button
+            key={ev.id}
+            onClick={() => onSelectAgent(ev.agentId)}
+            className="w-full text-left p-2 rounded-lg transition-all cursor-pointer hover:bg-white/5"
+            style={{
+              background: idx === 0 ? "rgba(255,255,255,0.04)" : "transparent",
+              border: "1px solid transparent",
+              borderColor: idx === 0 ? "rgba(255,255,255,0.06)" : "transparent",
+              animation: idx === 0 ? "fadeSlideIn 0.4s ease-out" : undefined,
+            }}
+          >
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-xs">{EVENT_ICONS[ev.type]}</span>
+              <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: EVENT_COLORS[ev.type] }}>
+                {ev.type}
+              </span>
+              <span className="flex-1" />
+              <span className="text-[9px] font-mono" style={{ color: "rgba(255,255,255,0.2)" }}>
+                {new Date(ev.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 mb-1">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: REALM_COLORS[ev.realm] }} />
+              <span className="text-[10px] font-mono" style={{ color: "rgba(255,255,255,0.5)" }}>
+                {ROLE_ICONS[ev.agentRole] || "🤖"} {ev.agentRole}
+              </span>
+            </div>
+            <div className="text-[11px] leading-tight" style={{ color: "rgba(255,255,255,0.6)" }}>
+              {ev.detail}
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Agent Detail Panel ──────────────────────────────────────────
 function AgentDetail({ agent, connections, agents, onClose }: {
-  agent: Agent;
-  connections: Connection[];
-  agents: Agent[];
-  onClose: () => void;
+  agent: Agent; connections: Connection[]; agents: Agent[]; onClose: () => void;
 }) {
   const color = REALM_COLORS[agent.realm];
   return (
@@ -334,7 +650,7 @@ function AgentDetail({ agent, connections, agents, onClose }: {
         </div>
         <div className="flex justify-between text-sm">
           <span style={{ color: "rgba(255,255,255,0.5)" }}>Budget</span>
-          <span className="text-yellow-400 font-mono font-bold">{agent.budget.toFixed(0)} ◆</span>
+          <span style={{ color: "#eab308" }} className="font-mono font-bold">{agent.budget.toFixed(0)} ◆</span>
         </div>
         <div className="flex justify-between text-sm">
           <span style={{ color: "rgba(255,255,255,0.5)" }}>Tasks</span>
@@ -382,13 +698,15 @@ export default function ZhihuiTiDashboard() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
+  const agents: Agent[] = data?.agents || [];
+  const events = useSimulatedFeed(agents);
+
   if (!data) return (
     <div className="min-h-screen flex items-center justify-center text-white" style={{ background: "#0a0a14" }}>
-      <div className="text-purple-400 animate-pulse text-xl">Loading 智慧体...</div>
+      <div className="animate-pulse text-xl" style={{ color: "#a855f7" }}>Loading 智慧体...</div>
     </div>
   );
 
-  const agents: Agent[] = data.agents || [];
   const connections: Connection[] = [];
   for (let i = 0; i < agents.length; i++) {
     for (let j = i + 1; j < agents.length; j++) {
@@ -428,6 +746,14 @@ export default function ZhihuiTiDashboard() {
       background: "linear-gradient(135deg, #0a0a14 0%, #0d0d1a 50%, #0a0f18 100%)",
       fontFamily: "'Inter', system-ui, sans-serif",
     }}>
+      {/* CSS for feed animation */}
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
       {/* Header */}
       <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
         <div className="flex items-center gap-3">
@@ -437,7 +763,7 @@ export default function ZhihuiTiDashboard() {
             <div className="text-sm font-bold tracking-wide">智慧体 ZHIHUITI</div>
             <div className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
               Autonomous Multi-Agent Ecosystem · {agents.length} agents
-              {!live && <span className="ml-2 text-yellow-500">(demo mode)</span>}
+              {!live && <span className="ml-2" style={{ color: "#eab308" }}>(demo mode)</span>}
             </div>
           </div>
         </div>
@@ -533,7 +859,7 @@ export default function ZhihuiTiDashboard() {
         {/* Center — 3D Graph */}
         <div className="flex-1 flex flex-col relative">
           <div className="flex-1 relative">
-            <ThreeGraph agents={agents} connections={connections} onSelect={handleSelect} selectedId={selected} />
+            <ThreeGraph agents={agents} connections={connections} onSelect={handleSelect} selectedId={selected} events={events} />
             <div className="absolute bottom-4 left-4 text-xs" style={{ color: "rgba(255,255,255,0.15)" }}>
               drag to rotate · click node for details
             </div>
@@ -589,6 +915,9 @@ export default function ZhihuiTiDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Right — Live Task Feed */}
+        <TaskFeed events={events} onSelectAgent={handleSelect} />
       </div>
     </div>
   );
