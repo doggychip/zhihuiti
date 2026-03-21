@@ -280,6 +280,27 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events }: {
       world.add(sprite);
     });
 
+    // Ambient particle dust
+    const dustCount = 200;
+    const dustPosArr = new Float32Array(dustCount * 3);
+    const dustVelArr = new Float32Array(dustCount * 3);
+    for (let i = 0; i < dustCount; i++) {
+      dustPosArr[i * 3] = (Math.random() - 0.5) * 24;
+      dustPosArr[i * 3 + 1] = (Math.random() - 0.5) * 12;
+      dustPosArr[i * 3 + 2] = (Math.random() - 0.5) * 24;
+      dustVelArr[i * 3] = (Math.random() - 0.5) * 0.003;
+      dustVelArr[i * 3 + 1] = (Math.random() - 0.5) * 0.002;
+      dustVelArr[i * 3 + 2] = (Math.random() - 0.5) * 0.003;
+    }
+    const dustGeo = new THREE.BufferGeometry();
+    dustGeo.setAttribute("position", new THREE.BufferAttribute(dustPosArr, 3));
+    const dustMat = new THREE.PointsMaterial({
+      color: "#6366f1", size: 0.04, transparent: true, opacity: 0.35,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const dustPoints = new THREE.Points(dustGeo, dustMat);
+    world.add(dustPoints);
+
     // Position agents
     const realmIdx: Record<string, number> = { central: 0, research: 0, execution: 0 };
     const realmCounts: Record<string, number> = {};
@@ -424,6 +445,20 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events }: {
       frameRef.current++;
       const t = frameRef.current * 0.008;
       const now = performance.now();
+
+      // Animate dust
+      const dustPos = dustGeo.attributes.position as THREE.BufferAttribute;
+      for (let i = 0; i < dustCount; i++) {
+        let x = dustPos.getX(i) + dustVelArr[i * 3];
+        let y = dustPos.getY(i) + dustVelArr[i * 3 + 1];
+        let z = dustPos.getZ(i) + dustVelArr[i * 3 + 2];
+        if (Math.abs(x) > 12) dustVelArr[i * 3] *= -1;
+        if (Math.abs(y) > 6) dustVelArr[i * 3 + 1] *= -1;
+        if (Math.abs(z) > 12) dustVelArr[i * 3 + 2] *= -1;
+        dustPos.setXYZ(i, x, y, z);
+      }
+      dustPos.needsUpdate = true;
+      dustMat.opacity = 0.25 + Math.sin(t * 0.5) * 0.1;
 
       // Animate nodes
       Object.entries(nodesRef.current).forEach(([id, n]) => {
