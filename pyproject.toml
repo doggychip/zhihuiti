@@ -1,0 +1,23 @@
+[project]
+name = "zhihuiti"
+version = "0.1.0"
+description = "智慧体 — Autonomous multi-agent orchestration system"
+requires-python = ">=3.9"
+dependencies = [
+    "httpx>=0.27",
+    "rich>=13.0",
+    "click>=8.1",
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+zhihuiti = "zhihuiti.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
