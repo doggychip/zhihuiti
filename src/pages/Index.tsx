@@ -1050,7 +1050,7 @@ export default function ZhihuiTiDashboard() {
   }));
 
   return (
-    <div className="min-h-screen text-white" style={{
+    <div className="min-h-screen text-white relative" style={{
       background: "linear-gradient(135deg, #0a0a14 0%, #0d0d1a 50%, #0a0f18 100%)",
       fontFamily: "'Inter', system-ui, sans-serif",
     }}>
