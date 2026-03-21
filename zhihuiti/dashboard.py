@@ -18,6 +18,7 @@ Uses only stdlib (http.server) — no Flask/FastAPI dependency.
 from __future__ import annotations
 
 import json
+import os
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from typing import TYPE_CHECKING
@@ -399,6 +400,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "job not found"}, 404)
         elif self.path == "/api/jobs":
             self._send_json(DashboardHandler._jobs)
+        elif self.path == "/api/debug":
+            self._send_json({
+                "backend": getattr(getattr(self.orchestrator, "llm", None), "_backend", "unknown"),
+                "model": getattr(getattr(self.orchestrator, "llm", None), "model", "unknown"),
+                "has_deepseek_key": bool(os.environ.get("DEEPSEEK_API_KEY", "")),
+                "has_openrouter_key": bool(os.environ.get("OPENROUTER_API_KEY", "")),
+                "has_execute_goal": hasattr(self.orchestrator, "execute_goal"),
+            })
         else:
             self._serve_html()
 
