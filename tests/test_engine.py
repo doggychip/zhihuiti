@@ -28,7 +28,7 @@ def test_simulation_runs():
         path = f.name
 
     try:
-        state = run(path)
+        state = run(path, plot=False)
         assert state.tick == 9  # 0-indexed, last tick is 9
         assert len(state.agents) == 9
         assert state.total_supply > 0
