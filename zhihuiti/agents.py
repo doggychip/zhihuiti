@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.tree import Tree
 
 from zhihuiti.models import AgentConfig, AgentRole, AgentState, Task, TaskStatus
-from zhihuiti.prompts import SYNTHESIS_INSTRUCTIONS, get_prompt
+from zhihuiti.prompts import SYNTHESIS_INSTRUCTIONS, TOOL_INSTRUCTIONS, get_prompt
 
 if TYPE_CHECKING:
     from zhihuiti.bloodline import Bloodline
@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from zhihuiti.llm import LLM
     from zhihuiti.memory import Memory
     from zhihuiti.realms import RealmManager
+    from zhihuiti.tools import ToolExecutor
 
 console = Console()
 
@@ -65,17 +66,46 @@ def _parse_delegation(response: str) -> list[dict] | None:
     return None
 
 
+def _parse_tool_request(response: str) -> str | None:
+    """Try to parse a tool-use request from agent output.
+
+    Returns the command string if the agent requested a tool,
+    or None if no tool request.
+    """
+    stripped = response.strip()
+    if stripped.startswith("```"):
+        lines = stripped.split("\n")
+        lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        stripped = "\n".join(lines).strip()
+
+    try:
+        data = json.loads(stripped)
+    except (json.JSONDecodeError, ValueError):
+        return None
+
+    if isinstance(data, dict) and data.get("action") == "tool":
+        command = data.get("command", "")
+        if command:
+            return command
+
+    return None
+
+
 class AgentManager:
     """Manages the lifecycle of all agents, including recursive sub-agent spawning."""
 
     def __init__(self, llm: LLM, memory: Memory, economy: Economy | None = None,
                  bloodline: Bloodline | None = None,
-                 realm_manager: RealmManager | None = None):
+                 realm_manager: RealmManager | None = None,
+                 tool_executor: ToolExecutor | None = None):
         self.llm = llm
         self.memory = memory
         self.economy = economy
         self.bloodline = bloodline
         self.realm_manager = realm_manager
+        self.tool_executor = tool_executor
         self.agents: dict[str, AgentState] = {}
 
     def spawn(
@@ -139,7 +169,9 @@ class AgentManager:
         return agent
 
     def execute_task(self, agent: AgentState, task: Task) -> str:
-        """Execute a task, handling sub-agent delegation recursively."""
+        """Execute a task with optional tool-use loop and sub-agent delegation."""
+        from zhihuiti.tools import TOOL_COST, MAX_TOOL_CALLS, ToolExecutionError
+
         if not agent.alive:
             raise ValueError(f"Agent {agent.id} is dead")
 
@@ -176,31 +208,72 @@ class AgentManager:
                 "You must handle this task directly."
             )
 
+        # Build system prompt — append tool instructions if tools are enabled
+        system_prompt = agent.config.system_prompt
+        tools_active = agent.config.tools_enabled and self.tool_executor is not None
+        if tools_active:
+            system_prompt += TOOL_INSTRUCTIONS
+
         prompt = f"Task: {task.description}{context}{depth_note}"
+        tool_history = ""  # accumulated tool call/result pairs
+        tool_calls = 0
 
-        try:
-            raw_response = self.llm.chat(
-                system=agent.config.system_prompt,
-                user=prompt,
-                temperature=agent.config.temperature,
-            )
-        except Exception as e:
-            task.status = TaskStatus.FAILED
-            task.result = f"Error: {e}"
-            self._save_task(task, agent)
-            return task.result
+        # ── Agentic loop: LLM → (tool → LLM)* → final answer ──
+        while True:
+            try:
+                raw_response = self.llm.chat(
+                    system=system_prompt,
+                    user=prompt + tool_history,
+                    temperature=agent.config.temperature,
+                    model=agent.config.model,
+                )
+            except Exception as e:
+                task.status = TaskStatus.FAILED
+                task.result = f"Error: {e}"
+                self._save_task(task, agent)
+                return task.result
 
-        # Check if the agent wants to delegate
-        subtask_requests = None
-        if can_delegate:
-            subtask_requests = _parse_delegation(raw_response)
+            # Check for tool request
+            if tools_active and tool_calls < MAX_TOOL_CALLS:
+                tool_command = _parse_tool_request(raw_response)
+                if tool_command:
+                    tool_calls += 1
+                    if not agent.deduct_budget(TOOL_COST):
+                        tool_history += (
+                            f"\n\n[Tool {tool_calls}: {tool_command}]\n"
+                            f"[Error: insufficient budget for tool call]\n"
+                        )
+                        continue
 
-        if subtask_requests:
-            # Agent requested sub-agents — execute delegation
-            result = self._execute_delegation(agent, task, subtask_requests)
-        else:
-            # Direct response
-            result = raw_response
+                    try:
+                        result = self.tool_executor.execute(tool_command)
+                        output = result.stdout or result.stderr or "(no output)"
+                        tool_history += (
+                            f"\n\n[Tool {tool_calls}: {tool_command}]\n"
+                            f"[Output ({result.return_code}):\n{output}\n]\n"
+                        )
+                    except ToolExecutionError as e:
+                        tool_history += (
+                            f"\n\n[Tool {tool_calls}: {tool_command}]\n"
+                            f"[Blocked: {e}]\n"
+                        )
+
+                    console.print(
+                        f"  [dim]🔧 Tool call {tool_calls}/{MAX_TOOL_CALLS}[/dim]"
+                    )
+                    continue  # loop back for agent to process the result
+
+            # Not a tool request — check for delegation or return as final answer
+            subtask_requests = None
+            if can_delegate:
+                subtask_requests = _parse_delegation(raw_response)
+
+            if subtask_requests:
+                result = self._execute_delegation(agent, task, subtask_requests)
+            else:
+                result = raw_response
+
+            break
 
         task.status = TaskStatus.COMPLETED
         task.result = result
@@ -305,6 +378,7 @@ class AgentManager:
                 system=agent.config.system_prompt,
                 user=prompt,
                 temperature=agent.config.temperature,
+                model=agent.config.model,
             )
             return synthesis
         except Exception as e:
@@ -322,6 +396,18 @@ class AgentManager:
             result=task.result,
             agent_id=agent.id,
             parent_task_id=task.parent_task_id,
+        )
+
+    def checkpoint_agent(self, agent: AgentState) -> None:
+        """Persist the agent's current budget and avg_score to DB mid-session."""
+        self.memory.save_agent(
+            agent_id=agent.id,
+            role=agent.config.role.value,
+            budget=agent.budget,
+            depth=agent.depth,
+            avg_score=agent.avg_score,
+            alive=agent.alive,
+            parent_agent_id=agent.parent_agent_id,
         )
 
     def cull_agent(self, agent: AgentState) -> None:
@@ -360,8 +446,22 @@ class AgentManager:
         )
 
     def promote_to_gene_pool(self, agent: AgentState) -> None:
-        """Save a high-performing agent's config to the gene pool."""
+        """Save a high-performing agent's config to the gene pool.
+
+        Agents promoted here earn a model upgrade: their descendants will use
+        the LLM's premium_model instead of the default.
+        """
         gene_id = agent.config.gene_id or uuid.uuid4().hex[:12]
+
+        # Upgrade model tier for this gene
+        premium = getattr(self.llm, "premium_model", None)
+        if premium and agent.config.model != premium:
+            agent.config.model = premium
+            console.print(
+                f"  [bold yellow]⬆ Model upgrade:[/bold yellow] "
+                f"{agent.config.role.value} [dim]{agent.id}[/dim] → {premium}"
+            )
+
         self.memory.save_to_gene_pool(
             gene_id=gene_id,
             role=agent.config.role.value,
@@ -369,6 +469,7 @@ class AgentManager:
             temperature=agent.config.temperature,
             avg_score=agent.avg_score,
             parent_gene_id=agent.config.parent_gene_id,
+            model=agent.config.model,
         )
 
         # Update bloodline score
@@ -399,6 +500,7 @@ class AgentManager:
             system_prompt=best["system_prompt"],
             temperature=best["temperature"],
             gene_id=best["gene_id"],
+            model=best.get("model"),  # inherit model tier from gene
         )
         return config.mutate("inherited from gene pool")
 

@@ -109,6 +109,21 @@ def _gather_data(orch: Orchestrator) -> dict:
     # Factory
     data["factory"] = orch.factory.get_stats()
 
+    # Goal history
+    data["goal_history"] = orch.memory.get_recent_goals(limit=10)
+
+    # Collision theories available
+    from zhihuiti.collision import THEORIES
+    data["theories"] = {k: {"label": v["label"], "description": v["description"]} for k, v in THEORIES.items()}
+
+    # Messages
+    all_msgs = orch.memory._query("SELECT COUNT(*) as c FROM messages")
+    unread = orch.memory._query("SELECT COUNT(*) as c FROM messages WHERE read = 0")
+    data["messaging"] = {
+        "total_messages": all_msgs[0]["c"] if all_msgs else 0,
+        "unread": unread[0]["c"] if unread else 0,
+    }
+
     return data
 
 
@@ -306,6 +321,23 @@ html += renderCard('🏭', 'Blood Sweat Factory', [
   m('Total Revenue', fa.total_revenue),
 ].join(''));
 
+// Messaging
+let msg = DATA.messaging;
+html += renderCard('📨', 'Agent Messaging', [
+  m('Total Messages', msg.total_messages),
+  m('Unread', msg.unread, msg.unread > 0 ? 'yellow' : ''),
+].join(''));
+
+// Goal History
+if (DATA.goal_history && DATA.goal_history.length) {
+  let rows = DATA.goal_history.map(g =>
+    `<tr><td>${g.goal.slice(0,30)}</td><td>${g.task_count}</td><td>${g.avg_score.toFixed(2)}</td></tr>`
+  ).join('');
+  html += renderCard('📚', `Goal History (${DATA.goal_history.length})`,
+    `<table><tr><th>Goal</th><th>Tasks</th><th>Score</th></tr>${rows}</table>`
+  );
+}
+
 // Memory
 let mem = DATA.memory;
 html += renderCard('💾', 'Memory', [
@@ -332,8 +364,34 @@ class DashboardHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/api/data":
             self._serve_json()
+        elif self.path == "/api/theories":
+            self._serve_theories()
         else:
             self._serve_html()
+
+    def do_POST(self):
+        if self.path == "/api/collide":
+            self._handle_collide()
+        elif self.path == "/api/run":
+            self._handle_run()
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def _send_json(self, data: dict, status: int = 200) -> None:
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(json.dumps(data).encode())
+
+    def do_OPTIONS(self):
+        """Handle CORS preflight for Lovable."""
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
 
     def _serve_html(self):
         data = _gather_data(self.orchestrator) if self.orchestrator else {}
@@ -347,8 +405,121 @@ class DashboardHandler(BaseHTTPRequestHandler):
         data = _gather_data(self.orchestrator) if self.orchestrator else {}
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
+
+    def _serve_theories(self):
+        from zhihuiti.collision import THEORIES
+        data = {k: {"label": v["label"], "description": v["description"]} for k, v in THEORIES.items()}
+        self._send_json(data)
+
+    def _handle_collide(self):
+        """POST /api/collide — trigger a theory collision.
+
+        Body: {"goal": "...", "theory_a": "darwinian", "theory_b": "mutualist"}
+        Returns collision result as JSON.
+        """
+        import threading as _threading
+
+        content_length = int(self.headers.get("Content-Length", 0))
+        body = json.loads(self.rfile.read(content_length)) if content_length else {}
+
+        goal = body.get("goal", "")
+        theory_a = body.get("theory_a", "darwinian")
+        theory_b = body.get("theory_b", "mutualist")
+
+        if not goal:
+            self._send_json({"error": "goal is required"}, 400)
+            return
+
+        from zhihuiti.collision import CollisionEngine, THEORIES
+        from zhihuiti.memory import Memory
+        from zhihuiti.orchestrator import Orchestrator
+        from zhihuiti import judge as judge_mod
+
+        if theory_a not in THEORIES or theory_b not in THEORIES:
+            self._send_json({"error": f"unknown theory, available: {list(THEORIES.keys())}"}, 400)
+            return
+
+        def make_orch(config):
+            judge_mod.CULL_THRESHOLD = config["cull_threshold"]
+            judge_mod.PROMOTE_THRESHOLD = config["promote_threshold"]
+            orch = self.orchestrator
+            # Use the existing orchestrator's LLM but fresh memory
+            from zhihuiti.economy import Economy
+            from zhihuiti.bloodline import Bloodline
+            from zhihuiti.realms import RealmManager
+            from zhihuiti.agents import AgentManager
+            from zhihuiti.judge import Judge
+            from zhihuiti.circuit_breaker import CircuitBreaker
+            from zhihuiti.behavior import BehaviorDetector
+            from zhihuiti.relationships import LendingSystem, RelationshipGraph
+            from zhihuiti.arbitration import ArbitrationBureau
+            from zhihuiti.market import TradingMarket
+            from zhihuiti.futures import FuturesMarket
+            from zhihuiti.factory import Factory
+            from zhihuiti.bidding import BiddingHouse
+            from zhihuiti.messaging import MessageBoard
+
+            mem = Memory(":memory:")
+            llm = self.orchestrator.llm
+
+            o = Orchestrator.__new__(Orchestrator)
+            o.llm = llm
+            o.memory = mem
+            o.economy = Economy(mem)
+            o.bloodline = Bloodline(mem)
+            o.realm_manager = RealmManager(mem)
+            o.agent_manager = AgentManager(llm, mem, o.economy, o.bloodline, o.realm_manager)
+            o.judge = Judge(llm, mem, o.agent_manager)
+            o.circuit_breaker = CircuitBreaker(mem, interactive=False)
+            o.behavior = BehaviorDetector(mem, llm)
+            o.rel_graph = RelationshipGraph(mem)
+            o.lending = LendingSystem(mem, o.rel_graph)
+            o.arbitration = ArbitrationBureau(mem)
+            o.market = TradingMarket(mem)
+            o.futures = FuturesMarket(mem)
+            o.factory = Factory(llm=llm, memory=mem)
+            o.bidding = BiddingHouse(llm, mem, o.economy)
+            o.messages = MessageBoard(mem) if config["messaging"] else type("Null", (), {
+                "broadcast": lambda *a, **k: None,
+                "collect_context": lambda *a, **k: "",
+            })()
+            o.tasks = {}
+            o.max_workers = 4
+            o.max_retries = 0
+            o.tools_enabled = False
+            for agent in o.bidding.pool.get_all_alive():
+                if agent.id not in o.agent_manager.agents:
+                    o.agent_manager.agents[agent.id] = agent
+            o.realm_manager.allocate_budgets(o.economy.treasury.balance * 0.5)
+            return o
+
+        engine = CollisionEngine()
+        result = engine.collide(goal, theory_a, theory_b, make_orch)
+        self._send_json(result.to_dict())
+
+    def _handle_run(self):
+        """POST /api/run — execute a goal.
+
+        Body: {"goal": "..."}
+        Returns execution result as JSON.
+        """
+        content_length = int(self.headers.get("Content-Length", 0))
+        body = json.loads(self.rfile.read(content_length)) if content_length else {}
+        goal = body.get("goal", "")
+
+        if not goal:
+            self._send_json({"error": "goal is required"}, 400)
+            return
+
+        if not self.orchestrator:
+            self._send_json({"error": "no orchestrator"}, 500)
+            return
+
+        result = self.orchestrator.execute_goal(goal)
+        self._send_json(result)
 
     def log_message(self, format, *args):
         pass  # Suppress access logs

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.zeabur.app/template.json",
+  "name": "zhihuiti",
+  "description": "智慧体 — Autonomous Multi-Agent Ecosystem Dashboard",
+  "port": 8377,
+  "build": {
+    "type": "dockerfile",
+    "dockerfile": "Dockerfile"
+  },
+  "env": {
+    "OLLAMA_HOST": {
+      "description": "Ollama server URL (or leave empty for OpenRouter)",
+      "required": false
+    },
+    "OPENROUTER_API_KEY": {
+      "description": "OpenRouter API key (required for cloud LLM)",
+      "required": false
+    },
+    "LLM_MODEL": {
+      "description": "LLM model override",
+      "required": false
+    }
+  }
+}

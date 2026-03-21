@@ -37,7 +37,7 @@ MIN_BID = 3.0              # Floor bid to prevent race-to-zero
 DEFAULT_PRICE_CEILING = 30.0  # Max the system pays for a standard task
 MIN_QUALIFICATION_SCORE = 0.4  # Minimum avg score to qualify for bidding
 MIN_TASKS_FOR_RECORD = 0    # How many past tasks needed to have a record
-POOL_SIZE_PER_ROLE = 3      # How many agents to maintain per role in pool
+POOL_SIZE_PER_ROLE = 3      # How many agents to maintain per role in pool (override with --pool-size)
 
 
 @dataclass

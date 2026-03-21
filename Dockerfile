@@ -1,0 +1,18 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY setup.py pyproject.toml ./
+COPY zhihuiti/ zhihuiti/
+RUN pip install --no-cache-dir -e .
+
+# Expose dashboard port
+ENV PORT=8377
+EXPOSE 8377
+
+# Persist data in a volume
+VOLUME /app/data
+
+# Start the dashboard (serves API + web UI)
+CMD ["python", "-m", "zhihuiti.cli", "dashboard", "--db", "/app/data/zhihuiti.db", "--port", "8377"]

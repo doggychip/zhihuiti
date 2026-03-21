@@ -26,9 +26,11 @@ import httpx
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_DEFAULT_MODEL = "anthropic/claude-sonnet-4"
+OPENROUTER_PREMIUM_MODEL = "anthropic/claude-opus-4"
 
 OLLAMA_DEFAULT_HOST = "http://localhost:11434"
 OLLAMA_DEFAULT_MODEL = "llama3"
+OLLAMA_PREMIUM_MODEL = "llama3.1"
 
 # Retry configuration
 MAX_RETRIES = 3
@@ -61,6 +63,11 @@ class LLM:
             default_model = OPENROUTER_DEFAULT_MODEL
 
         self.model = model or os.environ.get("LLM_MODEL", default_model)
+        # Premium model — used by high-performing agents; override via LLM_PREMIUM_MODEL
+        if self._use_ollama:
+            self.premium_model = os.environ.get("LLM_PREMIUM_MODEL", OLLAMA_PREMIUM_MODEL)
+        else:
+            self.premium_model = os.environ.get("LLM_PREMIUM_MODEL", OPENROUTER_PREMIUM_MODEL)
         self.client = httpx.Client(timeout=300)  # Ollama can be slow on first load
         self.total_calls = 0
         self.total_retries = 0
@@ -85,11 +92,15 @@ class LLM:
         user: str,
         temperature: float = 0.7,
         max_tokens: int = 4096,
+        model: str | None = None,
     ) -> str:
-        """Send a chat completion request with automatic retry on failure."""
+        """Send a chat completion request with automatic retry on failure.
+
+        model: optional per-call override; falls back to self.model.
+        """
         if self._use_ollama:
-            return self._chat_ollama(system, user, temperature, max_tokens)
-        return self._chat_openrouter(system, user, temperature, max_tokens)
+            return self._chat_ollama(system, user, temperature, max_tokens, model=model)
+        return self._chat_openrouter(system, user, temperature, max_tokens, model=model)
 
     def chat_json(
         self,
@@ -97,13 +108,14 @@ class LLM:
         user: str,
         temperature: float = 0.5,
         max_tokens: int = 4096,
+        model: str | None = None,
     ) -> dict | list:
         """Chat and parse the response as JSON."""
         system_with_json = (
             system + "\n\nIMPORTANT: Respond ONLY with valid JSON. "
             "No markdown, no explanation, just the JSON object/array."
         )
-        raw = self.chat(system_with_json, user, temperature, max_tokens)
+        raw = self.chat(system_with_json, user, temperature, max_tokens, model=model)
 
         cleaned = raw.strip()
         if cleaned.startswith("```"):
@@ -134,10 +146,11 @@ class LLM:
         user: str,
         temperature: float,
         max_tokens: int,
+        model: str | None = None,
     ) -> str:
         url = f"{self._ollama_host}/api/chat"
         payload = {
-            "model": self.model,
+            "model": model or self.model,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
@@ -196,6 +209,7 @@ class LLM:
         user: str,
         temperature: float,
         max_tokens: int,
+        model: str | None = None,
     ) -> str:
         last_error: str | None = None
 
@@ -211,7 +225,7 @@ class LLM:
                         "X-Title": "zhihuiti",
                     },
                     json={
-                        "model": self.model,
+                        "model": model or self.model,
                         "messages": [
                             {"role": "system", "content": system},
                             {"role": "user", "content": user},

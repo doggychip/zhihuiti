@@ -28,14 +28,29 @@ def main():
 @click.argument("goal")
 @click.option("--db", default="zhihuiti.db", help="SQLite database path")
 @click.option("--model", default=None, help="Model name (Ollama: llama3, mistral… / OpenRouter: anthropic/claude-sonnet-4…)")
-def run(goal: str, db: str, model: str | None):
+@click.option("--workers", default=4, type=int, help="Max parallel workers per wave")
+@click.option("--premium-model", default=None, help="Premium model for promoted agents")
+@click.option("--retries", default=1, type=int, help="Retry failed tasks (0=no retries)")
+@click.option("--pool-size", default=5, type=int, help="Agents per role in bidding pool")
+@click.option("--depth", default=3, type=int, help="Max sub-agent delegation depth")
+@click.option("--tools", is_flag=True, help="Enable tool execution (gh, git read-only)")
+def run(goal: str, db: str, model: str | None, workers: int, premium_model: str | None, retries: int, pool_size: int, depth: int, tools: bool):
     """Execute a goal through the agent swarm."""
+    import os
     from zhihuiti.orchestrator import Orchestrator
+    from zhihuiti import bidding, agents as agents_mod
+
+    if premium_model:
+        os.environ["LLM_PREMIUM_MODEL"] = premium_model
+    bidding.POOL_SIZE_PER_ROLE = pool_size
+    agents_mod.MAX_DEPTH = depth
 
     console.print(BANNER, style="bold cyan")
 
     try:
-        orch = Orchestrator(db_path=db, model=model)
+        orch = Orchestrator(db_path=db, model=model, tools_enabled=tools)
+        orch.max_workers = workers
+        orch.max_retries = retries
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")
         sys.exit(1)
@@ -51,15 +66,24 @@ def run(goal: str, db: str, model: str | None):
 @main.command()
 @click.option("--db", default="zhihuiti.db", help="SQLite database path")
 @click.option("--model", default=None, help="Model name (Ollama: llama3, mistral… / OpenRouter: anthropic/claude-sonnet-4…)")
-def repl(db: str, model: str | None):
+@click.option("--workers", default=4, type=int, help="Max parallel workers per wave")
+@click.option("--premium-model", default=None, help="Premium model for promoted agents")
+@click.option("--retries", default=1, type=int, help="Retry failed tasks (0=no retries)")
+def repl(db: str, model: str | None, workers: int, premium_model: str | None, retries: int):
     """Interactive REPL mode — enter goals one at a time."""
+    import os
     from zhihuiti.orchestrator import Orchestrator
+
+    if premium_model:
+        os.environ["LLM_PREMIUM_MODEL"] = premium_model
 
     console.print(BANNER, style="bold cyan")
     console.print("[dim]Commands: stats, genes, economy, auctions, pool, bloodline, ancestry <id>, purge <id>,\n  realms, realm <name>, inspection, fuse, laws, behavior, relations, loans,\n  market, futures, arbitration, factory, quit[/dim]\n")
 
     try:
         orch = Orchestrator(db_path=db, model=model)
+        orch.max_workers = workers
+        orch.max_retries = retries
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")
         sys.exit(1)
@@ -243,7 +267,14 @@ def dashboard(db: str, model: str | None, port: int):
     from zhihuiti.orchestrator import Orchestrator
 
     console.print(BANNER, style="bold cyan")
-    orch = Orchestrator(db_path=db, model=model)
+    try:
+        orch = Orchestrator(db_path=db, model=model)
+    except Exception as e:
+        console.print(f"[yellow]Warning:[/yellow] LLM not available ({e})")
+        console.print("[dim]Dashboard will serve data but cannot run goals.[/dim]")
+        # Create a minimal orchestrator with just memory for data serving
+        from zhihuiti.memory import Memory
+        orch = type("MinimalOrch", (), {"memory": Memory(db_path=db), "close": lambda self: self.memory.close()})()
     start_dashboard(orch, port=port, background=False)
     orch.close()
 
@@ -373,6 +404,119 @@ def _show_genes(orch) -> None:
         table.add_row(r[0], r[1], f"{r[2]:.2f}", f"{r[3]:.2f}", r[4] or "")
 
     console.print(table)
+
+
+@main.group()
+def monitor():
+    """Manage scheduled goal monitors."""
+
+
+@monitor.command("add")
+@click.argument("goal")
+@click.option("--interval", required=True, help="Interval (e.g. 2h, 30m, 1d)")
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+def monitor_add(goal: str, interval: str, db: str):
+    """Add a recurring monitor for a goal."""
+    from zhihuiti.memory import Memory
+    from zhihuiti.scheduler import MonitorScheduler, parse_interval
+
+    mem = Memory(db_path=db)
+    scheduler = MonitorScheduler(mem)
+    seconds = parse_interval(interval)
+    scheduler.add(goal, seconds)
+    mem.close()
+
+
+@monitor.command("list")
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+def monitor_list(db: str):
+    """List all monitors."""
+    from zhihuiti.memory import Memory
+    from zhihuiti.scheduler import MonitorScheduler
+
+    mem = Memory(db_path=db)
+    scheduler = MonitorScheduler(mem)
+    scheduler.print_monitors()
+    mem.close()
+
+
+@monitor.command("remove")
+@click.argument("monitor_id")
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+def monitor_remove(monitor_id: str, db: str):
+    """Remove a monitor."""
+    from zhihuiti.memory import Memory
+    from zhihuiti.scheduler import MonitorScheduler
+
+    mem = Memory(db_path=db)
+    scheduler = MonitorScheduler(mem)
+    scheduler.remove(monitor_id)
+    mem.close()
+
+
+@monitor.command("pause")
+@click.argument("monitor_id")
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+def monitor_pause(monitor_id: str, db: str):
+    """Pause a monitor."""
+    from zhihuiti.memory import Memory
+    from zhihuiti.scheduler import MonitorScheduler
+
+    mem = Memory(db_path=db)
+    scheduler = MonitorScheduler(mem)
+    scheduler.pause(monitor_id)
+    mem.close()
+
+
+@monitor.command("resume")
+@click.argument("monitor_id")
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+def monitor_resume(monitor_id: str, db: str):
+    """Resume a paused monitor."""
+    from zhihuiti.memory import Memory
+    from zhihuiti.scheduler import MonitorScheduler
+
+    mem = Memory(db_path=db)
+    scheduler = MonitorScheduler(mem)
+    scheduler.resume(monitor_id)
+    mem.close()
+
+
+@main.command()
+@click.argument("goal")
+@click.option("--theory-a", default="darwinian", help="First theory (darwinian, mutualist, hybrid, elitist)")
+@click.option("--theory-b", default="mutualist", help="Second theory")
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+@click.option("--model", default=None, help="Model name")
+def collide(goal: str, theory_a: str, theory_b: str, db: str, model: str | None):
+    """💥 Theory Collision — run a goal under two competing strategies and compare."""
+    from zhihuiti.collision import CollisionEngine, THEORIES
+    from zhihuiti.orchestrator import Orchestrator
+
+    console.print(BANNER, style="bold cyan")
+
+    available = list(THEORIES.keys())
+    if theory_a not in available or theory_b not in available:
+        console.print(f"[red]Available theories:[/red] {', '.join(available)}")
+        sys.exit(1)
+
+    def make_orchestrator(theory_config):
+        from zhihuiti import judge as judge_mod
+        # Apply theory settings
+        judge_mod.CULL_THRESHOLD = theory_config["cull_threshold"]
+        judge_mod.PROMOTE_THRESHOLD = theory_config["promote_threshold"]
+
+        orch = Orchestrator(db_path=":memory:", model=model)
+        # Disable/enable messaging based on theory
+        if not theory_config["messaging"]:
+            orch.messages = type("NullBoard", (), {
+                "broadcast": lambda *a, **k: None,
+                "collect_context": lambda *a, **k: "",
+            })()
+        return orch
+
+    engine = CollisionEngine()
+    engine.collide(goal, theory_a, theory_b, make_orchestrator)
 
 
 if __name__ == "__main__":

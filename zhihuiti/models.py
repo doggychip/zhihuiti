@@ -69,6 +69,10 @@ class AgentConfig:
     parent_a_gene: str | None = None
     parent_b_gene: str | None = None
     generation: int = 0
+    # Model tier — None means use the LLM default; a string overrides per-call
+    model: str | None = None
+    # Tool access — agents with tools can execute whitelisted shell commands
+    tools_enabled: bool = False
 
     def mutate(self, mutation_notes: str = "") -> AgentConfig:
         """Create a slightly mutated copy of this config."""
@@ -88,6 +92,8 @@ class AgentConfig:
             parent_a_gene=self.parent_a_gene,
             parent_b_gene=self.parent_b_gene,
             generation=self.generation,
+            model=self.model,  # inherit model tier on mutation
+            tools_enabled=self.tools_enabled,
         )
 
 
