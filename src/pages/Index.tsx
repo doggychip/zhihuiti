@@ -964,6 +964,7 @@ export default function ZhihuiTiDashboard() {
   const [data, setData] = useState<typeof DEMO_DATA | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [live, setLive] = useState(true);
+  const [showCollision, setShowCollision] = useState(false);
 
   const handleSelect = useCallback((id: string) => setSelected(prev => prev === id ? null : id), []);
 
