@@ -14,5 +14,16 @@ EXPOSE 8377
 # Persist data in a volume
 VOLUME /app/data
 
-# Start dashboard — uses $PORT, connects to DeepSeek via DEEPSEEK_API_KEY env var
-CMD python -m zhihuiti.cli dashboard --db /app/data/zhihuiti.db --port ${PORT}
+# Default: start dashboard with CriticAI monitoring
+# Set CRITICAI_URL to enable cross-system monitoring
+# Set MONITOR_INTERVAL to control check frequency (default: 30m)
+ENV CRITICAI_URL=""
+ENV MONITOR_INTERVAL="30m"
+
+# Start script: optionally set up CriticAI monitor, then launch dashboard
+CMD sh -c '\
+  if [ -n "$CRITICAI_URL" ]; then \
+    echo "Setting up CriticAI monitor at $CRITICAI_URL (interval: $MONITOR_INTERVAL)"; \
+    python -m zhihuiti.cli criticai watch --url "$CRITICAI_URL" --interval "$MONITOR_INTERVAL" --db /app/data/zhihuiti.db; \
+  fi; \
+  python -m zhihuiti.cli dashboard --db /app/data/zhihuiti.db --port ${PORT}'

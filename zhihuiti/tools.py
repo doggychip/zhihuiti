@@ -67,7 +67,7 @@ BLOCKED_PATTERNS = [
     "docker rm", "docker stop", "docker kill",              # destructive docker
     "npm install", "npm run", "pip install",                # write ops
     "curl -X POST", "curl -X PUT", "curl -X DELETE",       # write HTTP
-    "curl --data", "curl -d ",                              # write HTTP
+    "curl --data", "curl -d ",                              # write HTTP (except whitelisted)
 ]
 
 
@@ -92,6 +92,11 @@ class ToolExecutor:
         self.total_calls = 0
         self.total_blocked = 0
 
+    # Whitelisted POST endpoints (specific URLs that agents can POST to)
+    ALLOWED_POST_URLS = [
+        "/api/generate-activity",  # CriticAI: trigger agent activity
+    ]
+
     def validate(self, command: str) -> tuple[bool, str]:
         """Check if a command is allowed.
 
@@ -101,6 +106,13 @@ class ToolExecutor:
 
         if not cmd:
             return False, "empty command"
+
+        # Special case: allow whitelisted POST requests to known APIs
+        if "curl" in cmd and ("-X POST" in cmd or "--data" in cmd or "-d " in cmd):
+            for url in self.ALLOWED_POST_URLS:
+                if url in cmd:
+                    return True, f"allowed POST to {url}"
+            return False, "POST requests only allowed to whitelisted endpoints"
 
         # Check blocked patterns
         for pattern in BLOCKED_PATTERNS:

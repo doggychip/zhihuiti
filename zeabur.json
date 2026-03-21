@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.zeabur.app/template.json",
   "name": "zhihuiti",
-  "description": "智慧体 — Autonomous Multi-Agent Ecosystem Dashboard",
+  "description": "智慧体 — Autonomous Multi-Agent Ecosystem with CriticAI Bridge",
   "port": 8377,
   "build": {
     "type": "dockerfile",
@@ -19,6 +19,15 @@
     "LLM_MODEL": {
       "description": "LLM model override",
       "required": false
+    },
+    "CRITICAI_URL": {
+      "description": "CriticAI deployment URL for cross-system monitoring (e.g. https://criticai.zeabur.app)",
+      "required": false
+    },
+    "MONITOR_INTERVAL": {
+      "description": "How often to check CriticAI (default: 30m)",
+      "required": false,
+      "default": "30m"
     }
   }
 }

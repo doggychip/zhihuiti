@@ -1,11 +1,18 @@
-"""LLM backend — supports Ollama (local, default) and OpenRouter (cloud).
+"""LLM backend — supports Ollama (local), DeepSeek, OpenRouter, and any OpenAI-compatible API.
 
-Backend selection:
-  - If OPENROUTER_API_KEY is set, uses OpenRouter (cloud).
-  - Otherwise, uses Ollama at localhost:11434 (no key required).
+Backend selection (first match wins):
+  1. DEEPSEEK_API_KEY   → DeepSeek (https://api.deepseek.com)
+  2. OPENROUTER_API_KEY → OpenRouter (https://openrouter.ai)
+  3. OPENAI_API_KEY     → OpenAI (https://api.openai.com)
+  4. LLM_API_KEY + LLM_API_URL → Any OpenAI-compatible API
+  5. Otherwise          → Ollama at localhost:11434 (no key required)
 
 Environment variables:
-  OPENROUTER_API_KEY   — use OpenRouter; value is the API key
+  DEEPSEEK_API_KEY     — use DeepSeek API
+  OPENROUTER_API_KEY   — use OpenRouter
+  OPENAI_API_KEY       — use OpenAI
+  LLM_API_KEY          — generic API key (requires LLM_API_URL)
+  LLM_API_URL          — custom API endpoint (OpenAI-compatible)
   OLLAMA_HOST          — Ollama base URL (default: http://localhost:11434)
   OLLAMA_MODEL         — Ollama model name (default: llama3)
   LLM_MODEL            — override model for whichever backend is active
@@ -23,6 +30,10 @@ import httpx
 # ---------------------------------------------------------------------------
 # Backend constants
 # ---------------------------------------------------------------------------
+
+DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
+DEEPSEEK_DEFAULT_MODEL = "deepseek-chat"
+DEEPSEEK_PREMIUM_MODEL = "deepseek-reasoner"
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_DEFAULT_MODEL = "anthropic/claude-sonnet-4"
@@ -43,38 +54,54 @@ class LLMError(Exception):
 
 
 class LLM:
-    """LLM wrapper that auto-selects Ollama (local) or OpenRouter (cloud).
+    """LLM wrapper that auto-selects DeepSeek, OpenRouter, or Ollama.
 
     Priority:
-      1. OPENROUTER_API_KEY set → OpenRouter
-      2. Otherwise             → Ollama (no key needed)
+      1. DEEPSEEK_API_KEY set   → DeepSeek API
+      2. OPENROUTER_API_KEY set → OpenRouter
+      3. Otherwise              → Ollama (no key needed)
 
     Override the model with LLM_MODEL env var or the ``model`` constructor arg.
     """
 
     def __init__(self, model: str | None = None):
-        self._api_key = os.environ.get("OPENROUTER_API_KEY", "")
-        self._use_ollama = not self._api_key
+        self._deepseek_key = os.environ.get("DEEPSEEK_API_KEY", "")
+        self._openrouter_key = os.environ.get("OPENROUTER_API_KEY", "")
 
-        if self._use_ollama:
+        # Backend selection: DeepSeek > OpenRouter > Ollama
+        if self._deepseek_key:
+            self._backend = "deepseek"
+            self._api_key = self._deepseek_key
+            self._api_url = DEEPSEEK_URL
+            default_model = DEEPSEEK_DEFAULT_MODEL
+            default_premium = DEEPSEEK_PREMIUM_MODEL
+        elif self._openrouter_key:
+            self._backend = "openrouter"
+            self._api_key = self._openrouter_key
+            self._api_url = OPENROUTER_URL
+            default_model = OPENROUTER_DEFAULT_MODEL
+            default_premium = OPENROUTER_PREMIUM_MODEL
+        else:
+            self._backend = "ollama"
+            self._api_key = ""
+            self._api_url = ""
             self._ollama_host = os.environ.get("OLLAMA_HOST", OLLAMA_DEFAULT_HOST).rstrip("/")
             default_model = os.environ.get("OLLAMA_MODEL", OLLAMA_DEFAULT_MODEL)
-        else:
-            default_model = OPENROUTER_DEFAULT_MODEL
+            default_premium = OLLAMA_PREMIUM_MODEL
 
         self.model = model or os.environ.get("LLM_MODEL", default_model)
-        # Premium model — used by high-performing agents; override via LLM_PREMIUM_MODEL
-        if self._use_ollama:
-            self.premium_model = os.environ.get("LLM_PREMIUM_MODEL", OLLAMA_PREMIUM_MODEL)
-        else:
-            self.premium_model = os.environ.get("LLM_PREMIUM_MODEL", OPENROUTER_PREMIUM_MODEL)
-        self.client = httpx.Client(timeout=300)  # Ollama can be slow on first load
+        self.premium_model = os.environ.get("LLM_PREMIUM_MODEL", default_premium)
+        self.client = httpx.Client(timeout=300)
         self.total_calls = 0
         self.total_retries = 0
         self.total_failures = 0
 
-        backend = f"Ollama ({self._ollama_host}, {self.model})" if self._use_ollama \
-            else f"OpenRouter ({self.model})"
+        if self._backend == "ollama":
+            backend = f"Ollama ({self._ollama_host}, {self.model})"
+        elif self._backend == "deepseek":
+            backend = f"DeepSeek ({self.model})"
+        else:
+            backend = f"OpenRouter ({self.model})"
         # Lazy import to avoid circular
         try:
             from rich.console import Console
@@ -98,9 +125,10 @@ class LLM:
 
         model: optional per-call override; falls back to self.model.
         """
-        if self._use_ollama:
+        if self._backend == "ollama":
             return self._chat_ollama(system, user, temperature, max_tokens, model=model)
-        return self._chat_openrouter(system, user, temperature, max_tokens, model=model)
+        # DeepSeek and OpenRouter both use OpenAI-compatible format
+        return self._chat_openai_compat(system, user, temperature, max_tokens, model=model)
 
     def chat_json(
         self,
@@ -203,7 +231,7 @@ class LLM:
     # OpenRouter backend
     # ------------------------------------------------------------------
 
-    def _chat_openrouter(
+    def _chat_openai_compat(
         self,
         system: str,
         user: str,
@@ -211,19 +239,24 @@ class LLM:
         max_tokens: int,
         model: str | None = None,
     ) -> str:
+        """OpenAI-compatible chat endpoint — works with DeepSeek, OpenRouter, OpenAI."""
         last_error: str | None = None
 
         for attempt in range(MAX_RETRIES + 1):
             self.total_calls += 1
             try:
+                headers = {
+                    "Authorization": f"Bearer {self._api_key}",
+                    "Content-Type": "application/json",
+                }
+                # OpenRouter-specific headers
+                if self._backend == "openrouter":
+                    headers["HTTP-Referer"] = "https://github.com/zhihuiti"
+                    headers["X-Title"] = "zhihuiti"
+
                 resp = self.client.post(
-                    OPENROUTER_URL,
-                    headers={
-                        "Authorization": f"Bearer {self._api_key}",
-                        "Content-Type": "application/json",
-                        "HTTP-Referer": "https://github.com/zhihuiti",
-                        "X-Title": "zhihuiti",
-                    },
+                    self._api_url,
+                    headers=headers,
                     json={
                         "model": model or self.model,
                         "messages": [
@@ -255,7 +288,7 @@ class LLM:
                     continue
 
                 self.total_failures += 1
-                raise LLMError(f"OpenRouter error {resp.status_code}: {resp.text[:500]}")
+                raise LLMError(f"{self._backend} error {resp.status_code}: {resp.text[:500]}")
 
             except httpx.TimeoutException:
                 last_error = "Request timed out"
@@ -271,4 +304,4 @@ class LLM:
                     continue
 
         self.total_failures += 1
-        raise LLMError(f"OpenRouter failed after {MAX_RETRIES} retries: {last_error}")
+        raise LLMError(f"{self._backend} failed after {MAX_RETRIES} retries: {last_error}")
