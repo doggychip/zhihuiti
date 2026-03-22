@@ -19,6 +19,7 @@ class AgentRole(str, Enum):
     TRADER = "trader"
     JUDGE = "judge"
     ALPHAARENA_TRADER = "alphaarena_trader"
+    CAUSAL_REASONER = "causal_reasoner"
     CUSTOM = "custom"
 
 
@@ -55,6 +56,7 @@ ROLE_TO_REALM: dict[AgentRole, Realm] = {
     AgentRole.TRADER: Realm.EXECUTION,
     AgentRole.JUDGE: Realm.CENTRAL,
     AgentRole.ALPHAARENA_TRADER: Realm.EXECUTION,
+    AgentRole.CAUSAL_REASONER: Realm.RESEARCH,
     AgentRole.CUSTOM: Realm.EXECUTION,
 }
 

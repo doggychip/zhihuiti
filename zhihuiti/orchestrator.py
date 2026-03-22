@@ -13,6 +13,7 @@ from zhihuiti.agents import ROLE_MAP, AgentManager
 from zhihuiti.behavior import BehaviorDetector
 from zhihuiti.bidding import BiddingHouse
 from zhihuiti.bloodline import Bloodline
+from zhihuiti.causal import CausalGraph, CausalReasoner, CausalValidator, load_arb_causal_data
 from zhihuiti.circuit_breaker import CircuitBreaker
 from zhihuiti.economy import Economy
 from zhihuiti.judge import Judge
@@ -65,6 +66,18 @@ class Orchestrator:
         self.factory = Factory(llm=self.llm, memory=self.memory)
         self.bidding = BiddingHouse(self.llm, self.memory, self.economy)
         self.messages = MessageBoard(self.memory)
+
+        # Causal reasoning engine (因果推理)
+        self.causal_graph = CausalGraph()
+        self.causal_reasoner = CausalReasoner(self.llm, self.causal_graph)
+        self.causal_validator = CausalValidator(self.llm, self.causal_graph)
+        try:
+            n_loaded = load_arb_causal_data(self.causal_graph)
+            if n_loaded > 0:
+                console.print(f"  [dim]因果图: {n_loaded} causal edges loaded[/dim]")
+        except Exception:
+            pass  # Non-critical: prediction-arb data may not be available
+
         self.tasks: dict[str, Task] = {}
         self.max_workers = 4
         self.max_retries = 1
@@ -390,6 +403,10 @@ class Orchestrator:
             self.behavior.print_report()
         if self.lending.active_loans:
             self.lending.print_report()
+        if getattr(self, 'causal_validator', None) and self.causal_validator.history:
+            self.causal_validator.print_report()
+        if getattr(self, 'causal_graph', None) and self.causal_graph.edges:
+            self.causal_graph.print_graph()
 
         # Save goal to history for cross-goal learning
         scores = [r["score"] for r in results if r["score"] > 0]
