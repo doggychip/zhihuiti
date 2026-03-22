@@ -2199,6 +2199,145 @@ THEORY_REGISTRY: dict[str, dict] = {
         "conservation": set(),
         "structure": "optimization_over_parameter_space",
     },
+
+    # ── Generative Adversarial ───────────────────────────────────────────
+    "wasserstein_gan": {
+        "display_name": "Wasserstein GAN",
+        "domain": "Machine Learning",
+        "equation": "min_G max_D E[D(x)] − E[D(G(z))];  W(p,q) = sup_{||D||_L≤1} E_p[D] − E_q[D];  Kantorovich-Rubinstein duality",
+        "update_form": "alternating_gradient",
+        "optimization": "minimax_wasserstein",
+        "fixed_points": "generator_matches_data",
+        "operators": {"gradient", "lipschitz_constraint", "wasserstein_distance",
+                      "pushforward_map", "dual_potential"},
+        "patterns": {
+            "variational_principle",
+            "gradient_descent",
+            "dual_variables",
+            "competitive_dynamics",
+            "energy_minimization",
+            "exploration_exploitation",
+        },
+        "variables": {
+            "state": "generator_critic_parameters",
+            "energy": "wasserstein_distance",
+            "dynamics": "adversarial_training",
+            "coupling": "critic_potential",
+        },
+        "conservation": set(),
+        "structure": "minimax_optimization",
+    },
+
+    # ── Planning / Search ────────────────────────────────────────────────
+    "mcts": {
+        "display_name": "Monte Carlo Tree Search (MCTS)",
+        "domain": "Reinforcement Learning",
+        "equation": "UCB1: a* = argmax[Q(s,a) + c√(ln N(s)/N(s,a))];  V(s) = 1/N Σ R_i;  backup: N(s)+=1, Q(s,a) += (R−Q)/N",
+        "update_form": "tree_backup",
+        "optimization": "maximize_expected_return",
+        "fixed_points": "optimal_action_values",
+        "operators": {"selection", "expansion", "simulation", "backpropagation",
+                      "ucb_bound"},
+        "patterns": {
+            "exploration_exploitation",
+            "energy_minimization",
+            "gradient_descent",
+            "bayesian_inference",
+            "compositional_structure",
+        },
+        "variables": {
+            "state": "tree_statistics",
+            "energy": "negative_expected_return",
+            "dynamics": "tree_traversal_policy",
+            "information": "visit_counts",
+        },
+        "conservation": {"total_simulation_count"},
+        "structure": "bellman_recursion",
+    },
+
+    # ── Sequential Optimization ──────────────────────────────────────────
+    "bayesian_optimization": {
+        "display_name": "Bayesian Optimization",
+        "domain": "Optimization",
+        "equation": "x_{n+1} = argmax α(x; D_n);  α_EI(x) = E[max(f(x)−f*,0)];  f ~ GP(μ,k);  p(f|D) ∝ p(D|f)p(f)",
+        "update_form": "acquisition_maximization",
+        "optimization": "maximize_acquisition_function",
+        "fixed_points": "global_optimum",
+        "operators": {"gaussian_process", "acquisition_function",
+                      "posterior_update", "kernel_evaluation", "gradient"},
+        "patterns": {
+            "bayesian_inference",
+            "exploration_exploitation",
+            "information_gain",
+            "energy_minimization",
+            "variational_principle",
+            "optimal_inference",
+        },
+        "variables": {
+            "state": "gp_posterior",
+            "energy": "negative_acquisition_value",
+            "coupling": "kernel_gram_matrix",
+            "information": "posterior_variance",
+        },
+        "conservation": set(),
+        "structure": "optimization_over_parameter_space",
+    },
+
+    # ── Approximate Inference ────────────────────────────────────────────
+    "expectation_propagation": {
+        "display_name": "Expectation Propagation (EP)",
+        "domain": "Machine Learning",
+        "equation": "q(θ) = 1/Z Π f̃ᵢ(θ);  f̃ᵢ ← proj[q^\\i · fᵢ] / q^\\i;  proj = moment matching to exponential family;  q^\\i = q/f̃ᵢ",
+        "update_form": "moment_matching_iteration",
+        "optimization": "minimize_local_kl_divergence",
+        "fixed_points": "consistent_site_approximations",
+        "operators": {"moment_matching", "cavity_distribution",
+                      "exponential_family_projection", "partition_function"},
+        "patterns": {
+            "bayesian_inference",
+            "fixed_point_iteration",
+            "mean_field",
+            "energy_minimization",
+            "compositional_structure",
+            "information_gain",
+        },
+        "variables": {
+            "state": "site_approximations",
+            "energy": "bethe_free_energy",
+            "dynamics": "message_schedule",
+            "information": "moment_parameters",
+        },
+        "conservation": {"moment_consistency"},
+        "structure": "energy_based_pairwise_model",
+    },
+
+    # ── Tensor Methods ───────────────────────────────────────────────────
+    "tensor_network": {
+        "display_name": "Tensor Network / Tensor Decomposition",
+        "domain": "Physics",
+        "equation": "Ψ = Σ A^{s1} A^{s2} ... A^{sN};  MPS: Ψ_{s1...sN} = Tr(A^{s1}...A^{sN});  SVD truncation: ||Ψ − Ψ̃|| ≤ ε",
+        "update_form": "local_tensor_update",
+        "optimization": "minimize_truncation_error",
+        "fixed_points": "optimal_low_rank_approximation",
+        "operators": {"contraction", "svd_truncation", "bond_dimension",
+                      "transfer_matrix", "tensor_product"},
+        "patterns": {
+            "compositional_structure",
+            "structural_isomorphism",
+            "energy_minimization",
+            "variational_principle",
+            "information_gain",
+            "renormalization",
+        },
+        "variables": {
+            "state": "tensor_cores",
+            "energy": "truncation_error",
+            "coupling": "bond_indices",
+            "spectrum": "singular_values",
+        },
+        "conservation": {"unitarity_of_isometries"},
+        "structure": "renormalization_hierarchy",
+    },
 }
 
 
