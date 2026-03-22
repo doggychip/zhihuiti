@@ -1024,6 +1024,148 @@ THEORY_REGISTRY: dict[str, dict] = {
         "conservation": {"total_energy"},
         "structure": "open_system_far_from_equilibrium",
     },
+
+    # ── Stochastic Dynamics ──────────────────────────────────────────────
+    "fokker_planck": {
+        "display_name": "Fokker-Planck / Langevin Dynamics",
+        "domain": "Statistical Physics",
+        "equation": "∂p/∂t = −∂/∂x[μ(x)p] + (1/2)∂²/∂x²[σ²(x)p];  dx = μdt + σdW",
+        "update_form": "drift_diffusion",
+        "optimization": None,
+        "fixed_points": "stationary_distribution",
+        "operators": {"drift", "diffusion", "gradient", "laplacian", "partition_function"},
+        "patterns": {
+            "energy_based",
+            "energy_minimization",
+            "conservation_of_probability",
+            "mean_field",
+            "fixed_point_stability",
+            "energy_entropy_tradeoff",
+            "gradient_descent",
+        },
+        "variables": {
+            "state": "probability_density",
+            "energy": "potential_function",
+            "flow": "probability_current",
+            "temperature": "noise_intensity",
+        },
+        "conservation": {"total_probability"},
+        "structure": "stochastic_differential_equation",
+    },
+
+    # ── Game Theory ──────────────────────────────────────────────────────
+    "nash_equilibrium": {
+        "display_name": "Nash Equilibrium",
+        "domain": "Evolutionary Game Theory",
+        "equation": "σ* ∈ NE ⟺ ∀i, uᵢ(σ*) ≥ uᵢ(σ'ᵢ, σ*₋ᵢ);  BR(σ₋ᵢ) = argmax uᵢ(σᵢ, σ₋ᵢ)",
+        "update_form": "best_response_dynamics",
+        "optimization": "maximize_individual_utility",
+        "fixed_points": "mutual_best_response_equilibrium",
+        "operators": {"best_response", "expectation", "pairwise_interaction", "mixed_strategy"},
+        "patterns": {
+            "fixed_point_stability",
+            "fixed_point_iteration",
+            "pairwise_coupling",
+            "frequency_dependent",
+            "above_average_grows",
+            "mean_field",
+        },
+        "variables": {
+            "state": "strategy_profile",
+            "score": "utility",
+            "coupling": "payoff_matrix",
+            "reference": "opponent_strategy",
+        },
+        "conservation": {"total_probability"},
+        "structure": "fixed_point_of_best_response_map",
+    },
+
+    # ── Machine Learning (generative) ────────────────────────────────────
+    "boltzmann_machine": {
+        "display_name": "Boltzmann Machine",
+        "domain": "Machine Learning",
+        "equation": "P(v) = Σ_h exp(−E(v,h))/Z;  E(v,h) = −v^TWh − b^Tv − c^Th;  ΔW = ⟨vh^T⟩_data − ⟨vh^T⟩_model",
+        "update_form": "contrastive_divergence",
+        "optimization": "maximize_log_likelihood",
+        "fixed_points": "thermal_equilibrium_distribution",
+        "operators": {"partition_function", "expectation", "pairwise_interaction", "sampling",
+                      "gradient"},
+        "patterns": {
+            "energy_based",
+            "pairwise_coupling",
+            "correlation_learning",
+            "energy_entropy_tradeoff",
+            "energy_minimization",
+            "mean_field",
+            "phase_transition",
+            "bayesian_inference",
+        },
+        "variables": {
+            "state": "visible_hidden_configuration",
+            "energy": "energy_function",
+            "coupling": "weight_matrix",
+            "temperature": "inverse_beta",
+        },
+        "conservation": {"total_probability"},
+        "structure": "disordered_pairwise_energy_model",
+    },
+
+    # ── Information Theory (extended) ────────────────────────────────────
+    "compressed_sensing": {
+        "display_name": "Compressed Sensing",
+        "domain": "Information Theory",
+        "equation": "y = Φx, x sparse;  x* = argmin ‖x‖₁ s.t. Φx = y;  RIP: (1−δ)‖x‖₂² ≤ ‖Φx‖₂² ≤ (1+δ)‖x‖₂²",
+        "update_form": "sparse_recovery",
+        "optimization": "minimize_l1_norm",
+        "fixed_points": "sparsest_consistent_solution",
+        "operators": {"projection", "thresholding", "gradient", "linear_measurement",
+                      "basis_pursuit"},
+        "patterns": {
+            "information_gain",
+            "optimal_inference",
+            "variational_principle",
+            "structural_isomorphism",
+            "one_to_one_mapping",
+            "uncertainty_measure",
+        },
+        "variables": {
+            "state": "sparse_signal",
+            "energy": "l1_norm",
+            "measurement": "compressed_observations",
+            "precision": "restricted_isometry_constant",
+        },
+        "conservation": {"measurement_consistency"},
+        "structure": "underdetermined_linear_inverse_problem",
+    },
+
+    # ── Physics (extended) ───────────────────────────────────────────────
+    "gauge_theory": {
+        "display_name": "Gauge Theory",
+        "domain": "Physics",
+        "equation": "Dμ = ∂μ + igAμ;  Fμν = ∂μAν − ∂νAμ + ig[Aμ,Aν];  L = −(1/4)FμνF^μν + ψ̄(iD̸−m)ψ",
+        "update_form": "local_symmetry_covariant",
+        "optimization": "stationary_action",
+        "fixed_points": "gauge_invariant_observables",
+        "operators": {"covariant_derivative", "field_strength", "symmetry_group",
+                      "action_integral", "renormalization"},
+        "patterns": {
+            "variational_principle",
+            "dual_variables",
+            "topological_invariants",
+            "universality",
+            "compositional_structure",
+            "structural_isomorphism",
+            "scale_invariance",
+        },
+        "variables": {
+            "state": "field_configuration",
+            "energy": "lagrangian_density",
+            "symmetry": "gauge_group",
+            "coupling": "coupling_constant",
+        },
+        "conservation": {"gauge_charge", "energy"},
+        "structure": "variational_principle_with_symmetry",
+    },
 }
 
 
