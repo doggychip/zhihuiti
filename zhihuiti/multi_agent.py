@@ -34,29 +34,34 @@ STRATEGY_FN_MAP = {
     "diversify": "_trade_diversifier",
 }
 
-# 21 Agent profiles — diverse competing strategies
+# 21 Agent profiles — named with Chinese trading wisdom
 AGENT_PROFILES = {
-    "agent-zhihuiti": {"name": "ZhihuiTi Evolution", "strategy": "momentum"},
-    "agent-zhihuiti-2": {"name": "ZhihuiTi Contrarian", "strategy": "mean_reversion"},
-    "agent-zhihuiti-3": {"name": "ZhihuiTi HODL", "strategy": "accumulate"},
-    "agent-zhihuiti-4": {"name": "ZhihuiTi Scalper", "strategy": "scalp"},
-    "agent-zhihuiti-5": {"name": "ZhihuiTi Diversifier", "strategy": "diversify"},
-    "agent-zhihuiti-6": {"name": "ZhihuiTi Alpha", "strategy": "momentum"},
-    "agent-zhihuiti-7": {"name": "ZhihuiTi Beta", "strategy": "mean_reversion"},
-    "agent-zhihuiti-8": {"name": "ZhihuiTi Gamma", "strategy": "scalp"},
-    "agent-zhihuiti-9": {"name": "ZhihuiTi Delta", "strategy": "accumulate"},
-    "agent-zhihuiti-10": {"name": "ZhihuiTi Epsilon", "strategy": "diversify"},
-    "agent-zhihuiti-11": {"name": "ZhihuiTi Zeta", "strategy": "momentum"},
-    "agent-zhihuiti-12": {"name": "ZhihuiTi Eta", "strategy": "mean_reversion"},
-    "agent-zhihuiti-13": {"name": "ZhihuiTi Theta", "strategy": "scalp"},
-    "agent-zhihuiti-14": {"name": "ZhihuiTi Iota", "strategy": "accumulate"},
-    "agent-zhihuiti-15": {"name": "ZhihuiTi Kappa", "strategy": "diversify"},
-    "agent-zhihuiti-16": {"name": "ZhihuiTi Lambda", "strategy": "momentum"},
-    "agent-zhihuiti-17": {"name": "ZhihuiTi Mu", "strategy": "mean_reversion"},
-    "agent-zhihuiti-18": {"name": "ZhihuiTi Nu", "strategy": "scalp"},
-    "agent-zhihuiti-19": {"name": "ZhihuiTi Xi", "strategy": "accumulate"},
-    "agent-zhihuiti-20": {"name": "ZhihuiTi Omicron", "strategy": "diversify"},
-    "agent-zhihuiti-21": {"name": "ZhihuiTi Pi", "strategy": "momentum"},
+    # Momentum (趋势追踪 — trend followers)
+    "agent-zhihuiti": {"name": "龙首 Lóng Shǒu", "strategy": "momentum"},         # Dragon Head — leads the charge
+    "agent-zhihuiti-6": {"name": "追风 Zhuī Fēng", "strategy": "momentum"},        # Wind Chaser — rides momentum
+    "agent-zhihuiti-11": {"name": "破浪 Pò Làng", "strategy": "momentum"},         # Wave Breaker — surfs trends
+    "agent-zhihuiti-16": {"name": "雷动 Léi Dòng", "strategy": "momentum"},        # Thunder Mover — strikes fast
+    "agent-zhihuiti-21": {"name": "飞鹰 Fēi Yīng", "strategy": "momentum"},       # Flying Eagle — spots from above
+    # Mean Reversion (均值回归 — contrarian)
+    "agent-zhihuiti-2": {"name": "静水 Jìng Shuǐ", "strategy": "mean_reversion"}, # Still Water — buys the dip
+    "agent-zhihuiti-7": {"name": "逆风 Nì Fēng", "strategy": "mean_reversion"},   # Against Wind — contrarian
+    "agent-zhihuiti-12": {"name": "回春 Huí Chūn", "strategy": "mean_reversion"}, # Spring Return — recovery plays
+    "agent-zhihuiti-17": {"name": "磐石 Pán Shí", "strategy": "mean_reversion"},  # Bedrock — steady hands
+    # Accumulate (积蓄 — long-only holders)
+    "agent-zhihuiti-3": {"name": "铁手 Tiě Shǒu", "strategy": "accumulate"},      # Iron Hand — diamond hands
+    "agent-zhihuiti-9": {"name": "聚财 Jù Cái", "strategy": "accumulate"},         # Wealth Gatherer — accumulates
+    "agent-zhihuiti-14": {"name": "深根 Shēn Gēn", "strategy": "accumulate"},     # Deep Root — patient builder
+    "agent-zhihuiti-19": {"name": "守望 Shǒu Wàng", "strategy": "accumulate"},    # Watchkeeper — waits for drops
+    # Scalp (闪电交易 — high frequency)
+    "agent-zhihuiti-4": {"name": "闪电 Shǎn Diàn", "strategy": "scalp"},           # Lightning — fast strikes
+    "agent-zhihuiti-8": {"name": "蜂刺 Fēng Cì", "strategy": "scalp"},             # Bee Sting — small but frequent
+    "agent-zhihuiti-13": {"name": "游隼 Yóu Sǔn", "strategy": "scalp"},           # Peregrine — fastest hunter
+    "agent-zhihuiti-18": {"name": "旋风 Xuán Fēng", "strategy": "scalp"},          # Whirlwind — rapid trades
+    # Diversify (分散 — balanced allocation)
+    "agent-zhihuiti-5": {"name": "天平 Tiān Píng", "strategy": "diversify"},        # Scales — balanced weight
+    "agent-zhihuiti-10": {"name": "百川 Bǎi Chuān", "strategy": "diversify"},      # Hundred Rivers — flows everywhere
+    "agent-zhihuiti-15": {"name": "织网 Zhī Wǎng", "strategy": "diversify"},       # Web Weaver — spread wide
+    "agent-zhihuiti-20": {"name": "星图 Xīng Tú", "strategy": "diversify"},        # Star Map — sees the whole sky
 }
 
 
