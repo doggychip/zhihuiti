@@ -269,10 +269,15 @@ def dashboard(db: str, model: str | None, port: int):
     import traceback
     console.print(BANNER, style="bold cyan")
     try:
-        orch = Orchestrator(db_path=db, model=model)
+        # Enable tools if AlphaArena or CriticAI env vars are set
+        import os as _os
+        tools = bool(_os.environ.get("ALPHAARENA_API_KEY") or _os.environ.get("CRITICAI_URL"))
+        orch = Orchestrator(db_path=db, model=model, tools_enabled=tools)
         backend = getattr(orch.llm, '_backend', 'unknown')
         model_name = getattr(orch.llm, 'model', 'unknown')
         console.print(f"  [green]LLM backend ready:[/green] {backend} ({model_name})")
+        if tools:
+            console.print(f"  [green]Tools enabled:[/green] agents can execute curl commands")
     except Exception as e:
         console.print(f"[yellow]Warning:[/yellow] Orchestrator init failed: {e}")
         traceback.print_exc()
