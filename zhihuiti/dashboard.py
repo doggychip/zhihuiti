@@ -149,6 +149,19 @@ def _gather_data(orch) -> dict:
         "unread": unread[0]["c"] if unread else 0,
     }
 
+    # P&L Score (real trading performance)
+    aa_url_pnl = os.environ.get("ALPHAARENA_URL", "")
+    aa_id_pnl = os.environ.get("ALPHAARENA_AGENT_ID", "")
+    if aa_url_pnl and aa_id_pnl:
+        try:
+            from zhihuiti.pnl_scorer import PnLScorer
+            scorer = PnLScorer(base_url=aa_url_pnl, agent_id=aa_id_pnl)
+            data["pnl"] = scorer.score_cycle()
+        except Exception:
+            data["pnl"] = {"score": 0, "return_pct": 0, "equity": 0, "positions": 0}
+    else:
+        data["pnl"] = {"score": 0, "return_pct": 0, "equity": 0, "positions": 0}
+
     # AlphaArena external agents
     aa_url = os.environ.get("ALPHAARENA_URL", "")
     if aa_url:
@@ -391,6 +404,19 @@ html += renderCard('📨', 'Agent Messaging', [
   m('Total Messages', msg.total_messages),
   m('Unread', msg.unread, msg.unread > 0 ? 'yellow' : ''),
 ].join(''));
+
+// P&L Score (Real Trading Performance)
+if (DATA.pnl) {
+  let pnl = DATA.pnl;
+  let c = pnl.components || {};
+  html += renderCard('💰', 'Real P&L Score', [
+    m('Composite Score', (pnl.score||0).toFixed(3), pnl.score > 0.6 ? 'green' : pnl.score > 0.3 ? 'yellow' : 'red'),
+    m('Return', (pnl.return_pct||0).toFixed(2) + '%', pnl.return_pct >= 0 ? 'green' : 'red'),
+    m('Equity', '$' + (pnl.equity||0).toLocaleString()),
+    m('Positions', pnl.positions || 0),
+    m('Rank', pnl.leaderboard_rank || '—'),
+  ].join(''));
+}
 
 // AlphaArena Leaderboard
 if (DATA.alphaarena && DATA.alphaarena.agents && DATA.alphaarena.agents.length) {
