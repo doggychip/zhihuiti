@@ -84,12 +84,13 @@ export function LeaderboardTable({ agents, handleSelect, REALM_COLORS }: Leaderb
                   onMouseDown={e => onMouseDown(e, i)}
                   style={{
                     position: "absolute",
-                    right: 0,
+                    right: -4,
                     top: 0,
                     bottom: 0,
-                    width: 5,
+                    width: 9,
                     cursor: "col-resize",
                     background: "transparent",
+                    zIndex: 2,
                   }}
                   onMouseEnter={e => (e.currentTarget.style.background = "rgba(167,139,250,0.4)")}
                   onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
