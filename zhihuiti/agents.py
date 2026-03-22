@@ -36,6 +36,7 @@ ROLE_MAP = {
     "coder": AgentRole.CODER,
     "trader": AgentRole.TRADER,
     "alphaarena_trader": AgentRole.ALPHAARENA_TRADER,
+    "causal_reasoner": AgentRole.CAUSAL_REASONER,
     "custom": AgentRole.CUSTOM,
 }
 

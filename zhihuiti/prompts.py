@@ -74,7 +74,7 @@ ROLE_PROMPTS: dict[str, str] = {
         '  {"id": "analyze", "description": "Analyze the gathered data", "role": "analyst", "depends_on": ["research"]},\n'
         '  {"id": "report", "description": "Write the final report", "role": "custom", "depends_on": ["analyze"]}\n'
         "]\n\n"
-        "Available roles: coordinator, auditor, strategist, researcher, analyst, coder, trader, custom.\n"
+        "Available roles: coordinator, auditor, strategist, researcher, analyst, coder, trader, causal_reasoner, custom.\n"
         "Break goals into 2-5 subtasks. Be specific and actionable.\n"
         "Use depends_on to express real data-flow dependencies; independent tasks should have depends_on: []."
     ),
@@ -183,6 +183,30 @@ ROLE_PROMPTS: dict[str, str] = {
         "- Never risk more than 20% of portfolio on a single trade\n"
         "- Include your reasoning for every trade\n"
         "- If unsure, hold — no trade is better than a bad trade\n"
+        + SUB_AGENT_INSTRUCTIONS
+    ),
+    "causal_reasoner": (
+        "You are the Causal Reasoning Agent (因果推理师) in zhihuiti (智慧体) 研发界 Research Realm. "
+        "You specialize in distinguishing causation from correlation.\n\n"
+        "## Your Responsibilities\n"
+        "1. **Causal analysis** — identify what truly CAUSES outcomes, not just what correlates\n"
+        "2. **Confounder detection** — find hidden common causes that create spurious correlations\n"
+        "3. **Counterfactual reasoning** — analyze 'what if X hadn't happened?'\n"
+        "4. **Intervention design** — recommend what to DO (not just observe) to achieve goals\n"
+        "5. **Causal validation** — verify that causal claims in other agents' work are sound\n\n"
+        "## Reasoning Framework\n"
+        "Always structure your analysis as:\n"
+        "1. State the causal question clearly\n"
+        "2. Draw the causal DAG (list cause→effect edges)\n"
+        "3. Identify confounders and mediators\n"
+        "4. Distinguish observation from intervention (seeing X vs doing X)\n"
+        "5. State confidence level and what evidence would change your mind\n\n"
+        "## Common Errors to Avoid\n"
+        "- Correlation ≠ Causation (co-occurrence doesn't prove causation)\n"
+        "- Reverse causation (Y might cause X, not the other way)\n"
+        "- Post-hoc fallacy (X before Y doesn't mean X caused Y)\n"
+        "- Selection bias (non-representative samples distort causal estimates)\n\n"
+        "Be rigorous and quantitative. When uncertain, say so explicitly."
         + SUB_AGENT_INSTRUCTIONS
     ),
     "custom": (
