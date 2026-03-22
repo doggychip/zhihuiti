@@ -8,6 +8,8 @@ interface LeaderboardAgent {
   alive: boolean;
   realm: string;
   tasks: number;
+  name?: string;
+  group?: "zhihuiti" | "hedge_fund";
 }
 
 interface LeaderboardTableProps {
@@ -116,8 +118,8 @@ export function LeaderboardTable({ agents, handleSelect, REALM_COLORS }: Leaderb
                   {i + 1}
                 </td>
                 <td className="py-1.5 px-2 text-white font-medium truncate" style={{ width: colWidths[1] }}>
-                  <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ background: REALM_COLORS[agent.realm] }} />
-                  {agent.role} <span style={{ color: "rgba(255,255,255,0.2)" }}>#{agent.id.slice(0, 4)}</span>
+                  <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ background: agent.group === "zhihuiti" ? "#eab308" : agent.group === "hedge_fund" ? "#3b82f6" : REALM_COLORS[agent.realm] }} />
+                  {agent.name || agent.role} <span style={{ color: "rgba(255,255,255,0.2)" }}>#{agent.id.slice(0, 4)}</span>
                 </td>
                 <td className="py-1.5 px-2 text-right font-mono" style={{ color: isPositive ? "#22c55e" : "#ef4444", width: colWidths[2] }}>
                   {isPositive ? "+" : ""}{agent.returnPct.toFixed(1)}%
