@@ -1945,6 +1945,7 @@ export default function ZhihuiTiDashboard() {
 
               {/* AlphaArena Leaderboard — hidden in fullscreen */}
               {!graphFullscreen && agents.length > 0 &&
+            <ResizableWidget defaultHeight={220} minHeight={80} maxHeight={600}>
             <div className="px-4 pb-4" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
                   <div className="pt-3 pb-2 flex items-center gap-2">
                     <span style={{ fontSize: 14 }}>🏟️</span>
@@ -1952,6 +1953,7 @@ export default function ZhihuiTiDashboard() {
                   </div>
                   <LeaderboardTable agents={agents} handleSelect={handleSelect} REALM_COLORS={REALM_COLORS} />
                 </div>
+            </ResizableWidget>
             }
             </div>;
 
