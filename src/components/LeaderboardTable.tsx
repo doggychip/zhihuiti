@@ -173,6 +173,7 @@ export function LeaderboardTable({ agents, handleSelect, REALM_COLORS }: Leaderb
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
