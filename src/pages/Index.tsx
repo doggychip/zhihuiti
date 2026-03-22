@@ -198,11 +198,7 @@ interface BankruptEffect {
 
 // ── 3D Agent Graph (with effects) ───────────────────────────────
 function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhihuiti = true, showHedgeFund = true
-
-
-
-
-}: {agents: Agent[];connections: Connection[];onSelect: (id: string) => void;selectedId: string | null;events: TaskEvent[];}) {
+}: {agents: Agent[];connections: Connection[];onSelect: (id: string) => void;selectedId: string | null;events: TaskEvent[];showZhihuiti?: boolean;showHedgeFund?: boolean;}) {
   const mountRef = useRef<HTMLDivElement>(null);
   const nodesRef = useRef<Record<string, {mesh: THREE.Mesh;glow: THREE.Mesh;baseY: number;size: number;}>>({});
   const frameRef = useRef(0);
