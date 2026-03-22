@@ -8,7 +8,7 @@ import yaml
 from .models import Realm, SimState
 from .agents import create_agents, agent_decide, agent_act
 from .economy import distribute_staking_rewards, get_summary
-from .realms import REALM_TICK_FNS
+from .realms import REALM_TICK_FNS, apply_avalanche_spillover
 from .visualization import plot_simulation
 from .dynamics import tick_dynamics, strategy_frequencies, is_near_critical
 
@@ -151,6 +151,7 @@ def run(config_path: str, plot: bool = True) -> SimState:
         "avalanche": [],
         "strategy_freq": [],
         "realm_values": [],
+        "realm_theory": [],
     }
 
     for tick in range(ticks):
@@ -180,7 +181,10 @@ def run(config_path: str, plot: bool = True) -> SimState:
         # 6. Theoretical dynamics (replicator, thermodynamics, Bellman, SOC)
         tick_dynamics(state)
 
-        # 7. Collect history snapshot
+        # 7. SOC avalanche cascade across realms
+        apply_avalanche_spillover(state)
+
+        # 8. Collect history snapshot
         snapshot = collect_history(state)
         history["ticks"].append(tick)
         for key in ("total_supply", "circulating", "staked", "gini",
@@ -191,8 +195,20 @@ def run(config_path: str, plot: bool = True) -> SimState:
         history["avalanche"].append(state.last_avalanche_size)
         history["strategy_freq"].append(strategy_frequencies(state))
         history["realm_values"].append(dict(state.realm_values))
+        history["realm_theory"].append({
+            name: {
+                "selection_pressure": r.selection_pressure,
+                "realm_temperature": r.realm_temperature,
+                "realm_entropy": r.realm_entropy,
+                "knowledge_pool": r.knowledge_pool,
+                "route_efficiency": r.route_efficiency,
+                "congestion": r.congestion,
+                "avalanche_exposure": r.avalanche_exposure,
+            }
+            for name, r in state.realms.items()
+        })
 
-        # 7. Periodic summary
+        # 9. Periodic summary
         if tick % log_interval == 0:
             print_summary(state)
 
