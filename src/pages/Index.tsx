@@ -1910,6 +1910,68 @@ export default function ZhihuiTiDashboard() {
                   </div>
                 </div>
               )}
+
+              {/* AlphaArena Leaderboard — hidden in fullscreen */}
+              {!graphFullscreen && (data as any)?.alphaarena?.agents && (data as any).alphaarena.agents.length > 0 && (
+                <div className="px-4 pb-4" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div className="pt-3 pb-2 flex items-center gap-2">
+                    <span style={{ fontSize: 14 }}>🏟️</span>
+                    <span className="text-xs uppercase tracking-widest font-semibold" style={{ color: "#a78bfa" }}>AlphaArena Leaderboard</span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
+                      <thead>
+                        <tr style={{ color: "rgba(255,255,255,0.35)" }}>
+                          <th className="text-left py-1.5 px-2 font-medium">#</th>
+                          <th className="text-left py-1.5 px-2 font-medium">Agent</th>
+                          <th className="text-right py-1.5 px-2 font-medium">Return %</th>
+                          <th className="text-right py-1.5 px-2 font-medium">Sharpe</th>
+                          <th className="text-right py-1.5 px-2 font-medium">Win Rate</th>
+                          <th className="text-right py-1.5 px-2 font-medium">Score</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...(data as any).alphaarena.agents]
+                          .sort((a: any, b: any) => (b.score ?? 0) - (a.score ?? 0))
+                          .map((agent: any, i: number) => {
+                            const ret = agent.return_pct ?? agent.returnPct ?? agent.return ?? 0;
+                            const isPositive = ret >= 0;
+                            return (
+                              <tr
+                                key={agent.id ?? agent.name ?? i}
+                                className="transition-colors"
+                                style={{
+                                  background: i % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent",
+                                }}
+                                onMouseEnter={e => (e.currentTarget.style.background = "rgba(167,139,250,0.08)")}
+                                onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent")}
+                              >
+                                <td className="py-1.5 px-2 font-mono" style={{ color: i < 3 ? "#eab308" : "rgba(255,255,255,0.3)" }}>
+                                  {i + 1}
+                                </td>
+                                <td className="py-1.5 px-2 text-white font-medium truncate max-w-[140px]">
+                                  {agent.name ?? agent.role ?? "—"}
+                                </td>
+                                <td className="py-1.5 px-2 text-right font-mono" style={{ color: isPositive ? "#22c55e" : "#ef4444" }}>
+                                  {isPositive ? "+" : ""}{(typeof ret === "number" ? ret : 0).toFixed(2)}%
+                                </td>
+                                <td className="py-1.5 px-2 text-right font-mono text-white/70">
+                                  {(agent.sharpe ?? 0).toFixed(2)}
+                                </td>
+                                <td className="py-1.5 px-2 text-right font-mono text-white/70">
+                                  {((agent.win_rate ?? agent.winRate ?? 0) * 100).toFixed(1)}%
+                                </td>
+                                <td className="py-1.5 px-2 text-right font-mono" style={{ color: "#a78bfa" }}>
+                                  {(agent.score ?? 0).toFixed(2)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           );
           return graphFullscreen ? createPortal(graphContent, document.body) : graphContent;
