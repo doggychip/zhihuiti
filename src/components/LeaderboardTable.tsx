@@ -31,6 +31,8 @@ const COLUMNS = [
 
 export function LeaderboardTable({ agents, handleSelect, REALM_COLORS }: LeaderboardTableProps) {
   const [colWidths, setColWidths] = useState<number[]>(COLUMNS.map(c => c.defaultWidth));
+  const [showZhihuiti, setShowZhihuiti] = useState(true);
+  const [showHedgeFund, setShowHedgeFund] = useState(true);
   const dragRef = useRef<{ colIndex: number; startX: number; startWidth: number } | null>(null);
 
   const onMouseDown = useCallback((e: React.MouseEvent, colIndex: number) => {
@@ -61,6 +63,11 @@ export function LeaderboardTable({ agents, handleSelect, REALM_COLORS }: Leaderb
 
   const leaderboardData = [...agents]
     .filter(a => a.alive)
+    .filter(a => {
+      if (a.group === "zhihuiti") return showZhihuiti;
+      if (a.group === "hedge_fund") return showHedgeFund;
+      return true;
+    })
     .map(a => {
       const returnPct = ((a.budget - INITIAL_BUDGET) / INITIAL_BUDGET) * 100;
       const sharpe = a.tasks > 0 ? (a.avg_score - 0.5) / Math.max(0.1, 1 - a.avg_score) : 0;
@@ -71,8 +78,36 @@ export function LeaderboardTable({ agents, handleSelect, REALM_COLORS }: Leaderb
     .sort((a, b) => b.score - a.score)
     .slice(0, 20);
 
+  const zhihuiCount = agents.filter(a => a.alive && a.group === "zhihuiti").length;
+  const hedgeCount = agents.filter(a => a.alive && a.group === "hedge_fund").length;
+
   return (
-    <div className="overflow-x-auto max-h-52 overflow-y-auto">
+    <div>
+      <div className="flex gap-1.5 pb-2">
+        <button
+          onClick={() => setShowZhihuiti(v => !v)}
+          className="text-[10px] px-2 py-0.5 rounded-full transition-all"
+          style={{
+            background: showZhihuiti ? "rgba(234,179,8,0.15)" : "rgba(255,255,255,0.04)",
+            color: showZhihuiti ? "#eab308" : "rgba(255,255,255,0.3)",
+            border: `1px solid ${showZhihuiti ? "rgba(234,179,8,0.3)" : "rgba(255,255,255,0.08)"}`,
+          }}
+        >
+          🟡 ZhihuiTi ({zhihuiCount})
+        </button>
+        <button
+          onClick={() => setShowHedgeFund(v => !v)}
+          className="text-[10px] px-2 py-0.5 rounded-full transition-all"
+          style={{
+            background: showHedgeFund ? "rgba(59,130,246,0.15)" : "rgba(255,255,255,0.04)",
+            color: showHedgeFund ? "#3b82f6" : "rgba(255,255,255,0.3)",
+            border: `1px solid ${showHedgeFund ? "rgba(59,130,246,0.3)" : "rgba(255,255,255,0.08)"}`,
+          }}
+        >
+          🔵 Hedge Fund ({hedgeCount})
+        </button>
+      </div>
+      <div className="overflow-x-auto max-h-52 overflow-y-auto">
       <table className="text-xs" style={{ borderCollapse: "separate", borderSpacing: 0, tableLayout: "fixed", width: colWidths.reduce((s, w) => s + w, 0) }}>
         <thead>
           <tr style={{ color: "rgba(255,255,255,0.35)" }}>
@@ -138,6 +173,7 @@ export function LeaderboardTable({ agents, handleSelect, REALM_COLORS }: Leaderb
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
