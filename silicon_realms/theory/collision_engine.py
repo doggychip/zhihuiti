@@ -2059,6 +2059,146 @@ THEORY_REGISTRY: dict[str, dict] = {
         "conservation": {"total_edge_weight"},
         "structure": "graph_operator_spectrum",
     },
+
+    # ── Generative Models (flow-based) ───────────────────────────────────
+    "normalizing_flows": {
+        "display_name": "Normalizing Flows",
+        "domain": "Machine Learning",
+        "equation": "x = f(z), z ~ p_z;  log p_x(x) = log p_z(f⁻¹(x)) + log|det ∂f⁻¹/∂x|;  max Σ log p_x(xᵢ)",
+        "update_form": "gradient_on_flow_parameters",
+        "optimization": "maximize_log_likelihood",
+        "fixed_points": "trained_invertible_map",
+        "operators": {"gradient", "jacobian", "change_of_variables",
+                      "invertible_transform", "determinant"},
+        "patterns": {
+            "variational_principle",
+            "gradient_descent",
+            "energy_minimization",
+            "structural_isomorphism",
+            "information_gain",
+            "compositional_structure",
+        },
+        "variables": {
+            "state": "flow_parameters",
+            "energy": "negative_log_likelihood",
+            "dynamics": "invertible_transformation",
+            "distribution": "pushforward_density",
+        },
+        "conservation": {"probability_mass_conservation"},
+        "structure": "optimization_over_parameter_space",
+    },
+
+    # ── Stochastic Control ───────────────────────────────────────────────
+    "stochastic_optimal_control": {
+        "display_name": "Stochastic Optimal Control",
+        "domain": "Control Theory",
+        "equation": "dx = f(x,u)dt + σ(x)dW;  J = E[∫L(x,u)dt + Φ(x_T)];  −∂V/∂t = min_u{L + f·∇V + ½σσᵀ:∇²V}",
+        "update_form": "stochastic_hjb",
+        "optimization": "minimize_expected_cost",
+        "fixed_points": "optimal_stochastic_policy",
+        "operators": {"bellman_operator", "ito_calculus", "hamiltonian",
+                      "fokker_planck_adjoint", "stochastic_gradient"},
+        "patterns": {
+            "variational_principle",
+            "energy_minimization",
+            "gradient_descent",
+            "dual_variables",
+            "exploration_exploitation",
+            "energy_entropy_tradeoff",
+        },
+        "variables": {
+            "state": "stochastic_state_process",
+            "energy": "expected_cost_to_go",
+            "control": "feedback_policy",
+            "dynamics": "controlled_diffusion",
+        },
+        "conservation": {"bellman_optimality"},
+        "structure": "bellman_recursion",
+    },
+
+    # ── Self-Supervised Learning ─────────────────────────────────────────
+    "contrastive_learning": {
+        "display_name": "Contrastive Learning / NCE",
+        "domain": "Machine Learning",
+        "equation": "L = −log[exp(sim(z_i,z_j)/τ) / Σ_k exp(sim(z_i,z_k)/τ)];  p(d=1|x,c) = σ(f(x)ᵀf(c));  NCE → MLE as k→∞",
+        "update_form": "contrastive_gradient",
+        "optimization": "maximize_mutual_information_bound",
+        "fixed_points": "aligned_representation",
+        "operators": {"inner_product", "gradient", "temperature_scaling",
+                      "negative_sampling", "projection"},
+        "patterns": {
+            "energy_based",
+            "gradient_descent",
+            "energy_minimization",
+            "information_gain",
+            "pairwise_coupling",
+            "energy_entropy_tradeoff",
+        },
+        "variables": {
+            "state": "encoder_parameters",
+            "energy": "contrastive_loss",
+            "coupling": "similarity_matrix",
+            "temperature": "softmax_temperature",
+        },
+        "conservation": set(),
+        "structure": "energy_based_pairwise_model",
+    },
+
+    # ── Probabilistic Graphical Models ───────────────────────────────────
+    "belief_propagation": {
+        "display_name": "Belief Propagation / Message Passing",
+        "domain": "Machine Learning",
+        "equation": "m_{i→j}(x_j) = Σ_{x_i} ψ(x_i,x_j) φ(x_i) Π_{k∈N(i)\\j} m_{k→i}(x_i);  b(x_i) ∝ φ(x_i) Π_{j∈N(i)} m_{j→i}(x_i)",
+        "update_form": "message_passing_fixed_point",
+        "optimization": "bethe_free_energy",
+        "fixed_points": "marginal_beliefs",
+        "operators": {"message_update", "marginalization", "factor_graph",
+                      "partition_function", "bethe_approximation"},
+        "patterns": {
+            "fixed_point_iteration",
+            "bayesian_inference",
+            "pairwise_coupling",
+            "energy_based",
+            "compositional_structure",
+            "mean_field",
+        },
+        "variables": {
+            "state": "messages_and_beliefs",
+            "energy": "bethe_free_energy",
+            "coupling": "factor_potentials",
+            "dynamics": "message_schedule",
+        },
+        "conservation": {"normalization_of_beliefs"},
+        "structure": "energy_based_pairwise_model",
+    },
+
+    # ── Bayesian Estimation ──────────────────────────────────────────────
+    "map_estimation": {
+        "display_name": "Maximum a Posteriori (MAP) Estimation",
+        "domain": "Statistics",
+        "equation": "θ_MAP = argmax p(θ|x) = argmax [log p(x|θ) + log p(θ)];  ∇log p(x|θ) + ∇log p(θ) = 0;  MAP → MLE as prior → flat",
+        "update_form": "penalized_likelihood_gradient",
+        "optimization": "maximize_posterior",
+        "fixed_points": "posterior_mode",
+        "operators": {"gradient", "prior", "posterior", "regularizer",
+                      "laplace_approximation"},
+        "patterns": {
+            "bayesian_inference",
+            "gradient_descent",
+            "energy_minimization",
+            "variational_principle",
+            "optimal_inference",
+            "dual_variables",
+        },
+        "variables": {
+            "state": "parameter_estimate",
+            "energy": "negative_log_posterior",
+            "prior": "regularization_term",
+            "information": "posterior_curvature",
+        },
+        "conservation": set(),
+        "structure": "optimization_over_parameter_space",
+    },
 }
 
 
