@@ -737,6 +737,146 @@ THEORY_REGISTRY: dict[str, dict] = {
         "conservation": {"total_mass_in_closed_system"},
         "structure": "nonlinear_pde_with_turing_instability",
     },
+
+    # ── Physics (extended) ───────────────────────────────────────────────
+    "noether_theorem": {
+        "display_name": "Noether's Theorem",
+        "domain": "Physics",
+        "equation": "continuous symmetry G ⟹ conserved current Jμ:  ∂μJμ = 0",
+        "update_form": "symmetry_implies_conservation",
+        "optimization": "stationary_action",
+        "fixed_points": "conserved_quantities",
+        "operators": {"symmetry_group", "variational_derivative", "lie_derivative",
+                      "action_integral", "divergence"},
+        "patterns": {
+            "variational_principle",
+            "dual_variables",
+            "topological_invariants",
+            "universality",
+            "compositional_structure",
+            "structural_isomorphism",
+        },
+        "variables": {
+            "state": "field_configuration",
+            "energy": "lagrangian",
+            "symmetry": "lie_group_parameter",
+            "conserved": "noether_charge",
+        },
+        "conservation": {"energy", "momentum", "angular_momentum", "charge"},
+        "structure": "variational_principle_with_symmetry",
+    },
+
+    # ── Statistical Physics (extended) ───────────────────────────────────
+    "percolation_theory": {
+        "display_name": "Percolation Theory",
+        "domain": "Statistical Physics",
+        "equation": "P∞(p) ~ (p − pₖ)^β  for p > pₖ;  ξ(p) ~ |p − pₖ|^{−ν}",
+        "update_form": "bond_site_occupation",
+        "optimization": None,
+        "fixed_points": "percolation_threshold",
+        "operators": {"cluster_counting", "renormalization", "scaling", "pairwise_interaction"},
+        "patterns": {
+            "phase_transition",
+            "critical_phenomena",
+            "scale_invariance",
+            "universality",
+            "order_parameter",
+            "no_characteristic_scale",
+            "power_law",
+            "spontaneous_symmetry_breaking",
+        },
+        "variables": {
+            "state": "occupation_probability",
+            "coupling": "bond_probability",
+            "order": "percolation_strength",
+            "scale": "correlation_length",
+        },
+        "conservation": set(),
+        "structure": "random_graph_phase_transition",
+    },
+
+    # ── Machine Learning / Bayesian ──────────────────────────────────────
+    "variational_inference": {
+        "display_name": "Variational Inference (ELBO)",
+        "domain": "Machine Learning",
+        "equation": "ELBO = E_q[log p(x,z)] − E_q[log q(z)] ≤ log p(x);  KL(q‖p) = log p(x) − ELBO",
+        "update_form": "variational_optimization",
+        "optimization": "maximize_evidence_lower_bound",
+        "fixed_points": "approximate_posterior",
+        "operators": {"expectation", "logarithm", "gradient", "kl_divergence", "sampling"},
+        "patterns": {
+            "variational_inference",
+            "bayesian_inference",
+            "precision_weighted_update",
+            "surprise_minimization",
+            "information_gain",
+            "prediction_error",
+            "variational_principle",
+            "energy_entropy_tradeoff",
+        },
+        "variables": {
+            "state": "variational_parameters",
+            "energy": "negative_elbo",
+            "belief": "approximate_posterior",
+            "reference": "prior",
+        },
+        "conservation": set(),
+        "structure": "optimization_on_distribution_manifold",
+    },
+
+    # ── Dynamic Systems (extended) ───────────────────────────────────────
+    "lotka_volterra": {
+        "display_name": "Lotka-Volterra Equations",
+        "domain": "Dynamic Systems",
+        "equation": "dx/dt = αx − βxy;  dy/dt = δxy − γy",
+        "update_form": "coupled_nonlinear_ode",
+        "optimization": None,
+        "fixed_points": "coexistence_equilibrium",
+        "operators": {"pairwise_interaction", "growth_rate", "coupling", "jacobian"},
+        "patterns": {
+            "pairwise_coupling",
+            "frequency_dependent",
+            "fixed_point_stability",
+            "attractor_dynamics",
+            "above_average_grows",
+            "mean_field",
+        },
+        "variables": {
+            "state": "population_densities",
+            "score": "growth_rate",
+            "coupling": "interaction_coefficients",
+            "reference": "carrying_capacity",
+        },
+        "conservation": {"total_conserved_quantity_in_2d"},
+        "structure": "coupled_nonlinear_dynamical_system",
+    },
+
+    # ── Optimization / Information Geometry ──────────────────────────────
+    "natural_gradient": {
+        "display_name": "Natural Gradient Descent",
+        "domain": "Optimization",
+        "equation": "θ_{t+1} = θ_t − η F(θ)⁻¹ ∇L(θ);  F(θ)ᵢⱼ = E[(∂log p/∂θᵢ)(∂log p/∂θⱼ)]",
+        "update_form": "precision_weighted_gradient",
+        "optimization": "minimize_loss_on_manifold",
+        "fixed_points": "fisher_efficient_optimum",
+        "operators": {"gradient", "matrix_inverse", "expectation", "fisher_information_matrix"},
+        "patterns": {
+            "precision_weighted_update",
+            "gradient_descent",
+            "energy_minimization",
+            "information_gain",
+            "optimal_inference",
+            "multiplicative_update",
+        },
+        "variables": {
+            "state": "parameters",
+            "energy": "loss_function",
+            "precision": "fisher_matrix",
+            "flow": "natural_gradient_direction",
+        },
+        "conservation": set(),
+        "structure": "riemannian_metric_on_statistical_manifold",
+    },
 }
 
 
