@@ -370,13 +370,92 @@ def update_information_geometry(state: SimState):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# NATURAL GRADIENT FEEDBACK
+# Close the loop: use the information geometry metrics to adaptively
+# modulate each realm's reward_modifier.
+#
+# Three feedback mechanisms:
+#
+#   1. Gradient Momentum  ∇̃ → reward_modifier
+#      Positive natural gradient (realm improving) → slight reward boost.
+#      Negative gradient (realm declining) → stabilisation support.
+#      This creates a momentum effect on the statistical manifold.
+#
+#   2. Fisher Damping  I → dampen all adjustments
+#      When Fisher information is high the economy is in a sensitive
+#      regime (near a phase transition).  Large reward changes would be
+#      destabilising, so we shrink all adjustments proportionally.
+#      Damping factor = 1 / (1 + κ · I)
+#
+#   3. KL Equilibrium Pull  D_KL → redistribute toward weaker realms
+#      When KL divergence is high (wealth far from uniform), realms
+#      with negative gradient get an extra boost — pulling the system
+#      back toward equilibrium.  Strength proportional to D_KL.
+# ─────────────────────────────────────────────────────────────────────────────
+
+_GRADIENT_LR = 0.05      # learning rate for gradient momentum
+_FISHER_KAPPA = 2.0       # Fisher damping coefficient
+_KL_PULL_STRENGTH = 0.03  # equilibrium pull per unit of KL divergence
+_MODIFIER_MIN = 0.5       # reward_modifier floor
+_MODIFIER_MAX = 2.0       # reward_modifier ceiling
+_MODIFIER_DECAY = 0.05    # decay toward 1.0 each tick (mean-reversion)
+
+
+def apply_natural_gradient_feedback(state: SimState):
+    """
+    Use information geometry to adaptively adjust per-realm reward_modifier.
+
+    Called after update_information_geometry so that fisher_information,
+    kl_divergence, and natural_gradient are all fresh.
+
+    The modifier is applied multiplicatively to base_reward in each
+    realm's tick function, creating a closed feedback loop:
+
+        wealth distribution → Fisher/KL/∇̃ → reward_modifier → rewards → wealth distribution
+    """
+    if not state.natural_gradient:
+        return
+
+    fisher = state.fisher_information
+    kl = state.kl_divergence
+
+    # Fisher damping factor: high sensitivity → cautious adjustments
+    damping = 1.0 / (1.0 + _FISHER_KAPPA * fisher)
+
+    for realm_name, realm in state.realms.items():
+        grad = state.natural_gradient.get(realm_name, 0.0)
+
+        # 1. Gradient momentum: move modifier in direction of natural gradient
+        momentum = _GRADIENT_LR * grad * damping
+
+        # 2. KL equilibrium pull: underperforming realms get a boost
+        # when the system is far from equilibrium
+        if grad < 0 and kl > 0:
+            # Declining realm + high inequality → support
+            equilibrium_pull = _KL_PULL_STRENGTH * kl * damping
+        else:
+            equilibrium_pull = 0.0
+
+        # 3. Mean-reversion: decay modifier toward 1.0 to prevent drift
+        current = realm.reward_modifier
+        reversion = _MODIFIER_DECAY * (1.0 - current)
+
+        # Apply combined adjustment
+        new_modifier = current + momentum + equilibrium_pull + reversion
+
+        # Clamp to safe range
+        realm.reward_modifier = max(_MODIFIER_MIN, min(_MODIFIER_MAX, new_modifier))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Combined update — called once per tick from engine
 # ─────────────────────────────────────────────────────────────────────────────
 
 def tick_dynamics(state: SimState):
-    """Run all five theoretical dynamics for this tick."""
+    """Run all five theoretical dynamics + natural gradient feedback for this tick."""
     update_thermodynamics(state)
     update_bellman_values(state)
     evolve_strategies(state)
     detect_avalanche(state)
     update_information_geometry(state)
+    apply_natural_gradient_feedback(state)

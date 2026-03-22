@@ -89,7 +89,7 @@ def compute_tick(state: SimState, realm: Realm, agents: list[Agent]):
 
         # Selection pressure amplifies the gap: ratio^pressure
         amplified = fitness_ratio ** realm.selection_pressure
-        reward = realm.base_reward * amplified / difficulty
+        reward = realm.base_reward * realm.reward_modifier * amplified / difficulty
 
         # Probability of successful mining scales with energy
         if state.rng.random() < agent.energy / 100:
@@ -145,7 +145,7 @@ def memory_tick(state: SimState, realm: Realm, agents: list[Agent]):
     # Pool decays naturally
     entropy_factor = min(2.0, 1.0 + realm.realm_entropy * 0.3)
     realm.knowledge_pool *= (1 - decay_rate)  # decay
-    pool_contribution = realm.base_reward * 0.2 * entropy_factor * len(agents)
+    pool_contribution = realm.base_reward * realm.reward_modifier * 0.2 * entropy_factor * len(agents)
     realm.knowledge_pool += pool_contribution
 
     # ── Per-agent rewards ──
@@ -157,7 +157,7 @@ def memory_tick(state: SimState, realm: Realm, agents: list[Agent]):
 
         age = max(1, state.tick - agent.created_tick)
         # "Knowledge energy" — tenure-based, with decay
-        knowledge_energy = realm.base_reward * (1 - decay_rate) ** age
+        knowledge_energy = realm.base_reward * realm.reward_modifier * (1 - decay_rate) ** age
 
         # Boltzmann factor: P ∝ exp(-E/T) where low E = high knowledge
         # Invert: high tenure → low "energy cost" → higher probability
@@ -240,14 +240,15 @@ def network_tick(state: SimState, realm: Realm, agents: list[Agent]):
     realm.route_efficiency = max(0.1, min(3.0, v + alpha * (r + gamma * v - v)))
 
     # ── Per-agent rewards ──
-    congestion_penalty = realm.congestion * realm.base_reward * 0.5
+    effective_reward = realm.base_reward * realm.reward_modifier
+    congestion_penalty = realm.congestion * effective_reward * 0.5
 
     for agent in agents:
         if agent.energy <= 0:
             continue
 
         # Base routing reward scaled by learned efficiency
-        base = realm.base_reward * realm.route_efficiency / max(1, n)
+        base = effective_reward * realm.route_efficiency / max(1, n)
         # Subtract congestion cost
         reward = max(0.01, base - congestion_penalty / max(1, n))
 
@@ -352,10 +353,11 @@ def information_tick(state: SimState, realm: Realm, agents: list[Agent]):
 
         # Channel capacity reward: C determines max reward rate
         capacity = agent_capacity.get(agent.id, 1.0)
-        capacity_reward = realm.base_reward * capacity / (math.log2(1 + 100 / base_noise) + 1e-9)
+        effective_reward = realm.base_reward * realm.reward_modifier
+        capacity_reward = effective_reward * capacity / (math.log2(1 + 100 / base_noise) + 1e-9)
 
         # Mutual information bonus: collaboration reward
-        mi_bonus = realm.mutual_information * 0.1 * realm.base_reward / max(1, len(agents))
+        mi_bonus = realm.mutual_information * 0.1 * effective_reward / max(1, len(agents))
 
         # Apply redundancy factor
         reward = max(0.01, (capacity_reward + mi_bonus) * max(0.3, redundancy_factor))
