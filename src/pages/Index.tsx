@@ -301,13 +301,21 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
     const dustPoints = new THREE.Points(dustGeo, dustMat);
     world.add(dustPoints);
 
+    // Filter agents by visibility
+    const GROUP_COLORS = { zhihuiti: "#eab308", hedge_fund: "#3b82f6" };
+    const visibleAgents = agents.filter(a => {
+      if (a.group === "zhihuiti" && !showZhihuiti) return false;
+      if (a.group === "hedge_fund" && !showHedgeFund) return false;
+      return true;
+    });
+
     // Position agents
     const realmIdx: Record<string, number> = { central: 0, research: 0, execution: 0 };
     const realmCounts: Record<string, number> = {};
-    agents.forEach((a) => {realmCounts[a.realm] = (realmCounts[a.realm] || 0) + 1;});
+    visibleAgents.forEach((a) => {realmCounts[a.realm] = (realmCounts[a.realm] || 0) + 1;});
 
     const positions: Record<string, THREE.Vector3> = {};
-    agents.forEach((a) => {
+    visibleAgents.forEach((a) => {
       const rc = realmCounts[a.realm] || 1;
       const idx = realmIdx[a.realm] || 0;
       realmIdx[a.realm] = idx + 1;
@@ -335,12 +343,13 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
     });
 
     // Agent nodes
-    const maxBudget = Math.max(...agents.map((x) => x.budget), 1);
-    agents.forEach((a) => {
+    const maxBudget = Math.max(...visibleAgents.map((x) => x.budget), 1);
+    visibleAgents.forEach((a) => {
       const pos = positions[a.id];
       if (!pos) return;
       const size = 0.18 + a.budget / maxBudget * 0.45;
-      const color = REALM_COLORS[a.realm] || "#888";
+      // Use group-based color: gold for zhihuiti, blue for hedge_fund, fallback to realm color
+      const color = a.group ? GROUP_COLORS[a.group] : (REALM_COLORS[a.realm] || "#888");
 
       const glowGeo = new THREE.SphereGeometry(size * 2, 16, 16);
       const glowMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: a.alive ? 0.06 : 0.02 });
@@ -357,6 +366,28 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
       world.add(mesh);
 
       nodesRef.current[a.id] = { mesh, glow, baseY: pos.y, size };
+
+      // Add name label sprite for alphaarena agents
+      if (a.name) {
+        const labelCanvas = document.createElement("canvas");
+        labelCanvas.width = 512;labelCanvas.height = 64;
+        const lctx = labelCanvas.getContext("2d")!;
+        lctx.clearRect(0, 0, 512, 64);
+        lctx.font = "bold 28px 'Inter', system-ui, sans-serif";
+        lctx.textAlign = "center";
+        lctx.textBaseline = "middle";
+        lctx.shadowColor = color;
+        lctx.shadowBlur = 8;
+        lctx.fillStyle = color;
+        lctx.fillText(a.name, 256, 32);
+        const labelTex = new THREE.CanvasTexture(labelCanvas);
+        labelTex.needsUpdate = true;
+        const labelSpriteMat = new THREE.SpriteMaterial({ map: labelTex, transparent: true, opacity: 0.7, depthWrite: false });
+        const labelSprite = new THREE.Sprite(labelSpriteMat);
+        labelSprite.position.set(pos.x, pos.y + size + 0.5, pos.z);
+        labelSprite.scale.set(2.5, 0.32, 1);
+        world.add(labelSprite);
+      }
     });
 
     // ── Helper: spawn ripple ring ───────────────────────────────
