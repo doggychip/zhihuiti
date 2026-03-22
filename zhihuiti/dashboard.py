@@ -187,9 +187,16 @@ DASHBOARD_HTML = """<!DOCTYPE html>
 <body>
 <h1><span>智慧体</span> zhihuiti Dashboard</h1>
 <div class="refresh"><button onclick="location.reload()">Refresh</button> <span style="color:#606070">Auto-refresh: 10s</span></div>
-<div class="grid" id="dashboard"></div>
+<div class="grid" id="dashboard"><p style="color:#606070;text-align:center;padding:40px">Loading...</p></div>
 <script>
-let DATA = __DATA__;
+function loadAndRender() {
+fetch('/api/data').then(r=>r.json()).then(DATA=>{renderDashboard(DATA)}).catch(e=>{
+  document.getElementById('dashboard').innerHTML='<p style="color:red;padding:40px">Error loading data: '+e+'</p>';
+});
+}
+loadAndRender();
+setInterval(loadAndRender, 10000);
+function renderDashboard(DATA) {
 
 function m(label, value, cls) {
   return `<div class="metric"><span class="label">${label}</span><span class="value ${cls||''}">${value}</span></div>`;
@@ -356,7 +363,7 @@ html += renderCard('📨', 'Agent Messaging', [
 // Goal History
 if (DATA.goal_history && DATA.goal_history.length) {
   let rows = DATA.goal_history.map(g =>
-    `<tr><td>${g.goal.slice(0,30)}</td><td>${g.task_count}</td><td>${g.avg_score.toFixed(2)}</td></tr>`
+    `<tr><td>${(g.goal||'').slice(0,30)}</td><td>${g.task_count||0}</td><td>${(g.avg_score||0).toFixed(2)}</td></tr>`
   ).join('');
   html += renderCard('📚', `Goal History (${DATA.goal_history.length})`,
     `<table><tr><th>Goal</th><th>Tasks</th><th>Score</th></tr>${rows}</table>`
@@ -373,9 +380,7 @@ html += renderCard('💾', 'Memory', [
 ].join(''));
 
 document.getElementById('dashboard').innerHTML = html;
-
-// Auto-refresh every 10 seconds
-setTimeout(() => location.reload(), 10000);
+} // end renderDashboard
 </script>
 </body>
 </html>"""
@@ -437,12 +442,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def _serve_html(self):
-        data = _gather_data(self.orchestrator) if self.orchestrator else {}
-        html = DASHBOARD_HTML.replace("__DATA__", json.dumps(data))
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.end_headers()
-        self.wfile.write(html.encode())
+        self.wfile.write(DASHBOARD_HTML.encode())
 
     def _add_cors(self):
         """Add CORS headers to every response for Lovable cross-origin access."""
