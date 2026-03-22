@@ -34,6 +34,8 @@ interface Agent {
   generation: number;
   tasks: number;
   parentId?: string;
+  name?: string;
+  group?: "zhihuiti" | "hedge_fund";
 }
 
 interface Connection {
@@ -195,13 +197,8 @@ interface BankruptEffect {
 }
 
 // ── 3D Agent Graph (with effects) ───────────────────────────────
-function ThreeGraph({ agents, connections, onSelect, selectedId, events
-
-
-
-
-
-}: {agents: Agent[];connections: Connection[];onSelect: (id: string) => void;selectedId: string | null;events: TaskEvent[];}) {
+function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhihuiti = true, showHedgeFund = true
+}: {agents: Agent[];connections: Connection[];onSelect: (id: string) => void;selectedId: string | null;events: TaskEvent[];showZhihuiti?: boolean;showHedgeFund?: boolean;}) {
   const mountRef = useRef<HTMLDivElement>(null);
   const nodesRef = useRef<Record<string, {mesh: THREE.Mesh;glow: THREE.Mesh;baseY: number;size: number;}>>({});
   const frameRef = useRef(0);
@@ -304,13 +301,21 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events
     const dustPoints = new THREE.Points(dustGeo, dustMat);
     world.add(dustPoints);
 
+    // Filter agents by visibility
+    const GROUP_COLORS = { zhihuiti: "#eab308", hedge_fund: "#3b82f6" };
+    const visibleAgents = agents.filter(a => {
+      if (a.group === "zhihuiti" && !showZhihuiti) return false;
+      if (a.group === "hedge_fund" && !showHedgeFund) return false;
+      return true;
+    });
+
     // Position agents
     const realmIdx: Record<string, number> = { central: 0, research: 0, execution: 0 };
     const realmCounts: Record<string, number> = {};
-    agents.forEach((a) => {realmCounts[a.realm] = (realmCounts[a.realm] || 0) + 1;});
+    visibleAgents.forEach((a) => {realmCounts[a.realm] = (realmCounts[a.realm] || 0) + 1;});
 
     const positions: Record<string, THREE.Vector3> = {};
-    agents.forEach((a) => {
+    visibleAgents.forEach((a) => {
       const rc = realmCounts[a.realm] || 1;
       const idx = realmIdx[a.realm] || 0;
       realmIdx[a.realm] = idx + 1;
@@ -338,12 +343,13 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events
     });
 
     // Agent nodes
-    const maxBudget = Math.max(...agents.map((x) => x.budget), 1);
-    agents.forEach((a) => {
+    const maxBudget = Math.max(...visibleAgents.map((x) => x.budget), 1);
+    visibleAgents.forEach((a) => {
       const pos = positions[a.id];
       if (!pos) return;
       const size = 0.18 + a.budget / maxBudget * 0.45;
-      const color = REALM_COLORS[a.realm] || "#888";
+      // Use group-based color: gold for zhihuiti, blue for hedge_fund, fallback to realm color
+      const color = a.group ? GROUP_COLORS[a.group] : (REALM_COLORS[a.realm] || "#888");
 
       const glowGeo = new THREE.SphereGeometry(size * 2, 16, 16);
       const glowMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: a.alive ? 0.06 : 0.02 });
@@ -360,6 +366,28 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events
       world.add(mesh);
 
       nodesRef.current[a.id] = { mesh, glow, baseY: pos.y, size };
+
+      // Add name label sprite for alphaarena agents
+      if (a.name) {
+        const labelCanvas = document.createElement("canvas");
+        labelCanvas.width = 512;labelCanvas.height = 64;
+        const lctx = labelCanvas.getContext("2d")!;
+        lctx.clearRect(0, 0, 512, 64);
+        lctx.font = "bold 28px 'Inter', system-ui, sans-serif";
+        lctx.textAlign = "center";
+        lctx.textBaseline = "middle";
+        lctx.shadowColor = color;
+        lctx.shadowBlur = 8;
+        lctx.fillStyle = color;
+        lctx.fillText(a.name, 256, 32);
+        const labelTex = new THREE.CanvasTexture(labelCanvas);
+        labelTex.needsUpdate = true;
+        const labelSpriteMat = new THREE.SpriteMaterial({ map: labelTex, transparent: true, opacity: 0.7, depthWrite: false });
+        const labelSprite = new THREE.Sprite(labelSpriteMat);
+        labelSprite.position.set(pos.x, pos.y + size + 0.5, pos.z);
+        labelSprite.scale.set(2.5, 0.32, 1);
+        world.add(labelSprite);
+      }
     });
 
     // ── Helper: spawn ripple ring ───────────────────────────────
@@ -570,7 +598,7 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events
       if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
       renderer.dispose();
     };
-  }, [agents, connections, selectedId, onSelect]);
+  }, [agents, connections, selectedId, onSelect, showZhihuiti, showHedgeFund]);
 
   // React to new events and trigger 3D effects
   useEffect(() => {
@@ -1314,6 +1342,8 @@ export default function ZhihuiTiDashboard() {
   const [graphFullscreen, setGraphFullscreen] = useState(false);
   const [booted, setBooted] = useState(false);
   const handleBootComplete = useCallback(() => setBooted(true), []);
+  const [showZhihuiti, setShowZhihuiti] = useState(true);
+  const [showHedgeFund, setShowHedgeFund] = useState(true);
 
   // Run Goal state
   const [goalInput, setGoalInput] = useState("");
@@ -1414,7 +1444,28 @@ export default function ZhihuiTiDashboard() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  const agents: Agent[] = data?.agents || [];
+  const coreAgents: Agent[] = data?.agents || [];
+
+  // Parse alphaarena agents from API and merge
+  const alphaArenaAgents: Agent[] = useMemo(() => {
+    const raw = (data as any)?.alphaarena?.agents;
+    if (!Array.isArray(raw)) return [];
+    return raw.map((a: any) => ({
+      id: a.id,
+      role: a.name || a.id,
+      name: a.name,
+      budget: (a.compositeScore || 0.5) * 200,
+      avg_score: a.winRate || 0.5,
+      alive: true,
+      realm: a.type === "algo_bot" ? "central" : "research",
+      life_state: "active",
+      generation: 0,
+      tasks: 0,
+      group: (a.type === "algo_bot" ? "zhihuiti" : "hedge_fund") as "zhihuiti" | "hedge_fund",
+    }));
+  }, [data]);
+
+  const agents: Agent[] = useMemo(() => [...coreAgents, ...alphaArenaAgents], [coreAgents, alphaArenaAgents]);
   const events = useSimulatedFeed(agents);
 
   if (!data) return (
@@ -1787,7 +1838,7 @@ export default function ZhihuiTiDashboard() {
           <div className={`flex-1 flex flex-col relative ${graphFullscreen ? "" : ""}`}
           style={graphFullscreen ? { position: "fixed", inset: 0, zIndex: 9999, background: "#08080f" } : undefined}>
               <ResizableWidget defaultHeight={400} minHeight={150} maxHeight={800} className="flex-1 relative">
-                <ThreeGraph agents={agents} connections={connections} onSelect={handleSelect} selectedId={selected} events={events} />
+                <ThreeGraph agents={agents} connections={connections} onSelect={handleSelect} selectedId={selected} events={events} showZhihuiti={showZhihuiti} showHedgeFund={showHedgeFund} />
                 {/* Fullscreen toggle */}
                 <button
                 onClick={() => setGraphFullscreen((f) => !f)}
@@ -1802,8 +1853,28 @@ export default function ZhihuiTiDashboard() {
                 
                   {graphFullscreen ? "✕" : "⛶"}
                 </button>
-                <div className="absolute bottom-4 left-4 flex items-center gap-3">
+                <div className="absolute bottom-4 left-4 flex items-center gap-3 z-10">
                   <span className="text-xs" style={{ color: "rgba(255,255,255,0.15)" }}>drag to rotate · click node for details</span>
+                  <button
+                    onClick={() => setShowZhihuiti(s => !s)}
+                    className="text-[10px] px-2 py-1 rounded cursor-pointer transition-colors"
+                    style={{
+                      background: showZhihuiti ? "rgba(234,179,8,0.15)" : "rgba(255,255,255,0.05)",
+                      color: showZhihuiti ? "#eab308" : "rgba(255,255,255,0.3)",
+                      border: `1px solid ${showZhihuiti ? "rgba(234,179,8,0.3)" : "rgba(255,255,255,0.08)"}`
+                    }}>
+                    🟡 ZhihuiTi ({alphaArenaAgents.filter(a => a.group === "zhihuiti").length})
+                  </button>
+                  <button
+                    onClick={() => setShowHedgeFund(s => !s)}
+                    className="text-[10px] px-2 py-1 rounded cursor-pointer transition-colors"
+                    style={{
+                      background: showHedgeFund ? "rgba(59,130,246,0.15)" : "rgba(255,255,255,0.05)",
+                      color: showHedgeFund ? "#3b82f6" : "rgba(255,255,255,0.3)",
+                      border: `1px solid ${showHedgeFund ? "rgba(59,130,246,0.3)" : "rgba(255,255,255,0.08)"}`
+                    }}>
+                    🔵 Hedge Fund ({alphaArenaAgents.filter(a => a.group === "hedge_fund").length})
+                  </button>
                   <button
                   onClick={() => setShowCollision((s) => !s)}
                   className="text-[10px] px-2 py-1 rounded cursor-pointer transition-colors"
@@ -1812,7 +1883,6 @@ export default function ZhihuiTiDashboard() {
                     color: showCollision ? "#f472b6" : "rgba(255,255,255,0.4)",
                     border: `1px solid ${showCollision ? "rgba(244,114,182,0.3)" : "rgba(255,255,255,0.08)"}`
                   }}>
-                  
                     ⚛️ Collision Engine
                   </button>
                 </div>
