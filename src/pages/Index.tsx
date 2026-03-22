@@ -1894,7 +1894,8 @@ export default function ZhihuiTiDashboard() {
 
               {/* Bottom charts — hidden in fullscreen */}
               {!graphFullscreen &&
-            <div className="h-44 flex gap-4 px-4 pb-3" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+            <ResizableWidget defaultHeight={176} minHeight={80} maxHeight={500}>
+            <div className="flex gap-4 px-4 pb-3 h-full" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
                   <div className="flex-1 pt-3">
                     <div className="text-xs uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>Token Economy</div>
                     <ResponsiveContainer width="100%" height="85%">
@@ -1939,6 +1940,7 @@ export default function ZhihuiTiDashboard() {
                     </div>
                   </div>
                 </div>
+            </ResizableWidget>
             }
 
               {/* AlphaArena Leaderboard — hidden in fullscreen */}
