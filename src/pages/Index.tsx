@@ -312,12 +312,14 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events }: {
       const rc = realmCounts[a.realm] || 1;
       const idx = realmIdx[a.realm] || 0;
       realmIdx[a.realm] = idx + 1;
-      const angle = (idx / rc) * Math.PI * 2 + (a.realm === "research" ? 0.3 : a.realm === "execution" ? 1.2 : 2.5);
-      const r = a.realm === "central" ? 2.5 : a.realm === "research" ? 5.5 : 7.5;
-      const y = (Math.random() - 0.5) * 3;
+      const baseAngle = (idx / rc) * Math.PI * 2 + (a.realm === "research" ? 0.3 : a.realm === "execution" ? 1.2 : 2.5);
+      const angle = baseAngle + (Math.random() - 0.5) * (Math.PI / rc);
+      const baseR = a.realm === "central" ? 2.5 : a.realm === "research" ? 5.5 : 7.5;
+      const r = baseR + (Math.random() - 0.5) * 3;
+      const y = (Math.random() - 0.5) * 5;
       positions[a.id] = new THREE.Vector3(
-        Math.cos(angle) * r + (Math.random() - 0.5), y,
-        Math.sin(angle) * r + (Math.random() - 0.5)
+        Math.cos(angle) * r + (Math.random() - 0.5) * 2, y,
+        Math.sin(angle) * r + (Math.random() - 0.5) * 2
       );
     });
 
