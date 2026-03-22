@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import uuid
 from typing import TYPE_CHECKING
 
@@ -75,8 +76,15 @@ def _parse_tool_request(response: str) -> str | None:
 
     Returns the command string if the agent requested a tool,
     or None if no tool request.
+
+    Supports three formats:
+    1. Proper JSON: {"action": "tool", "command": "curl -s ..."}
+    2. JSON in code fences: ```json\n{"action":"tool",...}\n```
+    3. Bare commands in text: detects curl/gh commands and extracts them
     """
     stripped = response.strip()
+
+    # Strip code fences
     if stripped.startswith("```"):
         lines = stripped.split("\n")
         lines = lines[1:]
@@ -84,15 +92,44 @@ def _parse_tool_request(response: str) -> str | None:
             lines = lines[:-1]
         stripped = "\n".join(lines).strip()
 
+    # Try JSON parse first
     try:
         data = json.loads(stripped)
+        if isinstance(data, dict) and data.get("action") == "tool":
+            command = data.get("command", "")
+            if command:
+                return command
     except (json.JSONDecodeError, ValueError):
-        return None
+        pass
 
-    if isinstance(data, dict) and data.get("action") == "tool":
-        command = data.get("command", "")
-        if command:
-            return command
+    # Try to find JSON embedded in text
+    for match in re.finditer(r'\{[^{}]*"action"\s*:\s*"tool"[^{}]*\}', response):
+        try:
+            data = json.loads(match.group())
+            if data.get("command"):
+                return data["command"]
+        except (json.JSONDecodeError, ValueError):
+            continue
+
+    # Fallback: detect bare curl/gh commands in text
+    # Look for commands in code blocks first
+    code_block_pattern = re.compile(r'```(?:bash|sh|shell)?\s*\n((?:curl|gh)\s+[^\n]+)\n```', re.IGNORECASE)
+    m = code_block_pattern.search(response)
+    if m:
+        return m.group(1).strip()
+
+    # Look for bare curl/gh commands on their own line
+    for line in response.split("\n"):
+        line = line.strip()
+        # Remove common prefixes like "$ ", "> ", "Run: ", etc.
+        for prefix in ["$ ", "> ", "Run: ", "Execute: ", "Command: "]:
+            if line.startswith(prefix):
+                line = line[len(prefix):].strip()
+        # Check if it's a curl or gh command
+        if line.startswith(("curl ", "gh ")) and len(line) > 10:
+            # Avoid matching explanatory text like "curl is a tool..."
+            if " is " not in line[:30] and " can " not in line[:30]:
+                return line
 
     return None
 
