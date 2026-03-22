@@ -2338,6 +2338,141 @@ THEORY_REGISTRY: dict[str, dict] = {
         "conservation": {"unitarity_of_isometries"},
         "structure": "renormalization_hierarchy",
     },
+    # ── Sequential Decision Making ─────────────────────────────────────
+    "multi_armed_bandit": {
+        "display_name": "Multi-Armed Bandit / UCB",
+        "domain": "Reinforcement Learning",
+        "equation": "UCB: a* = argmax[μ̂ₐ + c√(ln t / Nₐ)];  regret R_T = T μ* − Σ μ_{aₜ};  Thompson: sample θₐ ~ posterior, play argmax θₐ",
+        "update_form": "index_policy_update",
+        "optimization": "minimize_cumulative_regret",
+        "fixed_points": "optimal_arm",
+        "operators": {"confidence_bound", "posterior_update",
+                      "regret_decomposition", "exploration_bonus"},
+        "patterns": {
+            "exploration_exploitation",
+            "bayesian_inference",
+            "information_gain",
+            "energy_minimization",
+            "optimal_inference",
+        },
+        "variables": {
+            "state": "arm_statistics",
+            "energy": "cumulative_regret",
+            "information": "posterior_uncertainty",
+            "dynamics": "sequential_allocation",
+        },
+        "conservation": {"total_pulls_equal_time"},
+        "structure": "bellman_recursion",
+    },
+
+    # ── Measure-Theoretic Optimization ───────────────────────────────────
+    "wasserstein_gradient_flow": {
+        "display_name": "Wasserstein Gradient Flow",
+        "domain": "Optimization",
+        "equation": "∂ρ/∂t = ∇·(ρ∇(δF/δρ));  JKO: ρ_{k+1} = argmin[F(ρ) + W₂²(ρ,ρₖ)/2τ];  F(ρ) = ∫ρlogρ + ∫ρV + ∫∫ρWρ",
+        "update_form": "jko_proximal_step",
+        "optimization": "minimize_free_energy_functional",
+        "fixed_points": "stationary_measure",
+        "operators": {"wasserstein_distance", "functional_derivative",
+                      "continuity_equation", "proximal_operator", "gradient"},
+        "patterns": {
+            "variational_principle",
+            "energy_minimization",
+            "gradient_descent",
+            "energy_entropy_tradeoff",
+            "dual_variables",
+        },
+        "variables": {
+            "state": "probability_density",
+            "energy": "free_energy_functional",
+            "dynamics": "continuity_equation",
+            "coupling": "interaction_potential",
+        },
+        "conservation": {"probability_mass_conservation"},
+        "structure": "dynamical_system_on_manifold",
+    },
+
+    # ── Particle Variational Inference ───────────────────────────────────
+    "stein_variational": {
+        "display_name": "Stein Variational Gradient Descent (SVGD)",
+        "domain": "Machine Learning",
+        "equation": "xᵢ ← xᵢ + ε φ*(xᵢ);  φ* = argmax_{||φ||≤1} −d/dε KL(T_ε q || p);  φ*(x) = E_q[k(x',x)∇log p(x') + ∇_{x'}k(x',x)]",
+        "update_form": "kernel_gradient_transport",
+        "optimization": "minimize_kl_divergence",
+        "fixed_points": "posterior_particle_approximation",
+        "operators": {"stein_operator", "kernel_evaluation", "gradient",
+                      "repulsive_force", "functional_gradient"},
+        "patterns": {
+            "gradient_descent",
+            "bayesian_inference",
+            "energy_minimization",
+            "pairwise_coupling",
+            "variational_principle",
+            "energy_entropy_tradeoff",
+        },
+        "variables": {
+            "state": "particle_positions",
+            "energy": "kl_divergence",
+            "coupling": "kernel_gram_matrix",
+            "dynamics": "deterministic_particle_flow",
+        },
+        "conservation": set(),
+        "structure": "optimization_over_parameter_space",
+    },
+
+    # ── Continuous-Depth Networks ────────────────────────────────────────
+    "neural_ode": {
+        "display_name": "Neural ODE",
+        "domain": "Machine Learning",
+        "equation": "dh/dt = f_θ(h,t);  h(T) = h(0) + ∫₀ᵀ f_θ(h,t)dt;  adjoint: da/dt = −aᵀ ∂f/∂h;  ∂L/∂θ = −∫ aᵀ ∂f/∂θ dt",
+        "update_form": "adjoint_sensitivity",
+        "optimization": "minimize_loss_via_adjoint",
+        "fixed_points": "trained_vector_field",
+        "operators": {"ode_solver", "adjoint_method", "gradient",
+                      "vector_field", "flow_map"},
+        "patterns": {
+            "gradient_descent",
+            "energy_minimization",
+            "variational_principle",
+            "compositional_structure",
+            "conservation_law",
+        },
+        "variables": {
+            "state": "hidden_trajectory",
+            "energy": "terminal_loss",
+            "dynamics": "learned_vector_field",
+            "control": "network_parameters",
+        },
+        "conservation": {"flow_invertibility"},
+        "structure": "dynamical_system_on_manifold",
+    },
+
+    # ── Causal Reasoning ─────────────────────────────────────────────────
+    "causal_inference": {
+        "display_name": "Causal Inference / do-calculus",
+        "domain": "Statistics",
+        "equation": "P(y|do(x)) = Σ_z P(y|x,z)P(z);  backdoor: P(y|do(x)) = Σ_z P(y|x,z)P(z);  frontdoor;  counterfactual: Y_x(u)",
+        "update_form": "interventional_query",
+        "optimization": "identify_causal_effect",
+        "fixed_points": "causal_estimand",
+        "operators": {"do_operator", "d_separation", "graph_surgery",
+                      "adjustment_formula", "counterfactual_reasoning"},
+        "patterns": {
+            "bayesian_inference",
+            "compositional_structure",
+            "structural_isomorphism",
+            "information_gain",
+            "optimal_inference",
+        },
+        "variables": {
+            "state": "causal_graph",
+            "energy": "interventional_distribution",
+            "coupling": "structural_equations",
+            "information": "identifiability_conditions",
+        },
+        "conservation": {"markov_compatibility"},
+        "structure": "graphical_model_structure",
+    },
 }
 
 
