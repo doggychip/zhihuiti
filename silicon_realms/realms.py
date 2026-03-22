@@ -21,6 +21,13 @@ Each realm is governed by a dominant theoretical framework:
     penalizes overcrowding.  Agents earn proportional to learned
     routing quality.
 
+  Information  →  Information Theory (Shannon)
+    Agents are information channels with signal-to-noise ratios.
+    Channel capacity C = log₂(1 + SNR) determines max reward rate.
+    Mutual information between agents drives collaboration bonuses.
+    Noise level evolves with wealth volatility; redundancy provides
+    resilience but limits efficiency.
+
 Cross-realm: SOC avalanches cascade — a large wealth drop in one
 realm spills over as reduced rewards in neighbouring realms.
 """
@@ -250,6 +257,110 @@ def network_tick(state: SimState, realm: Realm, agents: list[Agent]):
         agent.energy -= 1
 
 
+# ─── Information Realm: Information Theory (Shannon) ─────────────────────
+
+def information_tick(state: SimState, realm: Realm, agents: list[Agent]):
+    """
+    Shannon information-theoretic economy.
+
+    1. Each agent is an information channel.  Signal = wealth, Noise = wealth
+       volatility (from fitness_history).  SNR = signal / noise.
+    2. Channel capacity C = log₂(1 + SNR) — limits the max reward rate.
+    3. Mutual information: agents with similar wealth profiles share information
+       efficiently → collaboration bonus.
+    4. Redundancy: when many agents carry similar information, marginal value
+       decreases (diminishing returns from duplication).
+    5. Realm noise evolves: high wealth variance → high noise → lower capacity.
+    """
+    if not agents:
+        return
+
+    base_noise = realm.params.get("base_noise", 0.5)
+
+    # ── Realm-wide noise: driven by wealth volatility ──
+    volatilities = []
+    for a in agents:
+        if len(a.fitness_history) >= 2:
+            diffs = [abs(a.fitness_history[i] - a.fitness_history[i - 1])
+                     for i in range(1, len(a.fitness_history))]
+            volatilities.append(sum(diffs) / len(diffs))
+        else:
+            volatilities.append(base_noise)
+
+    realm.noise_level = max(0.01, sum(volatilities) / len(volatilities)) if volatilities else base_noise
+
+    # ── Per-agent SNR and channel capacity ──
+    agent_capacity = {}
+    for a in agents:
+        signal = max(0.01, a.balance + a.staked)
+        # Individual noise: agent's own volatility
+        if len(a.fitness_history) >= 2:
+            diffs = [abs(a.fitness_history[i] - a.fitness_history[i - 1])
+                     for i in range(1, len(a.fitness_history))]
+            agent_noise = max(0.01, sum(diffs) / len(diffs))
+        else:
+            agent_noise = base_noise
+        snr = signal / agent_noise
+        agent_capacity[a.id] = math.log2(1 + snr)
+
+    # ── Aggregate channel capacity ──
+    total_capacity = sum(agent_capacity.values())
+    realm.channel_capacity = total_capacity / len(agents) if agents else 1.0
+
+    # ── Mutual information: pairwise wealth similarity ──
+    # MI is high when agents have correlated wealth levels
+    wealths = [a.balance + a.staked for a in agents]
+    total_w = sum(wealths) + 1e-9
+    mi = 0.0
+    if len(agents) >= 2:
+        # Approximate MI via normalized wealth correlation
+        mean_w = total_w / len(agents)
+        for i in range(len(agents)):
+            for j in range(i + 1, min(i + 5, len(agents))):  # limit pairs for efficiency
+                wi = wealths[i] / total_w
+                wj = wealths[j] / total_w
+                # Joint vs marginal: higher when wealth is similar
+                joint = (wi + wj) / 2
+                if joint > 1e-12:
+                    mi += joint * math.log2(joint / (wi * wj + 1e-12) + 1e-12)
+        mi = max(0.0, mi)
+    realm.mutual_information = mi
+
+    # ── Redundancy: how concentrated/duplicated the wealth distribution is ──
+    # High redundancy when agents are very similar (low diversity)
+    if len(wealths) >= 2:
+        mean_w = sum(wealths) / len(wealths)
+        variance = sum((w - mean_w) ** 2 for w in wealths) / len(wealths)
+        cv = math.sqrt(variance) / (mean_w + 1e-9)  # coefficient of variation
+        # Low CV = high redundancy (everyone similar), high CV = low redundancy
+        realm.redundancy = max(0.0, 1.0 - min(1.0, cv))
+    else:
+        realm.redundancy = 1.0
+
+    # ── Per-agent rewards ──
+    # Efficiency factor: moderate redundancy is good (resilience), too much is wasteful
+    # Optimal redundancy ~ 0.5 (bell curve penalty)
+    redundancy_factor = 1.0 - 2.0 * (realm.redundancy - 0.5) ** 2
+
+    for agent in agents:
+        if agent.energy <= 0:
+            continue
+
+        # Channel capacity reward: C determines max reward rate
+        capacity = agent_capacity.get(agent.id, 1.0)
+        capacity_reward = realm.base_reward * capacity / (math.log2(1 + 100 / base_noise) + 1e-9)
+
+        # Mutual information bonus: collaboration reward
+        mi_bonus = realm.mutual_information * 0.1 * realm.base_reward / max(1, len(agents))
+
+        # Apply redundancy factor
+        reward = max(0.01, (capacity_reward + mi_bonus) * max(0.3, redundancy_factor))
+
+        if state.rng.random() < agent.energy / 100:
+            mint(state, agent.id, reward)
+            agent.energy -= 1
+
+
 # ─── SOC Avalanche Cascade ──────────────────────────────────────────────
 
 def apply_avalanche_spillover(state: SimState):
@@ -314,4 +425,5 @@ REALM_TICK_FNS = {
     "compute": compute_tick,
     "memory": memory_tick,
     "network": network_tick,
+    "information": information_tick,
 }

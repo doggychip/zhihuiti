@@ -135,7 +135,7 @@ def run(config_path: str, plot: bool = True) -> SimState:
     ticks = config.get("simulation", {}).get("ticks", 100)
     log_interval = config.get("simulation", {}).get("log_interval", 10)
 
-    print("Silicon Realms - Three-Realm Agent Civilization")
+    print("Silicon Realms - Four-Realm Agent Civilization")
     print(f"Running {ticks} ticks with {len(state.agents)} agents...\n")
 
     history = {
@@ -203,6 +203,10 @@ def run(config_path: str, plot: bool = True) -> SimState:
                 "knowledge_pool": r.knowledge_pool,
                 "route_efficiency": r.route_efficiency,
                 "congestion": r.congestion,
+                "channel_capacity": r.channel_capacity,
+                "noise_level": r.noise_level,
+                "mutual_information": r.mutual_information,
+                "redundancy": r.redundancy,
                 "avalanche_exposure": r.avalanche_exposure,
             }
             for name, r in state.realms.items()

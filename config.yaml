@@ -16,6 +16,10 @@ realms:
     capacity: 30
     base_reward: 12
     routing_fee: 0.05
+  information:
+    capacity: 35
+    base_reward: 9
+    base_noise: 0.5
 
 economy:
   initial_supply: 10000

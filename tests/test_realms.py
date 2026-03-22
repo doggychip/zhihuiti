@@ -7,6 +7,7 @@ from silicon_realms.realms import (
     compute_tick,
     memory_tick,
     network_tick,
+    information_tick,
     apply_avalanche_spillover,
     migrate_agent,
 )
@@ -22,6 +23,8 @@ def _make_state(agents=None, seed=42, tick=0, config=None, total_supply=10000):
                         params={"decay_rate": 0.01}),
         "network": Realm(name="network", capacity=30, base_reward=12,
                          params={"routing_fee": 0.05}),
+        "information": Realm(name="information", capacity=35, base_reward=9,
+                             params={"base_noise": 0.5}),
     }
     state = SimState(
         tick=tick,
@@ -338,3 +341,102 @@ class TestMigration:
         agents["migrant"] = migrant
         state = _make_state(agents)
         assert not migrate_agent(state, migrant, "memory")
+
+    def test_migrate_to_information(self):
+        agent = _agent("a", balance=100, realm="compute")
+        state = _make_state({"a": agent})
+        assert migrate_agent(state, agent, "information")
+        assert agent.realm == "information"
+
+
+# ─── Information Realm: Information Theory (Shannon) ─────────────────────
+
+class TestInformationRealm:
+    def test_information_empty_agents(self):
+        state = _make_state()
+        information_tick(state, state.realms["information"], [])  # no crash
+
+    def test_information_rewards_agents(self):
+        agents = {f"a{i}": _agent(f"a{i}", balance=100, realm="information")
+                  for i in range(5)}
+        state = _make_state(agents)
+        initial_supply = state.total_supply
+        information_tick(state, state.realms["information"], list(agents.values()))
+        assert state.total_supply > initial_supply  # tokens were minted
+
+    def test_information_updates_channel_capacity(self):
+        agents = {f"a{i}": _agent(f"a{i}", balance=100, realm="information")
+                  for i in range(5)}
+        state = _make_state(agents)
+        realm = state.realms["information"]
+        information_tick(state, realm, list(agents.values()))
+        assert realm.channel_capacity > 0
+
+    def test_information_updates_noise_level(self):
+        agents = {
+            "stable": _agent("stable", balance=100, realm="information",
+                             fitness_history=[100, 100, 100]),
+            "volatile": _agent("volatile", balance=100, realm="information",
+                               fitness_history=[50, 150, 50]),
+        }
+        state = _make_state(agents)
+        realm = state.realms["information"]
+        information_tick(state, realm, list(agents.values()))
+        assert realm.noise_level > 0
+
+    def test_information_high_snr_earns_more(self):
+        """High-wealth stable agents (high SNR) should earn more."""
+        stable_rich = _agent("sr", balance=1000, realm="information",
+                             fitness_history=[1000, 1000, 1000])
+        volatile_poor = _agent("vp", balance=50, realm="information",
+                               fitness_history=[20, 80, 20])
+        agents = {"sr": stable_rich, "vp": volatile_poor}
+        state = _make_state(agents, seed=42)
+
+        initial_sr = stable_rich.balance
+        initial_vp = volatile_poor.balance
+
+        for _ in range(50):
+            information_tick(state, state.realms["information"],
+                             [stable_rich, volatile_poor])
+
+        sr_gain = stable_rich.balance - initial_sr
+        vp_gain = volatile_poor.balance - initial_vp
+        assert sr_gain > vp_gain
+
+    def test_information_mutual_information_computed(self):
+        agents = {f"a{i}": _agent(f"a{i}", balance=100, realm="information")
+                  for i in range(5)}
+        state = _make_state(agents)
+        realm = state.realms["information"]
+        information_tick(state, realm, list(agents.values()))
+        # MI should be computed (can be 0 for equal wealth)
+        assert realm.mutual_information >= 0
+
+    def test_information_redundancy_high_for_equal_wealth(self):
+        """Equal wealth agents should have high redundancy."""
+        agents = {f"a{i}": _agent(f"a{i}", balance=100, realm="information")
+                  for i in range(10)}
+        state = _make_state(agents)
+        realm = state.realms["information"]
+        information_tick(state, realm, list(agents.values()))
+        assert realm.redundancy > 0.5
+
+    def test_information_redundancy_low_for_diverse_wealth(self):
+        """Diverse wealth agents should have low redundancy."""
+        agents = {
+            "poor": _agent("poor", balance=1, realm="information"),
+            "rich": _agent("rich", balance=10000, realm="information"),
+        }
+        state = _make_state(agents)
+        realm = state.realms["information"]
+        information_tick(state, realm, list(agents.values()))
+        assert realm.redundancy < 0.5
+
+    def test_information_zero_energy_skipped(self):
+        agent = _agent("a", balance=100, realm="information", energy=0)
+        agents = {"a": agent}
+        state = _make_state(agents)
+        initial = state.total_supply
+        information_tick(state, state.realms["information"], [agent])
+        assert state.total_supply == initial  # no minting

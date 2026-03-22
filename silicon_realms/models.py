@@ -50,6 +50,12 @@ class Realm:
     congestion: float = 0.0                   # excess agents above optimal → penalty
     throughput_history: list = field(default_factory=list)  # for TD learning
 
+    # Information realm: information theory (Shannon)
+    channel_capacity: float = 1.0             # aggregate channel capacity C = log₂(1+SNR)
+    noise_level: float = 0.5                  # realm-wide noise (σ²), affects SNR
+    mutual_information: float = 0.0           # aggregate mutual info between agents
+    redundancy: float = 0.0                   # information redundancy in the system
+
     # SOC: cross-realm avalanche state
     avalanche_exposure: float = 0.0           # realm-local cascade severity this tick
 

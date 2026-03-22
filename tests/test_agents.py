@@ -11,6 +11,7 @@ def make_state():
             "compute": {"capacity": 50, "base_reward": 10, "difficulty_growth": 0.02},
             "memory": {"capacity": 40, "base_reward": 8, "decay_rate": 0.01},
             "network": {"capacity": 30, "base_reward": 12, "routing_fee": 0.05},
+            "information": {"capacity": 35, "base_reward": 9, "base_noise": 0.5},
         },
     }
     state = SimState(rng=random.Random(42), config=config)
@@ -24,7 +25,7 @@ def test_create_agents():
     create_agents(config, state)
     assert len(state.agents) == 9
     realms_used = {a.realm for a in state.agents.values()}
-    assert len(realms_used) == 3  # all three realms populated
+    assert len(realms_used) == 4  # all four realms populated
 
 
 def test_agent_decide_returns_valid_action():
