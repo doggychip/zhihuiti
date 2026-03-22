@@ -34,6 +34,25 @@ class Realm:
     base_reward: float
     params: dict = field(default_factory=dict)
 
+    # ── Per-realm theoretical state ──────────────────────────────────────
+    # Compute realm: replicator dynamics
+    selection_pressure: float = 1.0           # amplifies fitness gap → strategy evolution
+    dominant_strategy: str = ""               # current fittest strategy in this realm
+    strategy_fitness: dict = field(default_factory=dict)  # strategy → mean fitness
+
+    # Memory realm: statistical mechanics
+    realm_temperature: float = 1.0            # local knowledge disorder
+    realm_entropy: float = 0.0                # local Shannon entropy of wealth
+    knowledge_pool: float = 0.0               # shared knowledge reservoir
+
+    # Network realm: control theory (Bellman)
+    route_efficiency: float = 1.0             # learned routing quality [0,1]→reward multiplier
+    congestion: float = 0.0                   # excess agents above optimal → penalty
+    throughput_history: list = field(default_factory=list)  # for TD learning
+
+    # SOC: cross-realm avalanche state
+    avalanche_exposure: float = 0.0           # realm-local cascade severity this tick
+
 
 @dataclass
 class Ledger:
