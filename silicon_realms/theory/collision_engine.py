@@ -1921,6 +1921,144 @@ THEORY_REGISTRY: dict[str, dict] = {
         "conservation": {"riemannian_metric_invariance"},
         "structure": "riemannian_manifold_of_distributions",
     },
+
+    # ── Stability Theory ─────────────────────────────────────────────────
+    "lyapunov_stability": {
+        "display_name": "Lyapunov Stability Theory",
+        "domain": "Dynamic Systems",
+        "equation": "V(x) > 0, V(0) = 0;  V̇(x) = ∇V·f(x) ≤ 0;  V̇ < 0 → asymptotic stability;  V̇ ≤ 0 → stability",
+        "update_form": "lyapunov_function_descent",
+        "optimization": None,
+        "fixed_points": "stable_equilibrium",
+        "operators": {"lyapunov_function", "linearization", "eigenvalue_decomposition",
+                      "invariance_principle", "basin_of_attraction"},
+        "patterns": {
+            "fixed_point_stability",
+            "energy_minimization",
+            "topological_invariants",
+            "gradient_descent",
+            "conservation_of_probability",
+        },
+        "variables": {
+            "state": "dynamical_state",
+            "energy": "lyapunov_function",
+            "dynamics": "flow_field",
+            "basin": "region_of_attraction",
+        },
+        "conservation": {"lyapunov_decrease"},
+        "structure": "parameter_dependent_dynamical_system",
+    },
+
+    # ── Optimization (geometry-aware) ────────────────────────────────────
+    "mirror_descent": {
+        "display_name": "Mirror Descent",
+        "domain": "Optimization",
+        "equation": "∇φ(x_{t+1}) = ∇φ(x_t) − η∇f(x_t);  x_{t+1} = argmin{η⟨∇f,x⟩ + D_φ(x,x_t)};  D_φ = Bregman divergence",
+        "update_form": "bregman_proximal",
+        "optimization": "minimize_loss_in_dual",
+        "fixed_points": "constrained_optimum",
+        "operators": {"gradient", "bregman_divergence", "dual_map",
+                      "convex_conjugate", "projection"},
+        "patterns": {
+            "gradient_descent",
+            "dual_variables",
+            "variational_principle",
+            "energy_minimization",
+            "structural_isomorphism",
+            "information_gain",
+        },
+        "variables": {
+            "state": "primal_and_dual_iterates",
+            "energy": "objective_function",
+            "metric": "bregman_divergence",
+            "flow": "mirror_map_direction",
+        },
+        "conservation": {"regret_bound"},
+        "structure": "riemannian_manifold_of_distributions",
+    },
+
+    # ── Generative Models (adversarial) ──────────────────────────────────
+    "gan": {
+        "display_name": "Generative Adversarial Network (GAN)",
+        "domain": "Machine Learning",
+        "equation": "min_G max_D E[log D(x)] + E[log(1−D(G(z)))];  p_G → p_data at Nash equilibrium",
+        "update_form": "alternating_gradient",
+        "optimization": "minimax_saddle_point",
+        "fixed_points": "nash_equilibrium_generative",
+        "operators": {"gradient", "sampling", "discriminator",
+                      "generator", "wasserstein_distance"},
+        "patterns": {
+            "dual_variables",
+            "gradient_descent",
+            "exploration_exploitation",
+            "energy_minimization",
+            "fixed_point_stability",
+            "adversarial",
+        },
+        "variables": {
+            "state": "generator_discriminator_params",
+            "energy": "minimax_value",
+            "dynamics": "adversarial_gradient_updates",
+            "distribution": "generated_distribution",
+        },
+        "conservation": set(),
+        "structure": "minimax_game_over_distributions",
+    },
+
+    # ── Reinforcement Learning (value-based) ─────────────────────────────
+    "td_learning": {
+        "display_name": "Temporal Difference Learning",
+        "domain": "Reinforcement Learning",
+        "equation": "δ_t = r_t + γV(s_{t+1}) − V(s_t);  V(s_t) ← V(s_t) + αδ_t;  TD(λ): e_t = γλe_{t-1} + ∇V(s_t)",
+        "update_form": "bootstrapped_value_update",
+        "optimization": "minimize_td_error",
+        "fixed_points": "value_function_fixed_point",
+        "operators": {"bellman_operator", "eligibility_trace", "gradient",
+                      "temporal_difference", "bootstrapping"},
+        "patterns": {
+            "gradient_descent",
+            "fixed_point_iteration",
+            "exploration_exploitation",
+            "energy_minimization",
+            "prediction_error",
+        },
+        "variables": {
+            "state": "value_function_estimate",
+            "energy": "mean_squared_td_error",
+            "signal": "td_error",
+            "dynamics": "value_iteration_dynamics",
+        },
+        "conservation": {"bellman_consistency"},
+        "structure": "bellman_recursion",
+    },
+
+    # ── Algebraic Graph Theory ───────────────────────────────────────────
+    "spectral_graph_theory": {
+        "display_name": "Spectral Graph Theory",
+        "domain": "Mathematics",
+        "equation": "Lf = λf;  L = D − A;  λ_2 = algebraic connectivity;  h(G) ≤ √(2λ_2) (Cheeger);  f_k = k-th Fiedler vector",
+        "update_form": "eigenvalue_decomposition",
+        "optimization": None,
+        "fixed_points": "graph_laplacian_spectrum",
+        "operators": {"eigenvalue_decomposition", "laplacian", "adjacency",
+                      "graph_fourier_transform", "cheeger_constant"},
+        "patterns": {
+            "universality",
+            "topological_invariants",
+            "pairwise_coupling",
+            "structural_isomorphism",
+            "scale_invariance",
+            "phase_transition",
+        },
+        "variables": {
+            "state": "graph_signal",
+            "energy": "dirichlet_energy",
+            "coupling": "adjacency_matrix",
+            "spectrum": "laplacian_eigenvalues",
+        },
+        "conservation": {"total_edge_weight"},
+        "structure": "graph_operator_spectrum",
+    },
 }
 
 
