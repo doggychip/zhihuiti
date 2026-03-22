@@ -743,6 +743,21 @@ class AutoScheduler:
                 except Exception as e:
                     console.print(f"  [red]Direct trade failed:[/red] {e}")
 
+            # CriticAI content generation every cycle
+            criticai_url = os.environ.get("CRITICAI_URL", "")
+            if criticai_url:
+                try:
+                    import httpx as _httpx
+                    resp = _httpx.post(f"{criticai_url}/api/generate-activity",
+                                       json={}, timeout=30)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        agent_name = data.get("agent", {}).get("name", "?") if isinstance(data.get("agent"), dict) else "?"
+                        activity = data.get("activityType", data.get("type", "activity"))
+                        console.print(f"  [magenta]CriticAI:[/magenta] {agent_name} generated {activity}")
+                except Exception as e:
+                    console.print(f"  [red]CriticAI failed:[/red] {e}")
+
             # Run hedge fund evolution every 3rd cycle
             if self.run_count > 0 and self.run_count % 3 == 0:
                 aa_url = os.environ.get("ALPHAARENA_URL", "")
@@ -807,11 +822,43 @@ def start_dashboard(orch: Orchestrator, port: int = DEFAULT_PORT,
 
         aa_url = os.environ.get("ALPHAARENA_URL", "")
         aa_id = os.environ.get("ALPHAARENA_AGENT_ID", "")
+        aa_key = os.environ.get("ALPHAARENA_API_KEY", "")
         if aa_url and aa_id:
+            # Build trade history context for smarter goals
+            trade_history = ""
+            try:
+                import httpx as _hx
+                trades_resp = _hx.get(f"{aa_url}/api/trades?agentId={aa_id}&limit=10", timeout=10)
+                trades = trades_resp.json()
+                trades_list = trades if isinstance(trades, list) else trades.get("trades", [])
+                if trades_list:
+                    lines = ["## Recent Trade History (learn from these):"]
+                    for t in trades_list[:10]:
+                        pair = t.get("pair", "?")
+                        side = t.get("side", "?")
+                        qty = t.get("quantity", 0)
+                        price = t.get("price", 0)
+                        lines.append(f"  {side} {qty} {pair} @ ${price:,.2f}")
+                    trade_history = "\n".join(lines) + "\n\n"
+            except Exception:
+                pass
+
+            portfolio_context = ""
+            try:
+                port_resp = _hx.get(f"{aa_url}/api/portfolio/{aa_id}", timeout=10)
+                port = port_resp.json()
+                cash = port.get("cashBalance", 0)
+                equity = port.get("totalEquity", 0)
+                positions = port.get("positions", [])
+                pos_str = ", ".join(f"{p.get('pair','?')} {p.get('side','?')} {p.get('quantity',0)}" for p in positions)
+                portfolio_context = f"Current portfolio: ${equity:,.0f} equity, ${cash:,.0f} cash. Positions: {pos_str or 'none'}.\n"
+            except Exception:
+                pass
+
             GOAL_POOL.extend([
-                f"AlphaArena: Check prices at {aa_url}/api/prices. Analyze top 3 movers. Trade if >3% move. Agent: {aa_id}.",
-                f"AlphaArena: Review portfolio at {aa_url}/api/portfolio/{aa_id}. Rebalance if any position >25%.",
-                f"AlphaArena: Analyze BTC and ETH momentum. Compare 24h trends. Trade the stronger one. Agent: {aa_id}.",
+                f"AlphaArena Trading: {portfolio_context}{trade_history}Check prices at {aa_url}/api/prices. Analyze top 3 movers. If any moved >3%, trade. API key: {aa_key}. Agent: {aa_id}.",
+                f"AlphaArena Portfolio Review: {portfolio_context}{trade_history}Review current positions. Close any losing positions (negative unrealizedPnl). API: {aa_url}. Key: {aa_key}. Agent: {aa_id}.",
+                f"AlphaArena Stock Analysis: {portfolio_context}{trade_history}Compare AAPL, TSLA, NVDA performance. Buy the strongest stock. API: {aa_url}. Key: {aa_key}. Agent: {aa_id}.",
             ])
 
         for goal in GOAL_POOL:
