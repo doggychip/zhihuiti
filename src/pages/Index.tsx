@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
+import { ResizableWidget } from "@/components/ResizableWidget";
 import { createPortal } from "react-dom";
 import * as THREE from "three";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -1635,12 +1636,13 @@ export default function ZhihuiTiDashboard() {
           </div>
 
           {/* Live Task Feed */}
+          <ResizableWidget defaultHeight={180} minHeight={60} maxHeight={400}>
           <div className="pb-3 mb-1" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
             <div className="text-xs uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>
               📡 Live Task Feed
               <span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full" style={{ background: "#22c55e", boxShadow: "0 0 6px #22c55e", animation: "bootCursor 1.5s ease-in-out infinite" }} />
             </div>
-            <div className="space-y-1 max-h-40 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
+            <div className="space-y-1 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
               {jobs.length === 0 ?
               <div className="text-xs py-2 text-center" style={{ color: "rgba(255,255,255,0.2)" }}>No active jobs</div> :
 
@@ -1674,49 +1676,75 @@ export default function ZhihuiTiDashboard() {
               }
             </div>
           </div>
+          </ResizableWidget>
 
-          <Stat label="Money Supply" value={`${(econ.money_supply || 0).toLocaleString()} ◆`} sub={`Treasury: ${(econ.treasury_balance || 0).toLocaleString()}`} color="#eab308" />
-          <Stat label="Tasks Completed" value={mem.total_tasks || 0} sub={`Avg score: ${(mem.avg_task_score || 0).toFixed(2)}`} color="#22c55e" />
-          <Stat label="Gene Pool" value={mem.gene_pool_size || 0} sub={`${bl.alive_genes || 0} alive · Gen ${bl.max_generation || 0}`} color="#a855f7" />
-          <Stat label="Auctions Won" value={au.total_auctions || 0} sub={`Saved ${(au.total_savings || 0).toFixed(0)} ◆`} color="#3b82f6" />
+          <ResizableWidget minHeight={50} maxHeight={300}>
+            <Stat label="Money Supply" value={`${(econ.money_supply || 0).toLocaleString()} ◆`} sub={`Treasury: ${(econ.treasury_balance || 0).toLocaleString()}`} color="#eab308" />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={300}>
+            <Stat label="Tasks Completed" value={mem.total_tasks || 0} sub={`Avg score: ${(mem.avg_task_score || 0).toFixed(2)}`} color="#22c55e" />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={300}>
+            <Stat label="Gene Pool" value={mem.gene_pool_size || 0} sub={`${bl.alive_genes || 0} alive · Gen ${bl.max_generation || 0}`} color="#a855f7" />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={300}>
+            <Stat label="Auctions Won" value={au.total_auctions || 0} sub={`Saved ${(au.total_savings || 0).toFixed(0)} ◆`} color="#3b82f6" />
+          </ResizableWidget>
 
+          <ResizableWidget minHeight={50} maxHeight={400}>
           <SystemCard icon="🔍" title="3-Layer Inspection" items={[
           ["Inspections", ins.total_inspections || 0],
           ["Accepted", ins.accepted || 0, "#22c55e"],
           ["Rejected", ins.rejected || 0, "#ef4444"],
           ["Avg Score", (ins.avg_score || 0).toFixed(2)]]
           } />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={400}>
           <SystemCard icon="🚨" title="Circuit Breaker" items={[
           ["Trips", cb.total_trips || 0, cb.total_trips > 0 ? "#ef4444" : "#22c55e"],
           ["Laws Active", cb.laws_active || 0]]
           } />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={400}>
           <SystemCard icon="👁" title="Behavioral Detection" items={[
           ["Violations", bh.total_violations || 0, bh.total_violations > 0 ? "#ef4444" : "#22c55e"],
           ["Agents Flagged", bh.agents_flagged || 0]]
           } />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={400}>
           <SystemCard icon="💳" title="Lending" items={[
           ["Active", ln.active || 0],
           ["Defaulted", ln.defaulted || 0, ln.defaulted > 0 ? "#ef4444" : "#fff"]]
           } />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={400}>
           <SystemCard icon="💱" title="Market / Futures" items={[
           ["Orders", mk.total_orders || 0],
           ["Trades", mk.total_trades || 0],
           ["Stakes", ft.active || 0]]
           } />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={400}>
           <SystemCard icon="⚖️" title="Arbitration" items={[
           ["Disputes", ar.total_disputes || 0],
           ["Resolved", ar.resolved || 0, "#22c55e"]]
           } />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={400}>
           <SystemCard icon="🏭" title="Factory" items={[
           ["Shipped", fa.shipped || 0, "#22c55e"],
           ["QA Fail", fa.qa_fail || 0, fa.qa_fail > 0 ? "#ef4444" : "#fff"]]
           } />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={400}>
           <SystemCard icon="📨" title="Agent Messaging" items={[
           ["Messages", msg.total_messages || 0],
           ["Unread", msg.unread || 0, msg.unread > 0 ? "#eab308" : "#fff"]]
           } />
+          </ResizableWidget>
 
           {goals.length > 0 &&
+          <ResizableWidget minHeight={50} maxHeight={400}>
           <SystemCard icon="📚" title="Goal History" items={
           goals.slice(0, 4).map((g) => [
           (g.goal || "").slice(0, 22) + ((g.goal?.length || 0) > 22 ? "..." : ""),
@@ -1724,6 +1752,7 @@ export default function ZhihuiTiDashboard() {
           (g.avg_score || 0) >= 0.8 ? "#22c55e" : "#eab308"] as
           [string, string, string])
           } />
+          </ResizableWidget>
           }
 
           {/* Connection legend */}
@@ -1865,7 +1894,8 @@ export default function ZhihuiTiDashboard() {
 
               {/* Bottom charts — hidden in fullscreen */}
               {!graphFullscreen &&
-            <div className="h-44 flex gap-4 px-4 pb-3" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+            <ResizableWidget defaultHeight={176} minHeight={80} maxHeight={500}>
+            <div className="flex gap-4 px-4 pb-3 h-full" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
                   <div className="flex-1 pt-3">
                     <div className="text-xs uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>Token Economy</div>
                     <ResponsiveContainer width="100%" height="85%">
@@ -1910,10 +1940,12 @@ export default function ZhihuiTiDashboard() {
                     </div>
                   </div>
                 </div>
+            </ResizableWidget>
             }
 
               {/* AlphaArena Leaderboard — hidden in fullscreen */}
               {!graphFullscreen && agents.length > 0 &&
+            <ResizableWidget defaultHeight={220} minHeight={80} maxHeight={600}>
             <div className="px-4 pb-4" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
                   <div className="pt-3 pb-2 flex items-center gap-2">
                     <span style={{ fontSize: 14 }}>🏟️</span>
@@ -1921,6 +1953,7 @@ export default function ZhihuiTiDashboard() {
                   </div>
                   <LeaderboardTable agents={agents} handleSelect={handleSelect} REALM_COLORS={REALM_COLORS} />
                 </div>
+            </ResizableWidget>
             }
             </div>;
 
