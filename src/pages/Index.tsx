@@ -34,6 +34,8 @@ interface Agent {
   generation: number;
   tasks: number;
   parentId?: string;
+  name?: string;
+  group?: "zhihuiti" | "hedge_fund";
 }
 
 interface Connection {
