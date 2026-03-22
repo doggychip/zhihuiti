@@ -1306,6 +1306,7 @@ export default function ZhihuiTiDashboard() {
   const [selected, setSelected] = useState<string | null>(null);
   const [live, setLive] = useState(true);
   const [showCollision, setShowCollision] = useState(false);
+  const [graphFullscreen, setGraphFullscreen] = useState(false);
   const [booted, setBooted] = useState(false);
   const handleBootComplete = useCallback(() => setBooted(true), []);
 
