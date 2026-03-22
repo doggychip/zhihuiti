@@ -1853,8 +1853,28 @@ export default function ZhihuiTiDashboard() {
                 
                   {graphFullscreen ? "✕" : "⛶"}
                 </button>
-                <div className="absolute bottom-4 left-4 flex items-center gap-3">
+                <div className="absolute bottom-4 left-4 flex items-center gap-3 z-10">
                   <span className="text-xs" style={{ color: "rgba(255,255,255,0.15)" }}>drag to rotate · click node for details</span>
+                  <button
+                    onClick={() => setShowZhihuiti(s => !s)}
+                    className="text-[10px] px-2 py-1 rounded cursor-pointer transition-colors"
+                    style={{
+                      background: showZhihuiti ? "rgba(234,179,8,0.15)" : "rgba(255,255,255,0.05)",
+                      color: showZhihuiti ? "#eab308" : "rgba(255,255,255,0.3)",
+                      border: `1px solid ${showZhihuiti ? "rgba(234,179,8,0.3)" : "rgba(255,255,255,0.08)"}`
+                    }}>
+                    🟡 ZhihuiTi ({alphaArenaAgents.filter(a => a.group === "zhihuiti").length})
+                  </button>
+                  <button
+                    onClick={() => setShowHedgeFund(s => !s)}
+                    className="text-[10px] px-2 py-1 rounded cursor-pointer transition-colors"
+                    style={{
+                      background: showHedgeFund ? "rgba(59,130,246,0.15)" : "rgba(255,255,255,0.05)",
+                      color: showHedgeFund ? "#3b82f6" : "rgba(255,255,255,0.3)",
+                      border: `1px solid ${showHedgeFund ? "rgba(59,130,246,0.3)" : "rgba(255,255,255,0.08)"}`
+                    }}>
+                    🔵 Hedge Fund ({alphaArenaAgents.filter(a => a.group === "hedge_fund").length})
+                  </button>
                   <button
                   onClick={() => setShowCollision((s) => !s)}
                   className="text-[10px] px-2 py-1 rounded cursor-pointer transition-colors"
@@ -1863,7 +1883,6 @@ export default function ZhihuiTiDashboard() {
                     color: showCollision ? "#f472b6" : "rgba(255,255,255,0.4)",
                     border: `1px solid ${showCollision ? "rgba(244,114,182,0.3)" : "rgba(255,255,255,0.08)"}`
                   }}>
-                  
                     ⚛️ Collision Engine
                   </button>
                 </div>
