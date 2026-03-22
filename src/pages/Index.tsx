@@ -1890,7 +1890,7 @@ export default function ZhihuiTiDashboard() {
                   })()}
                   </svg>
                 </div>
-              </div>
+              </ResizableWidget>
 
               {/* Bottom charts — hidden in fullscreen */}
               {!graphFullscreen &&
