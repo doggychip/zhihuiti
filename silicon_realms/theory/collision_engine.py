@@ -1306,6 +1306,64 @@ THEORY_REGISTRY: dict[str, dict] = {
         "conservation": {"walras_law", "total_endowment"},
         "structure": "fixed_point_of_excess_demand",
     },
+
+    # ── Evolutionary Computation ─────────────────────────────────────────
+    "genetic_algorithm": {
+        "display_name": "Genetic Algorithm",
+        "domain": "Evolutionary Game Theory",
+        "equation": "f(t+1) = select(crossover(mutate(f(t))));  P(select xᵢ) ∝ fitness(xᵢ)/⟨fitness⟩",
+        "update_form": "selection_variation_inheritance",
+        "optimization": "maximize_fitness",
+        "fixed_points": "fitness_landscape_peak",
+        "operators": {"selection", "crossover", "mutation", "fitness_evaluation",
+                      "population_dynamics"},
+        "patterns": {
+            "above_average_grows",
+            "frequency_dependent",
+            "exploration_exploitation",
+            "covariance_selection",
+            "energy_minimization",
+            "phase_transition",
+            "population_dynamics",
+        },
+        "variables": {
+            "state": "population_of_genotypes",
+            "score": "fitness",
+            "dynamics": "selection_pressure",
+            "coupling": "crossover_rate",
+        },
+        "conservation": {"population_size"},
+        "structure": "iterative_population_based_search",
+    },
+
+    # ── Machine Learning (generative, extended) ──────────────────────────
+    "variational_autoencoder": {
+        "display_name": "Variational Autoencoder (VAE)",
+        "domain": "Machine Learning",
+        "equation": "ELBO = E_q[log p(x|z)] − KL(q(z|x) ‖ p(z));  q(z|x) = N(μ(x), σ²(x));  z = μ + σε",
+        "update_form": "amortized_variational_inference",
+        "optimization": "maximize_ELBO",
+        "fixed_points": "learned_generative_model",
+        "operators": {"encoder", "decoder", "sampling", "gradient",
+                      "kl_divergence", "expectation"},
+        "patterns": {
+            "bayesian_inference",
+            "variational_principle",
+            "energy_entropy_tradeoff",
+            "information_gain",
+            "optimal_inference",
+            "energy_based",
+            "gradient_descent",
+        },
+        "variables": {
+            "state": "latent_code",
+            "energy": "negative_ELBO",
+            "flow": "encoder_decoder_pair",
+            "information": "kl_divergence_from_prior",
+        },
+        "conservation": {"total_probability"},
+        "structure": "variational_generative_model",
+    },
 }
 
 
