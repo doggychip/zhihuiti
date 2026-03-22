@@ -3274,6 +3274,272 @@ THEORY_REGISTRY: dict[str, dict] = {
         "conservation": {"expected_value_conservation"},
         "structure": "information_theoretic_bound",
     },
+
+    # ── Latent Sequence Models ───────────────────────────────────────────
+    "hidden_markov_model": {
+        "display_name": "Hidden Markov Model (HMM)",
+        "domain": "Machine Learning",
+        "equation": "P(O,S) = π_{s1} Π P(sₜ|sₜ₋₁) Π P(oₜ|sₜ);  forward: α_t(j) = Σᵢ α_{t-1}(i)aᵢⱼbⱼ(oₜ);  Baum-Welch = EM on HMM",
+        "update_form": "forward_backward_em",
+        "optimization": "maximize_observation_likelihood",
+        "fixed_points": "learned_transition_emission",
+        "operators": {"forward_algorithm", "backward_algorithm",
+                      "viterbi_decoding", "baum_welch", "transition_matrix"},
+        "patterns": {
+            "bayesian_inference",
+            "compositional_structure",
+            "energy_minimization",
+            "fixed_point_iteration",
+            "information_gain",
+        },
+        "variables": {
+            "state": "latent_state_sequence",
+            "energy": "negative_log_likelihood",
+            "dynamics": "transition_probabilities",
+            "coupling": "emission_probabilities",
+        },
+        "conservation": {"probability_mass_conservation"},
+        "structure": "optimization_over_parameter_space",
+    },
+
+    # ── Sequential Monte Carlo ───────────────────────────────────────────
+    "particle_filter": {
+        "display_name": "Particle Filter / Sequential Monte Carlo",
+        "domain": "Statistics",
+        "equation": "p(xₜ|y₁:ₜ) ≈ Σ wₜⁱ δ(xₜ−xₜⁱ);  wₜⁱ ∝ p(yₜ|xₜⁱ)p(xₜⁱ|xₜ₋₁ⁱ)/q(xₜⁱ);  resample when ESS < N/2;  N_eff = 1/Σ(wⁱ)²",
+        "update_form": "importance_sampling_resampling",
+        "optimization": "approximate_posterior_filtering",
+        "fixed_points": "posterior_particle_cloud",
+        "operators": {"importance_sampling", "resampling",
+                      "proposal_distribution", "weight_update", "ess_monitoring"},
+        "patterns": {
+            "bayesian_inference",
+            "population_dynamics",
+            "energy_minimization",
+            "exploration_exploitation",
+            "information_gain",
+        },
+        "variables": {
+            "state": "weighted_particle_set",
+            "energy": "negative_log_likelihood",
+            "dynamics": "sequential_importance_sampling",
+            "information": "effective_sample_size",
+        },
+        "conservation": {"weight_normalization"},
+        "structure": "optimization_over_parameter_space",
+    },
+
+    # ── Linear Optimization ──────────────────────────────────────────────
+    "linear_programming": {
+        "display_name": "Linear Programming / Simplex Method",
+        "domain": "Optimization",
+        "equation": "min cᵀx s.t. Ax≤b, x≥0;  dual: max bᵀy s.t. Aᵀy≤c, y≥0;  strong duality: cᵀx* = bᵀy*;  complementary slackness",
+        "update_form": "simplex_pivot",
+        "optimization": "minimize_linear_objective",
+        "fixed_points": "optimal_vertex",
+        "operators": {"pivot_operation", "dual_simplex",
+                      "reduced_cost", "complementary_slackness", "basis_exchange"},
+        "patterns": {
+            "dual_variables",
+            "energy_minimization",
+            "fixed_point_iteration",
+            "variational_principle",
+        },
+        "variables": {
+            "state": "basic_feasible_solution",
+            "energy": "objective_value",
+            "coupling": "constraint_matrix",
+            "dynamics": "simplex_path",
+        },
+        "conservation": {"strong_duality"},
+        "structure": "minimax_optimization",
+    },
+
+    # ── Combinatorial Optimization (flow) ────────────────────────────────
+    "max_flow_min_cut": {
+        "display_name": "Max Flow / Min Cut",
+        "domain": "Optimization",
+        "equation": "max Σⱼ f(s,j);  s.t. f(u,v) ≤ c(u,v), Σ f(u,v) = Σ f(v,w);  max-flow = min-cut;  Ford-Fulkerson: augment along s-t paths",
+        "update_form": "augmenting_path",
+        "optimization": "maximize_flow",
+        "fixed_points": "maximum_flow",
+        "operators": {"residual_graph", "augmenting_path",
+                      "capacity_constraint", "flow_conservation", "cut_capacity"},
+        "patterns": {
+            "dual_variables",
+            "energy_minimization",
+            "conservation_law",
+            "compositional_structure",
+        },
+        "variables": {
+            "state": "flow_assignment",
+            "energy": "negative_total_flow",
+            "coupling": "capacity_graph",
+            "dynamics": "augmentation_sequence",
+        },
+        "conservation": {"flow_conservation"},
+        "structure": "minimax_optimization",
+    },
+
+    # ── Experimental Design ──────────────────────────────────────────────
+    "optimal_design": {
+        "display_name": "Optimal Experiment Design",
+        "domain": "Statistics",
+        "equation": "D-optimal: max det F(ξ);  A-optimal: min tr F(ξ)⁻¹;  F(ξ) = Σ wᵢ f(xᵢ)f(xᵢ)ᵀ;  equivalence: D-optimal iff max d(x,ξ*) = p",
+        "update_form": "design_measure_update",
+        "optimization": "maximize_information_criterion",
+        "fixed_points": "optimal_design_measure",
+        "operators": {"fisher_information", "information_criterion",
+                      "equivalence_theorem", "exchange_algorithm"},
+        "patterns": {
+            "information_gain",
+            "variational_principle",
+            "energy_minimization",
+            "dual_variables",
+            "bayesian_inference",
+        },
+        "variables": {
+            "state": "design_measure",
+            "energy": "negative_information",
+            "information": "fisher_information_matrix",
+            "coupling": "regression_functions",
+        },
+        "conservation": {"total_design_weight"},
+        "structure": "optimization_over_parameter_space",
+    },
+
+    # ── Multi-Objective ──────────────────────────────────────────────────
+    "pareto_optimization": {
+        "display_name": "Multi-Objective / Pareto Optimization",
+        "domain": "Optimization",
+        "equation": "min (f₁(x),...,fₖ(x));  Pareto: x* if ∄x: fᵢ(x)≤fᵢ(x*) ∀i, strict for some;  scalarization: min Σλᵢfᵢ(x);  ε-constraint",
+        "update_form": "pareto_front_construction",
+        "optimization": "find_pareto_front",
+        "fixed_points": "pareto_optimal_set",
+        "operators": {"dominance_check", "scalarization",
+                      "hypervolume_indicator", "weighted_sum", "gradient"},
+        "patterns": {
+            "energy_minimization",
+            "dual_variables",
+            "variational_principle",
+            "competitive_dynamics",
+            "exploration_exploitation",
+        },
+        "variables": {
+            "state": "solution_set",
+            "energy": "scalarized_objective",
+            "coupling": "objective_tradeoffs",
+            "dynamics": "front_exploration",
+        },
+        "conservation": set(),
+        "structure": "minimax_optimization",
+    },
+
+    # ── Distribution Shift ───────────────────────────────────────────────
+    "domain_adaptation": {
+        "display_name": "Domain Adaptation / Distribution Shift",
+        "domain": "Machine Learning",
+        "equation": "R_T(h) ≤ R_S(h) + d_H(S,T) + λ*;  importance weighting: E_T[ℓ] = E_S[w(x)ℓ], w=p_T/p_S;  DANN: min_θ max_d L_task − λL_domain",
+        "update_form": "domain_adversarial_training",
+        "optimization": "minimize_target_risk",
+        "fixed_points": "domain_invariant_representation",
+        "operators": {"importance_weighting", "domain_discriminator",
+                      "distribution_distance", "gradient", "adversarial_alignment"},
+        "patterns": {
+            "gradient_descent",
+            "dual_variables",
+            "competitive_dynamics",
+            "information_gain",
+            "energy_minimization",
+        },
+        "variables": {
+            "state": "feature_extractor",
+            "energy": "domain_divergence",
+            "coupling": "importance_weights",
+            "dynamics": "adversarial_alignment",
+        },
+        "conservation": set(),
+        "structure": "minimax_optimization",
+    },
+
+    # ── Statistical Learning ─────────────────────────────────────────────
+    "empirical_risk_minimization": {
+        "display_name": "Empirical Risk Minimization (ERM)",
+        "domain": "Machine Learning",
+        "equation": "R̂(h) = 1/n Σ ℓ(h(xᵢ),yᵢ);  h* = argmin R̂(h);  R(h) ≤ R̂(h) + O(√(VC(H)/n));  structural risk: min R̂ + Ω(H)",
+        "update_form": "loss_minimization",
+        "optimization": "minimize_empirical_risk",
+        "fixed_points": "risk_minimizer",
+        "operators": {"gradient", "loss_function", "regularizer",
+                      "generalization_bound", "model_selection"},
+        "patterns": {
+            "gradient_descent",
+            "energy_minimization",
+            "variational_principle",
+            "information_gain",
+            "dual_variables",
+        },
+        "variables": {
+            "state": "hypothesis",
+            "energy": "empirical_risk",
+            "prior": "regularization_penalty",
+            "information": "generalization_gap",
+        },
+        "conservation": set(),
+        "structure": "optimization_over_parameter_space",
+    },
+
+    # ── Stochastic Analysis ──────────────────────────────────────────────
+    "ito_calculus": {
+        "display_name": "Itô Calculus / SDE Theory",
+        "domain": "Mathematics",
+        "equation": "dXₜ = μ(Xₜ)dt + σ(Xₜ)dWₜ;  Itô: df = (∂f/∂t + μ∂f/∂x + ½σ²∂²f/∂x²)dt + σ∂f/∂x dW;  Girsanov: dW̃ = dW + θdt",
+        "update_form": "ito_integration",
+        "optimization": "characterize_diffusion",
+        "fixed_points": "stationary_distribution",
+        "operators": {"ito_integral", "quadratic_variation",
+                      "girsanov_transform", "generator", "martingale_representation"},
+        "patterns": {
+            "conservation_law",
+            "energy_entropy_tradeoff",
+            "structural_isomorphism",
+            "variational_principle",
+        },
+        "variables": {
+            "state": "diffusion_process",
+            "energy": "quadratic_variation",
+            "dynamics": "drift_and_diffusion",
+            "coupling": "correlation_structure",
+        },
+        "conservation": {"martingale_property_under_girsanov"},
+        "structure": "dynamical_system_on_manifold",
+    },
+
+    # ── Satisfiability ───────────────────────────────────────────────────
+    "sat_solving": {
+        "display_name": "Boolean Satisfiability / SAT Solving",
+        "domain": "Computer Science",
+        "equation": "φ = ∧ᵢ Cᵢ, Cᵢ = ∨ⱼ lᵢⱼ;  DPLL: unit propagation + branching;  CDCL: conflict analysis → learned clause;  random k-SAT: α_c(k) ≈ 2ᵏ ln2",
+        "update_form": "conflict_driven_search",
+        "optimization": "find_satisfying_assignment",
+        "fixed_points": "satisfying_assignment",
+        "operators": {"unit_propagation", "conflict_analysis",
+                      "clause_learning", "branching_heuristic", "backtracking"},
+        "patterns": {
+            "fixed_point_iteration",
+            "energy_minimization",
+            "symmetry_breaking",
+            "exploration_exploitation",
+        },
+        "variables": {
+            "state": "partial_assignment",
+            "energy": "number_of_unsatisfied_clauses",
+            "dynamics": "search_tree_traversal",
+            "coupling": "clause_variable_graph",
+        },
+        "conservation": set(),
+        "structure": "energy_based_pairwise_model",
+    },
 }
 
 
