@@ -1,6 +1,10 @@
 # Simulation output
 simulation_results.png
 
+# Generated visualization
+collision_map.html
+collision_map.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
