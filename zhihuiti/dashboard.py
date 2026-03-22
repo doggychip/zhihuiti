@@ -400,6 +400,9 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "job not found"}, 404)
         elif self.path == "/api/jobs":
             self._send_json(DashboardHandler._jobs)
+        elif self.path == "/api/scheduler":
+            sched = getattr(DashboardHandler, "_scheduler", None)
+            self._send_json(sched.get_status() if sched else {"running": False, "goals": []})
         elif self.path == "/api/debug":
             self._send_json({
                 "backend": getattr(getattr(self.orchestrator, "llm", None), "_backend", "unknown"),
@@ -587,8 +590,64 @@ class DashboardHandler(BaseHTTPRequestHandler):
         pass  # Suppress access logs
 
 
+class AutoScheduler:
+    """Background scheduler that runs goals on an interval."""
+
+    def __init__(self, orch, interval_seconds: int = 7200):
+        self.orch = orch
+        self.interval = interval_seconds
+        self.running = False
+        self.thread = None
+        self.goals = []
+        self.last_run = None
+        self.run_count = 0
+
+    def add_goal(self, goal: str):
+        self.goals.append(goal)
+
+    def start(self):
+        if self.running:
+            return
+        self.running = True
+        self.thread = threading.Thread(target=self._loop, daemon=True)
+        self.thread.start()
+        console.print(f"  [green]Auto-scheduler:[/green] {len(self.goals)} goals every {self.interval}s")
+
+    def stop(self):
+        self.running = False
+
+    def _loop(self):
+        import time
+        while self.running:
+            for goal in self.goals:
+                if not self.running:
+                    break
+                try:
+                    console.print(f"  [cyan]Auto-run:[/cyan] {goal[:60]}...")
+                    self.orch.execute_goal(goal)
+                    self.run_count += 1
+                    self.last_run = time.time()
+                except Exception as e:
+                    console.print(f"  [red]Auto-run failed:[/red] {e}")
+            # Sleep in small increments so we can stop quickly
+            for _ in range(self.interval):
+                if not self.running:
+                    break
+                time.sleep(1)
+
+    def get_status(self) -> dict:
+        return {
+            "running": self.running,
+            "interval": self.interval,
+            "goals": self.goals,
+            "run_count": self.run_count,
+            "last_run": self.last_run,
+        }
+
+
 def start_dashboard(orch: Orchestrator, port: int = DEFAULT_PORT,
-                    background: bool = True) -> HTTPServer | None:
+                    background: bool = True, auto_trade: bool = False,
+                    trade_interval: int = 7200) -> HTTPServer | None:
     """Start the web dashboard server.
 
     If background=True, runs in a daemon thread and returns the server.
@@ -601,6 +660,32 @@ def start_dashboard(orch: Orchestrator, port: int = DEFAULT_PORT,
     console.print(
         f"  [bold green]Dashboard:[/bold green] http://localhost:{port}"
     )
+
+    # Start auto-scheduler if requested or ALPHAARENA env vars are set
+    if auto_trade or os.environ.get("ALPHAARENA_AUTO_TRADE"):
+        interval = int(os.environ.get("ALPHAARENA_TRADE_INTERVAL", str(trade_interval)))
+        scheduler = AutoScheduler(orch, interval_seconds=interval)
+
+        # Add AlphaArena trading goals
+        aa_url = os.environ.get("ALPHAARENA_URL", "")
+        aa_id = os.environ.get("ALPHAARENA_AGENT_ID", "")
+        if aa_url and aa_id:
+            scheduler.add_goal(
+                f"AlphaArena Trading: Check prices at {aa_url}/api/prices. "
+                f"Analyze the top 3 movers by 24h change. "
+                f"Check portfolio at {aa_url}/api/portfolio/{aa_id}. "
+                f"If any pair moved more than 3%, consider a trade. "
+                f"Execute via POST {aa_url}/api/trades. Agent ID: {aa_id}. "
+                f"Max 20% portfolio per trade. Focus on Sharpe ratio optimization."
+            )
+        else:
+            scheduler.add_goal(
+                "Analyze current market conditions for crypto. "
+                "Research top performing assets and identify trading opportunities."
+            )
+
+        scheduler.start()
+        DashboardHandler._scheduler = scheduler
 
     if background:
         thread = threading.Thread(target=server.serve_forever, daemon=True)
