@@ -40,8 +40,9 @@ export function LeaderboardTable({ agents, handleSelect, REALM_COLORS }: Leaderb
       const delta = ev.clientX - dragRef.current.startX;
       const newWidth = Math.max(COLUMNS[dragRef.current.colIndex].minWidth, dragRef.current.startWidth + delta);
       setColWidths(prev => {
+        if (!dragRef.current) return prev;
         const next = [...prev];
-        next[dragRef.current!.colIndex] = newWidth;
+        next[dragRef.current.colIndex] = newWidth;
         return next;
       });
     };
