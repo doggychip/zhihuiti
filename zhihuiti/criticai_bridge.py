@@ -15,7 +15,7 @@ from rich.table import Table
 
 console = Console()
 
-DEFAULT_BASE_URL = "http://localhost:5000"
+DEFAULT_BASE_URL = "https://criticai.zeabur.app"
 
 
 class CriticAIBridge:
