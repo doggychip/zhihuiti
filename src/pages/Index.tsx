@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import * as THREE from "three";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -1749,160 +1750,168 @@ export default function ZhihuiTiDashboard() {
         </div>
 
         {/* Center — 3D Graph */}
-        <div className={`flex-1 flex flex-col relative ${graphFullscreen ? "fixed inset-0 z-[999]" : ""}`} style={graphFullscreen ? { background: "#08080f" } : undefined}>
-          <div className="flex-1 relative">
-            <ThreeGraph agents={agents} connections={connections} onSelect={handleSelect} selectedId={selected} events={events} />
-            {/* Fullscreen toggle */}
-            <button
-              onClick={() => setGraphFullscreen(f => !f)}
-              className="absolute top-3 right-3 z-20 w-8 h-8 flex items-center justify-center rounded-md text-sm cursor-pointer transition-all hover:scale-105 active:scale-95"
-              style={{
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                color: "rgba(255,255,255,0.5)",
-                backdropFilter: "blur(8px)",
-              }}
-              title={graphFullscreen ? "Exit fullscreen" : "Fullscreen"}
-            >
-              {graphFullscreen ? "✕" : "⛶"}
-            </button>
-            <div className="absolute bottom-4 left-4 flex items-center gap-3">
-              <span className="text-xs" style={{ color: "rgba(255,255,255,0.15)" }}>drag to rotate · click node for details</span>
-              <button
-                onClick={() => setShowCollision(s => !s)}
-                className="text-[10px] px-2 py-1 rounded cursor-pointer transition-colors"
-                style={{
-                  background: showCollision ? "rgba(244,114,182,0.15)" : "rgba(255,255,255,0.05)",
-                  color: showCollision ? "#f472b6" : "rgba(255,255,255,0.4)",
-                  border: `1px solid ${showCollision ? "rgba(244,114,182,0.3)" : "rgba(255,255,255,0.08)"}`,
-                }}
-              >
-                ⚛️ Collision Engine
-              </button>
-            </div>
-            {selectedAgent && (
-              <AgentDetail agent={selectedAgent} connections={selectedConns} agents={agents} onClose={() => setSelected(null)} onSelect={handleSelect} />
-            )}
-            <CollisionEngine show={showCollision} onClose={() => setShowCollision(false)} />
-            {/* Minimap */}
-            <div className="absolute top-3 left-3 z-10 rounded-lg overflow-hidden" style={{
-              width: 120, height: 120,
-              background: "rgba(5,5,15,0.85)",
-              border: "1px solid rgba(99,102,241,0.2)",
-              boxShadow: "0 0 16px rgba(99,102,241,0.08)",
-            }}>
-              <div className="text-[8px] uppercase tracking-widest px-2 pt-1.5" style={{ color: "rgba(255,255,255,0.25)" }}>Minimap</div>
-              <svg width="120" height="104" viewBox="-12 -12 24 24" style={{ display: "block" }}>
-                {/* Realm rings */}
-                {[2.5, 5.5, 7.5].map((r, i) => (
-                  <circle key={r} cx={0} cy={0} r={r} fill="none"
-                    stroke={Object.values(REALM_COLORS)[i]} strokeWidth={0.15} opacity={0.2} />
-                ))}
-                {/* Connection lines */}
-                {connections.map((c, i) => {
-                  const fa = agents.find(a => a.id === c.from);
-                  const ta = agents.find(a => a.id === c.to);
-                  if (!fa || !ta) return null;
-                  const fi = agents.indexOf(fa);
-                  const ti = agents.indexOf(ta);
-                  const realmCounts: Record<string, number> = {};
-                  const realmIdxMap: Record<string, number> = {};
-                  agents.forEach(a => { realmCounts[a.realm] = (realmCounts[a.realm] || 0) + 1; });
-                  let fcnt = 0, tcnt = 0;
-                  agents.forEach((a, idx) => {
-                    if (!realmIdxMap[a.realm]) realmIdxMap[a.realm] = 0;
-                    if (idx === fi) fcnt = realmIdxMap[a.realm];
-                    if (idx === ti) tcnt = realmIdxMap[a.realm];
-                    realmIdxMap[a.realm]++;
-                  });
-                  return null; // skip lines for cleanliness
-                })}
-                {/* Agent dots */}
-                {(() => {
-                  const rc: Record<string, number> = {};
-                  const ri: Record<string, number> = { central: 0, research: 0, execution: 0 };
-                  agents.forEach(a => { rc[a.realm] = (rc[a.realm] || 0) + 1; });
-                  return agents.map(a => {
-                    const count = rc[a.realm] || 1;
-                    const idx = ri[a.realm] || 0;
-                    ri[a.realm] = idx + 1;
-                    const angle = (idx / count) * Math.PI * 2 + (a.realm === "research" ? 0.3 : a.realm === "execution" ? 1.2 : 2.5);
-                    const r = a.realm === "central" ? 2.5 : a.realm === "research" ? 5.5 : 7.5;
-                    const cx = Math.cos(angle) * r;
-                    const cy = Math.sin(angle) * r;
-                    const isSelected = a.id === selected;
-                    return (
-                      <g key={a.id}>
-                        {isSelected && (
-                          <circle cx={cx} cy={cy} r={1.2} fill="none"
-                            stroke={REALM_COLORS[a.realm]} strokeWidth={0.1} opacity={0.5}>
-                            <animate attributeName="r" values="0.8;1.4;0.8" dur="1.5s" repeatCount="indefinite" />
-                            <animate attributeName="opacity" values="0.5;0.1;0.5" dur="1.5s" repeatCount="indefinite" />
-                          </circle>
-                        )}
-                        <circle
-                          cx={cx} cy={cy}
-                          r={isSelected ? 0.5 : 0.35}
-                          fill={a.alive ? REALM_COLORS[a.realm] : "#555"}
-                          opacity={a.alive ? 0.9 : 0.4}
-                          style={{ cursor: "pointer" }}
-                          onClick={() => handleSelect(a.id)}
-                        />
-                      </g>
-                    );
-                  });
-                })()}
-              </svg>
-            </div>
-          </div>
-
-          {/* Bottom charts */}
-          <div className="h-44 flex gap-4 px-4 pb-3" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-            <div className="flex-1 pt-3">
-              <div className="text-xs uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>Token Economy</div>
-              <ResponsiveContainer width="100%" height="85%">
-                <AreaChart data={econHistory}>
-                  <defs>
-                    <linearGradient id="supplyGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#a855f7" stopOpacity={0.3} />
-                      <stop offset="100%" stopColor="#a855f7" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="day" hide />
-                  <YAxis hide />
-                  <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid #333", borderRadius: 8, fontSize: 11 }} />
-                  <Area type="monotone" dataKey="supply" stroke="#a855f7" fill="url(#supplyGrad)" strokeWidth={2} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="w-60 pt-3">
-              <div className="text-xs uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>Tax Revenue</div>
-              <ResponsiveContainer width="100%" height="85%">
-                <BarChart data={econHistory.slice(-10)}>
-                  <XAxis dataKey="day" hide />
-                  <YAxis hide />
-                  <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid #333", borderRadius: 8, fontSize: 11 }} />
-                  <Bar dataKey="taxed" fill="#eab30850" stroke="#eab308" strokeWidth={1} radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="w-52 pt-3">
-              <div className="text-xs uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>Top Agents</div>
-              <div className="space-y-1">
-                {[...agents].filter(a => a.alive).sort((a, b) => b.avg_score - a.avg_score).slice(0, 6).map((a, i) => (
-                  <div key={a.id} className="flex items-center gap-2 text-xs">
-                    <span className="w-4 text-right font-mono" style={{ color: "rgba(255,255,255,0.2)" }}>{i + 1}</span>
-                    <span className="w-2 h-2 rounded-full" style={{ background: REALM_COLORS[a.realm] }} />
-                    <span className="flex-1 text-white truncate">{a.role}</span>
-                    <span className="font-mono" style={{ color: a.avg_score >= 0.8 ? "#22c55e" : "#eab308" }}>
-                      {a.avg_score.toFixed(2)}
-                    </span>
-                  </div>
-                ))}
+        {(() => {
+          const graphContent = (
+            <div className={`flex-1 flex flex-col relative ${graphFullscreen ? "" : ""}`}
+              style={graphFullscreen ? { position: "fixed", inset: 0, zIndex: 9999, background: "#08080f" } : undefined}>
+              <div className="flex-1 relative">
+                <ThreeGraph agents={agents} connections={connections} onSelect={handleSelect} selectedId={selected} events={events} />
+                {/* Fullscreen toggle */}
+                <button
+                  onClick={() => setGraphFullscreen(f => !f)}
+                  className="absolute top-3 right-3 z-20 w-8 h-8 flex items-center justify-center rounded-md text-sm cursor-pointer transition-all hover:scale-105 active:scale-95"
+                  style={{
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    color: "rgba(255,255,255,0.5)",
+                    backdropFilter: "blur(8px)",
+                  }}
+                  title={graphFullscreen ? "Exit fullscreen" : "Fullscreen"}
+                >
+                  {graphFullscreen ? "✕" : "⛶"}
+                </button>
+                <div className="absolute bottom-4 left-4 flex items-center gap-3">
+                  <span className="text-xs" style={{ color: "rgba(255,255,255,0.15)" }}>drag to rotate · click node for details</span>
+                  <button
+                    onClick={() => setShowCollision(s => !s)}
+                    className="text-[10px] px-2 py-1 rounded cursor-pointer transition-colors"
+                    style={{
+                      background: showCollision ? "rgba(244,114,182,0.15)" : "rgba(255,255,255,0.05)",
+                      color: showCollision ? "#f472b6" : "rgba(255,255,255,0.4)",
+                      border: `1px solid ${showCollision ? "rgba(244,114,182,0.3)" : "rgba(255,255,255,0.08)"}`,
+                    }}
+                  >
+                    ⚛️ Collision Engine
+                  </button>
+                </div>
+                {selectedAgent && (
+                  <AgentDetail agent={selectedAgent} connections={selectedConns} agents={agents} onClose={() => setSelected(null)} onSelect={handleSelect} />
+                )}
+                <CollisionEngine show={showCollision} onClose={() => setShowCollision(false)} />
+                {/* Minimap */}
+                <div className="absolute top-3 left-3 z-10 rounded-lg overflow-hidden" style={{
+                  width: 120, height: 120,
+                  background: "rgba(5,5,15,0.85)",
+                  border: "1px solid rgba(99,102,241,0.2)",
+                  boxShadow: "0 0 16px rgba(99,102,241,0.08)",
+                }}>
+                  <div className="text-[8px] uppercase tracking-widest px-2 pt-1.5" style={{ color: "rgba(255,255,255,0.25)" }}>Minimap</div>
+                  <svg width="120" height="104" viewBox="-12 -12 24 24" style={{ display: "block" }}>
+                    {/* Realm rings */}
+                    {[2.5, 5.5, 7.5].map((r, i) => (
+                      <circle key={r} cx={0} cy={0} r={r} fill="none"
+                        stroke={Object.values(REALM_COLORS)[i]} strokeWidth={0.15} opacity={0.2} />
+                    ))}
+                    {/* Connection lines */}
+                    {connections.map((c, i) => {
+                      const fa = agents.find(a => a.id === c.from);
+                      const ta = agents.find(a => a.id === c.to);
+                      if (!fa || !ta) return null;
+                      const fi = agents.indexOf(fa);
+                      const ti = agents.indexOf(ta);
+                      const realmCounts: Record<string, number> = {};
+                      const realmIdxMap: Record<string, number> = {};
+                      agents.forEach(a => { realmCounts[a.realm] = (realmCounts[a.realm] || 0) + 1; });
+                      let fcnt = 0, tcnt = 0;
+                      agents.forEach((a, idx) => {
+                        if (!realmIdxMap[a.realm]) realmIdxMap[a.realm] = 0;
+                        if (idx === fi) fcnt = realmIdxMap[a.realm];
+                        if (idx === ti) tcnt = realmIdxMap[a.realm];
+                        realmIdxMap[a.realm]++;
+                      });
+                      return null; // skip lines for cleanliness
+                    })}
+                    {/* Agent dots */}
+                    {(() => {
+                      const rc: Record<string, number> = {};
+                      const ri: Record<string, number> = { central: 0, research: 0, execution: 0 };
+                      agents.forEach(a => { rc[a.realm] = (rc[a.realm] || 0) + 1; });
+                      return agents.map(a => {
+                        const count = rc[a.realm] || 1;
+                        const idx = ri[a.realm] || 0;
+                        ri[a.realm] = idx + 1;
+                        const angle = (idx / count) * Math.PI * 2 + (a.realm === "research" ? 0.3 : a.realm === "execution" ? 1.2 : 2.5);
+                        const r = a.realm === "central" ? 2.5 : a.realm === "research" ? 5.5 : 7.5;
+                        const cx = Math.cos(angle) * r;
+                        const cy = Math.sin(angle) * r;
+                        const isSelected = a.id === selected;
+                        return (
+                          <g key={a.id}>
+                            {isSelected && (
+                              <circle cx={cx} cy={cy} r={1.2} fill="none"
+                                stroke={REALM_COLORS[a.realm]} strokeWidth={0.1} opacity={0.5}>
+                                <animate attributeName="r" values="0.8;1.4;0.8" dur="1.5s" repeatCount="indefinite" />
+                                <animate attributeName="opacity" values="0.5;0.1;0.5" dur="1.5s" repeatCount="indefinite" />
+                              </circle>
+                            )}
+                            <circle
+                              cx={cx} cy={cy}
+                              r={isSelected ? 0.5 : 0.35}
+                              fill={a.alive ? REALM_COLORS[a.realm] : "#555"}
+                              opacity={a.alive ? 0.9 : 0.4}
+                              style={{ cursor: "pointer" }}
+                              onClick={() => handleSelect(a.id)}
+                            />
+                          </g>
+                        );
+                      });
+                    })()}
+                  </svg>
+                </div>
               </div>
+
+              {/* Bottom charts — hidden in fullscreen */}
+              {!graphFullscreen && (
+                <div className="h-44 flex gap-4 px-4 pb-3" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div className="flex-1 pt-3">
+                    <div className="text-xs uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>Token Economy</div>
+                    <ResponsiveContainer width="100%" height="85%">
+                      <AreaChart data={econHistory}>
+                        <defs>
+                          <linearGradient id="supplyGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#a855f7" stopOpacity={0.3} />
+                            <stop offset="100%" stopColor="#a855f7" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="day" hide />
+                        <YAxis hide />
+                        <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid #333", borderRadius: 8, fontSize: 11 }} />
+                        <Area type="monotone" dataKey="supply" stroke="#a855f7" fill="url(#supplyGrad)" strokeWidth={2} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="w-60 pt-3">
+                    <div className="text-xs uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>Tax Revenue</div>
+                    <ResponsiveContainer width="100%" height="85%">
+                      <BarChart data={econHistory.slice(-10)}>
+                        <XAxis dataKey="day" hide />
+                        <YAxis hide />
+                        <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid #333", borderRadius: 8, fontSize: 11 }} />
+                        <Bar dataKey="taxed" fill="#eab30850" stroke="#eab308" strokeWidth={1} radius={[2, 2, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="w-52 pt-3">
+                    <div className="text-xs uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>Top Agents</div>
+                    <div className="space-y-1">
+                      {[...agents].filter(a => a.alive).sort((a, b) => b.avg_score - a.avg_score).slice(0, 6).map((a, i) => (
+                        <div key={a.id} className="flex items-center gap-2 text-xs">
+                          <span className="w-4 text-right font-mono" style={{ color: "rgba(255,255,255,0.2)" }}>{i + 1}</span>
+                          <span className="w-2 h-2 rounded-full" style={{ background: REALM_COLORS[a.realm] }} />
+                          <span className="flex-1 text-white truncate">{a.role}</span>
+                          <span className="font-mono" style={{ color: a.avg_score >= 0.8 ? "#22c55e" : "#eab308" }}>
+                            {a.avg_score.toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        </div>
+          );
+          return graphFullscreen ? createPortal(graphContent, document.body) : graphContent;
+        })()}
 
         {/* Right — Results Panel or Live Task Feed */}
         {selectedJobId ? (
