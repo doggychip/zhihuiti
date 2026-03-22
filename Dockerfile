@@ -14,16 +14,15 @@ EXPOSE 8377
 # Persist data in a volume
 VOLUME /app/data
 
-# Default: start dashboard with CriticAI monitoring
-# Set CRITICAI_URL to enable cross-system monitoring
-# Set MONITOR_INTERVAL to control check frequency (default: 30m)
+# Default: start dashboard with optional auto-trading
+# Set ALPHAARENA_AUTO_TRADE=1 to enable automatic trading
+# Set ALPHAARENA_TRADE_INTERVAL to control frequency in seconds (default: 7200 = 2h)
 ENV CRITICAI_URL=""
 ENV MONITOR_INTERVAL="30m"
+ENV ALPHAARENA_AUTO_TRADE=""
+ENV ALPHAARENA_TRADE_INTERVAL="7200"
+ENV ALPHAARENA_URL=""
+ENV ALPHAARENA_API_KEY=""
+ENV ALPHAARENA_AGENT_ID=""
 
-# Start script: optionally set up CriticAI monitor, then launch dashboard
-CMD sh -c '\
-  if [ -n "$CRITICAI_URL" ]; then \
-    echo "Setting up CriticAI monitor at $CRITICAI_URL (interval: $MONITOR_INTERVAL)"; \
-    python -m zhihuiti.cli criticai watch --url "$CRITICAI_URL" --interval "$MONITOR_INTERVAL" --db /app/data/zhihuiti.db; \
-  fi; \
-  python -m zhihuiti.cli dashboard --db /app/data/zhihuiti.db --port ${PORT}'
+CMD python -m zhihuiti.cli dashboard --db /app/data/zhihuiti.db --port ${PORT}
