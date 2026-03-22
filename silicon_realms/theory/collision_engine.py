@@ -3807,6 +3807,273 @@ THEORY_REGISTRY: dict[str, dict] = {
         "conservation": {"logical_subspace_preservation"},
         "structure": "renormalization_hierarchy",
     },
+
+    # ── Wave Mechanics ───────────────────────────────────────────────────
+    "schrodinger_equation": {
+        "display_name": "Schrödinger Equation",
+        "domain": "Physics",
+        "equation": "iℏ∂ψ/∂t = Ĥψ;  Ĥ = −ℏ²/2m ∇² + V;  E_n ψ_n = Ĥψ_n;  ⟨A⟩ = ⟨ψ|Â|ψ⟩;  ΔxΔp ≥ ℏ/2",
+        "update_form": "unitary_time_evolution",
+        "optimization": "minimize_energy_expectation",
+        "fixed_points": "energy_eigenstates",
+        "operators": {"hamiltonian", "unitary_evolution", "spectral_decomposition",
+                      "commutator", "measurement"},
+        "patterns": {
+            "variational_principle",
+            "conservation_law",
+            "structural_isomorphism",
+            "energy_minimization",
+            "compositional_structure",
+        },
+        "variables": {
+            "state": "wave_function",
+            "energy": "hamiltonian_expectation",
+            "spectrum": "energy_eigenvalues",
+            "dynamics": "unitary_evolution",
+        },
+        "conservation": {"probability_conservation", "energy_conservation"},
+        "structure": "hilbert_space_optimization",
+    },
+
+    # ── Heat/Diffusion PDE ───────────────────────────────────────────────
+    "heat_equation": {
+        "display_name": "Heat Equation / Diffusion PDE",
+        "domain": "Physics",
+        "equation": "∂u/∂t = α∇²u;  u(x,t) = ∫G(x−y,t)u₀(y)dy;  G(x,t) = (4παt)⁻ⁿ/² exp(−|x|²/4αt);  max principle: max on boundary",
+        "update_form": "diffusion_kernel_convolution",
+        "optimization": "dissipate_to_equilibrium",
+        "fixed_points": "uniform_temperature",
+        "operators": {"laplacian", "heat_kernel", "maximum_principle",
+                      "spectral_decomposition", "green_function"},
+        "patterns": {
+            "energy_minimization",
+            "energy_entropy_tradeoff",
+            "conservation_law",
+            "renormalization",
+        },
+        "variables": {
+            "state": "temperature_field",
+            "energy": "thermal_energy",
+            "dynamics": "diffusive_transport",
+            "dissipation": "entropy_production",
+        },
+        "conservation": {"total_heat_conservation"},
+        "structure": "dynamical_system_on_manifold",
+    },
+
+    # ── Elastic Waves ────────────────────────────────────────────────────
+    "wave_equation": {
+        "display_name": "Wave Equation / d'Alembert",
+        "domain": "Physics",
+        "equation": "∂²u/∂t² = c²∇²u;  d'Alembert: u = f(x−ct) + g(x+ct);  energy: E = ½∫(u_t² + c²|∇u|²)dx;  dispersion: ω = ω(k)",
+        "update_form": "wave_propagation",
+        "optimization": "satisfy_wave_dynamics",
+        "fixed_points": "standing_wave_modes",
+        "operators": {"dalembert_operator", "fourier_mode_decomposition",
+                      "wave_speed", "dispersion_relation", "green_function"},
+        "patterns": {
+            "conservation_law",
+            "structural_isomorphism",
+            "compositional_structure",
+            "energy_minimization",
+        },
+        "variables": {
+            "state": "displacement_field",
+            "energy": "total_wave_energy",
+            "spectrum": "frequency_wavenumber",
+            "dynamics": "propagation",
+        },
+        "conservation": {"energy_conservation"},
+        "structure": "hilbert_space_optimization",
+    },
+
+    # ── Gradient Estimation ──────────────────────────────────────────────
+    "score_matching": {
+        "display_name": "Score Matching / Score Function",
+        "domain": "Machine Learning",
+        "equation": "s_θ(x) ≈ ∇_x log p(x);  J(θ) = ½E_p[||s_θ − ∇log p||²] = E_p[½||s_θ||² + tr(∇s_θ)];  DSM: J = E[||s_θ(x̃) − ∇log p(x̃|x)||²]",
+        "update_form": "score_network_training",
+        "optimization": "minimize_score_matching_loss",
+        "fixed_points": "learned_score_function",
+        "operators": {"gradient", "trace_of_jacobian", "noise_perturbation",
+                      "denoising", "langevin_sampling"},
+        "patterns": {
+            "gradient_descent",
+            "energy_minimization",
+            "energy_based",
+            "information_gain",
+            "variational_principle",
+        },
+        "variables": {
+            "state": "score_network_parameters",
+            "energy": "score_matching_loss",
+            "dynamics": "score_field",
+            "coupling": "noise_schedule",
+        },
+        "conservation": set(),
+        "structure": "optimization_over_parameter_space",
+    },
+
+    # ── Knowledge Compression ────────────────────────────────────────────
+    "knowledge_distillation": {
+        "display_name": "Knowledge Distillation",
+        "domain": "Machine Learning",
+        "equation": "L = (1−α)H(y,σ(z_s)) + α T² KL(σ(z_t/T)||σ(z_s/T));  student: small model;  teacher: large model;  dark knowledge in soft labels",
+        "update_form": "soft_label_training",
+        "optimization": "minimize_distillation_loss",
+        "fixed_points": "compressed_student",
+        "operators": {"temperature_scaling", "kl_divergence", "gradient",
+                      "soft_targets", "feature_matching"},
+        "patterns": {
+            "energy_minimization",
+            "gradient_descent",
+            "information_gain",
+            "energy_entropy_tradeoff",
+            "pairwise_coupling",
+        },
+        "variables": {
+            "state": "student_parameters",
+            "energy": "distillation_loss",
+            "coupling": "teacher_soft_labels",
+            "temperature": "distillation_temperature",
+        },
+        "conservation": set(),
+        "structure": "optimization_over_parameter_space",
+    },
+
+    # ── Dynamical Systems (discrete) ─────────────────────────────────────
+    "cellular_automaton": {
+        "display_name": "Cellular Automaton / Rule Systems",
+        "domain": "Computer Science",
+        "equation": "s_i(t+1) = f(s_{i-r}(t),...,s_{i+r}(t));  Rule 110: Turing complete;  Game of Life: birth if 3, survive if 2-3;  class I-IV: fixed, periodic, chaotic, complex",
+        "update_form": "local_rule_application",
+        "optimization": "characterize_emergent_behavior",
+        "fixed_points": "still_lifes_and_oscillators",
+        "operators": {"local_rule", "neighborhood_sum",
+                      "totalistic_function", "boundary_condition"},
+        "patterns": {
+            "fixed_point_iteration",
+            "symmetry_breaking",
+            "population_dynamics",
+            "compositional_structure",
+            "conservation_law",
+        },
+        "variables": {
+            "state": "lattice_configuration",
+            "energy": "pattern_complexity",
+            "dynamics": "deterministic_update_rule",
+            "coupling": "neighborhood_topology",
+        },
+        "conservation": {"rule_determinism"},
+        "structure": "energy_based_pairwise_model",
+    },
+
+    # ── Robust Statistics ────────────────────────────────────────────────
+    "robust_estimation": {
+        "display_name": "Robust Estimation / M-Estimators",
+        "domain": "Statistics",
+        "equation": "θ̂ = argmin Σ ρ(xᵢ−θ);  influence: IF(x;T,F) = lim [T((1−ε)F+εδ_x)−T(F)]/ε;  breakdown: ε* = max ε s.t. bounded;  Huber: ρ(x) = x²/2 if |x|≤k, k|x|−k²/2 else",
+        "update_form": "iteratively_reweighted_least_squares",
+        "optimization": "minimize_robust_loss",
+        "fixed_points": "robust_location_estimate",
+        "operators": {"influence_function", "breakdown_point",
+                      "weight_function", "huber_loss", "gradient"},
+        "patterns": {
+            "energy_minimization",
+            "gradient_descent",
+            "fixed_point_iteration",
+            "variational_principle",
+            "dual_variables",
+        },
+        "variables": {
+            "state": "parameter_estimate",
+            "energy": "robust_objective",
+            "prior": "loss_function_shape",
+            "dynamics": "irls_iteration",
+        },
+        "conservation": set(),
+        "structure": "optimization_over_parameter_space",
+    },
+
+    # ── Quantum Annealing ────────────────────────────────────────────────
+    "quantum_annealing": {
+        "display_name": "Quantum Annealing / Adiabatic QC",
+        "domain": "Physics",
+        "equation": "H(s) = (1−s)H_0 + sH_P;  s: 0→1;  adiabatic: T ≥ O(1/Δ²_min);  Δ = E₁−E₀;  ground state of H_P = solution",
+        "update_form": "adiabatic_evolution",
+        "optimization": "find_ground_state",
+        "fixed_points": "ground_state_of_problem_hamiltonian",
+        "operators": {"hamiltonian", "adiabatic_schedule",
+                      "spectral_gap", "tunneling", "transverse_field"},
+        "patterns": {
+            "energy_minimization",
+            "variational_principle",
+            "energy_entropy_tradeoff",
+            "symmetry_breaking",
+            "exploration_exploitation",
+        },
+        "variables": {
+            "state": "quantum_state",
+            "energy": "instantaneous_energy",
+            "spectrum": "spectral_gap",
+            "dynamics": "adiabatic_schedule",
+        },
+        "conservation": {"unitarity"},
+        "structure": "hilbert_space_optimization",
+    },
+
+    # ── Graph Algorithms ─────────────────────────────────────────────────
+    "shortest_path": {
+        "display_name": "Shortest Path / Dijkstra-Bellman-Ford",
+        "domain": "Computer Science",
+        "equation": "d(v) = min_{u:(u,v)∈E} [d(u) + w(u,v)];  Dijkstra: greedy + priority queue O(E log V);  Bellman-Ford: relax all edges V−1 times;  Floyd: d[i][j] = min(d[i][j], d[i][k]+d[k][j])",
+        "update_form": "relaxation_iteration",
+        "optimization": "minimize_path_cost",
+        "fixed_points": "shortest_path_tree",
+        "operators": {"edge_relaxation", "priority_queue",
+                      "dynamic_programming", "path_reconstruction"},
+        "patterns": {
+            "energy_minimization",
+            "fixed_point_iteration",
+            "compositional_structure",
+            "conservation_law",
+        },
+        "variables": {
+            "state": "distance_labels",
+            "energy": "total_path_cost",
+            "coupling": "edge_weights",
+            "dynamics": "relaxation_order",
+        },
+        "conservation": {"triangle_inequality"},
+        "structure": "bellman_recursion",
+    },
+
+    # ── Variational Quantum ──────────────────────────────────────────────
+    "variational_quantum": {
+        "display_name": "Variational Quantum Eigensolver (VQE)",
+        "domain": "Physics",
+        "equation": "E(θ) = ⟨ψ(θ)|H|ψ(θ)⟩;  |ψ(θ)⟩ = U(θ)|0⟩;  θ* = argmin E(θ);  ∂E/∂θᵢ = ½[E(θᵢ+π/2) − E(θᵢ−π/2)];  E(θ) ≥ E₀",
+        "update_form": "parameter_shift_gradient",
+        "optimization": "minimize_energy_expectation",
+        "fixed_points": "approximate_ground_state",
+        "operators": {"parameterized_circuit", "hamiltonian",
+                      "parameter_shift", "measurement", "gradient"},
+        "patterns": {
+            "variational_principle",
+            "energy_minimization",
+            "gradient_descent",
+            "compositional_structure",
+            "exploration_exploitation",
+        },
+        "variables": {
+            "state": "circuit_parameters",
+            "energy": "hamiltonian_expectation",
+            "spectrum": "energy_landscape",
+            "dynamics": "quantum_classical_loop",
+        },
+        "conservation": {"unitarity"},
+        "structure": "hilbert_space_optimization",
+    },
 }
 
 
