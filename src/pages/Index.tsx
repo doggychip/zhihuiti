@@ -197,8 +197,7 @@ interface BankruptEffect {
 }
 
 // ── 3D Agent Graph (with effects) ───────────────────────────────
-function ThreeGraph({ agents, connections, onSelect, selectedId, events
-
+function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhihuiti = true, showHedgeFund = true
 
 
 
