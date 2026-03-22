@@ -1786,7 +1786,7 @@ export default function ZhihuiTiDashboard() {
           const graphContent =
           <div className={`flex-1 flex flex-col relative ${graphFullscreen ? "" : ""}`}
           style={graphFullscreen ? { position: "fixed", inset: 0, zIndex: 9999, background: "#08080f" } : undefined}>
-              <div className="flex-1 relative">
+              <ResizableWidget defaultHeight={400} minHeight={150} maxHeight={800} className="flex-1 relative">
                 <ThreeGraph agents={agents} connections={connections} onSelect={handleSelect} selectedId={selected} events={events} />
                 {/* Fullscreen toggle */}
                 <button
