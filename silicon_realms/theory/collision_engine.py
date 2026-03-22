@@ -1166,6 +1166,146 @@ THEORY_REGISTRY: dict[str, dict] = {
         "conservation": {"gauge_charge", "energy"},
         "structure": "variational_principle_with_symmetry",
     },
+
+    # ── Quantum Information ──────────────────────────────────────────────
+    "quantum_information": {
+        "display_name": "Quantum Information (Density Matrix)",
+        "domain": "Physics",
+        "equation": "ρ = Σᵢ pᵢ|ψᵢ⟩⟨ψᵢ|;  S(ρ) = −Tr(ρ ln ρ);  ∂ρ/∂t = −i[H,ρ] + Σ LρL† − ½{L†L,ρ}",
+        "update_form": "lindblad_master_equation",
+        "optimization": None,
+        "fixed_points": "steady_state_density_matrix",
+        "operators": {"trace", "partial_trace", "commutator", "tensor_product",
+                      "unitary", "measurement", "channel"},
+        "patterns": {
+            "energy_based",
+            "energy_entropy_tradeoff",
+            "conservation_of_probability",
+            "information_gain",
+            "uncertainty_measure",
+            "compositional_structure",
+            "structural_isomorphism",
+        },
+        "variables": {
+            "state": "density_matrix",
+            "energy": "hamiltonian",
+            "information": "von_neumann_entropy",
+            "coupling": "interaction_hamiltonian",
+        },
+        "conservation": {"total_probability", "unitarity"},
+        "structure": "operator_algebra_on_hilbert_space",
+    },
+
+    # ── Optimization ─────────────────────────────────────────────────────
+    "simulated_annealing": {
+        "display_name": "Simulated Annealing",
+        "domain": "Optimization",
+        "equation": "P(accept) = min(1, exp(−ΔE / T));  T(t) → 0;  π(x) ∝ exp(−E(x)/T)",
+        "update_form": "metropolis_hastings",
+        "optimization": "global_minimum_energy",
+        "fixed_points": "ground_state_configuration",
+        "operators": {"sampling", "perturbation", "acceptance", "cooling_schedule",
+                      "partition_function"},
+        "patterns": {
+            "energy_based",
+            "energy_minimization",
+            "energy_entropy_tradeoff",
+            "phase_transition",
+            "exploration_exploitation",
+            "gradient_descent",
+        },
+        "variables": {
+            "state": "configuration",
+            "energy": "cost_function",
+            "temperature": "annealing_schedule",
+            "dynamics": "random_perturbation",
+        },
+        "conservation": {"detailed_balance"},
+        "structure": "markov_chain_convergence_to_ground_state",
+    },
+
+    # ── Neuroscience (extended) ──────────────────────────────────────────
+    "sparse_coding": {
+        "display_name": "Sparse Coding / Efficient Neural Coding",
+        "domain": "Neuroscience",
+        "equation": "x = Φa + ε;  a* = argmin ‖x − Φa‖₂² + λ‖a‖₁;  ΔΦ = η(x − Φa)a^T",
+        "update_form": "iterative_shrinkage_thresholding",
+        "optimization": "minimize_reconstruction_plus_sparsity",
+        "fixed_points": "sparse_representation",
+        "operators": {"projection", "thresholding", "gradient", "dictionary_learning",
+                      "lateral_inhibition"},
+        "patterns": {
+            "energy_minimization",
+            "information_gain",
+            "correlation_learning",
+            "optimal_inference",
+            "energy_entropy_tradeoff",
+            "variational_principle",
+        },
+        "variables": {
+            "state": "sparse_activations",
+            "energy": "reconstruction_error_plus_penalty",
+            "basis": "dictionary_atoms",
+            "coupling": "lateral_inhibition_weights",
+        },
+        "conservation": {"information_content"},
+        "structure": "overcomplete_basis_with_sparsity_constraint",
+    },
+
+    # ── Topology (extended) ──────────────────────────────────────────────
+    "simplicial_homology": {
+        "display_name": "Simplicial Homology",
+        "domain": "Topology",
+        "equation": "Hₙ(K) = ker ∂ₙ / im ∂ₙ₊₁;  ∂ₙ∂ₙ₊₁ = 0;  χ(K) = Σ (−1)ⁿ βₙ",
+        "update_form": "boundary_operator_chain",
+        "optimization": None,
+        "fixed_points": "homology_classes",
+        "operators": {"boundary", "chain_complex", "quotient", "exact_sequence",
+                      "betti_number"},
+        "patterns": {
+            "topological_invariants",
+            "compositional_structure",
+            "structural_isomorphism",
+            "universality",
+            "dual_variables",
+        },
+        "variables": {
+            "state": "chain_group",
+            "invariant": "homology_group",
+            "connectivity": "betti_numbers",
+            "shape": "euler_characteristic",
+        },
+        "conservation": {"topological_invariance"},
+        "structure": "algebraic_chain_complex",
+    },
+
+    # ── Economics ─────────────────────────────────────────────────────────
+    "general_equilibrium": {
+        "display_name": "General Equilibrium (Arrow-Debreu)",
+        "domain": "Economics",
+        "equation": "Σᵢ xᵢ(p) = Σᵢ ωᵢ;  xᵢ(p) = argmax uᵢ(x) s.t. p·x ≤ p·ωᵢ;  ∃p*: z(p*) = 0",
+        "update_form": "tatonnement_price_adjustment",
+        "optimization": "maximize_utility_under_budget",
+        "fixed_points": "walrasian_equilibrium_prices",
+        "operators": {"excess_demand", "price_adjustment", "fixed_point",
+                      "lagrange_multiplier", "convex_optimization"},
+        "patterns": {
+            "fixed_point_stability",
+            "fixed_point_iteration",
+            "variational_principle",
+            "dual_variables",
+            "pairwise_coupling",
+            "mean_field",
+        },
+        "variables": {
+            "state": "price_allocation_pair",
+            "energy": "aggregate_excess_demand",
+            "score": "utility",
+            "coupling": "market_clearing_condition",
+        },
+        "conservation": {"walras_law", "total_endowment"},
+        "structure": "fixed_point_of_excess_demand",
+    },
 }
 
 
