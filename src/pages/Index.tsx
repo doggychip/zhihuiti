@@ -598,7 +598,7 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
       if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
       renderer.dispose();
     };
-  }, [agents, connections, selectedId, onSelect]);
+  }, [agents, connections, selectedId, onSelect, showZhihuiti, showHedgeFund]);
 
   // React to new events and trigger 3D effects
   useEffect(() => {
