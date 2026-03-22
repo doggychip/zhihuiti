@@ -27,6 +27,9 @@ TASK_COST = 5.0  # Budget units per task execution
 SYNTHESIS_COST = 3.0  # Budget for the synthesis step
 
 ROLE_MAP = {
+    "coordinator": AgentRole.COORDINATOR,
+    "auditor": AgentRole.AUDITOR,
+    "strategist": AgentRole.STRATEGIST,
     "researcher": AgentRole.RESEARCHER,
     "analyst": AgentRole.ANALYST,
     "coder": AgentRole.CODER,
