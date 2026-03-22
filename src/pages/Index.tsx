@@ -1931,7 +1931,7 @@ export default function ZhihuiTiDashboard() {
                         </tr>
                       </thead>
                       <tbody>
-                        {[...data.alphaarena.agents]
+                        {[...(data as any).alphaarena.agents]
                           .sort((a: any, b: any) => (b.score ?? 0) - (a.score ?? 0))
                           .map((agent: any, i: number) => {
                             const ret = agent.return_pct ?? agent.returnPct ?? agent.return ?? 0;
