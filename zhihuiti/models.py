@@ -10,6 +10,9 @@ from typing import Any
 
 class AgentRole(str, Enum):
     ORCHESTRATOR = "orchestrator"
+    COORDINATOR = "coordinator"
+    AUDITOR = "auditor"
+    STRATEGIST = "strategist"
     RESEARCHER = "researcher"
     ANALYST = "analyst"
     CODER = "coder"
@@ -43,6 +46,9 @@ class TaskStatus(str, Enum):
 # Which roles belong to which realm by default
 ROLE_TO_REALM: dict[AgentRole, Realm] = {
     AgentRole.ORCHESTRATOR: Realm.CENTRAL,
+    AgentRole.COORDINATOR: Realm.CENTRAL,
+    AgentRole.AUDITOR: Realm.CENTRAL,
+    AgentRole.STRATEGIST: Realm.CENTRAL,
     AgentRole.RESEARCHER: Realm.RESEARCH,
     AgentRole.ANALYST: Realm.RESEARCH,
     AgentRole.CODER: Realm.RESEARCH,
