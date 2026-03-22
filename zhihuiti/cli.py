@@ -666,6 +666,28 @@ def alphaarena_watch(url: str | None, interval: str, db: str):
     mem.close()
 
 
+@alphaarena.command("hedge")
+@click.option("--url", default=None, help="AlphaArena API URL")
+def alphaarena_hedge(url: str | None):
+    """Show hedge fund agent tiers — top, mid, bottom performers."""
+    from zhihuiti.hedge_manager import HedgeFundManager
+    manager = HedgeFundManager(base_url=url)
+    manager.print_status()
+
+
+@alphaarena.command("evolve-hedge")
+@click.option("--url", default=None, help="AlphaArena API URL")
+@click.option("--cull", default=0.3, help="Bottom tier threshold (0-1)")
+@click.option("--promote", default=0.7, help="Top tier threshold (0-1)")
+def alphaarena_evolve_hedge(url: str | None, cull: float, promote: float):
+    """Run one evolution cycle — evolve bottom performers using top DNA."""
+    from zhihuiti.hedge_manager import HedgeFundManager
+    console.print(BANNER, style="bold cyan")
+    manager = HedgeFundManager(base_url=url, cull_threshold=cull, promote_threshold=promote)
+    result = manager.run_evolution_cycle()
+    console.print(f"\n  [green]Evolved {result['evolved']} agents[/green]")
+
+
 @main.group()
 def criticai():
     """🎬 CriticAI Bridge — monitor and collaborate with CriticAI agents."""
