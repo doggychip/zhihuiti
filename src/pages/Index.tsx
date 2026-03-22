@@ -1691,43 +1691,60 @@ export default function ZhihuiTiDashboard() {
             <Stat label="Auctions Won" value={au.total_auctions || 0} sub={`Saved ${(au.total_savings || 0).toFixed(0)} ◆`} color="#3b82f6" />
           </ResizableWidget>
 
+          <ResizableWidget minHeight={50} maxHeight={400}>
           <SystemCard icon="🔍" title="3-Layer Inspection" items={[
           ["Inspections", ins.total_inspections || 0],
           ["Accepted", ins.accepted || 0, "#22c55e"],
           ["Rejected", ins.rejected || 0, "#ef4444"],
           ["Avg Score", (ins.avg_score || 0).toFixed(2)]]
           } />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={400}>
           <SystemCard icon="🚨" title="Circuit Breaker" items={[
           ["Trips", cb.total_trips || 0, cb.total_trips > 0 ? "#ef4444" : "#22c55e"],
           ["Laws Active", cb.laws_active || 0]]
           } />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={400}>
           <SystemCard icon="👁" title="Behavioral Detection" items={[
           ["Violations", bh.total_violations || 0, bh.total_violations > 0 ? "#ef4444" : "#22c55e"],
           ["Agents Flagged", bh.agents_flagged || 0]]
           } />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={400}>
           <SystemCard icon="💳" title="Lending" items={[
           ["Active", ln.active || 0],
           ["Defaulted", ln.defaulted || 0, ln.defaulted > 0 ? "#ef4444" : "#fff"]]
           } />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={400}>
           <SystemCard icon="💱" title="Market / Futures" items={[
           ["Orders", mk.total_orders || 0],
           ["Trades", mk.total_trades || 0],
           ["Stakes", ft.active || 0]]
           } />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={400}>
           <SystemCard icon="⚖️" title="Arbitration" items={[
           ["Disputes", ar.total_disputes || 0],
           ["Resolved", ar.resolved || 0, "#22c55e"]]
           } />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={400}>
           <SystemCard icon="🏭" title="Factory" items={[
           ["Shipped", fa.shipped || 0, "#22c55e"],
           ["QA Fail", fa.qa_fail || 0, fa.qa_fail > 0 ? "#ef4444" : "#fff"]]
           } />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={400}>
           <SystemCard icon="📨" title="Agent Messaging" items={[
           ["Messages", msg.total_messages || 0],
           ["Unread", msg.unread || 0, msg.unread > 0 ? "#eab308" : "#fff"]]
           } />
+          </ResizableWidget>
 
           {goals.length > 0 &&
+          <ResizableWidget minHeight={50} maxHeight={400}>
           <SystemCard icon="📚" title="Goal History" items={
           goals.slice(0, 4).map((g) => [
           (g.goal || "").slice(0, 22) + ((g.goal?.length || 0) > 22 ? "..." : ""),
@@ -1735,6 +1752,7 @@ export default function ZhihuiTiDashboard() {
           (g.avg_score || 0) >= 0.8 ? "#22c55e" : "#eab308"] as
           [string, string, string])
           } />
+          </ResizableWidget>
           }
 
           {/* Connection legend */}
