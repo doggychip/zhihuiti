@@ -1678,10 +1678,18 @@ export default function ZhihuiTiDashboard() {
           </div>
           </ResizableWidget>
 
-          <Stat label="Money Supply" value={`${(econ.money_supply || 0).toLocaleString()} ◆`} sub={`Treasury: ${(econ.treasury_balance || 0).toLocaleString()}`} color="#eab308" />
-          <Stat label="Tasks Completed" value={mem.total_tasks || 0} sub={`Avg score: ${(mem.avg_task_score || 0).toFixed(2)}`} color="#22c55e" />
-          <Stat label="Gene Pool" value={mem.gene_pool_size || 0} sub={`${bl.alive_genes || 0} alive · Gen ${bl.max_generation || 0}`} color="#a855f7" />
-          <Stat label="Auctions Won" value={au.total_auctions || 0} sub={`Saved ${(au.total_savings || 0).toFixed(0)} ◆`} color="#3b82f6" />
+          <ResizableWidget minHeight={50} maxHeight={300}>
+            <Stat label="Money Supply" value={`${(econ.money_supply || 0).toLocaleString()} ◆`} sub={`Treasury: ${(econ.treasury_balance || 0).toLocaleString()}`} color="#eab308" />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={300}>
+            <Stat label="Tasks Completed" value={mem.total_tasks || 0} sub={`Avg score: ${(mem.avg_task_score || 0).toFixed(2)}`} color="#22c55e" />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={300}>
+            <Stat label="Gene Pool" value={mem.gene_pool_size || 0} sub={`${bl.alive_genes || 0} alive · Gen ${bl.max_generation || 0}`} color="#a855f7" />
+          </ResizableWidget>
+          <ResizableWidget minHeight={50} maxHeight={300}>
+            <Stat label="Auctions Won" value={au.total_auctions || 0} sub={`Saved ${(au.total_savings || 0).toFixed(0)} ◆`} color="#3b82f6" />
+          </ResizableWidget>
 
           <SystemCard icon="🔍" title="3-Layer Inspection" items={[
           ["Inspections", ins.total_inspections || 0],
