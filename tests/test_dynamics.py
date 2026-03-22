@@ -19,6 +19,7 @@ from silicon_realms.dynamics import (
     compute_kl_divergence,
     compute_natural_gradient,
     update_information_geometry,
+    apply_natural_gradient_feedback,
     tick_dynamics,
 )
 
@@ -371,6 +372,133 @@ class TestInformationGeometry:
         assert state.fisher_information >= 0
         assert state.kl_divergence >= 0
         assert isinstance(state.natural_gradient, dict)
+
+
+# ─── 5b. Natural Gradient Feedback ─────────────────────────────────────
+
+class TestNaturalGradientFeedback:
+    def test_feedback_no_crash_empty_gradient(self):
+        state = _make_state()
+        state.natural_gradient = {}
+        apply_natural_gradient_feedback(state)
+        # reward_modifier unchanged
+        for realm in state.realms.values():
+            assert realm.reward_modifier == 1.0
+
+    def test_positive_gradient_increases_modifier(self):
+        """Realm with positive natural gradient → reward_modifier > 1.0."""
+        state = _make_state()
+        state.natural_gradient = {"compute": 5.0, "memory": 0.0, "network": 0.0, "information": 0.0}
+        state.fisher_information = 0.0
+        state.kl_divergence = 0.0
+        apply_natural_gradient_feedback(state)
+        assert state.realms["compute"].reward_modifier > 1.0
+
+    def test_negative_gradient_decreases_modifier(self):
+        """Realm with negative gradient → reward_modifier < 1.0 (before KL pull)."""
+        state = _make_state()
+        state.natural_gradient = {"compute": -5.0, "memory": 0.0, "network": 0.0, "information": 0.0}
+        state.fisher_information = 0.0
+        state.kl_divergence = 0.0  # no KL pull to complicate
+        apply_natural_gradient_feedback(state)
+        assert state.realms["compute"].reward_modifier < 1.0
+
+    def test_fisher_damping_reduces_adjustment(self):
+        """High Fisher info → smaller modifier change."""
+        # Low Fisher
+        state_low = _make_state()
+        state_low.natural_gradient = {"compute": 10.0, "memory": 0.0, "network": 0.0, "information": 0.0}
+        state_low.fisher_information = 0.0
+        state_low.kl_divergence = 0.0
+        apply_natural_gradient_feedback(state_low)
+        change_low = state_low.realms["compute"].reward_modifier - 1.0
+
+        # High Fisher
+        state_high = _make_state()
+        state_high.natural_gradient = {"compute": 10.0, "memory": 0.0, "network": 0.0, "information": 0.0}
+        state_high.fisher_information = 5.0
+        state_high.kl_divergence = 0.0
+        apply_natural_gradient_feedback(state_high)
+        change_high = state_high.realms["compute"].reward_modifier - 1.0
+
+        assert abs(change_high) < abs(change_low)
+
+    def test_kl_pull_supports_declining_realm(self):
+        """High KL + declining realm → extra boost (equilibrium pull)."""
+        # No KL
+        state_no_kl = _make_state()
+        state_no_kl.natural_gradient = {"compute": -3.0, "memory": 0.0, "network": 0.0, "information": 0.0}
+        state_no_kl.fisher_information = 0.0
+        state_no_kl.kl_divergence = 0.0
+        apply_natural_gradient_feedback(state_no_kl)
+        mod_no_kl = state_no_kl.realms["compute"].reward_modifier
+
+        # High KL
+        state_kl = _make_state()
+        state_kl.natural_gradient = {"compute": -3.0, "memory": 0.0, "network": 0.0, "information": 0.0}
+        state_kl.fisher_information = 0.0
+        state_kl.kl_divergence = 2.0
+        apply_natural_gradient_feedback(state_kl)
+        mod_kl = state_kl.realms["compute"].reward_modifier
+
+        # KL pull should push modifier higher (more support)
+        assert mod_kl > mod_no_kl
+
+    def test_kl_pull_only_for_declining_realms(self):
+        """KL pull should NOT apply to realms with positive gradient."""
+        state = _make_state()
+        state.natural_gradient = {"compute": 3.0, "memory": 0.0, "network": 0.0, "information": 0.0}
+        state.fisher_information = 0.0
+        state.kl_divergence = 5.0  # high KL but positive gradient
+        apply_natural_gradient_feedback(state)
+
+        # The modifier should be > 1.0 (from momentum) but NOT get extra KL pull
+        # Compare: with KL=0, the momentum alone should give same result
+        state2 = _make_state()
+        state2.natural_gradient = {"compute": 3.0, "memory": 0.0, "network": 0.0, "information": 0.0}
+        state2.fisher_information = 0.0
+        state2.kl_divergence = 0.0
+        apply_natural_gradient_feedback(state2)
+
+        assert abs(state.realms["compute"].reward_modifier - state2.realms["compute"].reward_modifier) < 1e-9
+
+    def test_modifier_clamped_to_range(self):
+        """Extreme gradients should not push modifier outside [0.5, 2.0]."""
+        state = _make_state()
+        state.natural_gradient = {"compute": 1000.0, "memory": -1000.0, "network": 0.0, "information": 0.0}
+        state.fisher_information = 0.0
+        state.kl_divergence = 0.0
+        apply_natural_gradient_feedback(state)
+
+        assert state.realms["compute"].reward_modifier == 2.0
+        assert state.realms["memory"].reward_modifier == 0.5
+
+    def test_mean_reversion_toward_one(self):
+        """A modifier far from 1.0 should decay back toward 1.0."""
+        state = _make_state()
+        state.realms["compute"].reward_modifier = 1.8
+        state.natural_gradient = {"compute": 0.0, "memory": 0.0, "network": 0.0, "information": 0.0}
+        state.fisher_information = 0.0
+        state.kl_divergence = 0.0
+        apply_natural_gradient_feedback(state)
+
+        # Should have decayed toward 1.0
+        assert state.realms["compute"].reward_modifier < 1.8
+
+    def test_feedback_integrated_in_tick_dynamics(self):
+        """tick_dynamics should run feedback and set reward_modifier."""
+        agents = {
+            "a": _agent("a", 200, realm="compute", fitness_history=[100, 200]),
+            "b": _agent("b", 50, realm="memory", fitness_history=[100, 50]),
+        }
+        state = _make_state(agents)
+        tick_dynamics(state)
+
+        # Compute had positive growth → modifier should be >= 1.0
+        # Memory had negative growth → modifier may be < 1.0 (with mean-reversion)
+        # Just verify modifiers are set and in range
+        for realm in state.realms.values():
+            assert 0.5 <= realm.reward_modifier <= 2.0
 
 
 # ─── 6. Combined tick ───────────────────────────────────────────────────

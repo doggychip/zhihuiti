@@ -59,6 +59,9 @@ class Realm:
     # SOC: cross-realm avalanche state
     avalanche_exposure: float = 0.0           # realm-local cascade severity this tick
 
+    # Information geometry: natural gradient feedback
+    reward_modifier: float = 1.0              # multiplicative reward adjustment from natural gradient
+
 
 @dataclass
 class Ledger:

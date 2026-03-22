@@ -214,6 +214,7 @@ def run(config_path: str, plot: bool = True) -> SimState:
                 "mutual_information": r.mutual_information,
                 "redundancy": r.redundancy,
                 "avalanche_exposure": r.avalanche_exposure,
+                "reward_modifier": r.reward_modifier,
             }
             for name, r in state.realms.items()
         })
