@@ -618,10 +618,13 @@ class AutoScheduler:
 
     def _loop(self):
         import time
+        import random
         while self.running:
-            for goal in self.goals:
-                if not self.running:
-                    break
+            # Pick a random goal from the pool each cycle
+            goal = random.choice(self.goals) if self.goals else None
+            if goal and not self.running:
+                break
+            if goal:
                 try:
                     console.print(f"  [cyan]Auto-run:[/cyan] {goal[:60]}...")
                     self.orch.execute_goal(goal)
@@ -666,23 +669,31 @@ def start_dashboard(orch: Orchestrator, port: int = DEFAULT_PORT,
         interval = int(os.environ.get("ALPHAARENA_TRADE_INTERVAL", str(trade_interval)))
         scheduler = AutoScheduler(orch, interval_seconds=interval)
 
-        # Add AlphaArena trading goals
+        # Add diverse goal pool — each cycle picks one randomly
+        GOAL_POOL = [
+            "Research the latest developments in AI agent frameworks. Compare at least 3 approaches and their trade-offs.",
+            "Analyze current trends in DeFi and decentralized finance. Identify the top protocols and emerging risks.",
+            "Compare different approaches to multi-agent coordination: auction-based, hierarchical, and evolutionary.",
+            "Research the state of open-source LLMs. Compare Llama, Mistral, DeepSeek, and Qwen on coding tasks.",
+            "Analyze the competitive landscape of AI coding assistants. What differentiates each product?",
+            "Research blockchain scalability solutions: L2 rollups, sharding, and alternative consensus mechanisms.",
+            "Evaluate strategies for building resilient distributed systems. Focus on fault tolerance and self-healing.",
+            "Analyze the economics of AI inference: cloud vs local, cost per token trends, and optimization strategies.",
+            "Research autonomous agent architectures used in production systems. What patterns work at scale?",
+            "Compare approaches to AI safety and alignment. How do different frameworks handle agent autonomy?",
+        ]
+
         aa_url = os.environ.get("ALPHAARENA_URL", "")
         aa_id = os.environ.get("ALPHAARENA_AGENT_ID", "")
         if aa_url and aa_id:
-            scheduler.add_goal(
-                f"AlphaArena Trading: Check prices at {aa_url}/api/prices. "
-                f"Analyze the top 3 movers by 24h change. "
-                f"Check portfolio at {aa_url}/api/portfolio/{aa_id}. "
-                f"If any pair moved more than 3%, consider a trade. "
-                f"Execute via POST {aa_url}/api/trades. Agent ID: {aa_id}. "
-                f"Max 20% portfolio per trade. Focus on Sharpe ratio optimization."
-            )
-        else:
-            scheduler.add_goal(
-                "Analyze current market conditions for crypto. "
-                "Research top performing assets and identify trading opportunities."
-            )
+            GOAL_POOL.extend([
+                f"AlphaArena: Check prices at {aa_url}/api/prices. Analyze top 3 movers. Trade if >3% move. Agent: {aa_id}.",
+                f"AlphaArena: Review portfolio at {aa_url}/api/portfolio/{aa_id}. Rebalance if any position >25%.",
+                f"AlphaArena: Analyze BTC and ETH momentum. Compare 24h trends. Trade the stronger one. Agent: {aa_id}.",
+            ])
+
+        for goal in GOAL_POOL:
+            scheduler.add_goal(goal)
 
         scheduler.start()
         DashboardHandler._scheduler = scheduler
