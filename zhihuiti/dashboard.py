@@ -682,6 +682,41 @@ class AutoScheduler:
                 except Exception as e:
                     console.print(f"  [red]Auto-run failed:[/red] {e}")
 
+            # Direct AlphaArena trading via Python bridge (no agent curl needed)
+            aa_url = os.environ.get("ALPHAARENA_URL", "")
+            aa_key = os.environ.get("ALPHAARENA_API_KEY", "")
+            aa_id = os.environ.get("ALPHAARENA_AGENT_ID", "")
+            if aa_url and aa_key and aa_id:
+                try:
+                    from zhihuiti.alphaarena import AlphaArenaBridge
+                    bridge = AlphaArenaBridge(base_url=aa_url, api_key=aa_key, agent_id=aa_id)
+                    prices = bridge.get_prices()
+                    portfolio = bridge.get_portfolio()
+
+                    # Find top mover by 24h change
+                    if prices:
+                        top_mover = max(prices, key=lambda p: abs(p.get("change24h", 0)))
+                        change = top_mover.get("change24h", 0)
+                        pair = top_mover.get("pair", "")
+                        price = top_mover.get("price", 0)
+                        cash = portfolio.get("cashBalance", 0)
+
+                        # Trade if significant move and we have cash
+                        if abs(change) > 1.0 and cash > 1000 and pair:
+                            # Max 10% of cash per trade
+                            max_spend = cash * 0.1
+                            quantity = round(max_spend / price, 4) if price > 0 else 0
+                            side = "buy" if change > 0 else "sell"
+
+                            if quantity > 0:
+                                result = bridge.trade(pair, side, quantity)
+                                console.print(
+                                    f"  [green]Trade executed:[/green] {side} {quantity} {pair} "
+                                    f"@ ${price:,.2f} (24h: {change:+.1f}%)"
+                                )
+                except Exception as e:
+                    console.print(f"  [red]Direct trade failed:[/red] {e}")
+
             # Run hedge fund evolution every 3rd cycle
             if self.run_count > 0 and self.run_count % 3 == 0:
                 aa_url = os.environ.get("ALPHAARENA_URL", "")
