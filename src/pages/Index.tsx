@@ -1444,7 +1444,28 @@ export default function ZhihuiTiDashboard() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  const agents: Agent[] = data?.agents || [];
+  const coreAgents: Agent[] = data?.agents || [];
+
+  // Parse alphaarena agents from API and merge
+  const alphaArenaAgents: Agent[] = useMemo(() => {
+    const raw = (data as any)?.alphaarena?.agents;
+    if (!Array.isArray(raw)) return [];
+    return raw.map((a: any) => ({
+      id: a.id,
+      role: a.name || a.id,
+      name: a.name,
+      budget: (a.compositeScore || 0.5) * 200,
+      avg_score: a.winRate || 0.5,
+      alive: true,
+      realm: a.type === "algo_bot" ? "central" : "research",
+      life_state: "active",
+      generation: 0,
+      tasks: 0,
+      group: (a.type === "algo_bot" ? "zhihuiti" : "hedge_fund") as "zhihuiti" | "hedge_fund",
+    }));
+  }, [data]);
+
+  const agents: Agent[] = useMemo(() => [...coreAgents, ...alphaArenaAgents], [coreAgents, alphaArenaAgents]);
   const events = useSimulatedFeed(agents);
 
   if (!data) return (
