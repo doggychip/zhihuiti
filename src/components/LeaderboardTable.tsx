@@ -31,6 +31,8 @@ const COLUMNS = [
 
 export function LeaderboardTable({ agents, handleSelect, REALM_COLORS }: LeaderboardTableProps) {
   const [colWidths, setColWidths] = useState<number[]>(COLUMNS.map(c => c.defaultWidth));
+  const [showZhihuiti, setShowZhihuiti] = useState(true);
+  const [showHedgeFund, setShowHedgeFund] = useState(true);
   const dragRef = useRef<{ colIndex: number; startX: number; startWidth: number } | null>(null);
 
   const onMouseDown = useCallback((e: React.MouseEvent, colIndex: number) => {
