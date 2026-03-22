@@ -681,6 +681,18 @@ class AutoScheduler:
                     self.last_run = time.time()
                 except Exception as e:
                     console.print(f"  [red]Auto-run failed:[/red] {e}")
+
+            # Run hedge fund evolution every 3rd cycle
+            if self.run_count > 0 and self.run_count % 3 == 0:
+                aa_url = os.environ.get("ALPHAARENA_URL", "")
+                if aa_url:
+                    try:
+                        from zhihuiti.hedge_manager import HedgeFundManager
+                        manager = HedgeFundManager(base_url=aa_url)
+                        result = manager.run_evolution_cycle()
+                        console.print(f"  [green]Evolution:[/green] evolved {result['evolved']} agents")
+                    except Exception as e:
+                        console.print(f"  [red]Evolution failed:[/red] {e}")
             # Sleep in small increments so we can stop quickly
             for _ in range(self.interval):
                 if not self.running:
