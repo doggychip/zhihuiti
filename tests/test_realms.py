@@ -9,6 +9,7 @@ from silicon_realms.realms import (
     network_tick,
     information_tick,
     apply_avalanche_spillover,
+    apply_cross_realm_dynamics,
     migrate_agent,
 )
 
@@ -440,3 +441,137 @@ class TestInformationRealm:
         initial = state.total_supply
         information_tick(state, state.realms["information"], [agent])
         assert state.total_supply == initial  # no minting
+
+
+# ─── Cross-Realm Dynamics ──────────────────────────────────────────────
+
+class TestCrossRealmDynamics:
+    def test_cross_realm_no_crash_empty(self):
+        state = _make_state()
+        apply_cross_realm_dynamics(state)  # no crash
+
+    def test_information_diffusion_boosts_compute(self):
+        """High channel capacity in info realm should boost compute selection pressure."""
+        state = _make_state()
+        info = state.realms["information"]
+        compute = state.realms["compute"]
+
+        info.channel_capacity = 5.0  # high capacity
+        initial_pressure = compute.selection_pressure
+
+        apply_cross_realm_dynamics(state)
+
+        assert compute.selection_pressure > initial_pressure
+
+    def test_information_diffusion_boosts_network(self):
+        """High channel capacity should boost network route efficiency."""
+        state = _make_state()
+        info = state.realms["information"]
+        network = state.realms["network"]
+
+        info.channel_capacity = 5.0
+        initial_eff = network.route_efficiency
+
+        apply_cross_realm_dynamics(state)
+
+        assert network.route_efficiency > initial_eff
+
+    def test_information_diffusion_boosts_memory(self):
+        """High channel capacity should boost memory knowledge pool."""
+        state = _make_state()
+        info = state.realms["information"]
+        memory = state.realms["memory"]
+
+        info.channel_capacity = 5.0
+        memory.knowledge_pool = 100.0
+        initial_pool = memory.knowledge_pool
+
+        apply_cross_realm_dynamics(state)
+
+        assert memory.knowledge_pool > initial_pool
+
+    def test_no_boost_when_capacity_low(self):
+        """Channel capacity <= 1.0 should not trigger diffusion."""
+        state = _make_state()
+        info = state.realms["information"]
+        compute = state.realms["compute"]
+
+        info.channel_capacity = 0.8
+        initial_pressure = compute.selection_pressure
+
+        apply_cross_realm_dynamics(state)
+
+        assert compute.selection_pressure == initial_pressure
+
+    def test_compute_network_synergy(self):
+        """High selection pressure in compute should boost network efficiency."""
+        state = _make_state()
+        compute = state.realms["compute"]
+        network = state.realms["network"]
+
+        # Need info.channel_capacity <= 1.0 to isolate this effect
+        state.realms["information"].channel_capacity = 0.5
+        compute.selection_pressure = 3.0
+        initial_eff = network.route_efficiency
+
+        apply_cross_realm_dynamics(state)
+
+        assert network.route_efficiency > initial_eff
+
+    def test_memory_information_bridge(self):
+        """Large knowledge pool should increase info realm MI."""
+        state = _make_state()
+        memory = state.realms["memory"]
+        info = state.realms["information"]
+
+        memory.knowledge_pool = 100.0
+        info.channel_capacity = 0.5  # disable diffusion
+        initial_mi = info.mutual_information
+
+        apply_cross_realm_dynamics(state)
+
+        assert info.mutual_information > initial_mi
+
+    def test_network_memory_flow(self):
+        """High route efficiency should boost knowledge pool."""
+        state = _make_state()
+        network = state.realms["network"]
+        memory = state.realms["memory"]
+
+        network.route_efficiency = 2.0
+        memory.knowledge_pool = 50.0
+        state.realms["information"].channel_capacity = 0.5  # disable diffusion
+        initial_pool = memory.knowledge_pool
+
+        apply_cross_realm_dynamics(state)
+
+        assert memory.knowledge_pool > initial_pool
+
+    def test_noise_contagion(self):
+        """High noise in info realm should increase memory temperature."""
+        state = _make_state()
+        info = state.realms["information"]
+        memory = state.realms["memory"]
+
+        info.noise_level = 3.0
+        info.channel_capacity = 0.5  # disable diffusion
+        initial_temp = memory.realm_temperature
+
+        apply_cross_realm_dynamics(state)
+
+        assert memory.realm_temperature > initial_temp
+
+    def test_boosts_are_capped(self):
+        """Extreme values should not cause unbounded growth."""
+        state = _make_state()
+        info = state.realms["information"]
+        compute = state.realms["compute"]
+        network = state.realms["network"]
+
+        info.channel_capacity = 1000.0  # extreme
+        compute.selection_pressure = 4.9
+
+        apply_cross_realm_dynamics(state)
+
+        assert compute.selection_pressure <= 5.0
+        assert network.route_efficiency <= 3.0

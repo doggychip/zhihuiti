@@ -8,7 +8,7 @@ import yaml
 from .models import Realm, SimState
 from .agents import create_agents, agent_decide, agent_act
 from .economy import distribute_staking_rewards, get_summary
-from .realms import REALM_TICK_FNS, apply_avalanche_spillover
+from .realms import REALM_TICK_FNS, apply_avalanche_spillover, apply_cross_realm_dynamics
 from .visualization import plot_simulation
 from .dynamics import tick_dynamics, strategy_frequencies, is_near_critical
 
@@ -152,6 +152,9 @@ def run(config_path: str, plot: bool = True) -> SimState:
         "strategy_freq": [],
         "realm_values": [],
         "realm_theory": [],
+        "fisher_information": [],
+        "kl_divergence": [],
+        "natural_gradient": [],
     }
 
     for tick in range(ticks):
@@ -178,13 +181,16 @@ def run(config_path: str, plot: bool = True) -> SimState:
         # 5. Energy management
         update_energy(state)
 
-        # 6. Theoretical dynamics (replicator, thermodynamics, Bellman, SOC)
+        # 6. Theoretical dynamics (replicator, thermodynamics, Bellman, SOC, info geometry)
         tick_dynamics(state)
 
-        # 7. SOC avalanche cascade across realms
+        # 7. Cross-realm dynamics (information diffusion, synergy, bridges)
+        apply_cross_realm_dynamics(state)
+
+        # 8. SOC avalanche cascade across realms
         apply_avalanche_spillover(state)
 
-        # 8. Collect history snapshot
+        # 9. Collect history snapshot
         snapshot = collect_history(state)
         history["ticks"].append(tick)
         for key in ("total_supply", "circulating", "staked", "gini",
@@ -212,7 +218,11 @@ def run(config_path: str, plot: bool = True) -> SimState:
             for name, r in state.realms.items()
         })
 
-        # 9. Periodic summary
+        history["fisher_information"].append(state.fisher_information)
+        history["kl_divergence"].append(state.kl_divergence)
+        history["natural_gradient"].append(dict(state.natural_gradient))
+
+        # 10. Periodic summary
         if tick % log_interval == 0:
             print_summary(state)
 
