@@ -3540,6 +3540,273 @@ THEORY_REGISTRY: dict[str, dict] = {
         "conservation": set(),
         "structure": "energy_based_pairwise_model",
     },
+
+    # ── Harmonic Analysis ────────────────────────────────────────────────
+    "fourier_analysis": {
+        "display_name": "Fourier Analysis / Spectral Decomposition",
+        "domain": "Mathematics",
+        "equation": "f(x) = Σ cₙ eⁱⁿˣ;  F(ω) = ∫f(t)e⁻ⁱωᵗdt;  Parseval: ∫|f|² = Σ|cₙ|²;  convolution: F(f*g) = F(f)·F(g);  sampling: f_s ≥ 2f_max",
+        "update_form": "spectral_decomposition",
+        "optimization": "optimal_frequency_representation",
+        "fixed_points": "spectral_coefficients",
+        "operators": {"fourier_transform", "convolution", "inner_product",
+                      "spectral_decomposition", "windowing"},
+        "patterns": {
+            "structural_isomorphism",
+            "compositional_structure",
+            "dual_variables",
+            "conservation_law",
+            "energy_minimization",
+        },
+        "variables": {
+            "state": "spectral_coefficients",
+            "energy": "signal_energy",
+            "spectrum": "frequency_spectrum",
+            "coupling": "convolution_kernel",
+        },
+        "conservation": {"parseval_energy_conservation"},
+        "structure": "hilbert_space_optimization",
+    },
+
+    # ── Multiscale Analysis ──────────────────────────────────────────────
+    "wavelet_theory": {
+        "display_name": "Wavelet Theory / Multiresolution",
+        "domain": "Signal Processing",
+        "equation": "f = Σ⟨f,ψⱼₖ⟩ψⱼₖ;  ψⱼₖ(t) = 2^{j/2}ψ(2ʲt−k);  MRA: V_j ⊂ V_{j+1};  φ(t) = √2 Σ hₖ φ(2t−k);  ||f||² = Σ|⟨f,ψⱼₖ⟩|²",
+        "update_form": "multiresolution_decomposition",
+        "optimization": "optimal_time_frequency_representation",
+        "fixed_points": "wavelet_coefficients",
+        "operators": {"dilation", "translation", "filter_bank",
+                      "thresholding", "reconstruction"},
+        "patterns": {
+            "renormalization",
+            "compositional_structure",
+            "structural_isomorphism",
+            "energy_minimization",
+            "information_gain",
+        },
+        "variables": {
+            "state": "wavelet_coefficients",
+            "energy": "signal_energy",
+            "spectrum": "scale_frequency_map",
+            "dynamics": "multiresolution_ladder",
+        },
+        "conservation": {"parseval_frame_bound"},
+        "structure": "renormalization_hierarchy",
+    },
+
+    # ── Financial Mathematics ────────────────────────────────────────────
+    "black_scholes": {
+        "display_name": "Black-Scholes / Option Pricing",
+        "domain": "Economics",
+        "equation": "∂V/∂t + ½σ²S²∂²V/∂S² + rS∂V/∂S − rV = 0;  C = SN(d₁) − Ke⁻ʳᵀN(d₂);  Δ-hedge: dΠ = rΠdt;  risk-neutral: E^Q[e⁻ʳᵀ payoff]",
+        "update_form": "risk_neutral_pricing",
+        "optimization": "replicate_payoff",
+        "fixed_points": "arbitrage_free_price",
+        "operators": {"ito_calculus", "risk_neutral_measure",
+                      "delta_hedging", "pde_solution", "girsanov_transform"},
+        "patterns": {
+            "conservation_law",
+            "dual_variables",
+            "energy_entropy_tradeoff",
+            "variational_principle",
+        },
+        "variables": {
+            "state": "option_price",
+            "energy": "hedging_error",
+            "dynamics": "geometric_brownian_motion",
+            "coupling": "volatility_surface",
+        },
+        "conservation": {"no_arbitrage"},
+        "structure": "dynamical_system_on_manifold",
+    },
+
+    # ── Portfolio Theory ─────────────────────────────────────────────────
+    "markowitz_portfolio": {
+        "display_name": "Markowitz Portfolio / Mean-Variance",
+        "domain": "Economics",
+        "equation": "min wᵀΣw s.t. wᵀμ=r, wᵀ1=1;  efficient frontier: σ²(r) = a r² − 2br + c;  Sharpe: max (wᵀμ−r_f)/√(wᵀΣw);  CAPM: E[rᵢ]−r_f = βᵢ(E[r_m]−r_f)",
+        "update_form": "mean_variance_optimization",
+        "optimization": "minimize_portfolio_variance",
+        "fixed_points": "efficient_portfolio",
+        "operators": {"covariance_estimation", "quadratic_programming",
+                      "lagrange_multiplier", "risk_decomposition"},
+        "patterns": {
+            "energy_minimization",
+            "dual_variables",
+            "variational_principle",
+            "pairwise_coupling",
+        },
+        "variables": {
+            "state": "portfolio_weights",
+            "energy": "portfolio_variance",
+            "coupling": "covariance_matrix",
+            "dynamics": "efficient_frontier",
+        },
+        "conservation": {"budget_constraint"},
+        "structure": "optimization_over_parameter_space",
+    },
+
+    # ── Epidemiological Models ───────────────────────────────────────────
+    "sir_model": {
+        "display_name": "SIR / Epidemiological Model",
+        "domain": "Biology",
+        "equation": "dS/dt = −βSI;  dI/dt = βSI − γI;  dR/dt = γI;  R₀ = β/γ;  herd immunity: S < 1/R₀;  final size: 1−R∞ = e^{−R₀R∞}",
+        "update_form": "compartmental_ode",
+        "optimization": "minimize_epidemic_size",
+        "fixed_points": "disease_free_equilibrium",
+        "operators": {"mass_action", "basic_reproduction_number",
+                      "compartment_transition", "threshold_condition"},
+        "patterns": {
+            "population_dynamics",
+            "fixed_point_iteration",
+            "energy_minimization",
+            "conservation_law",
+            "symmetry_breaking",
+        },
+        "variables": {
+            "state": "compartment_fractions",
+            "energy": "epidemic_potential",
+            "dynamics": "transmission_recovery",
+            "coupling": "contact_rate",
+        },
+        "conservation": {"total_population"},
+        "structure": "dynamical_system_on_simplex",
+    },
+
+    # ── Type Theory ──────────────────────────────────────────────────────
+    "curry_howard": {
+        "display_name": "Curry-Howard Correspondence / Type Theory",
+        "domain": "Computer Science",
+        "equation": "Γ ⊢ t : A  ≅  proof of A from Γ;  A→B ≅ implication;  A×B ≅ conjunction;  Π(x:A).B(x) ≅ ∀x.B;  Σ(x:A).B(x) ≅ ∃x.B",
+        "update_form": "type_checking_inference",
+        "optimization": "construct_proof_term",
+        "fixed_points": "well_typed_program",
+        "operators": {"type_inference", "substitution",
+                      "abstraction", "application", "normalization"},
+        "patterns": {
+            "structural_isomorphism",
+            "compositional_structure",
+            "dual_variables",
+            "conservation_law",
+        },
+        "variables": {
+            "state": "typing_judgment",
+            "energy": "proof_complexity",
+            "dynamics": "beta_reduction",
+            "coupling": "type_context",
+        },
+        "conservation": {"subject_reduction"},
+        "structure": "renormalization_hierarchy",
+    },
+
+    # ── Quantum Algorithms ───────────────────────────────────────────────
+    "quantum_computing": {
+        "display_name": "Quantum Computing / Gate Model",
+        "domain": "Physics",
+        "equation": "|ψ⟩ = Σ αᵢ|i⟩;  U = Π Gⱼ;  Grover: O(√N) search;  Shor: period finding via QFT;  ||ψ||² = 1;  decoherence: ρ → Σ EₖρEₖ†",
+        "update_form": "unitary_gate_sequence",
+        "optimization": "minimize_circuit_depth",
+        "fixed_points": "measurement_outcome",
+        "operators": {"unitary_gate", "measurement", "tensor_product",
+                      "quantum_fourier_transform", "error_correction"},
+        "patterns": {
+            "compositional_structure",
+            "structural_isomorphism",
+            "information_gain",
+            "conservation_law",
+            "symmetry_breaking",
+        },
+        "variables": {
+            "state": "quantum_state_vector",
+            "energy": "circuit_cost",
+            "spectrum": "eigenvalues_of_observable",
+            "dynamics": "gate_sequence",
+        },
+        "conservation": {"unitarity", "born_rule_normalization"},
+        "structure": "hilbert_space_optimization",
+    },
+
+    # ── Network Community Structure ──────────────────────────────────────
+    "community_detection": {
+        "display_name": "Community Detection / Modularity",
+        "domain": "Network Science",
+        "equation": "Q = 1/(2m) Σ [Aᵢⱼ − kᵢkⱼ/(2m)] δ(cᵢ,cⱼ);  SBM: P(Aᵢⱼ=1) = p if cᵢ=cⱼ, q otherwise;  detection threshold: (p−q)²/[2(p+q)] = log n",
+        "update_form": "modularity_optimization",
+        "optimization": "maximize_modularity",
+        "fixed_points": "optimal_partition",
+        "operators": {"modularity_matrix", "louvain_merge",
+                      "spectral_bisection", "likelihood_ratio"},
+        "patterns": {
+            "energy_minimization",
+            "symmetry_breaking",
+            "pairwise_coupling",
+            "mean_field",
+            "structural_isomorphism",
+        },
+        "variables": {
+            "state": "community_assignment",
+            "energy": "negative_modularity",
+            "coupling": "adjacency_minus_null_model",
+            "spectrum": "modularity_eigenvalues",
+        },
+        "conservation": set(),
+        "structure": "energy_based_pairwise_model",
+    },
+
+    # ── Population Genetics ──────────────────────────────────────────────
+    "wright_fisher": {
+        "display_name": "Wright-Fisher / Population Genetics",
+        "domain": "Biology",
+        "equation": "E[pₜ₊₁] = p(1+s)/(1+sp);  drift: Var(Δp) = p(1−p)/(2N);  diffusion: ∂f/∂t = 1/(4N)∂²(p(1-p)f)/∂p² − s∂(p(1-p)f)/∂p;  fixation: u(p) ≈ (1−e⁻⁴ᴺˢᵖ)/(1−e⁻⁴ᴺˢ)",
+        "update_form": "binomial_sampling_selection",
+        "optimization": "characterize_allele_dynamics",
+        "fixed_points": "fixation_or_loss",
+        "operators": {"selection", "drift", "mutation",
+                      "diffusion_approximation", "coalescent"},
+        "patterns": {
+            "population_dynamics",
+            "energy_entropy_tradeoff",
+            "symmetry_breaking",
+            "fixed_point_iteration",
+            "mean_field",
+        },
+        "variables": {
+            "state": "allele_frequencies",
+            "energy": "negative_fitness",
+            "dynamics": "selection_drift_balance",
+            "coupling": "population_size",
+        },
+        "conservation": {"total_allele_frequency"},
+        "structure": "dynamical_system_on_simplex",
+    },
+
+    # ── Quantum Error Theory ─────────────────────────────────────────────
+    "quantum_error_correction": {
+        "display_name": "Quantum Error Correction",
+        "domain": "Physics",
+        "equation": "[[n,k,d]] code;  syndrome: s = Hε;  Knill-Laflamme: ⟨ψᵢ|E†ₐEᵦ|ψⱼ⟩ = Cₐᵦδᵢⱼ;  threshold: p < p_th → arbitrarily long computation;  toric code",
+        "update_form": "syndrome_decoding",
+        "optimization": "minimize_logical_error_rate",
+        "fixed_points": "fault_tolerant_logical_qubit",
+        "operators": {"stabilizer_measurement", "syndrome_extraction",
+                      "error_correction", "code_distance", "threshold_theorem"},
+        "patterns": {
+            "conservation_law",
+            "structural_isomorphism",
+            "compositional_structure",
+            "information_gain",
+            "energy_minimization",
+        },
+        "variables": {
+            "state": "code_space",
+            "energy": "logical_error_rate",
+            "coupling": "stabilizer_group",
+            "information": "code_distance",
+        },
+        "conservation": {"logical_subspace_preservation"},
+        "structure": "renormalization_hierarchy",
+    },
 }
 
 
