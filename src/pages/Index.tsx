@@ -1636,12 +1636,13 @@ export default function ZhihuiTiDashboard() {
           </div>
 
           {/* Live Task Feed */}
+          <ResizableWidget defaultHeight={180} minHeight={60} maxHeight={400}>
           <div className="pb-3 mb-1" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
             <div className="text-xs uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>
               📡 Live Task Feed
               <span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full" style={{ background: "#22c55e", boxShadow: "0 0 6px #22c55e", animation: "bootCursor 1.5s ease-in-out infinite" }} />
             </div>
-            <div className="space-y-1 max-h-40 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
+            <div className="space-y-1 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
               {jobs.length === 0 ?
               <div className="text-xs py-2 text-center" style={{ color: "rgba(255,255,255,0.2)" }}>No active jobs</div> :
 
@@ -1675,6 +1676,7 @@ export default function ZhihuiTiDashboard() {
               }
             </div>
           </div>
+          </ResizableWidget>
 
           <Stat label="Money Supply" value={`${(econ.money_supply || 0).toLocaleString()} ◆`} sub={`Treasury: ${(econ.treasury_balance || 0).toLocaleString()}`} color="#eab308" />
           <Stat label="Tasks Completed" value={mem.total_tasks || 0} sub={`Avg score: ${(mem.avg_task_score || 0).toFixed(2)}`} color="#22c55e" />
