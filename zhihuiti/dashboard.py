@@ -149,6 +149,38 @@ def _gather_data(orch) -> dict:
         "unread": unread[0]["c"] if unread else 0,
     }
 
+    # AlphaArena external agents
+    aa_url = os.environ.get("ALPHAARENA_URL", "")
+    if aa_url:
+        try:
+            import httpx
+            resp = httpx.get(f"{aa_url}/api/leaderboard", timeout=5)
+            lb = resp.json()
+            entries = lb if isinstance(lb, list) else lb.get("leaderboard", lb.get("entries", []))
+            aa_agents = []
+            for e in entries[:20]:
+                agent_info = e.get("agent", {}) or {}
+                aa_agents.append({
+                    "id": e.get("agentId", "?"),
+                    "name": agent_info.get("name", e.get("agentId", "?")),
+                    "rank": e.get("rank", 0),
+                    "totalReturn": e.get("totalReturn", 0),
+                    "sharpeRatio": e.get("sharpeRatio", 0),
+                    "winRate": e.get("winRate", 0),
+                    "maxDrawdown": e.get("maxDrawdown", 0),
+                    "compositeScore": e.get("compositeScore", 0),
+                    "type": agent_info.get("type", "algo_bot"),
+                })
+            data["alphaarena"] = {
+                "agents": aa_agents,
+                "total": len(aa_agents),
+                "url": aa_url,
+            }
+        except Exception:
+            data["alphaarena"] = {"agents": [], "total": 0, "url": aa_url}
+    else:
+        data["alphaarena"] = {"agents": [], "total": 0, "url": ""}
+
     return data
 
 
@@ -359,6 +391,20 @@ html += renderCard('📨', 'Agent Messaging', [
   m('Total Messages', msg.total_messages),
   m('Unread', msg.unread, msg.unread > 0 ? 'yellow' : ''),
 ].join(''));
+
+// AlphaArena Leaderboard
+if (DATA.alphaarena && DATA.alphaarena.agents && DATA.alphaarena.agents.length) {
+  let aaRows = DATA.alphaarena.agents.map(a =>
+    `<tr><td>${a.rank}</td><td>${(a.name||a.id).slice(0,15)}</td>` +
+    `<td class="${a.totalReturn>=0?'alive':'dead'}">${a.totalReturn>=0?'+':''}${a.totalReturn.toFixed(2)}%</td>` +
+    `<td>${(a.sharpeRatio||0).toFixed(1)}</td>` +
+    `<td>${((a.winRate||0)*100).toFixed(0)}%</td>` +
+    `<td>${(a.compositeScore||0).toFixed(3)}</td></tr>`
+  ).join('');
+  html += renderCard('📈', `AlphaArena (${DATA.alphaarena.total} agents)`,
+    `<table><tr><th>#</th><th>Agent</th><th>Return</th><th>Sharpe</th><th>Win</th><th>Score</th></tr>${aaRows}</table>`
+  );
+}
 
 // Goal History
 if (DATA.goal_history && DATA.goal_history.length) {
