@@ -2,6 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Install curl and git for tool execution
+RUN apt-get update && apt-get install -y --no-install-recommends curl git && rm -rf /var/lib/apt/lists/*
+
 # Install dependencies
 COPY setup.py pyproject.toml ./
 COPY zhihuiti/ zhihuiti/
