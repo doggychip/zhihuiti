@@ -195,11 +195,11 @@ class TestScoringInvariants:
         for report in collide_all():
             s = report.similarity_score
             strength = report.collision_strength
-            if s > 0.55:
+            if s > 0.50:
                 assert strength == "deep"
-            elif s > 0.30:
+            elif s > 0.28:
                 assert strength == "significant"
-            elif s > 0.12:
+            elif s > 0.10:
                 assert strength == "resonance"
             else:
                 assert strength == "weak"
