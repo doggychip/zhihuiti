@@ -1342,6 +1342,8 @@ export default function ZhihuiTiDashboard() {
   const [graphFullscreen, setGraphFullscreen] = useState(false);
   const [booted, setBooted] = useState(false);
   const handleBootComplete = useCallback(() => setBooted(true), []);
+  const [showZhihuiti, setShowZhihuiti] = useState(true);
+  const [showHedgeFund, setShowHedgeFund] = useState(true);
 
   // Run Goal state
   const [goalInput, setGoalInput] = useState("");
