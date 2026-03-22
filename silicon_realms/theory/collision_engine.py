@@ -597,6 +597,146 @@ THEORY_REGISTRY: dict[str, dict] = {
         "conservation": {"topological_invariants"},
         "structure": "filtered_simplicial_complex",
     },
+
+    "morse_theory": {
+        "display_name": "Morse Theory",
+        "domain": "Topology",
+        "equation": "χ(M) = Σ (−1)^k cₖ;  ∇f(p)=0 ⇒ index(p) = # negative eigenvalues of Hf",
+        "update_form": "gradient_flow_to_critical_points",
+        "optimization": "minimize_morse_function",
+        "fixed_points": "critical_points_by_index",
+        "operators": {"gradient", "hessian", "index", "handle_attachment", "flow"},
+        "patterns": {
+            "energy_minimization",
+            "gradient_descent",
+            "fixed_point_stability",
+            "birth_death_of_features",
+            "multi_scale_analysis",
+            "topological_invariants",
+            "energy_based",
+        },
+        "variables": {
+            "state": "point_on_manifold",
+            "energy": "morse_function",
+            "flow": "negative_gradient_flow",
+            "curvature": "hessian_eigenvalues",
+        },
+        "conservation": {"euler_characteristic"},
+        "structure": "gradient_dynamical_system_on_manifold",
+    },
+
+    # ── Category Theory ──────────────────────────────────────────────────
+    "category_theory": {
+        "display_name": "Category Theory",
+        "domain": "Meta-Frameworks",
+        "equation": "F: C → D (functor);  η: F ⇒ G (natural transformation);  F ⊣ G (adjunction)",
+        "update_form": "functorial_mapping",
+        "optimization": "universal_properties",
+        "fixed_points": "terminal_initial_objects",
+        "operators": {"functor", "natural_transformation", "adjoint", "limit", "colimit", "composition"},
+        "patterns": {
+            "structural_isomorphism",
+            "relational_transfer",
+            "hierarchical_decomposition",
+            "universality",
+            "one_to_one_mapping",
+            "compositional_structure",
+        },
+        "variables": {
+            "source": "category_C",
+            "target": "category_D",
+            "mapping": "functor",
+            "transformation": "natural_transformation",
+        },
+        "conservation": {"relational_structure", "compositional_structure"},
+        "structure": "abstract_algebraic_framework",
+    },
+
+    # ── Evolutionary Game Theory (extended) ──────────────────────────────
+    "price_equation": {
+        "display_name": "Price Equation (Multilevel Selection)",
+        "domain": "Evolutionary Game Theory",
+        "equation": "w̄ Δz̄ = Cov(w,z) + E(wΔz)",
+        "update_form": "covariance_driven_selection",
+        "optimization": "maximize_mean_fitness",
+        "fixed_points": "selection_transmission_balance",
+        "operators": {"covariance", "expectation", "decomposition", "recursive_decomposition"},
+        "patterns": {
+            "selection",
+            "frequency_dependent",
+            "hierarchical_decomposition",
+            "bayesian_inference",
+            "mean_field",
+            "above_average_grows",
+            "recursive_decomposition",
+            "conservation_of_probability",
+        },
+        "variables": {
+            "state": "trait_frequency",
+            "score": "fitness",
+            "reference": "mean_fitness",
+            "trait": "phenotype_value",
+        },
+        "conservation": {"total_probability"},
+        "structure": "statistical_decomposition_of_evolutionary_change",
+    },
+
+    # ── Information Theory (extended) ────────────────────────────────────
+    "fisher_information": {
+        "display_name": "Fisher Information",
+        "domain": "Information Theory",
+        "equation": "I(θ)ᵢⱼ = E[(∂log p/∂θᵢ)(∂log p/∂θⱼ)]  ≥  1/Var(θ̂)  (Cramér-Rao)",
+        "update_form": "curvature_of_likelihood",
+        "optimization": "minimize_estimation_variance",
+        "fixed_points": "cramer_rao_bound",
+        "operators": {"expectation", "logarithm", "gradient", "covariance", "matrix_inverse"},
+        "patterns": {
+            "precision_weighted_update",
+            "bayesian_inference",
+            "prediction_error",
+            "information_gain",
+            "variational_principle",
+            "optimal_inference",
+            "uncertainty_measure",
+        },
+        "variables": {
+            "parameter": "true_value",
+            "estimator": "maximum_likelihood",
+            "precision": "fisher_matrix",
+            "uncertainty": "cramer_rao_bound",
+        },
+        "conservation": set(),
+        "structure": "riemannian_metric_on_statistical_manifold",
+    },
+
+    # ── Dynamic Systems (extended) ───────────────────────────────────────
+    "reaction_diffusion": {
+        "display_name": "Turing Reaction-Diffusion",
+        "domain": "Dynamic Systems",
+        "equation": "∂u/∂t = f(u,v) + Dᵤ∇²u;  ∂v/∂t = g(u,v) + Dᵥ∇²v",
+        "update_form": "pattern_forming_instability",
+        "optimization": None,
+        "fixed_points": "spatially_periodic_patterns",
+        "operators": {"laplacian", "reaction_kinetics", "linear_stability", "diffusion", "pairwise_interaction"},
+        "patterns": {
+            "phase_transition",
+            "spontaneous_symmetry_breaking",
+            "pairwise_coupling",
+            "critical_phenomena",
+            "order_parameter",
+            "mean_field",
+            "scale_invariance",
+            "fixed_point_stability",
+        },
+        "variables": {
+            "state": "concentration_field",
+            "coupling": "diffusion_ratio",
+            "field": "chemical_potential",
+            "score": "pattern_wavelength",
+        },
+        "conservation": {"total_mass_in_closed_system"},
+        "structure": "nonlinear_pde_with_turing_instability",
+    },
 }
 
 
@@ -647,6 +787,65 @@ def _jaccard(a: set, b: set) -> float:
     if not a and not b:
         return 0.0
     return len(a & b) / len(a | b)
+
+
+def _overlap_coefficient(a: set, b: set) -> float:
+    """Overlap coefficient: |A∩B| / min(|A|,|B|).  Less penalizing than Jaccard
+    when one theory has many more patterns than the other."""
+    if not a or not b:
+        return 0.0
+    return len(a & b) / min(len(a), len(b))
+
+
+# Semantic clusters: patterns that are conceptually equivalent or closely related.
+# If theory A has pattern X and theory B has pattern Y from the same cluster,
+# that should boost similarity even though they don't share the exact string.
+_PATTERN_CLUSTERS = [
+    {"bayesian_inference", "prior_to_posterior", "likelihood_weighting", "optimal_inference",
+     "precision_weighted_update", "information_gain"},
+    {"energy_based", "energy_minimization", "energy_entropy_tradeoff", "gradient_descent"},
+    {"prediction_error_correction", "prediction_error", "surprise", "surprise_minimization"},
+    {"variational_principle", "variational_inference", "active_inference"},
+    {"conservation_of_probability", "normalization", "total_probability"},
+    {"phase_transition", "critical_phenomena", "spontaneous_symmetry_breaking", "order_parameter"},
+    {"scale_invariance", "universality", "scale_free", "no_characteristic_scale", "power_law"},
+    {"fixed_point_stability", "fixed_points", "fixed_point_iteration", "attractor_dynamics",
+     "basin_of_attraction"},
+    {"hierarchical_decomposition", "hierarchical_inference", "hierarchical_estimation",
+     "multi_scale_analysis"},
+    {"selection", "above_average_grows", "frequency_dependent"},
+    {"multiplicative_update", "exponential_family", "exponential_weighting"},
+    {"pairwise_coupling", "pairwise_interaction", "correlation_learning"},
+    {"recursive_decomposition", "dynamic_programming", "recursive"},
+    {"structural_isomorphism", "relational_transfer", "one_to_one_mapping"},
+    {"dual_variables", "hamiltonian_mechanics", "adjoint_equations"},
+    {"topological_invariants", "birth_death_of_features", "multi_scale_analysis"},
+    {"uncertainty_measure", "uncertainty_representation", "maximum_entropy"},
+]
+
+
+def _semantic_pattern_sim(pa: set, pb: set) -> float:
+    """Compute semantic similarity by counting shared cluster memberships
+    beyond exact pattern matches."""
+    if not pa or not pb:
+        return 0.0
+    # Direct overlap
+    direct = len(pa & pb)
+    # Cluster-mediated overlap: for each cluster, if both theories touch it
+    cluster_hits = 0
+    for cluster in _PATTERN_CLUSTERS:
+        a_in = pa & cluster
+        b_in = pb & cluster
+        if a_in and b_in:
+            # Count unique cross-cluster matches (not already direct)
+            cross = (a_in - pb) & cluster
+            if cross and (b_in - pa):
+                cluster_hits += 1
+    # Combine: direct Jaccard + cluster bonus
+    jaccard = direct / len(pa | pb) if (pa | pb) else 0.0
+    overlap = direct / min(len(pa), len(pb)) if min(len(pa), len(pb)) > 0 else 0.0
+    cluster_bonus = cluster_hits * 0.04
+    return min(1.0, 0.4 * jaccard + 0.4 * overlap + 0.2 * cluster_bonus / max(1, len(_PATTERN_CLUSTERS) * 0.1))
 
 
 def _structural_bridges(ta: dict, tb: dict) -> list[str]:
@@ -754,28 +953,49 @@ def collide(theory_a: str, theory_b: str) -> CollisionReport:
         if ta["variables"].get(r) and tb["variables"].get(r)
     )
 
-    # Weighted similarity score
-    pattern_sim = _jaccard(ta["patterns"], tb["patterns"])
-    operator_sim = _jaccard(ta["operators"], tb["operators"])
-    var_sim = _jaccard(set(ta["variables"].keys()), set(tb["variables"].keys()))
+    # ── Similarity components ──
+    # Semantic pattern similarity (cluster-aware, overlap + Jaccard blend)
+    pattern_sim = _semantic_pattern_sim(ta["patterns"], tb["patterns"])
+    # Operator overlap (use overlap coefficient — less penalizing for asymmetry)
+    operator_sim = _overlap_coefficient(ta["operators"], tb["operators"])
+    # Variable role overlap
+    var_sim = _overlap_coefficient(set(ta["variables"].keys()), set(tb["variables"].keys()))
+    # Conservation law overlap
     cons_sim = _jaccard(ta["conservation"], tb["conservation"]) if (ta["conservation"] or tb["conservation"]) else 0.0
 
-    # Structural bonuses
+    # ── Structural bonuses (deep isomorphism signals) ──
     bonus = 0.0
     if ta["update_form"] == tb["update_form"]:
-        bonus += 0.15
+        bonus += 0.18
     if ta["optimization"] and tb["optimization"] and ta["optimization"] == tb["optimization"]:
-        bonus += 0.10
-    if ta.get("structure") == tb.get("structure"):
-        bonus += 0.10
+        bonus += 0.12
+    if ta.get("structure") and tb.get("structure") and ta["structure"] == tb["structure"]:
+        bonus += 0.12
 
-    score = min(1.0, 0.45 * pattern_sim + 0.25 * operator_sim + 0.10 * var_sim + 0.10 * cons_sim + bonus)
+    # Cross-domain bonus: isomorphisms across domains are more valuable
+    if ta["domain"] != tb["domain"]:
+        shared_count = len(ta["patterns"] & tb["patterns"])
+        if shared_count >= 3:
+            bonus += 0.08
+        elif shared_count >= 2:
+            bonus += 0.04
 
-    if score > 0.55:
+    # Fixed-point semantic match bonus
+    if ta["fixed_points"] and tb["fixed_points"]:
+        fp_keywords = {"equilibrium", "optimal", "attractor", "fixed_point", "minimum",
+                       "critical", "stable", "stationary"}
+        fp_a_words = set(ta["fixed_points"].split("_"))
+        fp_b_words = set(tb["fixed_points"].split("_"))
+        if fp_a_words & fp_b_words & fp_keywords:
+            bonus += 0.04
+
+    score = min(1.0, 0.40 * pattern_sim + 0.22 * operator_sim + 0.12 * var_sim + 0.08 * cons_sim + bonus)
+
+    if score > 0.50:
         strength = "deep"
-    elif score > 0.30:
+    elif score > 0.28:
         strength = "significant"
-    elif score > 0.12:
+    elif score > 0.10:
         strength = "resonance"
     else:
         strength = "weak"
