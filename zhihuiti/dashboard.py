@@ -743,6 +743,33 @@ class AutoScheduler:
                 except Exception as e:
                     console.print(f"  [red]Direct trade failed:[/red] {e}")
 
+            # Multi-agent trading (all 21 agents trade independently)
+            if aa_url and aa_key:
+                try:
+                    from zhihuiti.multi_agent import MultiAgentManager
+                    multi = MultiAgentManager(base_url=aa_url, api_key=aa_key)
+                    multi_results = multi.run_all()
+                    total_trades = sum(len(r.get("trades", [])) for r in multi_results.values())
+                    if total_trades > 0:
+                        console.print(f"  [green]Multi-agent:[/green] {total_trades} trades across {len(multi_results)} agents")
+                except Exception as e:
+                    console.print(f"  [red]Multi-agent failed:[/red] {e}")
+
+            # HeartAI health check every cycle
+            heartai_url = os.environ.get("HEARTAI_URL", "")
+            if heartai_url:
+                try:
+                    import httpx as _hx2
+                    resp = _hx2.get(f"{heartai_url}/health", timeout=10)
+                    health = resp.json()
+                    status = health.get("status", "unknown")
+                    if status != "ok" and status != "healthy":
+                        console.print(f"  [yellow]HeartAI:[/yellow] health={status} — may need attention")
+                    else:
+                        console.print(f"  [dim]HeartAI:[/dim] healthy")
+                except Exception as e:
+                    console.print(f"  [red]HeartAI down:[/red] {e}")
+
             # CriticAI content generation every cycle
             criticai_url = os.environ.get("CRITICAI_URL", "")
             if criticai_url:

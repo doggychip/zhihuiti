@@ -688,6 +688,72 @@ def alphaarena_evolve_hedge(url: str | None, cull: float, promote: float):
     console.print(f"\n  [green]Evolved {result['evolved']} agents[/green]")
 
 
+@alphaarena.command("multi-status")
+@click.option("--url", default=None, help="AlphaArena API URL")
+def alphaarena_multi_status(url: str | None):
+    """Show all 21 zhihuiti agents' portfolio status."""
+    from zhihuiti.multi_agent import MultiAgentManager
+    manager = MultiAgentManager(base_url=url)
+    manager.print_status()
+
+
+@alphaarena.command("multi-trade")
+@click.option("--url", default=None, help="AlphaArena API URL")
+def alphaarena_multi_trade(url: str | None):
+    """Run one trade cycle for all 21 agents."""
+    from zhihuiti.multi_agent import MultiAgentManager
+    console.print(BANNER, style="bold cyan")
+    manager = MultiAgentManager(base_url=url)
+    results = manager.run_all()
+    total_trades = sum(len(r.get("trades", [])) for r in results.values())
+    console.print(f"\n  [green]{total_trades} trades across {len(results)} agents[/green]")
+
+
+@alphaarena.command("register-sql")
+@click.option("--url", default=None, help="AlphaArena API URL")
+def alphaarena_register_sql(url: str | None):
+    """Print SQL to register all 20 zhihuiti agents in AlphaArena DB."""
+    from zhihuiti.multi_agent import MultiAgentManager
+    manager = MultiAgentManager(base_url=url)
+    sql = manager.generate_registration_sql()
+    console.print(sql)
+
+
+@main.group()
+def heartai():
+    """❤️ HeartAI Bridge — monitor Stella agent and BaZi readings."""
+    pass
+
+
+@heartai.command("status")
+@click.option("--url", default=None, help="HeartAI URL (default: https://heartai.zeabur.app)")
+def heartai_status(url: str | None):
+    """Check HeartAI health and agent status."""
+    import httpx
+    base = url or os.environ.get("HEARTAI_URL", "https://heartai.zeabur.app")
+    console.print(f"  Checking HeartAI at {base}...")
+
+    try:
+        # Health check
+        resp = httpx.get(f"{base}/health", timeout=10)
+        health = resp.json()
+        console.print(f"  [green]Health:[/green] {health.get('status', 'unknown')}")
+    except Exception as e:
+        console.print(f"  [red]Health check failed:[/red] {e}")
+
+    try:
+        # Agents
+        resp = httpx.get(f"{base}/api/agents", timeout=10)
+        agents = resp.json()
+        agents_list = agents if isinstance(agents, list) else agents.get("agents", [])
+        console.print(f"  [green]Agents:[/green] {len(agents_list)}")
+        for a in agents_list[:5]:
+            name = a.get("name", a.get("agent_name", "?"))
+            console.print(f"    - {name}")
+    except Exception as e:
+        console.print(f"  [red]Agents check failed:[/red] {e}")
+
+
 @main.group()
 def criticai():
     """🎬 CriticAI Bridge — monitor and collaborate with CriticAI agents."""
