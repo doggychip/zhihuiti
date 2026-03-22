@@ -877,6 +877,153 @@ THEORY_REGISTRY: dict[str, dict] = {
         "conservation": set(),
         "structure": "riemannian_metric_on_statistical_manifold",
     },
+
+    # ── Optimal Transport ────────────────────────────────────────────────
+    "optimal_transport": {
+        "display_name": "Optimal Transport (Wasserstein)",
+        "domain": "Optimization",
+        "equation": "W_p(μ,ν) = (inf_{γ∈Γ(μ,ν)} ∫ c(x,y)^p dγ)^{1/p};  Monge: T*=argmin ∫c(x,T(x))dμ",
+        "update_form": "transport_plan_optimization",
+        "optimization": "minimize_transport_cost",
+        "fixed_points": "optimal_coupling",
+        "operators": {"infimum", "coupling", "gradient", "pushforward", "dual_potential"},
+        "patterns": {
+            "variational_principle",
+            "dual_variables",
+            "optimal_inference",
+            "energy_minimization",
+            "one_to_one_mapping",
+            "structural_isomorphism",
+            "conservation_of_probability",
+        },
+        "variables": {
+            "state": "transport_plan",
+            "energy": "transport_cost",
+            "source": "source_distribution",
+            "target": "target_distribution",
+        },
+        "conservation": {"total_mass"},
+        "structure": "optimization_on_distribution_manifold",
+    },
+
+    # ── Statistical Physics (extended) ───────────────────────────────────
+    "spin_glass": {
+        "display_name": "Spin Glass (Edwards-Anderson)",
+        "domain": "Statistical Physics",
+        "equation": "H = −Σᵢⱼ Jᵢⱼ sᵢsⱼ − Σᵢ hᵢsᵢ;  Jᵢⱼ ~ N(0,J²/N);  q = (1/N)Σᵢ ⟨sᵢ⟩²",
+        "update_form": "disordered_energy_minimization",
+        "optimization": "minimize_frustrated_energy",
+        "fixed_points": "metastable_glassy_states",
+        "operators": {"pairwise_interaction", "quenched_average", "replica", "overlap",
+                      "partition_function"},
+        "patterns": {
+            "energy_based",
+            "pairwise_coupling",
+            "phase_transition",
+            "energy_entropy_tradeoff",
+            "energy_minimization",
+            "mean_field",
+            "order_parameter",
+            "fixed_point_stability",
+            "correlation_learning",
+        },
+        "variables": {
+            "state": "spin_configuration",
+            "energy": "hamiltonian",
+            "coupling": "random_bonds",
+            "order": "overlap_parameter",
+            "temperature": "inverse_beta",
+        },
+        "conservation": set(),
+        "structure": "disordered_pairwise_energy_model",
+    },
+
+    # ── Reinforcement Learning ───────────────────────────────────────────
+    "policy_gradient": {
+        "display_name": "Policy Gradient (REINFORCE)",
+        "domain": "Machine Learning",
+        "equation": "∇J(θ) = E_π[∇log π(a|s;θ) · (R − b)];  θ ← θ + α∇J(θ)",
+        "update_form": "score_function_gradient",
+        "optimization": "maximize_expected_return",
+        "fixed_points": "locally_optimal_policy",
+        "operators": {"expectation", "logarithm", "gradient", "sampling", "baseline_subtraction"},
+        "patterns": {
+            "above_average_grows",
+            "selection",
+            "frequency_dependent",
+            "multiplicative_update",
+            "gradient_descent",
+            "prediction_error",
+            "information_gain",
+        },
+        "variables": {
+            "state": "policy_parameters",
+            "score": "expected_return",
+            "reference": "baseline",
+            "action": "sampled_action",
+        },
+        "conservation": {"total_probability"},
+        "structure": "stochastic_gradient_on_policy_manifold",
+    },
+
+    # ── Statistical Physics (mean field) ─────────────────────────────────
+    "mean_field_theory": {
+        "display_name": "Mean Field Theory",
+        "domain": "Statistical Physics",
+        "equation": "m = tanh(β(Jzm + h));  F_MF = −(Jz/2)m² − hm + (1/β)[(1+m)/2 ln(1+m)/2 + (1−m)/2 ln(1−m)/2]",
+        "update_form": "self_consistent_field",
+        "optimization": "minimize_free_energy",
+        "fixed_points": "self_consistent_magnetization",
+        "operators": {"expectation", "self_consistency", "partition_function",
+                      "variational_derivative", "pairwise_interaction"},
+        "patterns": {
+            "mean_field",
+            "phase_transition",
+            "order_parameter",
+            "energy_entropy_tradeoff",
+            "energy_based",
+            "fixed_point_iteration",
+            "variational_principle",
+            "pairwise_coupling",
+        },
+        "variables": {
+            "state": "order_parameter",
+            "energy": "free_energy_functional",
+            "coupling": "interaction_strength",
+            "temperature": "inverse_beta",
+        },
+        "conservation": set(),
+        "structure": "self_consistent_approximation",
+    },
+
+    # ── Thermodynamics (extended) ────────────────────────────────────────
+    "dissipative_structures": {
+        "display_name": "Dissipative Structures (Prigogine)",
+        "domain": "Thermodynamics",
+        "equation": "dᵢS/dt ≥ 0;  dS/dt = dᵢS/dt + dₑS/dt;  far from equilibrium: dₑS/dt < 0 possible",
+        "update_form": "entropy_production_driven",
+        "optimization": None,
+        "fixed_points": "far_from_equilibrium_steady_state",
+        "operators": {"entropy_production", "flux", "thermodynamic_force", "bifurcation",
+                      "linear_stability"},
+        "patterns": {
+            "spontaneous_symmetry_breaking",
+            "phase_transition",
+            "energy_entropy_tradeoff",
+            "critical_phenomena",
+            "self_organization",
+            "scale_invariance",
+            "fixed_point_stability",
+        },
+        "variables": {
+            "state": "macroscopic_variables",
+            "energy": "entropy_production_rate",
+            "flow": "thermodynamic_fluxes",
+            "field": "thermodynamic_forces",
+        },
+        "conservation": {"total_energy"},
+        "structure": "open_system_far_from_equilibrium",
+    },
 }
 
 
@@ -961,6 +1108,8 @@ _PATTERN_CLUSTERS = [
     {"dual_variables", "hamiltonian_mechanics", "adjoint_equations"},
     {"topological_invariants", "birth_death_of_features", "multi_scale_analysis"},
     {"uncertainty_measure", "uncertainty_representation", "maximum_entropy"},
+    {"self_organization", "spontaneous_symmetry_breaking", "critical_phenomena"},
+    {"mean_field", "self_consistent_field", "fixed_point_iteration"},
 ]
 
 
