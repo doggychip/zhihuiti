@@ -668,7 +668,7 @@ def criticai():
 
 
 @criticai.command("status")
-@click.option("--url", default="http://localhost:5000", help="CriticAI base URL")
+@click.option("--url", default="https://criticai.zeabur.app", help="CriticAI base URL")
 def criticai_status(url: str):
     """Check CriticAI system status."""
     from zhihuiti.criticai_bridge import CriticAIBridge
@@ -677,7 +677,7 @@ def criticai_status(url: str):
 
 
 @criticai.command("report")
-@click.option("--url", default="http://localhost:5000", help="CriticAI base URL")
+@click.option("--url", default="https://criticai.zeabur.app", help="CriticAI base URL")
 def criticai_report(url: str):
     """Generate a full CriticAI status report."""
     from zhihuiti.criticai_bridge import CriticAIBridge
@@ -687,7 +687,7 @@ def criticai_report(url: str):
 
 
 @criticai.command("trigger")
-@click.option("--url", default="http://localhost:5000", help="CriticAI base URL")
+@click.option("--url", default="https://criticai.zeabur.app", help="CriticAI base URL")
 def criticai_trigger(url: str):
     """Trigger a CriticAI agent to generate a new activity."""
     from zhihuiti.criticai_bridge import CriticAIBridge
@@ -701,7 +701,7 @@ def criticai_trigger(url: str):
 
 
 @criticai.command("watch")
-@click.option("--url", default="http://localhost:5000", help="CriticAI base URL")
+@click.option("--url", default="https://criticai.zeabur.app", help="CriticAI base URL")
 @click.option("--interval", default="30m", help="Check interval (e.g. 10m, 1h)")
 @click.option("--db", default="zhihuiti.db", help="SQLite database path")
 def criticai_watch(url: str, interval: str, db: str):
@@ -729,7 +729,7 @@ def criticai_watch(url: str, interval: str, db: str):
 
 
 @criticai.command("analyze")
-@click.option("--url", default="http://localhost:5000", help="CriticAI base URL")
+@click.option("--url", default="https://criticai.zeabur.app", help="CriticAI base URL")
 @click.option("--db", default="zhihuiti.db", help="SQLite database path")
 @click.option("--model", default=None, help="Model name")
 def criticai_analyze(url: str, db: str, model: str | None):
