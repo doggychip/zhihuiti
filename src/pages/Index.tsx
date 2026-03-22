@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { createPortal } from "react-dom";
 import * as THREE from "three";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -1918,71 +1919,7 @@ export default function ZhihuiTiDashboard() {
                     <span style={{ fontSize: 14 }}>🏟️</span>
                     <span className="text-xs uppercase tracking-widest font-semibold" style={{ color: "#a78bfa" }}>AlphaArena Leaderboard</span>
                   </div>
-                  <div className="overflow-x-auto max-h-52 overflow-y-auto">
-                    <table className="w-full text-xs" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
-                      <thead>
-                        <tr style={{ color: "rgba(255,255,255,0.35)" }}>
-                          <th className="text-left py-1.5 px-2 font-medium sticky top-0" style={{ background: "#0d0d1a" }}>#</th>
-                          <th className="text-left py-1.5 px-2 font-medium sticky top-0" style={{ background: "#0d0d1a" }}>Agent</th>
-                          <th className="text-right py-1.5 px-2 font-medium sticky top-0" style={{ background: "#0d0d1a" }}>Return %</th>
-                          <th className="text-right py-1.5 px-2 font-medium sticky top-0" style={{ background: "#0d0d1a" }}>Sharpe</th>
-                          <th className="text-right py-1.5 px-2 font-medium sticky top-0" style={{ background: "#0d0d1a" }}>Win Rate</th>
-                          <th className="text-right py-1.5 px-2 font-medium sticky top-0" style={{ background: "#0d0d1a" }}>Score</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(() => {
-                          const INITIAL_BUDGET = 100;
-                          return [...agents]
-                            .filter(a => a.alive)
-                            .map(a => {
-                              const returnPct = ((a.budget - INITIAL_BUDGET) / INITIAL_BUDGET) * 100;
-                              const sharpe = a.tasks > 0 ? (a.avg_score - 0.5) / Math.max(0.1, 1 - a.avg_score) : 0;
-                              const winRate = a.avg_score;
-                              const score = (a.avg_score * 0.4) + (Math.max(0, returnPct) / 100 * 0.3) + (winRate * 0.3);
-                              return { ...a, returnPct, sharpe, winRate, score };
-                            })
-                            .sort((a, b) => b.score - a.score)
-                            .slice(0, 20)
-                            .map((agent, i) => {
-                              const isPositive = agent.returnPct >= 0;
-                              return (
-                                <tr
-                                  key={agent.id}
-                                  className="transition-colors cursor-pointer"
-                                  style={{
-                                    background: i % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent",
-                                  }}
-                                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(167,139,250,0.08)")}
-                                  onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent")}
-                                  onClick={() => handleSelect(agent.id)}
-                                >
-                                  <td className="py-1.5 px-2 font-mono" style={{ color: i < 3 ? "#eab308" : "rgba(255,255,255,0.3)" }}>
-                                    {i + 1}
-                                  </td>
-                                  <td className="py-1.5 px-2 text-white font-medium truncate max-w-[140px]">
-                                    <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ background: REALM_COLORS[agent.realm] }} />
-                                    {agent.role} <span style={{ color: "rgba(255,255,255,0.2)" }}>#{agent.id.slice(0, 4)}</span>
-                                  </td>
-                                  <td className="py-1.5 px-2 text-right font-mono" style={{ color: isPositive ? "#22c55e" : "#ef4444" }}>
-                                    {isPositive ? "+" : ""}{agent.returnPct.toFixed(1)}%
-                                  </td>
-                                  <td className="py-1.5 px-2 text-right font-mono text-white/70">
-                                    {agent.sharpe.toFixed(2)}
-                                  </td>
-                                  <td className="py-1.5 px-2 text-right font-mono text-white/70">
-                                    {(agent.winRate * 100).toFixed(1)}%
-                                  </td>
-                                  <td className="py-1.5 px-2 text-right font-mono" style={{ color: "#a78bfa" }}>
-                                    {agent.score.toFixed(2)}
-                                  </td>
-                                </tr>
-                              );
-                            });
-                        })()}
-                      </tbody>
-                    </table>
-                  </div>
+                  <LeaderboardTable agents={agents} handleSelect={handleSelect} REALM_COLORS={REALM_COLORS} />
                 </div>
               )}
             </div>
