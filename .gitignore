@@ -4,6 +4,7 @@ simulation_results.png
 # Generated visualization
 collision_map.html
 collision_map.json
+synthesis_map.html
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
