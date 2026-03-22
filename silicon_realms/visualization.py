@@ -32,6 +32,7 @@ REALM_COLORS = {
     "compute": "#00BCD4",
     "data": "#4CAF50",
     "governance": "#FF5722",
+    "information": "#9C27B0",
 }
 
 THERMO_COLORS = {

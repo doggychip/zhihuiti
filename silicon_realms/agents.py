@@ -6,7 +6,7 @@ from .realms import migrate_agent
 
 
 STRATEGIES = ["greedy", "staker", "nomad", "balanced"]
-REALM_NAMES = ["compute", "memory", "network"]
+REALM_NAMES = ["compute", "memory", "network", "information"]
 
 AGENT_PREFIXES = [
     "Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta",
