@@ -8,6 +8,8 @@ interface LeaderboardAgent {
   alive: boolean;
   realm: string;
   tasks: number;
+  name?: string;
+  group?: "zhihuiti" | "hedge_fund";
 }
 
 interface LeaderboardTableProps {
