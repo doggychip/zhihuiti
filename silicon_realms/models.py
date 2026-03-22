@@ -84,3 +84,7 @@ class SimState:
     realm_values: dict = field(default_factory=dict)   # Bellman value per realm
     # SOC
     last_avalanche_size: float = 0.0  # largest wealth drop this tick
+    # Information geometry
+    fisher_information: float = 0.0   # sensitivity of wealth distribution to perturbation
+    kl_divergence: float = 0.0        # distance from uniform (equilibrium) distribution
+    natural_gradient: dict = field(default_factory=dict)  # per-realm gradient on statistical manifold

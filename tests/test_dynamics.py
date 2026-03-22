@@ -15,6 +15,10 @@ from silicon_realms.dynamics import (
     detect_avalanche,
     avalanche_distribution,
     is_near_critical,
+    compute_fisher_information,
+    compute_kl_divergence,
+    compute_natural_gradient,
+    update_information_geometry,
     tick_dynamics,
 )
 
@@ -31,6 +35,7 @@ def _make_state(
         "compute": Realm(name="compute", capacity=50, base_reward=10),
         "memory": Realm(name="memory", capacity=40, base_reward=8),
         "network": Realm(name="network", capacity=30, base_reward=12),
+        "information": Realm(name="information", capacity=35, base_reward=9),
     }
     state = SimState(
         realms=realms,
@@ -203,7 +208,7 @@ class TestBellmanValues:
         state.realm_values = {}
         # Should not crash, returns a valid realm
         result = best_realm_by_value(state)
-        assert result in ["compute", "memory", "network"]
+        assert result in ["compute", "memory", "network", "information"]
 
 
 # ─── 4. Self-Organized Criticality ──────────────────────────────────────
@@ -272,13 +277,112 @@ class TestSOC:
 
 # ─── 5. Combined tick ───────────────────────────────────────────────────
 
+# ─── 5. Information Geometry ───────────────────────────────────────────
+
+class TestInformationGeometry:
+    def test_fisher_information_no_history(self):
+        """No fitness history → Fisher info = 0."""
+        agents = {f"a{i}": _agent(f"a{i}", 100) for i in range(5)}
+        state = _make_state(agents)
+        fi = compute_fisher_information(state)
+        assert fi == 0.0
+
+    def test_fisher_information_stable_economy(self):
+        """Stable wealth (no change) → low Fisher info."""
+        agents = {f"a{i}": _agent(f"a{i}", 100, fitness_history=[100, 100])
+                  for i in range(5)}
+        state = _make_state(agents)
+        fi = compute_fisher_information(state)
+        assert fi < 0.01
+
+    def test_fisher_information_volatile_economy(self):
+        """Large wealth shifts → high Fisher info."""
+        agents = {
+            "a": _agent("a", 200, fitness_history=[50, 200]),
+            "b": _agent("b", 50, fitness_history=[200, 50]),
+        }
+        state = _make_state(agents)
+        fi = compute_fisher_information(state)
+        assert fi > 0.1
+
+    def test_fisher_info_empty(self):
+        state = _make_state(agents={})
+        assert compute_fisher_information(state) == 0.0
+
+    def test_kl_divergence_equal_wealth(self):
+        """Equal wealth → KL divergence = 0."""
+        n = 10
+        agents = {f"a{i}": _agent(f"a{i}", 100) for i in range(n)}
+        state = _make_state(agents)
+        update_thermodynamics(state)
+        kl = compute_kl_divergence(state)
+        assert abs(kl) < 1e-9
+
+    def test_kl_divergence_unequal_wealth(self):
+        """Concentrated wealth → high KL divergence."""
+        agents = {
+            "rich": _agent("rich", 10000),
+            "poor1": _agent("poor1", 0),
+            "poor2": _agent("poor2", 0),
+        }
+        state = _make_state(agents)
+        update_thermodynamics(state)
+        kl = compute_kl_divergence(state)
+        assert kl > 0.5
+
+    def test_kl_divergence_single_agent(self):
+        state = _make_state({"a": _agent("a", 100)})
+        assert compute_kl_divergence(state) == 0.0
+
+    def test_natural_gradient_computed_per_realm(self):
+        agents = {
+            "a": _agent("a", 100, realm="compute", fitness_history=[80, 100]),
+            "b": _agent("b", 50, realm="memory", fitness_history=[60, 50]),
+            "c": _agent("c", 200, realm="information", fitness_history=[150, 200]),
+        }
+        state = _make_state(agents)
+        state.fisher_information = 0.5
+        grad = compute_natural_gradient(state)
+        assert "compute" in grad
+        assert "memory" in grad
+        assert "network" in grad
+        assert "information" in grad
+
+    def test_natural_gradient_dampened_by_fisher(self):
+        """High Fisher info should dampen the gradient."""
+        agents = {"a": _agent("a", 200, realm="compute", fitness_history=[100, 200])}
+        state = _make_state(agents)
+
+        state.fisher_information = 0.0
+        grad_low = compute_natural_gradient(state)
+
+        state.fisher_information = 10.0
+        grad_high = compute_natural_gradient(state)
+
+        # High Fisher → smaller gradient magnitude
+        assert abs(grad_high["compute"]) < abs(grad_low["compute"])
+
+    def test_update_information_geometry_sets_state(self):
+        agents = {f"a{i}": _agent(f"a{i}", 100 + i * 10, fitness_history=[90 + i * 10, 100 + i * 10])
+                  for i in range(5)}
+        state = _make_state(agents)
+        update_thermodynamics(state)  # needed for KL divergence
+        update_information_geometry(state)
+        assert state.fisher_information >= 0
+        assert state.kl_divergence >= 0
+        assert isinstance(state.natural_gradient, dict)
+
+
+# ─── 6. Combined tick ───────────────────────────────────────────────────
+
 class TestTickDynamics:
     def test_tick_dynamics_runs(self):
-        """tick_dynamics should run all four subsystems without error."""
+        """tick_dynamics should run all five subsystems without error."""
+        realms = ["compute", "memory", "network", "information"]
         agents = {
-            f"a{i}": _agent(f"a{i}", 100 + i * 20, realm=["compute", "memory", "network"][i % 3],
+            f"a{i}": _agent(f"a{i}", 100 + i * 20, realm=realms[i % 4],
                             fitness_history=[80 + i * 10, 100 + i * 20])
-            for i in range(9)
+            for i in range(12)
         }
         state = _make_state(agents)
         tick_dynamics(state)
@@ -287,6 +391,10 @@ class TestTickDynamics:
         assert state.temperature >= 0
         assert state.entropy >= 0
         # Bellman ran
-        assert len(state.realm_values) == 3
+        assert len(state.realm_values) == 4
         # SOC ran
         assert hasattr(state, "last_avalanche_size")
+        # Information geometry ran
+        assert state.fisher_information >= 0
+        assert state.kl_divergence >= 0
+        assert len(state.natural_gradient) == 4

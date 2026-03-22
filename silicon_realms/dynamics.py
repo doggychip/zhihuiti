@@ -1,12 +1,13 @@
 """
 Theoretical Dynamics
 ====================
-Four theory-grounded enrichments for the Silicon Realms simulation:
+Five theory-grounded enrichments for the Silicon Realms simulation:
 
 1. Replicator Dynamics (EGT)       — strategy frequencies evolve by fitness
 2. Statistical Mechanics           — temperature + entropy of token economy
 3. Control Theory (Bellman)        — value function guides realm migration
 4. Self-Organized Criticality      — detect phase transitions & avalanches
+5. Information Geometry            — Fisher information + KL divergence on wealth manifold
 """
 from __future__ import annotations
 
@@ -246,12 +247,136 @@ def is_near_critical(state: SimState) -> bool:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# 5. INFORMATION GEOMETRY
+# Treat the wealth distribution as a point on a statistical manifold.
+# The Fisher Information Matrix defines the Riemannian metric on this space.
+#
+#   Fisher Information I(θ) = E[(d log p / dθ)²]
+#     Measures how "sensitive" the wealth distribution is to perturbations.
+#     High I → small changes in conditions cause large distributional shifts.
+#     Low I → the economy is robust / stable.
+#
+#   KL Divergence D_KL(p || u) = Σ p_i log(p_i / u_i)
+#     Distance from current distribution to uniform (perfect equality).
+#     Tracks how far the economy has drifted from equilibrium.
+#
+#   Natural Gradient ∇̃ = I⁻¹ ∇
+#     Per-realm gradient that accounts for the manifold curvature.
+#     Used to modulate realm base rewards — realms where the distribution
+#     is highly curved (sensitive) get stabilising adjustments.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def compute_fisher_information(state: SimState) -> float:
+    """
+    Fisher information of the wealth distribution.
+
+    Approximated as the mean squared score function:
+      I ≈ (1/n) Σ [(p_i' / p_i)²]
+    where p_i' is the change in normalised wealth share from last tick.
+
+    High Fisher info → economy is in a sensitive regime (near phase transition).
+    Low Fisher info → economy is stable.
+    """
+    wealths = [a.balance + a.staked for a in state.agents.values()]
+    total = sum(wealths)
+    if total < 1e-9 or len(wealths) < 2:
+        return 0.0
+
+    # Current proportions
+    p_current = [w / total for w in wealths]
+
+    # Previous proportions from fitness history
+    prev_wealths = []
+    for a in state.agents.values():
+        if len(a.fitness_history) >= 2:
+            prev_wealths.append(a.fitness_history[-2])
+        else:
+            prev_wealths.append(a.balance + a.staked)
+
+    prev_total = sum(prev_wealths)
+    if prev_total < 1e-9:
+        return 0.0
+
+    p_prev = [w / prev_total for w in prev_wealths]
+
+    # Fisher info: mean of (dp/p)² — score function squared
+    fisher = 0.0
+    for pc, pp in zip(p_current, p_prev):
+        if pp > 1e-12 and pc > 1e-12:
+            score = (pc - pp) / pp  # relative change
+            fisher += score ** 2
+
+    return fisher / len(wealths)
+
+
+def compute_kl_divergence(state: SimState) -> float:
+    """
+    KL divergence from the current wealth distribution to uniform.
+
+    D_KL(p || u) = Σ p_i log(p_i * n)
+                 = log(n) + Σ p_i log(p_i)
+                 = log(n) - H(p)
+
+    When wealth is perfectly equal: D_KL = 0.
+    As wealth concentrates: D_KL → log(n).
+    """
+    n = len(state.agents)
+    if n < 2:
+        return 0.0
+    max_entropy = math.log(n)
+    # D_KL = log(n) - H(p) = max_entropy - current_entropy
+    return max(0.0, max_entropy - state.entropy)
+
+
+def compute_natural_gradient(state: SimState) -> dict[str, float]:
+    """
+    Per-realm natural gradient on the statistical manifold.
+
+    The natural gradient ∇̃ = I⁻¹ · ∇ adjusts the ordinary gradient
+    by the inverse Fisher metric, accounting for manifold curvature.
+
+    Here we compute: for each realm, the mean wealth change (∇) divided
+    by the local Fisher information (curvature).  High curvature dampens
+    the gradient → stabilising effect.  Low curvature amplifies it.
+    """
+    gradients = {}
+    fisher = state.fisher_information
+
+    for realm_name in state.realms:
+        agents_in_realm = [a for a in state.agents.values() if a.realm == realm_name]
+        if not agents_in_realm:
+            gradients[realm_name] = 0.0
+            continue
+
+        # Ordinary gradient: mean wealth change
+        deltas = []
+        for a in agents_in_realm:
+            if len(a.fitness_history) >= 2:
+                deltas.append(a.fitness_history[-1] - a.fitness_history[-2])
+
+        mean_delta = sum(deltas) / len(deltas) if deltas else 0.0
+
+        # Natural gradient: ∇̃ = ∇ / (1 + I) — regularized inverse
+        gradients[realm_name] = mean_delta / (1.0 + fisher)
+
+    return gradients
+
+
+def update_information_geometry(state: SimState):
+    """Compute and store information geometry metrics."""
+    state.fisher_information = compute_fisher_information(state)
+    state.kl_divergence = compute_kl_divergence(state)
+    state.natural_gradient = compute_natural_gradient(state)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Combined update — called once per tick from engine
 # ─────────────────────────────────────────────────────────────────────────────
 
 def tick_dynamics(state: SimState):
-    """Run all four theoretical dynamics for this tick."""
+    """Run all five theoretical dynamics for this tick."""
     update_thermodynamics(state)
     update_bellman_values(state)
     evolve_strategies(state)
     detect_avalanche(state)
+    update_information_geometry(state)

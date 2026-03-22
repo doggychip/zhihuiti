@@ -28,8 +28,12 @@ Each realm is governed by a dominant theoretical framework:
     Noise level evolves with wealth volatility; redundancy provides
     resilience but limits efficiency.
 
-Cross-realm: SOC avalanches cascade — a large wealth drop in one
-realm spills over as reduced rewards in neighbouring realms.
+Cross-realm interactions:
+  - SOC avalanches cascade across realms
+  - Information diffusion: information realm's channel capacity
+    enhances other realms' reward quality
+  - Compute-Network synergy: selection pressure feeds routing
+  - Memory-Information bridge: knowledge pool feeds mutual information
 """
 from __future__ import annotations
 
@@ -391,6 +395,79 @@ def apply_avalanche_spillover(state: SimState):
             realm.avalanche_exposure = state.last_avalanche_size
         else:
             realm.avalanche_exposure = state.last_avalanche_size * cascade_fraction
+
+
+# ─── Cross-Realm Dynamics ────────────────────────────────────────────────
+
+def apply_cross_realm_dynamics(state: SimState):
+    """
+    Cross-realm interactions that create emergent coupling between the four
+    theoretical frameworks:
+
+    1. Information Diffusion (信息界 → all):
+       High channel capacity in the information realm improves signal quality
+       everywhere — compute gets better fitness estimates, memory gets cleaner
+       knowledge, network gets more accurate routing signals.
+
+    2. Compute-Network Synergy (计算界 → 网络界):
+       Higher selection pressure in compute (better algorithms discovered)
+       boosts network route efficiency (better algorithms → better routing).
+
+    3. Memory-Information Bridge (记忆界 → 信息界):
+       Knowledge pool accumulated in memory feeds the information realm's
+       mutual information — shared knowledge increases information coherence.
+
+    4. Network-Memory Flow (网络界 → 记忆界):
+       Route efficiency in the network realm accelerates knowledge pool growth
+       in memory — better routing means faster knowledge dissemination.
+    """
+    realms = state.realms
+
+    info = realms.get("information")
+    compute = realms.get("compute")
+    memory = realms.get("memory")
+    network = realms.get("network")
+
+    # 1. Information Diffusion: channel capacity → base_reward multiplier
+    # High capacity amplifies all realms slightly (capped at 20% boost)
+    if info and info.channel_capacity > 1.0:
+        diffusion_boost = min(0.2, (info.channel_capacity - 1.0) * 0.05)
+        if compute:
+            # Better signal → more accurate fitness estimation
+            compute.selection_pressure *= (1.0 + diffusion_boost * 0.5)
+            compute.selection_pressure = min(5.0, compute.selection_pressure)
+        if memory:
+            # Cleaner signals → knowledge pool grows faster
+            memory.knowledge_pool *= (1.0 + diffusion_boost * 0.3)
+        if network:
+            # Better information → more efficient routing
+            network.route_efficiency *= (1.0 + diffusion_boost * 0.2)
+            network.route_efficiency = min(3.0, network.route_efficiency)
+
+    # 2. Compute → Network: selection pressure feeds routing quality
+    # Better-optimized strategies → smarter network algorithms
+    if compute and network and compute.selection_pressure > 1.5:
+        synergy = min(0.1, (compute.selection_pressure - 1.5) * 0.02)
+        network.route_efficiency *= (1.0 + synergy)
+        network.route_efficiency = min(3.0, network.route_efficiency)
+
+    # 3. Memory → Information: knowledge pool feeds mutual information
+    # Shared knowledge base increases information coherence
+    if memory and info and memory.knowledge_pool > 10.0:
+        knowledge_signal = min(0.5, math.log(memory.knowledge_pool / 10.0) * 0.1)
+        info.mutual_information += knowledge_signal
+
+    # 4. Network → Memory: route efficiency accelerates knowledge dissemination
+    # Better routing → faster knowledge spread → pool grows
+    if network and memory and network.route_efficiency > 1.0:
+        flow_boost = min(0.15, (network.route_efficiency - 1.0) * 0.1)
+        memory.knowledge_pool *= (1.0 + flow_boost)
+
+    # 5. Noise contagion: high noise in information realm increases
+    # temperature in memory (disorder spreads)
+    if info and memory and info.noise_level > 1.0:
+        noise_contagion = min(0.1, (info.noise_level - 1.0) * 0.05)
+        memory.realm_temperature += noise_contagion
 
 
 # ─── Migration with theory-aware destination ────────────────────────────
