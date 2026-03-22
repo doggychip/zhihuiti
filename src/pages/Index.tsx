@@ -1306,6 +1306,7 @@ export default function ZhihuiTiDashboard() {
   const [selected, setSelected] = useState<string | null>(null);
   const [live, setLive] = useState(true);
   const [showCollision, setShowCollision] = useState(false);
+  const [graphFullscreen, setGraphFullscreen] = useState(false);
   const [booted, setBooted] = useState(false);
   const handleBootComplete = useCallback(() => setBooted(true), []);
 
@@ -1748,9 +1749,23 @@ export default function ZhihuiTiDashboard() {
         </div>
 
         {/* Center — 3D Graph */}
-        <div className="flex-1 flex flex-col relative">
+        <div className={`flex-1 flex flex-col relative ${graphFullscreen ? "fixed inset-0 z-[999]" : ""}`} style={graphFullscreen ? { background: "#08080f" } : undefined}>
           <div className="flex-1 relative">
             <ThreeGraph agents={agents} connections={connections} onSelect={handleSelect} selectedId={selected} events={events} />
+            {/* Fullscreen toggle */}
+            <button
+              onClick={() => setGraphFullscreen(f => !f)}
+              className="absolute top-3 right-3 z-20 w-8 h-8 flex items-center justify-center rounded-md text-sm cursor-pointer transition-all hover:scale-105 active:scale-95"
+              style={{
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                color: "rgba(255,255,255,0.5)",
+                backdropFilter: "blur(8px)",
+              }}
+              title={graphFullscreen ? "Exit fullscreen" : "Fullscreen"}
+            >
+              {graphFullscreen ? "✕" : "⛶"}
+            </button>
             <div className="absolute bottom-4 left-4 flex items-center gap-3">
               <span className="text-xs" style={{ color: "rgba(255,255,255,0.15)" }}>drag to rotate · click node for details</span>
               <button
