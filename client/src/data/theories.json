@@ -6911,5 +6911,559 @@
     },
     "conservation": [],
     "structure": "ode_on_trait_space"
+  },
+  "erdos_renyi": {
+    "id": "erdos_renyi",
+    "name": "Erdős-Rényi Random Graph",
+    "domain": "Network Science",
+    "equation": "G(n,p): P(edge) = p;  giant component emerges at p = 1/n;  P(k) = C(n,k)pᵏ(1−p)ⁿ⁻ᵏ → Poisson",
+    "update_form": "independent_edge_model",
+    "optimization": "none_generative",
+    "fixed_points": "giant_component_threshold",
+    "operators": [
+      "binomial_sampling",
+      "normalize",
+      "random_assignment",
+      "state_transition"
+    ],
+    "patterns": [
+      "birth_death_process",
+      "conservation_of_probability",
+      "exponential_family",
+      "mean_field",
+      "null_model",
+      "percolation",
+      "phase_transition"
+    ],
+    "variables": {
+      "state": "graph_adjacency",
+      "score": "edge_probability",
+      "reference": "critical_threshold"
+    },
+    "conservation": [],
+    "structure": "random_graph_ensemble"
+  },
+  "small_world": {
+    "id": "small_world",
+    "name": "Watts-Strogatz Small World",
+    "domain": "Network Science",
+    "equation": "L(p) ∝ log(N)/log(K);  C(p) ≈ C(0)(1−p)³;  rewire each edge with prob p",
+    "update_form": "interpolating_rewire",
+    "optimization": "minimize_path_length",
+    "fixed_points": "small_world_regime",
+    "operators": [
+      "graph_adjacency",
+      "random_walk",
+      "rewiring"
+    ],
+    "patterns": [
+      "clustering",
+      "interpolation",
+      "phase_transition",
+      "random_walk",
+      "short_path_length",
+      "spatial_structure"
+    ],
+    "variables": {
+      "state": "network_topology",
+      "score": "path_length",
+      "reference": "rewiring_probability"
+    },
+    "conservation": [
+      "total_edges"
+    ],
+    "structure": "random_graph_ensemble"
+  },
+  "network_centrality": {
+    "id": "network_centrality",
+    "name": "Network Centrality / PageRank",
+    "domain": "Network Science",
+    "equation": "πᵢ = (1−d)/N + d Σⱼ Aⱼᵢ πⱼ/kⱼ_out",
+    "update_form": "random_walk_stationary",
+    "optimization": "rank_nodes",
+    "fixed_points": "stationary_distribution",
+    "operators": [
+      "eigenvalue_decomposition",
+      "matrix_multiply",
+      "normalize",
+      "random_walk"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "eigenvector_centrality",
+      "ergodic",
+      "fixed_point_iteration",
+      "mean_field",
+      "spectral_decomposition",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "node_importance",
+      "score": "centrality_score",
+      "reference": "damping_factor"
+    },
+    "conservation": [
+      "total_probability"
+    ],
+    "structure": "markov_chain_on_graph"
+  },
+  "network_epidemic": {
+    "id": "network_epidemic",
+    "name": "Epidemic Spreading on Networks",
+    "domain": "Network Science",
+    "equation": "dρᵢ/dt = −ρᵢ + (1−ρᵢ)λΣⱼ Aᵢⱼρⱼ;  threshold: λc = ⟨k⟩/⟨k²⟩",
+    "update_form": "heterogeneous_mean_field",
+    "optimization": "minimize_spread",
+    "fixed_points": "endemic_or_disease_free",
+    "operators": [
+      "bilinear_interaction",
+      "differential",
+      "graph_adjacency",
+      "mass_action"
+    ],
+    "patterns": [
+      "epidemic_threshold",
+      "fixed_point_stability",
+      "heterogeneous_mean_field",
+      "mass_action",
+      "mean_field",
+      "percolation",
+      "phase_transition"
+    ],
+    "variables": {
+      "state": "infection_probability",
+      "score": "spectral_radius",
+      "reference": "epidemic_threshold"
+    },
+    "conservation": [],
+    "structure": "coupled_ode"
+  },
+  "spectral_graph_theory": {
+    "id": "spectral_graph_theory",
+    "name": "Spectral Graph Theory / Graph Laplacian",
+    "domain": "Network Science",
+    "equation": "Lf = λf;  L = D − A;  λ₂ = algebraic_connectivity;  cuts ∝ fᵀLf",
+    "update_form": "spectral_embedding",
+    "optimization": "minimize_graph_cut",
+    "fixed_points": "spectral_partition",
+    "operators": [
+      "eigenvalue_decomposition",
+      "laplacian",
+      "matrix_multiply",
+      "projection"
+    ],
+    "patterns": [
+      "dimensionality_reduction",
+      "dual_variables",
+      "energy_minimization",
+      "relaxation",
+      "spectral_decomposition",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "graph_embedding",
+      "score": "eigenvalue",
+      "reference": "graph_laplacian"
+    },
+    "conservation": [],
+    "structure": "spectral_problem"
+  },
+  "network_flow": {
+    "id": "network_flow",
+    "name": "Max-Flow Min-Cut / Network Flow",
+    "domain": "Network Science",
+    "equation": "max Σⱼ f(s,j) s.t. f(u,v) ≤ c(u,v), Σⱼ f(j,v) = Σⱼ f(v,j)",
+    "update_form": "augmenting_path",
+    "optimization": "maximize_flow",
+    "fixed_points": "max_flow_min_cut",
+    "operators": [
+      "augmenting_path",
+      "graph_adjacency",
+      "linear_combination"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "duality",
+      "energy_minimization",
+      "linear_pricing"
+    ],
+    "variables": {
+      "state": "edge_flow",
+      "score": "total_flow",
+      "reference": "capacity_constraint"
+    },
+    "conservation": [
+      "flow_conservation"
+    ],
+    "structure": "linear_program"
+  },
+  "opinion_dynamics": {
+    "id": "opinion_dynamics",
+    "name": "Voter Model / Opinion Dynamics",
+    "domain": "Network Science",
+    "equation": "P(xᵢ→σ) = (1/kᵢ)Σⱼ Aᵢⱼ δ(xⱼ,σ);  DeGroot: x(t+1) = Wx(t)",
+    "update_form": "imitation_dynamics",
+    "optimization": "none_consensus",
+    "fixed_points": "consensus_or_fragmentation",
+    "operators": [
+      "graph_adjacency",
+      "matrix_multiply",
+      "random_walk",
+      "state_transition"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "diffusion",
+      "fixation_probability",
+      "information_aggregation",
+      "mean_field",
+      "selection",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "opinion_vector",
+      "score": "consensus_time",
+      "reference": "network_topology"
+    },
+    "conservation": [
+      "mean_opinion_degroot"
+    ],
+    "structure": "markov_chain_on_graph"
+  },
+  "network_robustness": {
+    "id": "network_robustness",
+    "name": "Network Robustness / Percolation",
+    "domain": "Network Science",
+    "equation": "S∞ = 1 − G₀(u);  u = 1 − p + pG₁(u);  fc = 1/(κ−1), κ = ⟨k²⟩/⟨k⟩",
+    "update_form": "percolation_on_graph",
+    "optimization": "maximize_resilience",
+    "fixed_points": "percolation_threshold",
+    "operators": [
+      "fixed_point",
+      "generating_function",
+      "random_walk"
+    ],
+    "patterns": [
+      "birth_death_process",
+      "fixed_point_iteration",
+      "mean_field",
+      "percolation",
+      "phase_transition",
+      "robustness"
+    ],
+    "variables": {
+      "state": "giant_component_fraction",
+      "score": "percolation_threshold",
+      "reference": "degree_distribution"
+    },
+    "conservation": [],
+    "structure": "fixed_point_equilibrium"
+  },
+  "network_game_theory": {
+    "id": "network_game_theory",
+    "name": "Games on Networks / Spatial Games",
+    "domain": "Network Science",
+    "equation": "πᵢ = Σⱼ Aᵢⱼ u(sᵢ,sⱼ);  update: P(sᵢ→sⱼ) = 1/(1+exp(−β(πⱼ−πᵢ)))",
+    "update_form": "fermi_imitation_on_graph",
+    "optimization": "maximize_local_payoff",
+    "fixed_points": "spatial_equilibrium",
+    "operators": [
+      "graph_adjacency",
+      "payoff_matrix",
+      "selection",
+      "softmax",
+      "state_transition"
+    ],
+    "patterns": [
+      "cooperation_dilemma",
+      "energy_entropy_tradeoff",
+      "exploration_exploitation",
+      "game_theoretic_equilibrium",
+      "pairwise_coupling",
+      "selection",
+      "spatial_structure"
+    ],
+    "variables": {
+      "state": "strategy_configuration",
+      "score": "local_payoff",
+      "reference": "network_topology"
+    },
+    "conservation": [],
+    "structure": "markov_chain_on_graph"
+  },
+  "network_motifs": {
+    "id": "network_motifs",
+    "name": "Network Motifs / Subgraph Census",
+    "domain": "Network Science",
+    "equation": "Z_G = (N_G − ⟨N_G^rand⟩) / σ(N_G^rand);  significance profile SP_i = Z_i / √(Σⱼ Z_j²)",
+    "update_form": "subgraph_enumeration",
+    "optimization": "identify_significant_patterns",
+    "fixed_points": "motif_significance_profile",
+    "operators": [
+      "comparison",
+      "graph_adjacency",
+      "normalize",
+      "random_assignment"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "information_gain",
+      "null_model",
+      "pattern_formation",
+      "signal_noise_separation"
+    ],
+    "variables": {
+      "state": "subgraph_count",
+      "score": "z_score",
+      "reference": "random_ensemble"
+    },
+    "conservation": [],
+    "structure": "statistical_test"
+  },
+  "influence_maximization": {
+    "id": "influence_maximization",
+    "name": "Influence Maximization / Cascade Model",
+    "domain": "Network Science",
+    "equation": "σ(S) = E[|activated|];  IC: P(u→v) = pᵤᵥ;  LT: activate if Σⱼ wⱼᵢ xⱼ ≥ θᵢ",
+    "update_form": "greedy_submodular",
+    "optimization": "maximize_spread",
+    "fixed_points": "cascade_completion",
+    "operators": [
+      "expectation",
+      "graph_adjacency",
+      "state_transition",
+      "threshold"
+    ],
+    "patterns": [
+      "amplification",
+      "diminishing_returns",
+      "exploration_exploitation",
+      "information_gain",
+      "percolation",
+      "positive_feedback",
+      "subadditivity"
+    ],
+    "variables": {
+      "state": "activated_set",
+      "score": "expected_influence",
+      "reference": "seed_set"
+    },
+    "conservation": [],
+    "structure": "submodular_optimization"
+  },
+  "graph_signal_processing": {
+    "id": "graph_signal_processing",
+    "name": "Graph Signal Processing / Graph Fourier",
+    "domain": "Network Science",
+    "equation": "x̂(λₗ) = ⟨x, uₗ⟩;  h(L)x = Σₗ ĥ(λₗ)⟨x,uₗ⟩uₗ;  graph wavelet: ψₛ = g(sL)δᵢ",
+    "update_form": "spectral_graph_filtering",
+    "optimization": "denoise_graph_signal",
+    "fixed_points": "spectral_components",
+    "operators": [
+      "eigenvalue_decomposition",
+      "fourier_transform",
+      "laplacian",
+      "projection"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "dimensionality_reduction",
+      "dual_variables",
+      "energy_minimization",
+      "spectral_decomposition",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "graph_signal",
+      "score": "graph_frequency",
+      "reference": "graph_laplacian"
+    },
+    "conservation": [
+      "parseval_energy"
+    ],
+    "structure": "spectral_problem"
+  },
+  "network_embedding": {
+    "id": "network_embedding",
+    "name": "Network Embedding / Node2Vec",
+    "domain": "Network Science",
+    "equation": "max Σᵢ log P(N(i) | zᵢ);  P(j|i) = exp(zᵢᵀzⱼ) / Σₖ exp(zᵢᵀzₖ)",
+    "update_form": "skip_gram_on_graph",
+    "optimization": "maximize_likelihood",
+    "fixed_points": "embedding_convergence",
+    "operators": [
+      "gradient",
+      "random_walk",
+      "softmax",
+      "stochastic_integral"
+    ],
+    "patterns": [
+      "dimensionality_reduction",
+      "energy_minimization",
+      "exploration_exploitation",
+      "information_gain",
+      "random_walk",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "node_embedding",
+      "score": "log_likelihood",
+      "reference": "random_walk_context"
+    },
+    "conservation": [],
+    "structure": "optimization_over_parameter_space"
+  },
+  "temporal_network": {
+    "id": "temporal_network",
+    "name": "Temporal Networks / Time-Varying Graphs",
+    "domain": "Network Science",
+    "equation": "G(t) = (V, E(t));  reachability: i→j iff ∃ time-respecting path;  burstiness B = (σ−μ)/(σ+μ)",
+    "update_form": "time_ordered_graph",
+    "optimization": "maximize_temporal_reachability",
+    "fixed_points": "stationary_temporal_pattern",
+    "operators": [
+      "convolution",
+      "graph_adjacency",
+      "state_transition",
+      "temporal_ordering"
+    ],
+    "patterns": [
+      "autoregressive",
+      "birth_death_process",
+      "continuous_time_markov",
+      "diffusion",
+      "stochastic_dynamics",
+      "temporal_correlation"
+    ],
+    "variables": {
+      "state": "time_varying_adjacency",
+      "score": "temporal_reachability",
+      "reference": "interevent_time_distribution"
+    },
+    "conservation": [],
+    "structure": "temporal_process"
+  },
+  "network_controllability": {
+    "id": "network_controllability",
+    "name": "Network Controllability (Liu-Barabási)",
+    "domain": "Network Science",
+    "equation": "dx/dt = Ax + Bu;  Nₐ = max(1, N − |maximum_matching|);  structural controllability",
+    "update_form": "structural_control",
+    "optimization": "minimize_driver_nodes",
+    "fixed_points": "controllable_subspace",
+    "operators": [
+      "differential",
+      "eigenvalue_decomposition",
+      "graph_adjacency",
+      "linear_combination",
+      "matrix_multiply"
+    ],
+    "patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "lyapunov_stability",
+      "spectral_decomposition",
+      "structural_stability"
+    ],
+    "variables": {
+      "state": "node_state_vector",
+      "score": "driver_node_count",
+      "reference": "maximum_matching"
+    },
+    "conservation": [],
+    "structure": "linear_control_system"
+  },
+  "multilayer_network": {
+    "id": "multilayer_network",
+    "name": "Multilayer / Multiplex Networks",
+    "domain": "Network Science",
+    "equation": "L̃ = Σα Lα + ω Σα≠β Iαβ;  supra-adjacency: Ã = [A₁ ωI; ωI A₂]",
+    "update_form": "layer_coupled_dynamics",
+    "optimization": "identify_cross_layer_structure",
+    "fixed_points": "multiplex_equilibrium",
+    "operators": [
+      "eigenvalue_decomposition",
+      "graph_adjacency",
+      "laplacian",
+      "matrix_multiply"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "coupled_oscillation",
+      "dimensionality_reduction",
+      "mean_field",
+      "pairwise_coupling",
+      "phase_transition",
+      "spectral_decomposition"
+    ],
+    "variables": {
+      "state": "multilayer_state",
+      "score": "interlayer_coupling",
+      "reference": "supra_laplacian"
+    },
+    "conservation": [],
+    "structure": "coupled_spectral_problem"
+  },
+  "network_synchronization": {
+    "id": "network_synchronization",
+    "name": "Kuramoto / Network Synchronization",
+    "domain": "Network Science",
+    "equation": "dθᵢ/dt = ωᵢ + (K/N) Σⱼ Aᵢⱼ sin(θⱼ−θᵢ);  r·e^{iψ} = (1/N)Σⱼ e^{iθⱼ}",
+    "update_form": "coupled_oscillator_sync",
+    "optimization": "maximize_order_parameter",
+    "fixed_points": "synchronized_state",
+    "operators": [
+      "differential",
+      "graph_adjacency",
+      "nonlinear_reaction",
+      "order_parameter"
+    ],
+    "patterns": [
+      "bifurcation",
+      "convergence_to_equilibrium",
+      "coupled_oscillation",
+      "mean_field",
+      "nonlinear_dynamics",
+      "pairwise_coupling",
+      "phase_transition",
+      "self_organization"
+    ],
+    "variables": {
+      "state": "phase_angles",
+      "score": "order_parameter",
+      "reference": "coupling_strength"
+    },
+    "conservation": [],
+    "structure": "coupled_ode"
+  },
+  "link_prediction": {
+    "id": "link_prediction",
+    "name": "Link Prediction / Network Evolution",
+    "domain": "Network Science",
+    "equation": "score(i,j) = |Γ(i) ∩ Γ(j)| / |Γ(i) ∪ Γ(j)|;  AA: Σₖ∈Γ(i)∩Γ(j) 1/log(kₖ)",
+    "update_form": "similarity_scoring",
+    "optimization": "maximize_auc",
+    "fixed_points": "predicted_edge_set",
+    "operators": [
+      "comparison",
+      "graph_adjacency",
+      "normalize",
+      "random_walk"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "exploration_exploitation",
+      "information_gain",
+      "null_model",
+      "random_walk"
+    ],
+    "variables": {
+      "state": "node_pair_scores",
+      "score": "prediction_accuracy",
+      "reference": "network_topology"
+    },
+    "conservation": [],
+    "structure": "optimization_over_parameter_space"
   }
 }
