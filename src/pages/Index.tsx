@@ -1141,7 +1141,7 @@ export default function ZhihuiTiDashboard() {
   const [live, setLive] = useState(true);
   const [showCollision, setShowCollision] = useState(false);
   const [graphFullscreen, setGraphFullscreen] = useState(false);
-  const [lodCount, setLodCount] = useState(50);
+  const [lodCount, setLodCount] = useState(30);
   const [booted, setBooted] = useState(false);
   const handleBootComplete = useCallback(() => setBooted(true), []);
   const [showZhihuiti, setShowZhihuiti] = useState(true);
