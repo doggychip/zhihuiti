@@ -5570,15 +5570,19 @@
     "fixed_points": "informational_equilibrium",
     "operators": [
       "conditional_expectation",
+      "drift",
       "filtration",
       "projection"
     ],
     "patterns": [
+      "bayesian_updating",
+      "diffusion_approximation",
       "information_aggregation",
       "martingale",
       "no_free_lunch",
       "random_walk",
-      "rational_expectations"
+      "rational_expectations",
+      "stochastic_dynamics"
     ],
     "variables": {
       "state": "asset_price",
@@ -5600,12 +5604,16 @@
     "fixed_points": "market_equilibrium",
     "operators": [
       "covariance",
+      "expectation",
       "linear_combination",
       "normalize",
+      "projection",
       "regression"
     ],
     "patterns": [
+      "dimensionality_reduction",
       "diversification",
+      "energy_minimization",
       "linear_factor_model",
       "mean_variance",
       "risk_return_tradeoff",
@@ -5630,6 +5638,7 @@
     "optimization": "no_arbitrage",
     "fixed_points": "factor_equilibrium",
     "operators": [
+      "eigenvalue_decomposition",
       "factor_decomposition",
       "linear_combination",
       "projection",
@@ -5637,9 +5646,11 @@
     ],
     "patterns": [
       "dimensionality_reduction",
+      "dual_variables",
       "factor_model",
       "linear_pricing",
       "no_free_lunch",
+      "spectral_decomposition",
       "systematic_risk"
     ],
     "variables": {
@@ -5667,11 +5678,15 @@
       "payoff_matrix"
     ],
     "patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "fixed_point_iteration",
       "fixed_point_stability",
       "game_theoretic_equilibrium",
       "mutual_consistency",
       "no_unilateral_deviation",
-      "strategic_interaction"
+      "strategic_interaction",
+      "variational_principle"
     ],
     "variables": {
       "state": "strategy_profile",
@@ -5693,13 +5708,16 @@
       "nonlinear_weighting",
       "piecewise_function",
       "probability_distortion",
-      "reference_shift"
+      "reference_shift",
+      "softmax"
     ],
     "patterns": [
       "asymmetric_response",
       "diminishing_sensitivity",
+      "energy_entropy_tradeoff",
       "framing_dependence",
       "loss_aversion",
+      "nonlinear_dynamics",
       "reference_dependence"
     ],
     "variables": {
@@ -5724,7 +5742,9 @@
       "present_value"
     ],
     "patterns": [
+      "compositional_structure",
       "conservation_law",
+      "dual_variables",
       "irrelevance_theorem",
       "no_free_lunch",
       "value_additivity"
@@ -5749,15 +5769,19 @@
     "fixed_points": "optimal_fraction",
     "operators": [
       "expectation",
+      "gradient",
       "logarithm",
       "maximize"
     ],
     "patterns": [
+      "energy_entropy_tradeoff",
       "geometric_growth",
+      "information_gain",
       "information_theoretic",
       "log_utility",
       "optimal_sizing",
-      "risk_of_ruin"
+      "risk_of_ruin",
+      "variational_principle"
     ],
     "variables": {
       "state": "bet_fraction",
@@ -5780,10 +5804,13 @@
     "operators": [
       "brownian_motion",
       "differential",
+      "fokker_planck",
       "linear_restoring_force",
       "stochastic_integral"
     ],
     "patterns": [
+      "diffusion_approximation",
+      "energy_minimization",
       "ergodic",
       "gaussian_stationary",
       "mean_reverting",
@@ -5809,14 +5836,17 @@
       "change_of_measure",
       "conditional_expectation",
       "discounting",
+      "exponential",
       "martingale"
     ],
     "patterns": [
+      "dual_variables",
       "equivalent_martingale_measure",
       "girsanov_transform",
       "no_free_lunch",
       "numeraire_invariance",
-      "risk_neutral_valuation"
+      "risk_neutral_valuation",
+      "variational_principle"
     ],
     "variables": {
       "state": "derivative_price",
@@ -5840,10 +5870,13 @@
       "brownian_motion",
       "correlation",
       "differential",
+      "fokker_planck",
       "mean_reversion",
       "square_root_process"
     ],
     "patterns": [
+      "coupled_oscillation",
+      "diffusion_approximation",
       "fat_tails",
       "leverage_effect",
       "mean_reverting",
@@ -5874,10 +5907,13 @@
     ],
     "patterns": [
       "adverse_selection",
+      "bayesian_updating",
       "information_asymmetry",
+      "information_gain",
       "linear_price_impact",
       "noise_trading",
-      "price_discovery"
+      "price_discovery",
+      "signal_noise_separation"
     ],
     "variables": {
       "state": "market_price",
@@ -5901,13 +5937,17 @@
       "autoregression",
       "conditional_variance",
       "exponential_smoothing",
+      "fokker_planck",
       "maximum_likelihood"
     ],
     "patterns": [
       "autoregressive",
       "conditional_heteroskedasticity",
+      "energy_minimization",
       "exponential_decay",
+      "information_gain",
       "persistence",
+      "stochastic_dynamics",
       "volatility_clustering"
     ],
     "variables": {
@@ -5932,9 +5972,11 @@
       "brownian_motion",
       "compound_poisson",
       "differential",
-      "jump_operator"
+      "jump_operator",
+      "state_transition"
     ],
     "patterns": [
+      "birth_death_process",
       "fat_tails",
       "jump_discontinuity",
       "leptokurtic",
@@ -5960,11 +6002,15 @@
     "operators": [
       "bargaining",
       "externality_pricing",
+      "fixed_point",
       "property_rights_assignment"
     ],
     "patterns": [
+      "dual_variables",
       "efficiency_theorem",
+      "energy_minimization",
       "externality_internalization",
+      "game_theoretic_equilibrium",
       "irrelevance_theorem",
       "transaction_cost_friction"
     ],
@@ -5989,15 +6035,20 @@
     "operators": [
       "differential",
       "excess_demand",
+      "gradient",
       "gradient_descent",
       "price_adjustment"
     ],
     "patterns": [
       "convergence_to_equilibrium",
+      "energy_minimization",
+      "fixed_point_iteration",
       "gradient_flow",
+      "lyapunov_stability",
       "market_clearing",
       "price_discovery",
-      "tatonnement"
+      "tatonnement",
+      "variational_principle"
     ],
     "variables": {
       "state": "price_vector",
@@ -6023,7 +6074,9 @@
       "projection"
     ],
     "patterns": [
+      "bayesian_updating",
       "consistency",
+      "fixed_point_iteration",
       "fixed_point_stability",
       "information_aggregation",
       "model_consistent",
@@ -6048,6 +6101,7 @@
     "optimization": "output_gap_stabilization",
     "fixed_points": "goods_money_equilibrium",
     "operators": [
+      "eigenvalue_decomposition",
       "feedback_loop",
       "geometric_series",
       "simultaneous_equations"
@@ -6056,7 +6110,9 @@
       "amplification",
       "demand_driven",
       "feedback_loop",
+      "fixed_point_iteration",
       "multiplier_effect",
+      "positive_feedback",
       "simultaneous_equilibrium"
     ],
     "variables": {
@@ -6082,12 +6138,15 @@
       "brownian_motion",
       "differential",
       "exponential",
+      "fokker_planck",
       "mean_reversion"
     ],
     "patterns": [
       "affine_structure",
+      "energy_minimization",
       "mean_reverting",
       "no_free_lunch",
+      "spectral_decomposition",
       "stochastic_dynamics",
       "term_structure"
     ],
@@ -6111,12 +6170,15 @@
       "arrival_rate",
       "cancellation",
       "diffusion",
+      "laplacian",
       "reaction_diffusion"
     ],
     "patterns": [
       "birth_death_process",
+      "continuous_time_markov",
       "diffusion",
       "mean_reverting",
+      "pattern_formation",
       "queueing",
       "reaction_diffusion"
     ],
@@ -6138,12 +6200,16 @@
     "fixed_points": "risk_budget_equilibrium",
     "operators": [
       "conditional_expectation",
+      "expectation",
       "quantile",
       "tail_integral"
     ],
     "patterns": [
       "coherent_risk_measure",
       "convex_optimization",
+      "dual_variables",
+      "energy_minimization",
+      "extreme_value_theory",
       "fat_tails",
       "subadditivity",
       "tail_risk"
@@ -6168,13 +6234,18 @@
       "bilinear_interaction",
       "differential",
       "growth",
+      "mass_action",
       "predation"
     ],
     "patterns": [
+      "conservation_law",
       "coupled_oscillation",
       "ecological_cycle",
+      "energy_minimization",
+      "fixed_point_stability",
       "neutral_stability",
       "nonlinear_dynamics",
+      "pairwise_coupling",
       "predator_prey"
     ],
     "variables": {
@@ -6198,10 +6269,13 @@
     "operators": [
       "differential",
       "growth",
+      "nonlinear_reaction",
       "saturation"
     ],
     "patterns": [
       "density_dependence",
+      "fixed_point_stability",
+      "nonlinear_dynamics",
       "s_curve",
       "saturation",
       "self_limiting",
@@ -6225,15 +6299,20 @@
     "fixed_points": "spatially_patterned_steady_state",
     "operators": [
       "diffusion",
+      "eigenvalue_decomposition",
       "laplacian",
       "nonlinear_reaction",
       "reaction_diffusion"
     ],
     "patterns": [
       "activator_inhibitor",
+      "bifurcation",
       "diffusion_driven_instability",
+      "energy_entropy_tradeoff",
+      "pairwise_coupling",
       "pattern_formation",
       "reaction_diffusion",
+      "self_organization",
       "spatial_symmetry_breaking",
       "turing_instability"
     ],
@@ -6257,12 +6336,16 @@
       "crossover",
       "mutation",
       "selection",
+      "stochastic_dynamics",
       "tournament"
     ],
     "patterns": [
+      "energy_minimization",
       "exploration_exploitation",
       "fitness_landscape",
       "genetic_diversity",
+      "information_gain",
+      "multiplicative_update",
       "population_based_search",
       "schema_theorem",
       "selection"
@@ -6288,11 +6371,14 @@
     "operators": [
       "binomial_expansion",
       "frequency_counting",
+      "normalize",
       "normalization"
     ],
     "patterns": [
       "conservation_of_probability",
       "equilibrium_in_one_step",
+      "exponential_family",
+      "fixed_point_stability",
       "neutral_evolution",
       "null_model",
       "random_mating"
@@ -6317,6 +6403,7 @@
     "optimization": "none_stochastic",
     "fixed_points": "mutation_drift_balance",
     "operators": [
+      "brownian_motion",
       "diffusion",
       "drift",
       "fokker_planck",
@@ -6324,10 +6411,13 @@
     ],
     "patterns": [
       "diffusion_approximation",
+      "energy_entropy_tradeoff",
       "fixation_probability",
       "genetic_drift",
+      "mean_field",
       "mutation_drift_balance",
       "neutral_evolution",
+      "random_walk",
       "stochastic_dynamics"
     ],
     "variables": {
@@ -6350,17 +6440,22 @@
     "fixed_points": "quasispecies_distribution",
     "operators": [
       "differential",
+      "eigenvalue_decomposition",
       "matrix_multiply",
       "mutation_matrix",
       "selection",
       "subtract_mean"
     ],
     "patterns": [
+      "energy_entropy_tradeoff",
       "error_catastrophe",
       "error_threshold",
+      "information_gain",
       "mutation_selection_balance",
+      "phase_transition",
       "quasispecies",
-      "selection"
+      "selection",
+      "spectral_decomposition"
     ],
     "variables": {
       "state": "sequence_frequency",
@@ -6388,8 +6483,12 @@
     ],
     "patterns": [
       "all_or_nothing",
+      "bifurcation",
+      "coupled_oscillation",
+      "dissipative_system",
       "excitability",
       "limit_cycle",
+      "nonlinear_dynamics",
       "relaxation_oscillation",
       "threshold_behavior"
     ],
@@ -6415,14 +6514,18 @@
       "covariance",
       "expectation",
       "fitness_weighting",
-      "partition"
+      "partition",
+      "regression"
     ],
     "patterns": [
       "covariance_selection",
       "exact_decomposition",
+      "information_gain",
+      "mean_field",
       "multilevel_selection",
       "natural_selection",
-      "transmission_bias"
+      "transmission_bias",
+      "variational_principle"
     ],
     "variables": {
       "state": "mean_trait",
@@ -6443,6 +6546,7 @@
     "operators": [
       "competition_matrix",
       "differential",
+      "eigenvalue_decomposition",
       "growth",
       "saturation"
     ],
@@ -6450,7 +6554,11 @@
       "competitive_exclusion",
       "coexistence_criteria",
       "density_dependence",
+      "fixed_point_stability",
+      "game_theoretic_equilibrium",
+      "lyapunov_stability",
       "niche_differentiation",
+      "pairwise_coupling",
       "resource_competition"
     ],
     "variables": {
@@ -6472,13 +6580,18 @@
     "operators": [
       "averaging",
       "epistatic_coupling",
+      "gradient",
       "random_assignment"
     ],
     "patterns": [
+      "energy_minimization",
       "epistasis",
+      "exploration_exploitation",
       "fitness_landscape",
       "local_optima",
+      "pairwise_coupling",
       "ruggedness",
+      "spin_glass",
       "tunably_rugged"
     ],
     "variables": {
@@ -6499,6 +6612,7 @@
     "fixed_points": "stationary_distribution",
     "operators": [
       "exponential_waiting",
+      "mass_action",
       "propensity_function",
       "state_transition",
       "stoichiometry"
@@ -6506,7 +6620,9 @@
     "patterns": [
       "birth_death_process",
       "continuous_time_markov",
+      "ergodic",
       "exact_simulation",
+      "information_gain",
       "intrinsic_noise",
       "stochastic_dynamics"
     ],
@@ -6530,15 +6646,20 @@
     "optimization": "maximize_catalytic_rate",
     "fixed_points": "steady_state_rate",
     "operators": [
+      "exponential",
       "hyperbolic_function",
       "quasi_steady_state",
       "saturation"
     ],
     "patterns": [
       "cooperative_binding",
+      "energy_minimization",
       "enzyme_saturation",
+      "exponential_family",
+      "fixed_point_stability",
       "hyperbolic_response",
       "quasi_steady_state",
+      "saturation",
       "substrate_inhibition"
     ],
     "variables": {
@@ -6561,14 +6682,19 @@
     "fixed_points": "attractor_states",
     "operators": [
       "boolean_function",
+      "graph_adjacency",
       "state_transition",
       "synchronous_update"
     ],
     "patterns": [
       "attractor_landscape",
+      "bifurcation",
       "cell_fate_decision",
       "discrete_dynamics",
       "edge_of_chaos",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "phase_transition",
       "robustness"
     ],
     "variables": {
@@ -6590,11 +6716,14 @@
     "operators": [
       "exponential_waiting",
       "merging",
-      "pairwise_rate"
+      "pairwise_rate",
+      "state_transition"
     ],
     "patterns": [
       "backward_in_time",
+      "birth_death_process",
       "coalescence",
+      "continuous_time_markov",
       "exponential_decay",
       "genealogical",
       "tree_structure"
@@ -6626,9 +6755,12 @@
     ],
     "patterns": [
       "aggregation",
+      "bifurcation",
       "blowup",
       "chemotaxis",
       "drift_diffusion",
+      "energy_entropy_tradeoff",
+      "nonlinear_dynamics",
       "pattern_formation",
       "self_organization"
     ],
@@ -6654,14 +6786,18 @@
       "bilinear_interaction",
       "compartment_flow",
       "differential",
-      "mass_action"
+      "mass_action",
+      "state_transition"
     ],
     "patterns": [
       "basic_reproduction_number",
       "compartmental",
       "epidemic_threshold",
+      "fixed_point_stability",
       "herd_immunity",
-      "mass_action"
+      "mass_action",
+      "mean_field",
+      "phase_transition"
     ],
     "variables": {
       "state": "compartment_sizes",
@@ -6682,6 +6818,7 @@
     "optimization": "cell_fate_specification",
     "fixed_points": "differentiated_cell_types",
     "operators": [
+      "fokker_planck",
       "gradient",
       "noise",
       "potential_function",
@@ -6692,8 +6829,12 @@
       "bifurcation",
       "canalization",
       "cell_fate_decision",
+      "energy_minimization",
+      "gradient_flow",
       "irreversibility",
-      "stochastic_dynamics"
+      "lyapunov_stability",
+      "stochastic_dynamics",
+      "variational_principle"
     ],
     "variables": {
       "state": "gene_expression_state",
@@ -6715,12 +6856,16 @@
       "birth_death",
       "graph_adjacency",
       "random_walk",
-      "selection"
+      "selection",
+      "state_transition"
     ],
     "patterns": [
       "amplifier_of_selection",
+      "birth_death_process",
+      "continuous_time_markov",
       "fixation_probability",
       "isothermal_theorem",
+      "mean_field",
       "spatial_structure",
       "suppressor_of_selection"
     ],
@@ -6744,16 +6889,20 @@
     "fixed_points": "evolutionary_singular_strategy",
     "operators": [
       "differential",
+      "gradient",
       "invasion_fitness",
       "mutation_kernel",
       "selection_gradient"
     ],
     "patterns": [
+      "bifurcation",
       "branching_point",
       "convergence_stability",
       "evolutionary_branching",
       "evolutionary_singularity",
-      "invasion_analysis"
+      "gradient_flow",
+      "invasion_analysis",
+      "variational_principle"
     ],
     "variables": {
       "state": "resident_trait",
