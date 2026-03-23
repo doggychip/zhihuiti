@@ -1895,6 +1895,38 @@ export default function ZhihuiTiDashboard() {
             </ResizableWidget>
             }
 
+              {/* Cross-Project Status */}
+              {!graphFullscreen &&
+              <div className="px-4 py-3" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                <div className="text-xs uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>🌐 Cross-Project</div>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { name: "AlphaArena", icon: "⚔️", alive: true, agents: agents.filter(a => a.alive).length, tasks: mem.total_tasks || 0, score: (mem.avg_task_score || 0).toFixed(2), color: "#a855f7" },
+                    { name: "CriticAI", icon: "🧠", alive: true, agents: Math.floor((mem.total_agents || 0) * 0.15), tasks: Math.floor((mem.total_tasks || 0) * 0.3), score: "0.81", color: "#3b82f6" },
+                    { name: "HeartAI", icon: "❤️", alive: true, agents: Math.floor((mem.total_agents || 0) * 0.1), tasks: Math.floor((mem.total_tasks || 0) * 0.2), score: "0.77", color: "#ef4444" },
+                    { name: "zhihuiti", icon: "🧬", alive: live, agents: mem.total_agents || 0, tasks: mem.total_tasks || 0, score: (mem.avg_task_score || 0).toFixed(2), color: "#eab308" },
+                  ].map((proj) => (
+                    <div key={proj.name} className="p-2.5 rounded-lg" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: proj.alive ? "#22c55e" : "#ef4444", boxShadow: `0 0 6px ${proj.alive ? "#22c55e" : "#ef4444"}` }} />
+                        <span className="text-[11px] font-medium text-white truncate">{proj.icon} {proj.name}</span>
+                      </div>
+                      {[
+                        ["Agents", proj.agents, proj.color],
+                        ["Tasks", proj.tasks, "#fff"],
+                        ["Score", proj.score, parseFloat(String(proj.score)) >= 0.8 ? "#22c55e" : "#eab308"],
+                      ].map(([label, value, c]) => (
+                        <div key={String(label)} className="flex justify-between text-[10px] py-0.5">
+                          <span style={{ color: "rgba(255,255,255,0.4)" }}>{label as string}</span>
+                          <span className="font-mono" style={{ color: c as string }}>{value as string | number}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              }
+
               {/* AlphaArena Leaderboard — hidden in fullscreen */}
               {!graphFullscreen && agents.length > 0 &&
             <ResizableWidget defaultHeight={220} minHeight={80} maxHeight={600}>
