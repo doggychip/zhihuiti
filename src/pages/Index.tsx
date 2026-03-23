@@ -397,6 +397,18 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
         }
       });
 
+      // Dynamic line highlighting
+      const hasSelection = !!selectedId;
+      linesRef.current.forEach(({ line, from, to }) => {
+        const mat = line.material as THREE.LineBasicMaterial;
+        const connected = from === selectedId || to === selectedId;
+        if (hasSelection) {
+          mat.opacity = connected ? 0.7 + Math.sin(t * 4) * 0.15 : 0.03;
+          mat.linewidth = connected ? 2 : 1;
+        } else {
+          mat.opacity = 0.12;
+        }
+      });
       world.rotation.x = rotRef.current.x;
       world.rotation.y = rotRef.current.y + t * 0.02;
       renderer.render(scene, camera);
