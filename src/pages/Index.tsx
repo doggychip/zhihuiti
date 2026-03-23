@@ -484,7 +484,7 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
       if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
       renderer.dispose();
     };
-  }, [agents, connections, selectedId, onSelect, showZhihuiti, showHedgeFund]);
+  }, [agents, connections, selectedId, onSelect, showZhihuiti, showHedgeFund, lodCount]);
 
   return <div ref={mountRef} style={{ width: "100%", height: "100%" }} />;
 }
