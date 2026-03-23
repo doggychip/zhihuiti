@@ -175,8 +175,8 @@ function useSimulatedFeed(agents: Agent[]): TaskEvent[] {
 }
 
 // ── 3D Force-Directed Graph ─────────────────────────────────────
-function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhihuiti = true, showHedgeFund = true
-}: {agents: Agent[];connections: Connection[];onSelect: (id: string) => void;selectedId: string | null;events: TaskEvent[];showZhihuiti?: boolean;showHedgeFund?: boolean;}) {
+function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhihuiti = true, showHedgeFund = true, lodCount = 50
+}: {agents: Agent[];connections: Connection[];onSelect: (id: string) => void;selectedId: string | null;events: TaskEvent[];showZhihuiti?: boolean;showHedgeFund?: boolean;lodCount?: number;}) {
   const mountRef = useRef<HTMLDivElement>(null);
   const nodesRef = useRef<Record<string, {mesh: THREE.Mesh; label?: THREE.Sprite; basePos: THREE.Vector3; vel: THREE.Vector3; size: number;}>>({});
   const frameRef = useRef(0);
@@ -307,56 +307,96 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
       linesRef.current.push(line);
     });
 
+    // Score agents for LOD ranking
+    const INITIAL_BUDGET = 100;
+    const scoredAgents = visibleAgents.map(a => {
+      const returnPct = ((a.budget - INITIAL_BUDGET) / INITIAL_BUDGET) * 100;
+      const score = (a.avg_score * 0.4) + (Math.max(0, returnPct) / 100 * 0.3) + (a.avg_score * 0.3);
+      return { ...a, lodScore: score };
+    }).sort((a, b) => b.lodScore - a.lodScore);
+
+    const topAgentIds = new Set(scoredAgents.slice(0, lodCount).map(a => a.id));
+
     // Agent nodes
     const maxBudget = Math.max(...visibleAgents.map(x => x.budget), 1);
+
+    // Batch geometry for dot agents (small points)
+    const dotPositions: number[] = [];
+    const dotColors: number[] = [];
+    const dotAgentIds: string[] = [];
+
     visibleAgents.forEach(a => {
       const pos = positions[a.id];
       if (!pos) return;
-      const size = 0.15 + (a.budget / maxBudget) * 0.4;
       const color = a.group ? GROUP_COLORS[a.group] : (REALM_COLORS[a.realm] || "#888");
 
-      const geo = new THREE.SphereGeometry(size, 24, 24);
-      const mat = new THREE.MeshStandardMaterial({
-        color: a.alive ? color : "#333",
-        emissive: a.alive ? color : "#111",
-        emissiveIntensity: a.alive ? 0.35 : 0.05,
-        metalness: 0.5,
-        roughness: 0.3,
-      });
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.copy(pos);
-      mesh.userData = { agentId: a.id };
-      world.add(mesh);
+      if (topAgentIds.has(a.id)) {
+        // Full LOD: sphere + label
+        const size = 0.15 + (a.budget / maxBudget) * 0.4;
+        const geo = new THREE.SphereGeometry(size, 24, 24);
+        const mat = new THREE.MeshStandardMaterial({
+          color: a.alive ? color : "#333",
+          emissive: a.alive ? color : "#111",
+          emissiveIntensity: a.alive ? 0.35 : 0.05,
+          metalness: 0.5,
+          roughness: 0.3,
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.copy(pos);
+        mesh.userData = { agentId: a.id };
+        world.add(mesh);
 
-      let labelSprite: THREE.Sprite | undefined;
-      // Name label
-      if (a.name || a.role) {
-        const labelCanvas = document.createElement("canvas");
-        labelCanvas.width = 512; labelCanvas.height = 64;
-        const lctx = labelCanvas.getContext("2d")!;
-        lctx.clearRect(0, 0, 512, 64);
-        lctx.font = "bold 26px 'Inter', system-ui, sans-serif";
-        lctx.textAlign = "center";
-        lctx.textBaseline = "middle";
-        lctx.fillStyle = "rgba(255,255,255,0.55)";
-        lctx.fillText(a.name || a.role, 256, 32);
-        const tex = new THREE.CanvasTexture(labelCanvas);
-        tex.needsUpdate = true;
-        const sMat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.6, depthWrite: false });
-        labelSprite = new THREE.Sprite(sMat);
-        labelSprite.position.set(pos.x, pos.y + size + 0.45, pos.z);
-        labelSprite.scale.set(2.2, 0.28, 1);
-        world.add(labelSprite);
+        let labelSprite: THREE.Sprite | undefined;
+        if (a.name || a.role) {
+          const labelCanvas = document.createElement("canvas");
+          labelCanvas.width = 512; labelCanvas.height = 64;
+          const lctx = labelCanvas.getContext("2d")!;
+          lctx.clearRect(0, 0, 512, 64);
+          lctx.font = "bold 26px 'Inter', system-ui, sans-serif";
+          lctx.textAlign = "center";
+          lctx.textBaseline = "middle";
+          lctx.fillStyle = "rgba(255,255,255,0.55)";
+          lctx.fillText(a.name || a.role, 256, 32);
+          const tex = new THREE.CanvasTexture(labelCanvas);
+          tex.needsUpdate = true;
+          const sMat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.6, depthWrite: false });
+          labelSprite = new THREE.Sprite(sMat);
+          labelSprite.position.set(pos.x, pos.y + size + 0.45, pos.z);
+          labelSprite.scale.set(2.2, 0.28, 1);
+          world.add(labelSprite);
+        }
+
+        nodesRef.current[a.id] = {
+          mesh,
+          label: labelSprite,
+          basePos: pos.clone(),
+          vel: new THREE.Vector3(),
+          size
+        };
+      } else {
+        // Low LOD: collect for batch points
+        dotPositions.push(pos.x, pos.y, pos.z);
+        const c = new THREE.Color(a.alive ? color : "#333");
+        dotColors.push(c.r, c.g, c.b);
+        dotAgentIds.push(a.id);
       }
-
-      nodesRef.current[a.id] = {
-        mesh,
-        label: labelSprite,
-        basePos: pos.clone(),
-        vel: new THREE.Vector3(),
-        size
-      };
     });
+
+    // Render dot agents as a single Points object
+    if (dotPositions.length > 0) {
+      const dotGeo = new THREE.BufferGeometry();
+      dotGeo.setAttribute("position", new THREE.Float32BufferAttribute(dotPositions, 3));
+      dotGeo.setAttribute("color", new THREE.Float32BufferAttribute(dotColors, 3));
+      const dotMat = new THREE.PointsMaterial({
+        size: 0.08,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.5,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      world.add(new THREE.Points(dotGeo, dotMat));
+    }
 
     // Ambient dust (lighter)
     const dustCount = 100;
@@ -444,7 +484,7 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
       if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
       renderer.dispose();
     };
-  }, [agents, connections, selectedId, onSelect, showZhihuiti, showHedgeFund]);
+  }, [agents, connections, selectedId, onSelect, showZhihuiti, showHedgeFund, lodCount]);
 
   return <div ref={mountRef} style={{ width: "100%", height: "100%" }} />;
 }
@@ -1167,6 +1207,7 @@ export default function ZhihuiTiDashboard() {
   const [live, setLive] = useState(true);
   const [showCollision, setShowCollision] = useState(false);
   const [graphFullscreen, setGraphFullscreen] = useState(false);
+  const [lodCount, setLodCount] = useState(50);
   const [booted, setBooted] = useState(false);
   const handleBootComplete = useCallback(() => setBooted(true), []);
   const [showZhihuiti, setShowZhihuiti] = useState(true);
@@ -1665,7 +1706,7 @@ export default function ZhihuiTiDashboard() {
           <div className={`flex-1 flex flex-col relative ${graphFullscreen ? "" : ""}`}
           style={graphFullscreen ? { position: "fixed", inset: 0, zIndex: 9999, background: "#08080f" } : undefined}>
               <ResizableWidget defaultHeight={400} minHeight={150} maxHeight={800} className="flex-1 relative">
-                <ThreeGraph agents={agents} connections={connections} onSelect={handleSelect} selectedId={selected} events={events} showZhihuiti={showZhihuiti} showHedgeFund={showHedgeFund} />
+                <ThreeGraph agents={agents} connections={connections} onSelect={handleSelect} selectedId={selected} events={events} showZhihuiti={showZhihuiti} showHedgeFund={showHedgeFund} lodCount={lodCount} />
                 {/* Fullscreen toggle */}
                 <button
                 onClick={() => setGraphFullscreen((f) => !f)}
@@ -1712,6 +1753,19 @@ export default function ZhihuiTiDashboard() {
                   }}>
                     ⚛️ Collision Engine
                   </button>
+                  <div className="flex items-center gap-1.5 ml-2" style={{ borderLeft: "1px solid rgba(255,255,255,0.08)", paddingLeft: 8 }}>
+                    <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>LOD</span>
+                    <input
+                      type="range"
+                      min={5}
+                      max={Math.max(agents.length, 50)}
+                      value={lodCount}
+                      onChange={e => setLodCount(Number(e.target.value))}
+                      className="w-16 h-1 accent-purple-500 cursor-pointer"
+                      style={{ opacity: 0.6 }}
+                    />
+                    <span className="text-[10px] font-mono" style={{ color: "rgba(167,139,250,0.7)" }}>{lodCount}</span>
+                  </div>
                 </div>
                 {selectedAgent &&
               <AgentDetail agent={selectedAgent} connections={selectedConns} agents={agents} onClose={() => setSelected(null)} onSelect={handleSelect} />
