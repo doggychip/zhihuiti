@@ -28,6 +28,9 @@ def create_agents(config: dict, state: SimState):
         realm = REALM_NAMES[i % len(REALM_NAMES)]
         strategy = state.rng.choice(STRATEGIES)
 
+        # Heterogeneous adaptation rate: some agents learn fast, others are conservative
+        adaptation_rate = 0.5 + state.rng.random() * 1.5  # range [0.5, 2.0]
+
         agent = Agent(
             id=f"agent_{i:03d}",
             name=name,
@@ -35,6 +38,7 @@ def create_agents(config: dict, state: SimState):
             balance=initial_balance,
             strategy=strategy,
             created_tick=0,
+            adaptation_rate=adaptation_rate,
         )
         state.agents[agent.id] = agent
         state.total_supply += initial_balance
@@ -91,10 +95,22 @@ def agent_act(state: SimState, agent: Agent, action: str):
         unstake(state, agent.id, amount)
 
     elif action == "migrate":
-        # Use Bellman value estimates if available, else fall back to population
+        # Gradient-informed migration: combine Bellman values with natural gradient
+        # to prefer realms that are both valuable AND improving
         if state.realm_values:
             from .dynamics import best_realm_by_value
             best_realm = best_realm_by_value(state)
+
+            # If natural gradient available, factor it in
+            if state.natural_gradient:
+                candidates = [r for r in REALM_NAMES if r != agent.realm]
+                # Score = Bellman value + gradient bonus (improving realms preferred)
+                scores = {}
+                for r in candidates:
+                    value = state.realm_values.get(r, 0.0)
+                    grad = state.natural_gradient.get(r, 0.0)
+                    scores[r] = value + grad * 0.5
+                best_realm = max(candidates, key=lambda r: scores[r])
         else:
             realm_pops = {}
             for a in state.agents.values():

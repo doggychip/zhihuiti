@@ -155,6 +155,7 @@ def run(config_path: str, plot: bool = True) -> SimState:
         "fisher_information": [],
         "kl_divergence": [],
         "natural_gradient": [],
+        "strategy_tenure": [],
     }
 
     for tick in range(ticks):
@@ -222,6 +223,14 @@ def run(config_path: str, plot: bool = True) -> SimState:
         history["fisher_information"].append(state.fisher_information)
         history["kl_divergence"].append(state.kl_divergence)
         history["natural_gradient"].append(dict(state.natural_gradient))
+
+        # Strategy tenure snapshot: mean tenure per strategy
+        tenure_by_strat: dict[str, list[int]] = {}
+        for a in state.agents.values():
+            tenure_by_strat.setdefault(a.strategy, []).append(a.strategy_tenure)
+        history["strategy_tenure"].append({
+            s: sum(ts) / len(ts) for s, ts in tenure_by_strat.items()
+        })
 
         # 10. Periodic summary
         if tick % log_interval == 0:
