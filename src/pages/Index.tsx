@@ -307,56 +307,96 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
       linesRef.current.push(line);
     });
 
+    // Score agents for LOD ranking
+    const INITIAL_BUDGET = 100;
+    const scoredAgents = visibleAgents.map(a => {
+      const returnPct = ((a.budget - INITIAL_BUDGET) / INITIAL_BUDGET) * 100;
+      const score = (a.avg_score * 0.4) + (Math.max(0, returnPct) / 100 * 0.3) + (a.avg_score * 0.3);
+      return { ...a, lodScore: score };
+    }).sort((a, b) => b.lodScore - a.lodScore);
+
+    const topAgentIds = new Set(scoredAgents.slice(0, lodCount).map(a => a.id));
+
     // Agent nodes
     const maxBudget = Math.max(...visibleAgents.map(x => x.budget), 1);
+
+    // Batch geometry for dot agents (small points)
+    const dotPositions: number[] = [];
+    const dotColors: number[] = [];
+    const dotAgentIds: string[] = [];
+
     visibleAgents.forEach(a => {
       const pos = positions[a.id];
       if (!pos) return;
-      const size = 0.15 + (a.budget / maxBudget) * 0.4;
       const color = a.group ? GROUP_COLORS[a.group] : (REALM_COLORS[a.realm] || "#888");
 
-      const geo = new THREE.SphereGeometry(size, 24, 24);
-      const mat = new THREE.MeshStandardMaterial({
-        color: a.alive ? color : "#333",
-        emissive: a.alive ? color : "#111",
-        emissiveIntensity: a.alive ? 0.35 : 0.05,
-        metalness: 0.5,
-        roughness: 0.3,
-      });
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.copy(pos);
-      mesh.userData = { agentId: a.id };
-      world.add(mesh);
+      if (topAgentIds.has(a.id)) {
+        // Full LOD: sphere + label
+        const size = 0.15 + (a.budget / maxBudget) * 0.4;
+        const geo = new THREE.SphereGeometry(size, 24, 24);
+        const mat = new THREE.MeshStandardMaterial({
+          color: a.alive ? color : "#333",
+          emissive: a.alive ? color : "#111",
+          emissiveIntensity: a.alive ? 0.35 : 0.05,
+          metalness: 0.5,
+          roughness: 0.3,
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.copy(pos);
+        mesh.userData = { agentId: a.id };
+        world.add(mesh);
 
-      let labelSprite: THREE.Sprite | undefined;
-      // Name label
-      if (a.name || a.role) {
-        const labelCanvas = document.createElement("canvas");
-        labelCanvas.width = 512; labelCanvas.height = 64;
-        const lctx = labelCanvas.getContext("2d")!;
-        lctx.clearRect(0, 0, 512, 64);
-        lctx.font = "bold 26px 'Inter', system-ui, sans-serif";
-        lctx.textAlign = "center";
-        lctx.textBaseline = "middle";
-        lctx.fillStyle = "rgba(255,255,255,0.55)";
-        lctx.fillText(a.name || a.role, 256, 32);
-        const tex = new THREE.CanvasTexture(labelCanvas);
-        tex.needsUpdate = true;
-        const sMat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.6, depthWrite: false });
-        labelSprite = new THREE.Sprite(sMat);
-        labelSprite.position.set(pos.x, pos.y + size + 0.45, pos.z);
-        labelSprite.scale.set(2.2, 0.28, 1);
-        world.add(labelSprite);
+        let labelSprite: THREE.Sprite | undefined;
+        if (a.name || a.role) {
+          const labelCanvas = document.createElement("canvas");
+          labelCanvas.width = 512; labelCanvas.height = 64;
+          const lctx = labelCanvas.getContext("2d")!;
+          lctx.clearRect(0, 0, 512, 64);
+          lctx.font = "bold 26px 'Inter', system-ui, sans-serif";
+          lctx.textAlign = "center";
+          lctx.textBaseline = "middle";
+          lctx.fillStyle = "rgba(255,255,255,0.55)";
+          lctx.fillText(a.name || a.role, 256, 32);
+          const tex = new THREE.CanvasTexture(labelCanvas);
+          tex.needsUpdate = true;
+          const sMat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.6, depthWrite: false });
+          labelSprite = new THREE.Sprite(sMat);
+          labelSprite.position.set(pos.x, pos.y + size + 0.45, pos.z);
+          labelSprite.scale.set(2.2, 0.28, 1);
+          world.add(labelSprite);
+        }
+
+        nodesRef.current[a.id] = {
+          mesh,
+          label: labelSprite,
+          basePos: pos.clone(),
+          vel: new THREE.Vector3(),
+          size
+        };
+      } else {
+        // Low LOD: collect for batch points
+        dotPositions.push(pos.x, pos.y, pos.z);
+        const c = new THREE.Color(a.alive ? color : "#333");
+        dotColors.push(c.r, c.g, c.b);
+        dotAgentIds.push(a.id);
       }
-
-      nodesRef.current[a.id] = {
-        mesh,
-        label: labelSprite,
-        basePos: pos.clone(),
-        vel: new THREE.Vector3(),
-        size
-      };
     });
+
+    // Render dot agents as a single Points object
+    if (dotPositions.length > 0) {
+      const dotGeo = new THREE.BufferGeometry();
+      dotGeo.setAttribute("position", new THREE.Float32BufferAttribute(dotPositions, 3));
+      dotGeo.setAttribute("color", new THREE.Float32BufferAttribute(dotColors, 3));
+      const dotMat = new THREE.PointsMaterial({
+        size: 0.08,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.5,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      world.add(new THREE.Points(dotGeo, dotMat));
+    }
 
     // Ambient dust (lighter)
     const dustCount = 100;
