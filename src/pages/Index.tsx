@@ -91,7 +91,8 @@ const DEMO_DATA = {
   goal_history: [
   { goal: "list 3 programming languages and their best use cases", task_count: 4, avg_score: 0.83 }],
 
-  transactions: {}
+  transactions: {},
+  risk: { halted: false, peak_equity: 10000, current_drawdown: 0, trades_today: 0, max_drawdown_limit: 20 }
 };
 
 const EVENT_ICONS: Record<string, string> = {
