@@ -348,22 +348,31 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
         world.add(mesh);
 
         let labelSprite: THREE.Sprite | undefined;
-        if (a.name || a.role) {
+        {
+          const displayName = a.name || a.role;
+          const subtitle = a.role;
           const labelCanvas = document.createElement("canvas");
-          labelCanvas.width = 512; labelCanvas.height = 64;
+          labelCanvas.width = 512; labelCanvas.height = 96;
           const lctx = labelCanvas.getContext("2d")!;
-          lctx.clearRect(0, 0, 512, 64);
+          lctx.clearRect(0, 0, 512, 96);
+          // Name line
           lctx.font = "bold 26px 'Inter', system-ui, sans-serif";
           lctx.textAlign = "center";
           lctx.textBaseline = "middle";
-          lctx.fillStyle = "rgba(255,255,255,0.55)";
-          lctx.fillText(a.name || a.role, 256, 32);
+          lctx.fillStyle = "rgba(255,255,255,0.7)";
+          lctx.fillText(displayName, 256, a.name ? 30 : 48);
+          // Subtitle (strategy/role) — only if name exists
+          if (a.name) {
+            lctx.font = "italic 18px 'Inter', system-ui, sans-serif";
+            lctx.fillStyle = "rgba(255,255,255,0.35)";
+            lctx.fillText(subtitle, 256, 62);
+          }
           const tex = new THREE.CanvasTexture(labelCanvas);
           tex.needsUpdate = true;
-          const sMat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.6, depthWrite: false });
+          const sMat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.7, depthWrite: false });
           labelSprite = new THREE.Sprite(sMat);
-          labelSprite.position.set(pos.x, pos.y + size + 0.45, pos.z);
-          labelSprite.scale.set(2.2, 0.28, 1);
+          labelSprite.position.set(pos.x, pos.y + size + 0.55, pos.z);
+          labelSprite.scale.set(2.4, 0.45, 1);
           world.add(labelSprite);
         }
 
