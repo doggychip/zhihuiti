@@ -149,11 +149,56 @@ zhihuiti dashboard --port 8377
 
 Dark-themed single-page dashboard showing all 18 system cards with 10-second auto-refresh. Also serves JSON at `/api/data`.
 
+## K-Dense BYOK Integration
+
+zhihuiti can serve as a multi-agent backend for [K-Dense BYOK](https://github.com/K-Dense-AI/k-dense-byok), letting Kady delegate complex tasks to zhihuiti's agent swarm.
+
+### Option 1: MCP Toolset (recommended)
+
+Add to `kady_agent/mcps.py` in your k-dense-byok project:
+
+```python
+from kady_bridge import zhihuiti_mcp
+all_mcps.append(zhihuiti_mcp)
+```
+
+This starts zhihuiti as a subprocess MCP server. Kady gets 4 tools: `zhihuiti_execute_goal`, `zhihuiti_execute_task`, `zhihuiti_list_agents`, `zhihuiti_system_status`.
+
+### Option 2: HTTP API
+
+```bash
+# Start the API server
+zhihuiti serve --port 8377
+
+# Submit goals
+curl -X POST http://localhost:8377/api/goals -H 'Content-Type: application/json' \
+  -d '{"goal": "research the top 3 programming languages"}'
+
+# Poll results
+curl http://localhost:8377/api/goals/<id>
+
+# List agents
+curl http://localhost:8377/api/agents
+```
+
+### Option 3: Direct function tool
+
+```python
+from kady_bridge import delegate_to_zhihuiti
+result = delegate_to_zhihuiti("analyze market trends for renewable energy")
+```
+
+### Setup
+
+1. `pip install -e /path/to/zhihuiti`
+2. Copy `kady_bridge.py` into your k-dense-byok project
+3. Set `OPENROUTER_API_KEY` (shared between both systems)
+
 ## Tests
 
 ```bash
 pip install pytest
-python -m pytest -q          # 253 tests, ~0.6s
+python -m pytest -q          # 353 tests, ~8s
 ```
 
 All tests use in-memory SQLite and stub LLMs — no network or API keys required.
