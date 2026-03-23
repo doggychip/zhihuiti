@@ -455,7 +455,26 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
     };
   }, [agents, connections, selectedId, onSelect, showZhihuiti, showHedgeFund, lodCount]);
 
-  return <div ref={mountRef} style={{ width: "100%", height: "100%" }} />;
+  return (
+    <div style={{ width: "100%", height: "100%", position: "relative" }}>
+      <div ref={mountRef} style={{ width: "100%", height: "100%" }} />
+      <div style={{
+        position: "absolute", bottom: 12, left: 12,
+        background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)",
+        borderRadius: 8, padding: "8px 12px",
+        border: "1px solid rgba(255,255,255,0.08)",
+        pointerEvents: "none",
+      }}>
+        <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: 1.5, color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>Connections</div>
+        {Object.entries(CONN_COLORS).map(([type, color]) => (
+          <div key={type} style={{ display: "flex", alignItems: "center", gap: 6, padding: "1px 0" }}>
+            <span style={{ width: 14, height: 2, borderRadius: 1, background: color, display: "inline-block" }} />
+            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", textTransform: "capitalize" }}>{type}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // ── Stat Card ───────────────────────────────────────────────────
