@@ -432,6 +432,28 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
           mat.opacity = 0.12;
         }
       });
+
+      // Animate token particles along connections
+      tokensRef.current.forEach(tok => {
+        tok.progress += tok.speed;
+        if (tok.progress > 1) tok.progress -= 1;
+        const p1 = positionsRef.current[tok.from];
+        const p2 = positionsRef.current[tok.to];
+        if (p1 && p2) {
+          tok.mesh.visible = true;
+          tok.mesh.position.lerpVectors(p1, p2, tok.progress);
+          const mat = tok.mesh.material as THREE.MeshBasicMaterial;
+          const isConnected = tok.from === selectedId || tok.to === selectedId;
+          if (hasSelection) {
+            mat.opacity = isConnected ? 0.9 : 0.05;
+            tok.mesh.scale.setScalar(isConnected ? 1.8 : 0.6);
+          } else {
+            mat.opacity = 0.55 + Math.sin(tok.progress * Math.PI) * 0.3;
+            tok.mesh.scale.setScalar(1);
+          }
+        }
+      });
+
       world.rotation.x = rotRef.current.x;
       world.rotation.y = rotRef.current.y + t * 0.02;
       renderer.render(scene, camera);
