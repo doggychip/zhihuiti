@@ -335,6 +335,27 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
       };
     });
 
+    // Connection lines between agents
+    const visibleIds = new Set(topAgents.map(a => a.id));
+    const visibleConns = connections.filter(c => visibleIds.has(c.from) && visibleIds.has(c.to));
+    visibleConns.forEach(conn => {
+      const p1 = positions[conn.from];
+      const p2 = positions[conn.to];
+      if (!p1 || !p2) return;
+      const points = [p1, p2];
+      const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+      const lineColor = CONN_COLORS[conn.type] || "#555";
+      const lineMat = new THREE.LineBasicMaterial({
+        color: lineColor,
+        transparent: true,
+        opacity: conn.from === selectedId || conn.to === selectedId ? 0.6 : 0.12,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      const line = new THREE.Line(lineGeo, lineMat);
+      world.add(line);
+    });
+
     // Ambient dust
     const dustCount = 80;
     const dustArr = new Float32Array(dustCount * 3);
@@ -1270,21 +1291,33 @@ export default function ZhihuiTiDashboard() {
   const agents: Agent[] = useMemo(() => [...coreAgents, ...alphaArenaAgents], [coreAgents, alphaArenaAgents]);
   const events = useSimulatedFeed(agents);
 
+  // Build sparse economy graph: each agent connects to 2-3 peers (same realm, nearest by score)
+  const connections: Connection[] = useMemo(() => {
+    const conns: Connection[] = [];
+    const types = ["transaction", "investment", "bounty", "employment", "subsidy", "bloodline", "competition"];
+    const byRealm: Record<string, Agent[]> = {};
+    agents.forEach(a => {
+      (byRealm[a.realm] ||= []).push(a);
+    });
+    Object.values(byRealm).forEach(group => {
+      const sorted = [...group].sort((a, b) => b.avg_score - a.avg_score);
+      sorted.forEach((a, i) => {
+        for (let d = 1; d <= 2; d++) {
+          const j = i + d;
+          if (j < sorted.length) {
+            conns.push({ from: a.id, to: sorted[j].id, type: types[(i + j) % types.length] });
+          }
+        }
+      });
+    });
+    return conns;
+  }, [agents]);
+
   if (!data) return (
     <div className="min-h-screen flex items-center justify-center text-white" style={{ background: "#0a0a14" }}>
       <div className="animate-pulse text-xl" style={{ color: "#a855f7" }}>Loading 智慧体...</div>
     </div>);
 
-
-  const connections: Connection[] = [];
-  for (let i = 0; i < agents.length; i++) {
-    for (let j = i + 1; j < agents.length; j++) {
-      if (agents[i].realm === agents[j].realm) {
-        const types = ["transaction", "bloodline", "competition", "investment"];
-        connections.push({ from: agents[i].id, to: agents[j].id, type: types[(i + j) % types.length] });
-      }
-    }
-  }
 
   const selectedAgent = agents.find((a) => a.id === selected);
   const selectedConns = connections.filter((c) => c.from === selected || c.to === selected);
