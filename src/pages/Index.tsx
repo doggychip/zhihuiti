@@ -176,7 +176,7 @@ function useSimulatedFeed(agents: Agent[]): TaskEvent[] {
 }
 
 // ── 3D Realm-Grouped Graph ─────────────────────────────────────
-const REALM_X: Record<string, number> = { research: -10, execution: 0, central: 10 };
+const REALM_X: Record<string, number> = { research: -4, execution: 0, central: 4 };
 const REALM_SPHERE_COLORS: Record<string, string> = { research: "#3b82f6", execution: "#f97316", central: "#a855f7" };
 
 function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhihuiti = true, showHedgeFund = true, lodCount = 30
