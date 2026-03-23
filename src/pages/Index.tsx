@@ -183,6 +183,7 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
 }: {agents: Agent[];connections: Connection[];onSelect: (id: string) => void;selectedId: string | null;events: TaskEvent[];showZhihuiti?: boolean;showHedgeFund?: boolean;lodCount?: number;}) {
   const mountRef = useRef<HTMLDivElement>(null);
   const nodesRef = useRef<Record<string, {mesh: THREE.Mesh; label?: THREE.Sprite; basePos: THREE.Vector3; vel: THREE.Vector3; size: number;}>>({});
+  const linesRef = useRef<{ line: THREE.Line; from: string; to: string; baseColor: string }[]>([]);
   const frameRef = useRef(0);
   const mouseRef = useRef({ down: false, prevX: 0, prevY: 0 });
   const rotRef = useRef({ x: 0.25, y: 0 });
