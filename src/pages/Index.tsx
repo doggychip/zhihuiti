@@ -1718,18 +1718,20 @@ export default function ZhihuiTiDashboard() {
                   }}>
                     ⚛️ Collision Engine
                   </button>
-                  <div className="flex items-center gap-1.5 ml-2" style={{ borderLeft: "1px solid rgba(255,255,255,0.08)", paddingLeft: 8 }}>
-                    <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>LOD</span>
-                    <input
-                      type="range"
-                      min={5}
-                      max={Math.max(agents.length, 50)}
-                      value={lodCount}
-                      onChange={e => setLodCount(Number(e.target.value))}
-                      className="w-16 h-1 accent-purple-500 cursor-pointer"
-                      style={{ opacity: 0.6 }}
-                    />
-                    <span className="text-[10px] font-mono" style={{ color: "rgba(167,139,250,0.7)" }}>{lodCount}</span>
+                  <div className="flex items-center gap-1 ml-2" style={{ borderLeft: "1px solid rgba(255,255,255,0.08)", paddingLeft: 8 }}>
+                    <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>Show:</span>
+                    {[{ label: "Top 30", value: 30 }, { label: "Top 50", value: 50 }, { label: "All", value: -1 }].map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setLodCount(opt.value)}
+                        className="text-[10px] px-1.5 py-0.5 rounded cursor-pointer transition-colors"
+                        style={{
+                          background: lodCount === opt.value ? "rgba(167,139,250,0.2)" : "rgba(255,255,255,0.04)",
+                          color: lodCount === opt.value ? "#a78bfa" : "rgba(255,255,255,0.3)",
+                          border: `1px solid ${lodCount === opt.value ? "rgba(167,139,250,0.4)" : "rgba(255,255,255,0.08)"}`
+                        }}
+                      >{opt.label}</button>
+                    ))}
                   </div>
                 </div>
                 {selectedAgent &&
