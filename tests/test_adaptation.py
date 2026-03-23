@@ -17,6 +17,7 @@ from zhihuiti.adaptation import (
     PerformanceTracker,
     PromptEvolver,
     RolePerformance,
+    _pearson,
 )
 
 
@@ -393,3 +394,185 @@ class TestAdaptationIntegration:
         # This rate would be passed to bloodline.breed_from_pool(mutation_rate=rate)
         # We just verify the value is reasonable
         assert 0.0 < rate < 1.0
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DIRECTIVE PRUNING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestDirectivePruning:
+    def test_pruning_after_consecutive_passes(self):
+        pe = PromptEvolver()
+        # Fail at rigor to create a directive
+        for _ in range(5):
+            pe.record_inspection("researcher",
+                                 {"rigor": 0.2, "relevance": 0.9},
+                                 {"rigor": 0.5, "relevance": 0.4})
+        # Verify directive is added
+        prompt = pe.evolve_prompt("Base.", "researcher")
+        assert "Performance Improvement Directives" in prompt
+
+        # Now pass rigor 5 consecutive times (PRUNE_AFTER_PASSES = 5)
+        for _ in range(5):
+            pe.record_inspection("researcher",
+                                 {"rigor": 0.8, "relevance": 0.9},
+                                 {"rigor": 0.5, "relevance": 0.4})
+
+        # Rigor should be pruned — no more directives
+        prompt2 = pe.evolve_prompt("Base.", "researcher")
+        assert prompt2 == "Base."
+
+    def test_pruning_resets_on_new_failure(self):
+        pe = PromptEvolver()
+        # Build up failures
+        for _ in range(5):
+            pe.record_inspection("coder",
+                                 {"safety": 0.2},
+                                 {"safety": 0.6})
+        # Pass 4 times (not enough to prune)
+        for _ in range(4):
+            pe.record_inspection("coder",
+                                 {"safety": 0.8},
+                                 {"safety": 0.6})
+        # Fail once — resets consecutive counter
+        pe.record_inspection("coder", {"safety": 0.2}, {"safety": 0.6})
+        # Pass 4 more — still not enough
+        for _ in range(4):
+            pe.record_inspection("coder",
+                                 {"safety": 0.8},
+                                 {"safety": 0.6})
+        prompt = pe.evolve_prompt("Base.", "coder")
+        assert "Performance Improvement Directives" in prompt
+
+    def test_pruned_layers_in_report(self):
+        pe = PromptEvolver()
+        for _ in range(5):
+            pe.record_inspection("analyst",
+                                 {"rigor": 0.2},
+                                 {"rigor": 0.5})
+        for _ in range(5):
+            pe.record_inspection("analyst",
+                                 {"rigor": 0.9},
+                                 {"rigor": 0.5})
+        report = pe.get_role_report()
+        assert "rigor" in report["analyst"]["pruned_layers"]
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VARIANCE-AWARE MUTATION & TEMPORAL DECAY
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestVarianceAwareMutation:
+    def test_high_variance_increases_mutation(self):
+        pt = PerformanceTracker()
+        # Erratic performer: same mean (~0.55) but high variance
+        for s in [0.2, 0.9, 0.3, 0.8, 0.25, 0.85]:
+            pt.record("erratic", s)
+        # Stable performer: same mean but low variance
+        for s in [0.55, 0.55, 0.55, 0.55, 0.55, 0.55]:
+            pt.record("stable", s)
+
+        rate_erratic = pt.suggest_mutation_rate("erratic")
+        rate_stable = pt.suggest_mutation_rate("stable")
+        assert rate_erratic > rate_stable
+
+    def test_mutation_rate_within_bounds(self):
+        pt = PerformanceTracker()
+        for _ in range(10):
+            pt.record("role", 0.99)
+        rate = pt.suggest_mutation_rate("role")
+        assert 0.03 <= rate <= 0.35
+
+
+class TestWeightedMean:
+    def test_weighted_mean_favors_recent(self):
+        rp = RolePerformance(role="test")
+        # Early scores are low, recent are high
+        rp.scores = [0.2, 0.2, 0.2, 0.2, 0.9, 0.9, 0.9, 0.9]
+        # Weighted mean should be higher than simple mean
+        assert rp.weighted_mean_score > rp.mean_score
+
+    def test_weighted_mean_empty(self):
+        rp = RolePerformance(role="test")
+        assert rp.weighted_mean_score == 0.0
+
+
+class TestCoefficientOfVariation:
+    def test_zero_variance(self):
+        rp = RolePerformance(role="test", scores=[0.5, 0.5, 0.5])
+        assert rp.coefficient_of_variation == 0.0
+
+    def test_high_variance(self):
+        rp = RolePerformance(role="test", scores=[0.1, 0.9, 0.1, 0.9, 0.1, 0.9])
+        assert rp.coefficient_of_variation > 0.5
+
+    def test_cv_too_few_scores(self):
+        rp = RolePerformance(role="test", scores=[0.5])
+        assert rp.coefficient_of_variation == 0.0
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CROSS-LAYER CORRELATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestLayerCorrelation:
+    def test_perfect_positive_correlation(self):
+        pt = PerformanceTracker()
+        for i in range(10):
+            s = 0.3 + i * 0.05
+            pt.record("researcher", s, {"rigor": s, "safety": s})
+        corrs = pt.detect_layer_correlations("researcher")
+        assert len(corrs) >= 1
+        # Perfect positive correlation
+        assert corrs[0][2] > 0.9
+
+    def test_negative_correlation(self):
+        pt = PerformanceTracker()
+        for i in range(10):
+            s = 0.3 + i * 0.05
+            pt.record("researcher", s, {"rigor": s, "safety": 1.0 - s})
+        corrs = pt.detect_layer_correlations("researcher")
+        assert len(corrs) >= 1
+        assert corrs[0][2] < -0.9
+
+    def test_no_correlation_with_few_samples(self):
+        pt = PerformanceTracker()
+        pt.record("researcher", 0.5, {"rigor": 0.5, "safety": 0.5})
+        corrs = pt.detect_layer_correlations("researcher")
+        assert corrs == []
+
+    def test_no_correlation_for_unknown_role(self):
+        pt = PerformanceTracker()
+        assert pt.detect_layer_correlations("nonexistent") == []
+
+    def test_correlations_in_summary(self):
+        pt = PerformanceTracker()
+        for i in range(10):
+            s = 0.3 + i * 0.05
+            pt.record("researcher", s, {"rigor": s, "safety": s})
+        summary = pt.get_role_summary("researcher")
+        assert "layer_correlations" in summary
+        assert len(summary["layer_correlations"]) >= 1
+
+    def test_summary_includes_new_fields(self):
+        pt = PerformanceTracker()
+        for i in range(5):
+            pt.record("coder", 0.5 + i * 0.05)
+        summary = pt.get_role_summary("coder")
+        assert "weighted_mean" in summary
+        assert "variance" in summary
+        assert "cv" in summary
+
+
+class TestPearson:
+    def test_perfect_positive(self):
+        assert _pearson([1, 2, 3], [1, 2, 3]) == pytest.approx(1.0)
+
+    def test_perfect_negative(self):
+        assert _pearson([1, 2, 3], [3, 2, 1]) == pytest.approx(-1.0)
+
+    def test_zero_variance(self):
+        assert _pearson([1, 1, 1], [2, 3, 4]) == 0.0
+
+    def test_too_few(self):
+        assert _pearson([1], [2]) == 0.0

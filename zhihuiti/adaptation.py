@@ -30,6 +30,21 @@ if TYPE_CHECKING:
 console = Console()
 
 
+def _pearson(xs: list[float], ys: list[float]) -> float:
+    """Pearson correlation coefficient between two same-length sequences."""
+    n = len(xs)
+    if n < 2:
+        return 0.0
+    mx = sum(xs) / n
+    my = sum(ys) / n
+    num = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
+    dx = math.sqrt(sum((x - mx) ** 2 for x in xs))
+    dy = math.sqrt(sum((y - my) ** 2 for y in ys))
+    if dx == 0 or dy == 0:
+        return 0.0
+    return num / (dx * dy)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. ADAPTIVE THRESHOLDS
 # ─────────────────────────────────────────────────────────────────────────────
@@ -211,18 +226,26 @@ class PromptEvolver:
 
     Tracks which inspection layers agents fail at most often,
     then appends targeted improvement directives to their system prompts.
+    Prunes directives when roles recover (consecutive passes above threshold).
 
     This closes the feedback loop:
-    score → failure analysis → prompt improvement → better scores
+    score → failure analysis → prompt improvement → better scores → directive pruning
     """
+
+    # After this many consecutive passes on a layer, prune its directive
+    PRUNE_AFTER_PASSES = 5
 
     def __init__(self):
         self.patterns: dict[str, FailurePattern] = {}  # role → pattern
         self._directive_index: dict[str, int] = {}  # role:layer → next directive idx
+        self._consecutive_passes: dict[str, int] = {}  # role:layer → consecutive pass count
+        self._pruned_layers: dict[str, set[str]] = {}  # role → set of pruned layer names
 
     def record_inspection(self, role: str, layer_scores: dict[str, float],
                           layer_thresholds: dict[str, float]) -> None:
         """Record an inspection result for pattern analysis.
+
+        Also tracks consecutive passes per layer for directive pruning.
 
         Args:
             role: Agent role (e.g., "researcher")
@@ -237,9 +260,18 @@ class PromptEvolver:
 
         for layer, score in layer_scores.items():
             threshold = layer_thresholds.get(layer, 0.5)
+            key = f"{role}:{layer}"
             if score < threshold:
                 pattern.layer_failures[layer] = pattern.layer_failures.get(layer, 0) + 1
                 pattern.total_failures += 1
+                self._consecutive_passes[key] = 0  # Reset on failure
+            else:
+                self._consecutive_passes[key] = self._consecutive_passes.get(key, 0) + 1
+                # Prune directive if recovered
+                if self._consecutive_passes[key] >= self.PRUNE_AFTER_PASSES:
+                    if role not in self._pruned_layers:
+                        self._pruned_layers[role] = set()
+                    self._pruned_layers[role].add(layer)
 
     def evolve_prompt(self, base_prompt: str, role: str,
                       min_inspections: int = 3) -> str:
@@ -264,8 +296,9 @@ class PromptEvolver:
         if pattern.failure_rate < 0.1:
             return base_prompt  # Under 10% failure → prompt is fine
 
-        # Get the weakest layers
-        weak_layers = pattern.weakest_layers(n=2)
+        # Get the weakest layers, excluding pruned ones (recovered layers)
+        pruned = self._pruned_layers.get(role, set())
+        weak_layers = [l for l in pattern.weakest_layers(n=4) if l not in pruned][:2]
         if not weak_layers:
             return base_prompt
 
@@ -306,6 +339,7 @@ class PromptEvolver:
                 "failure_rate": round(pattern.failure_rate, 3),
                 "layer_failures": dict(pattern.layer_failures),
                 "worst_layer": pattern.worst_layer(),
+                "pruned_layers": sorted(self._pruned_layers.get(role, set())),
             }
         return report
 
@@ -326,6 +360,46 @@ class RolePerformance:
         if not self.scores:
             return 0.0
         return sum(self.scores) / len(self.scores)
+
+    @property
+    def weighted_mean_score(self) -> float:
+        """Exponentially-weighted mean — recent scores matter more.
+
+        Uses decay factor 0.95: the most recent score has weight 1.0,
+        the one before it 0.95, then 0.9025, etc.
+        """
+        if not self.scores:
+            return 0.0
+        decay = 0.95
+        recent = self.scores[-30:]  # Cap window
+        n = len(recent)
+        weights = [decay ** (n - 1 - i) for i in range(n)]
+        total_weight = sum(weights)
+        if total_weight == 0:
+            return 0.0
+        return sum(w * s for w, s in zip(weights, recent)) / total_weight
+
+    @property
+    def score_variance(self) -> float:
+        """Variance of recent scores — measures consistency."""
+        if len(self.scores) < 2:
+            return 0.0
+        recent = self.scores[-20:]
+        mean = sum(recent) / len(recent)
+        return sum((s - mean) ** 2 for s in recent) / len(recent)
+
+    @property
+    def coefficient_of_variation(self) -> float:
+        """Stddev / mean — normalized measure of inconsistency.
+
+        High CV = inconsistent performer. Low CV = stable.
+        """
+        if len(self.scores) < 2:
+            return 0.0
+        mean = self.mean_score
+        if mean == 0:
+            return 0.0
+        return math.sqrt(self.score_variance) / mean
 
     @property
     def score_trend(self) -> float:
@@ -392,11 +466,15 @@ class PerformanceTracker:
             "role": role,
             "total_scores": len(rp.scores),
             "mean_score": round(rp.mean_score, 3),
+            "weighted_mean": round(rp.weighted_mean_score, 3),
+            "variance": round(rp.score_variance, 4),
+            "cv": round(rp.coefficient_of_variation, 3),
             "trend": round(rp.score_trend, 4),
             "layer_means": {
                 layer: round(rp.layer_mean(layer), 3)
                 for layer in rp.layer_scores
             },
+            "layer_correlations": self.detect_layer_correlations(role),
         }
 
     def get_improving_roles(self) -> list[str]:
@@ -414,32 +492,87 @@ class PerformanceTracker:
         ]
 
     def suggest_mutation_rate(self, role: str) -> float:
-        """Suggest a mutation rate based on performance.
+        """Suggest a mutation rate based on performance, trend, AND consistency.
 
+        Uses variance to differentiate stable from erratic performers:
         - High-performing, stable roles → low mutation (0.05-0.10)
         - Declining roles → high mutation (0.20-0.30) — need to change
         - Improving roles → moderate mutation (0.10-0.15) — keep evolving
         - Low-performing → high mutation (0.25) — try something different
+        - High variance bumps mutation up (inconsistent = needs tuning)
         """
         rp = self.roles.get(role)
         if not rp or len(rp.scores) < 3:
             return 0.15  # Default
 
         trend = rp.score_trend
-        mean = rp.mean_score
+        mean = rp.weighted_mean_score  # Use temporal-decay weighted mean
+        cv = rp.coefficient_of_variation
 
+        # Base rate from mean + trend
         if mean >= 0.8 and trend >= 0:
-            return 0.05  # Top performer, don't break it
+            base = 0.05  # Top performer, don't break it
         elif mean >= 0.6 and trend > 0:
-            return 0.10  # Good and improving, gentle mutation
+            base = 0.10  # Good and improving, gentle mutation
         elif trend > 0:
-            return 0.15  # Improving but still mid, keep evolving
+            base = 0.15  # Improving but still mid, keep evolving
         elif mean < 0.4:
-            return 0.25  # Low performer, shake things up
+            base = 0.25  # Low performer, shake things up
         elif trend < -0.01:
-            return 0.25  # Actively declining, needs change
+            base = 0.25  # Actively declining, needs change
         else:
-            return 0.15  # Stable but mediocre
+            base = 0.15  # Stable but mediocre
+
+        # Variance adjustment: high CV (>0.3) bumps mutation, low CV (<0.1) reduces it
+        if cv > 0.3:
+            variance_adj = 0.05  # Inconsistent — need more exploration
+        elif cv < 0.1:
+            variance_adj = -0.03  # Very consistent — less exploration needed
+        else:
+            variance_adj = 0.0
+
+        return max(0.03, min(0.35, base + variance_adj))
+
+    def detect_layer_correlations(self, role: str, min_samples: int = 5) -> list[tuple[str, str, float]]:
+        """Detect correlated failure patterns across inspection layers.
+
+        When two layers tend to fail together (e.g., rigor and causal),
+        this suggests a deeper underlying issue. Returns pairs with their
+        correlation coefficient.
+
+        Args:
+            role: Agent role to analyze
+            min_samples: Minimum data points required
+
+        Returns:
+            List of (layer_a, layer_b, correlation) tuples, sorted by |correlation|.
+        """
+        rp = self.roles.get(role)
+        if not rp or not rp.layer_scores:
+            return []
+
+        layers = [l for l, scores in rp.layer_scores.items() if len(scores) >= min_samples]
+        if len(layers) < 2:
+            return []
+
+        correlations: list[tuple[str, str, float]] = []
+        for i in range(len(layers)):
+            for j in range(i + 1, len(layers)):
+                la, lb = layers[i], layers[j]
+                sa = rp.layer_scores[la]
+                sb = rp.layer_scores[lb]
+                # Align to same length (use min length)
+                n = min(len(sa), len(sb))
+                if n < min_samples:
+                    continue
+                sa_recent = sa[-n:]
+                sb_recent = sb[-n:]
+                corr = _pearson(sa_recent, sb_recent)
+                if abs(corr) > 0.3:  # Only report meaningful correlations
+                    correlations.append((la, lb, round(corr, 3)))
+
+        correlations.sort(key=lambda x: -abs(x[2]))
+        return correlations
 
     def print_dashboard(self) -> None:
         """Print a performance dashboard."""
@@ -451,6 +584,8 @@ class PerformanceTracker:
         table.add_column("Role", style="cyan")
         table.add_column("N", justify="right")
         table.add_column("Mean", justify="center")
+        table.add_column("WMean", justify="center")
+        table.add_column("CV", justify="center")
         table.add_column("Trend", justify="center")
         table.add_column("Relevance", justify="center")
         table.add_column("Rigor", justify="center")
@@ -464,7 +599,11 @@ class PerformanceTracker:
             trend_color = "green" if trend > 0.005 else "red" if trend < -0.005 else "yellow"
 
             mean = rp.mean_score
+            wmean = rp.weighted_mean_score
             mean_color = "green" if mean >= 0.7 else "yellow" if mean >= 0.4 else "red"
+
+            cv = rp.coefficient_of_variation
+            cv_color = "green" if cv < 0.15 else "yellow" if cv < 0.3 else "red"
 
             mut_rate = self.suggest_mutation_rate(role)
 
@@ -479,6 +618,8 @@ class PerformanceTracker:
                 role,
                 str(len(rp.scores)),
                 f"[{mean_color}]{mean:.2f}[/{mean_color}]",
+                f"[{mean_color}]{wmean:.2f}[/{mean_color}]",
+                f"[{cv_color}]{cv:.2f}[/{cv_color}]",
                 f"[{trend_color}]{trend_icon} {trend:+.3f}[/{trend_color}]",
                 _layer_cell("relevance"),
                 _layer_cell("rigor"),
@@ -494,3 +635,12 @@ class PerformanceTracker:
             console.print(f"  [green]Improving:[/green] {', '.join(improving)}")
         if declining:
             console.print(f"  [red]Declining:[/red] {', '.join(declining)}")
+
+        # Show cross-layer correlations
+        for role in sorted(self.roles):
+            corrs = self.detect_layer_correlations(role)
+            if corrs:
+                console.print(f"  [cyan]{role}[/cyan] layer correlations:")
+                for la, lb, r in corrs:
+                    label = "co-fail" if r > 0 else "trade-off"
+                    console.print(f"    {la} ~ {lb}: {r:+.3f} ({label})")
