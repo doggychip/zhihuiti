@@ -321,12 +321,12 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
       realmIdx[a.realm] = idx + 1;
       const baseAngle = idx / rc * Math.PI * 2 + (a.realm === "research" ? 0.3 : a.realm === "execution" ? 1.2 : 2.5);
       const angle = baseAngle + (Math.random() - 0.5) * (Math.PI / rc);
-      const baseR = a.realm === "central" ? 2.5 : a.realm === "research" ? 5.5 : 7.5;
-      const r = baseR + (Math.random() - 0.5) * 3;
-      const y = (Math.random() - 0.5) * 5;
+      const baseR = a.realm === "central" ? 3.5 : a.realm === "research" ? 7 : 10.5;
+      const r = baseR + (Math.random() - 0.5) * 4;
+      const y = (Math.random() - 0.5) * 7;
       positions[a.id] = new THREE.Vector3(
-        Math.cos(angle) * r + (Math.random() - 0.5) * 2, y,
-        Math.sin(angle) * r + (Math.random() - 0.5) * 2
+        Math.cos(angle) * r + (Math.random() - 0.5) * 3, y,
+        Math.sin(angle) * r + (Math.random() - 0.5) * 3
       );
     });
 
