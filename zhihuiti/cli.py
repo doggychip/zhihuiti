@@ -528,6 +528,26 @@ def collide(goal: str, theory_a: str, theory_b: str, db: str, model: str | None)
     engine.collide(goal, theory_a, theory_b, make_orchestrator)
 
 
+@main.command()
+@click.option("--port", default=8377, type=int, help="API server port")
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+@click.option("--model", default=None, help="Model name")
+@click.option("--tools", is_flag=True, help="Enable tool execution")
+def serve(port: int, db: str, model: str | None, tools: bool):
+    """Start the HTTP API server — for K-Dense BYOK and external integrations."""
+    from zhihuiti.api import serve as api_serve
+
+    console.print(BANNER, style="bold cyan")
+    api_serve(port=port, db_path=db, model=model, tools=tools)
+
+
+@main.command("mcp-serve")
+def mcp_serve():
+    """Start the MCP server on stdio — for K-Dense BYOK McpToolset integration."""
+    from zhihuiti.mcp_server import main as mcp_main
+    mcp_main()
+
+
 @main.group()
 def alphaarena():
     """📈 AlphaArena — trade crypto with evolving AI agents."""
