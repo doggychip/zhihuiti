@@ -184,6 +184,7 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
   const mountRef = useRef<HTMLDivElement>(null);
   const nodesRef = useRef<Record<string, {mesh: THREE.Mesh; label?: THREE.Sprite; basePos: THREE.Vector3; vel: THREE.Vector3; size: number;}>>({});
   const linesRef = useRef<{ line: THREE.Line; from: string; to: string; baseColor: string }[]>([]);
+  const tokensRef = useRef<{ mesh: THREE.Mesh; from: string; to: string; progress: number; speed: number; color: string }[]>([]);
   const frameRef = useRef(0);
   const mouseRef = useRef({ down: false, prevX: 0, prevY: 0 });
   const rotRef = useRef({ x: 0.25, y: 0 });
