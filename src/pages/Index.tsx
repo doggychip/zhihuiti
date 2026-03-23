@@ -1726,63 +1726,32 @@ export default function ZhihuiTiDashboard() {
               }}>
                   <div className="text-[8px] uppercase tracking-widest px-2 pt-1.5" style={{ color: "rgba(255,255,255,0.25)" }}>Minimap</div>
                   <svg width="120" height="104" viewBox="-12 -12 24 24" style={{ display: "block" }}>
-                    {/* Realm rings */}
-                    {[2.5, 5.5, 7.5].map((r, i) =>
-                  <circle key={r} cx={0} cy={0} r={r} fill="none"
-                  stroke={Object.values(REALM_COLORS)[i]} strokeWidth={0.15} opacity={0.2} />
-                  )}
-                    {/* Connection lines */}
-                    {connections.map((c, i) => {
-                    const fa = agents.find((a) => a.id === c.from);
-                    const ta = agents.find((a) => a.id === c.to);
-                    if (!fa || !ta) return null;
-                    const fi = agents.indexOf(fa);
-                    const ti = agents.indexOf(ta);
-                    const realmCounts: Record<string, number> = {};
-                    const realmIdxMap: Record<string, number> = {};
-                    agents.forEach((a) => {realmCounts[a.realm] = (realmCounts[a.realm] || 0) + 1;});
-                    let fcnt = 0,tcnt = 0;
-                    agents.forEach((a, idx) => {
-                      if (!realmIdxMap[a.realm]) realmIdxMap[a.realm] = 0;
-                      if (idx === fi) fcnt = realmIdxMap[a.realm];
-                      if (idx === ti) tcnt = realmIdxMap[a.realm];
-                      realmIdxMap[a.realm]++;
-                    });
-                    return null; // skip lines for cleanliness
-                  })}
-                    {/* Agent dots */}
                     {(() => {
-                    const rc: Record<string, number> = {};
-                    const ri: Record<string, number> = { central: 0, research: 0, execution: 0 };
-                    agents.forEach((a) => {rc[a.realm] = (rc[a.realm] || 0) + 1;});
-                    return agents.map((a) => {
-                      const count = rc[a.realm] || 1;
-                      const idx = ri[a.realm] || 0;
-                      ri[a.realm] = idx + 1;
-                      const angle = idx / count * Math.PI * 2 + (a.realm === "research" ? 0.3 : a.realm === "execution" ? 1.2 : 2.5);
-                      const r = a.realm === "central" ? 2.5 : a.realm === "research" ? 5.5 : 7.5;
-                      const cx = Math.cos(angle) * r;
-                      const cy = Math.sin(angle) * r;
+                    const total = agents.length;
+                    const GROUP_COLORS_MAP: Record<string, string> = { zhihuiti: "#eab308", hedge_fund: "#3b82f6" };
+                    return agents.map((a, i) => {
+                      const phi = Math.acos(1 - 2 * (i + 0.5) / total);
+                      const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+                      const r = 3 + (i / total) * 6;
+                      const cx = Math.sin(phi) * Math.cos(theta) * r;
+                      const cy = Math.sin(phi) * Math.sin(theta) * r;
                       const isSelected = a.id === selected;
+                      const dotColor = a.group ? GROUP_COLORS_MAP[a.group] : REALM_COLORS[a.realm];
                       return (
                         <g key={a.id}>
                             {isSelected &&
                           <circle cx={cx} cy={cy} r={1.2} fill="none"
-                          stroke={REALM_COLORS[a.realm]} strokeWidth={0.1} opacity={0.5}>
+                          stroke={dotColor} strokeWidth={0.1} opacity={0.5}>
                                 <animate attributeName="r" values="0.8;1.4;0.8" dur="1.5s" repeatCount="indefinite" />
-                                <animate attributeName="opacity" values="0.5;0.1;0.5" dur="1.5s" repeatCount="indefinite" />
                               </circle>
                           }
-                            <circle
-                            cx={cx} cy={cy}
+                            <circle cx={cx} cy={cy}
                             r={isSelected ? 0.5 : 0.35}
-                            fill={a.alive ? REALM_COLORS[a.realm] : "#555"}
+                            fill={a.alive ? dotColor : "#555"}
                             opacity={a.alive ? 0.9 : 0.4}
                             style={{ cursor: "pointer" }}
                             onClick={() => handleSelect(a.id)} />
-                          
                           </g>);
-
                     });
                   })()}
                   </svg>
