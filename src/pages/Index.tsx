@@ -176,7 +176,7 @@ function useSimulatedFeed(agents: Agent[]): TaskEvent[] {
 }
 
 // ── 3D Realm-Grouped Graph ─────────────────────────────────────
-const REALM_X: Record<string, number> = { research: -10, execution: 0, central: 10 };
+const REALM_X: Record<string, number> = { research: -4, execution: 0, central: 4 };
 const REALM_SPHERE_COLORS: Record<string, string> = { research: "#3b82f6", execution: "#f97316", central: "#a855f7" };
 
 function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhihuiti = true, showHedgeFund = true, lodCount = 30
@@ -252,13 +252,13 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
 
     Object.entries(realmGroups).forEach(([realm, group]) => {
       const cx = REALM_X[realm] || 0;
-      const radius = Math.sqrt(group.length) * 1.4;
+      const radius = Math.sqrt(group.length) * 2.2;
       group.forEach((a, i) => {
-        const angle = (i / group.length) * Math.PI * 2 + (Math.random() - 0.5) * 0.8;
+        const angle = (i / group.length) * Math.PI * 2 + (Math.random() - 0.5) * 1.2;
         const r = Math.sqrt(Math.random()) * radius;
-        const x = cx + Math.cos(angle) * r + (Math.random() - 0.5) * 1.2;
-        const y = Math.sin(angle) * r + (Math.random() - 0.5) * 1.2;
-        const z = (Math.random() - 0.5) * 3;
+        const x = cx + Math.cos(angle) * r + (Math.random() - 0.5) * 2.5;
+        const y = Math.sin(angle) * r + (Math.random() - 0.5) * 2.5;
+        const z = (Math.random() - 0.5) * 4;
         positions[a.id] = new THREE.Vector3(x, y, z);
       });
     });
