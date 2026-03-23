@@ -309,24 +309,19 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
       return true;
     });
 
-    // Position agents
-    const realmIdx: Record<string, number> = { central: 0, research: 0, execution: 0 };
-    const realmCounts: Record<string, number> = {};
-    visibleAgents.forEach((a) => {realmCounts[a.realm] = (realmCounts[a.realm] || 0) + 1;});
-
+    // Position agents evenly across a sphere (no realm-based rings)
     const positions: Record<string, THREE.Vector3> = {};
-    visibleAgents.forEach((a) => {
-      const rc = realmCounts[a.realm] || 1;
-      const idx = realmIdx[a.realm] || 0;
-      realmIdx[a.realm] = idx + 1;
-      const baseAngle = idx / rc * Math.PI * 2 + (a.realm === "research" ? 0.3 : a.realm === "execution" ? 1.2 : 2.5);
-      const angle = baseAngle + (Math.random() - 0.5) * (Math.PI / rc);
-      const baseR = a.realm === "central" ? 3.5 : a.realm === "research" ? 7 : 10.5;
-      const r = baseR + (Math.random() - 0.5) * 4;
-      const y = (Math.random() - 0.5) * 7;
+    const total = visibleAgents.length;
+    visibleAgents.forEach((a, i) => {
+      // Golden angle spiral distribution
+      const phi = Math.acos(1 - 2 * (i + 0.5) / total);
+      const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+      const r = 4 + Math.random() * 6;
+      const y = (Math.cos(phi) * r * 0.7) + (Math.random() - 0.5) * 2;
       positions[a.id] = new THREE.Vector3(
-        Math.cos(angle) * r + (Math.random() - 0.5) * 3, y,
-        Math.sin(angle) * r + (Math.random() - 0.5) * 3
+        Math.sin(phi) * Math.cos(theta) * r + (Math.random() - 0.5) * 1.5,
+        y,
+        Math.sin(phi) * Math.sin(theta) * r + (Math.random() - 0.5) * 1.5
       );
     });
 
