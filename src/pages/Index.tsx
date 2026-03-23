@@ -174,43 +174,21 @@ function useSimulatedFeed(agents: Agent[]): TaskEvent[] {
   return events;
 }
 
-// ── 3D Effect types ─────────────────────────────────────────────
-interface RippleEffect {
-  agentId: string;
-  startTime: number;
-  ring: THREE.Mesh;
-}
-
-interface ParticleTrail {
-  fromId: string;
-  toId: string;
-  startTime: number;
-  particles: THREE.Points;
-  curve: THREE.QuadraticBezierCurve3;
-}
-
-interface BankruptEffect {
-  agentId: string;
-  startTime: number;
-  particles: THREE.Points;
-  flash: THREE.PointLight;
-}
-
-// ── 3D Agent Graph (with effects) ───────────────────────────────
+// ── 3D Force-Directed Graph ─────────────────────────────────────
 function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhihuiti = true, showHedgeFund = true
 }: {agents: Agent[];connections: Connection[];onSelect: (id: string) => void;selectedId: string | null;events: TaskEvent[];showZhihuiti?: boolean;showHedgeFund?: boolean;}) {
   const mountRef = useRef<HTMLDivElement>(null);
-  const nodesRef = useRef<Record<string, {mesh: THREE.Mesh;glow: THREE.Mesh;baseY: number;size: number;}>>({});
+  const nodesRef = useRef<Record<string, {mesh: THREE.Mesh; label?: THREE.Sprite; basePos: THREE.Vector3; vel: THREE.Vector3; size: number;}>>({});
   const frameRef = useRef(0);
   const mouseRef = useRef({ down: false, prevX: 0, prevY: 0 });
-  const rotRef = useRef({ x: 0.3, y: 0 });
+  const rotRef = useRef({ x: 0.25, y: 0 });
   const raycasterRef = useRef(new THREE.Raycaster());
   const mouseVec = useRef(new THREE.Vector2());
   const worldRef = useRef<THREE.Group | null>(null);
-  const ripplesRef = useRef<RippleEffect[]>([]);
-  const trailsRef = useRef<ParticleTrail[]>([]);
-  const bankruptRef = useRef<BankruptEffect[]>([]);
-  const processedEventsRef = useRef<Set<string>>(new Set());
+  const linesRef = useRef<THREE.Line[]>([]);
+  const hoveredRef = useRef<string | null>(null);
+  // Store positions for minimap access
+  const positionsRef = useRef<Record<string, THREE.Vector3>>({});
 
   useEffect(() => {
     const container = mountRef.current;
@@ -219,14 +197,11 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
     const w = container.clientWidth;
     const h = container.clientHeight;
     nodesRef.current = {};
-    ripplesRef.current = [];
-    trailsRef.current = [];
-    bankruptRef.current = [];
-    processedEventsRef.current = new Set();
+    linesRef.current = [];
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(55, w / h, 0.1, 1000);
-    camera.position.z = 26;
+    const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 500);
+    camera.position.z = 28;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(w, h);
@@ -234,341 +209,217 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
     renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0x404060, 0.6));
-    const pl1 = new THREE.PointLight(0x6366f1, 1.5, 50);pl1.position.set(5, 5, 10);scene.add(pl1);
-    const pl2 = new THREE.PointLight(0xf97316, 0.8, 40);pl2.position.set(-5, -3, 8);scene.add(pl2);
-    const pl3 = new THREE.PointLight(0xa855f7, 0.6, 35);pl3.position.set(0, 8, -5);scene.add(pl3);
+    // Lighting
+    scene.add(new THREE.AmbientLight(0x334466, 0.8));
+    const keyLight = new THREE.DirectionalLight(0x6366f1, 0.6);
+    keyLight.position.set(10, 12, 15);
+    scene.add(keyLight);
+    const fillLight = new THREE.DirectionalLight(0xa855f7, 0.3);
+    fillLight.position.set(-8, -4, 10);
+    scene.add(fillLight);
 
     const world = new THREE.Group();
     worldRef.current = world;
     scene.add(world);
 
-    // Realm rings
-    const realmRadii = [3.5, 7, 10.5];
-    const realmKeys = ["central", "research", "execution"];
-    const realmChineseLabels: Record<string, string> = { central: "中枢界", research: "研发界", execution: "执行界" };
-    realmRadii.forEach((r, ri) => {
-      const pts: THREE.Vector3[] = [];
-      for (let a = 0; a < Math.PI * 2; a += 0.05) {
-        pts.push(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r));
-      }
-      pts.push(pts[0].clone());
-      const geo = new THREE.BufferGeometry().setFromPoints(pts);
-      const mat = new THREE.LineBasicMaterial({ color: Object.values(REALM_COLORS)[ri], transparent: true, opacity: 0.06 });
-      world.add(new THREE.Line(geo, mat));
-
-      // Floating Chinese label sprite
-      const canvas = document.createElement("canvas");
-      canvas.width = 256;canvas.height = 64;
-      const ctx = canvas.getContext("2d")!;
-      ctx.clearRect(0, 0, 256, 64);
-      ctx.font = "bold 32px 'Inter', system-ui, sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      const realmColor = Object.values(REALM_COLORS)[ri];
-      ctx.shadowColor = realmColor;
-      ctx.shadowBlur = 12;
-      ctx.fillStyle = realmColor;
-      ctx.fillText(realmChineseLabels[realmKeys[ri]], 128, 32);
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.needsUpdate = true;
-      const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.4, depthWrite: false });
-      const sprite = new THREE.Sprite(spriteMat);
-      const labelAngle = ri * (Math.PI * 2 / 3) + 0.5;
-      sprite.position.set(Math.cos(labelAngle) * (r + 0.8), 2.2, Math.sin(labelAngle) * (r + 0.8));
-      sprite.scale.set(3, 0.75, 1);
-      world.add(sprite);
-    });
-
-    // Ambient particle dust
-    const dustCount = 200;
-    const dustPosArr = new Float32Array(dustCount * 3);
-    const dustVelArr = new Float32Array(dustCount * 3);
-    for (let i = 0; i < dustCount; i++) {
-      dustPosArr[i * 3] = (Math.random() - 0.5) * 24;
-      dustPosArr[i * 3 + 1] = (Math.random() - 0.5) * 12;
-      dustPosArr[i * 3 + 2] = (Math.random() - 0.5) * 24;
-      dustVelArr[i * 3] = (Math.random() - 0.5) * 0.003;
-      dustVelArr[i * 3 + 1] = (Math.random() - 0.5) * 0.002;
-      dustVelArr[i * 3 + 2] = (Math.random() - 0.5) * 0.003;
-    }
-    const dustGeo = new THREE.BufferGeometry();
-    dustGeo.setAttribute("position", new THREE.BufferAttribute(dustPosArr, 3));
-    const dustMat = new THREE.PointsMaterial({
-      color: "#6366f1", size: 0.04, transparent: true, opacity: 0.35,
-      blending: THREE.AdditiveBlending, depthWrite: false
-    });
-    const dustPoints = new THREE.Points(dustGeo, dustMat);
-    world.add(dustPoints);
-
-    // Filter agents by visibility
     const GROUP_COLORS = { zhihuiti: "#eab308", hedge_fund: "#3b82f6" };
+
+    // Filter agents
     const visibleAgents = agents.filter(a => {
       if (a.group === "zhihuiti" && !showZhihuiti) return false;
       if (a.group === "hedge_fund" && !showHedgeFund) return false;
       return true;
     });
 
-    // Position agents evenly across a sphere (no realm-based rings)
+    // Initialize positions randomly in a sphere
     const positions: Record<string, THREE.Vector3> = {};
-    const total = visibleAgents.length;
-    visibleAgents.forEach((a, i) => {
-      // Golden angle spiral distribution
-      const phi = Math.acos(1 - 2 * (i + 0.5) / total);
-      const theta = Math.PI * (1 + Math.sqrt(5)) * i;
-      const r = 4 + Math.random() * 6;
-      const y = (Math.cos(phi) * r * 0.7) + (Math.random() - 0.5) * 2;
+    visibleAgents.forEach(a => {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const r = 3 + Math.random() * 8;
       positions[a.id] = new THREE.Vector3(
-        Math.sin(phi) * Math.cos(theta) * r + (Math.random() - 0.5) * 1.5,
-        y,
-        Math.sin(phi) * Math.sin(theta) * r + (Math.random() - 0.5) * 1.5
+        Math.sin(phi) * Math.cos(theta) * r,
+        Math.cos(phi) * r * 0.6,
+        Math.sin(phi) * Math.sin(theta) * r
       );
     });
 
+    // Run force-directed layout simulation (offline, ~80 iterations)
+    const velocities: Record<string, THREE.Vector3> = {};
+    visibleAgents.forEach(a => { velocities[a.id] = new THREE.Vector3(); });
+
+    for (let iter = 0; iter < 80; iter++) {
+      const damping = 0.85;
+      const repulsionStrength = 2.5;
+      const attractionStrength = 0.008;
+      const centerPull = 0.002;
+
+      // Repulsion between all pairs
+      for (let i = 0; i < visibleAgents.length; i++) {
+        for (let j = i + 1; j < visibleAgents.length; j++) {
+          const a = visibleAgents[i], b = visibleAgents[j];
+          const diff = positions[a.id].clone().sub(positions[b.id]);
+          const dist = Math.max(diff.length(), 0.5);
+          const force = diff.normalize().multiplyScalar(repulsionStrength / (dist * dist));
+          velocities[a.id].add(force);
+          velocities[b.id].sub(force);
+        }
+      }
+
+      // Attraction along connections
+      connections.forEach(c => {
+        const p1 = positions[c.from], p2 = positions[c.to];
+        if (!p1 || !p2) return;
+        const diff = p2.clone().sub(p1);
+        const dist = diff.length();
+        const force = diff.normalize().multiplyScalar(dist * attractionStrength);
+        if (velocities[c.from]) velocities[c.from].add(force);
+        if (velocities[c.to]) velocities[c.to].sub(force);
+      });
+
+      // Center pull
+      visibleAgents.forEach(a => {
+        const pull = positions[a.id].clone().negate().multiplyScalar(centerPull);
+        velocities[a.id].add(pull);
+      });
+
+      // Apply velocities
+      visibleAgents.forEach(a => {
+        velocities[a.id].multiplyScalar(damping);
+        positions[a.id].add(velocities[a.id]);
+      });
+    }
+
+    positionsRef.current = positions;
+
     // Connection lines
-    connections.forEach((c) => {
-      const p1 = positions[c.from],p2 = positions[c.to];
+    connections.forEach(c => {
+      const p1 = positions[c.from], p2 = positions[c.to];
       if (!p1 || !p2) return;
-      const mid = p1.clone().lerp(p2, 0.5);mid.y += 0.5;
-      const curve = new THREE.QuadraticBezierCurve3(p1, mid, p2);
-      const pts = curve.getPoints(20);
-      const geo = new THREE.BufferGeometry().setFromPoints(pts);
-      const mat = new THREE.LineBasicMaterial({ color: CONN_COLORS[c.type] || "#444", transparent: true, opacity: 0.18 });
-      world.add(new THREE.Line(geo, mat));
+      const geo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+      const mat = new THREE.LineBasicMaterial({
+        color: CONN_COLORS[c.type] || "#444",
+        transparent: true,
+        opacity: 0.08
+      });
+      const line = new THREE.Line(geo, mat);
+      world.add(line);
+      linesRef.current.push(line);
     });
 
     // Agent nodes
-    const maxBudget = Math.max(...visibleAgents.map((x) => x.budget), 1);
-    visibleAgents.forEach((a) => {
+    const maxBudget = Math.max(...visibleAgents.map(x => x.budget), 1);
+    visibleAgents.forEach(a => {
       const pos = positions[a.id];
       if (!pos) return;
-      const size = 0.18 + a.budget / maxBudget * 0.45;
-      // Use group-based color: gold for zhihuiti, blue for hedge_fund, fallback to realm color
+      const size = 0.15 + (a.budget / maxBudget) * 0.4;
       const color = a.group ? GROUP_COLORS[a.group] : (REALM_COLORS[a.realm] || "#888");
 
-      const glowGeo = new THREE.SphereGeometry(size * 2, 16, 16);
-      const glowMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: a.alive ? 0.06 : 0.02 });
-      const glow = new THREE.Mesh(glowGeo, glowMat);
-      glow.position.copy(pos);world.add(glow);
-
-      const geo = new THREE.SphereGeometry(size, 32, 32);
+      const geo = new THREE.SphereGeometry(size, 24, 24);
       const mat = new THREE.MeshStandardMaterial({
-        color: a.alive ? color : "#333", emissive: a.alive ? color : "#111",
-        emissiveIntensity: a.alive ? 0.5 : 0.1, metalness: 0.6, roughness: 0.2
+        color: a.alive ? color : "#333",
+        emissive: a.alive ? color : "#111",
+        emissiveIntensity: a.alive ? 0.35 : 0.05,
+        metalness: 0.5,
+        roughness: 0.3,
       });
       const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.copy(pos);mesh.userData = { agentId: a.id };
+      mesh.position.copy(pos);
+      mesh.userData = { agentId: a.id };
       world.add(mesh);
 
-      nodesRef.current[a.id] = { mesh, glow, baseY: pos.y, size };
-
-      // Add name label sprite for alphaarena agents
-      if (a.name) {
+      let labelSprite: THREE.Sprite | undefined;
+      // Name label
+      if (a.name || a.role) {
         const labelCanvas = document.createElement("canvas");
-        labelCanvas.width = 512;labelCanvas.height = 64;
+        labelCanvas.width = 512; labelCanvas.height = 64;
         const lctx = labelCanvas.getContext("2d")!;
         lctx.clearRect(0, 0, 512, 64);
-        lctx.font = "bold 28px 'Inter', system-ui, sans-serif";
+        lctx.font = "bold 26px 'Inter', system-ui, sans-serif";
         lctx.textAlign = "center";
         lctx.textBaseline = "middle";
-        lctx.shadowColor = color;
-        lctx.shadowBlur = 8;
-        lctx.fillStyle = color;
-        lctx.fillText(a.name, 256, 32);
-        const labelTex = new THREE.CanvasTexture(labelCanvas);
-        labelTex.needsUpdate = true;
-        const labelSpriteMat = new THREE.SpriteMaterial({ map: labelTex, transparent: true, opacity: 0.7, depthWrite: false });
-        const labelSprite = new THREE.Sprite(labelSpriteMat);
-        labelSprite.position.set(pos.x, pos.y + size + 0.5, pos.z);
-        labelSprite.scale.set(2.5, 0.32, 1);
+        lctx.fillStyle = "rgba(255,255,255,0.55)";
+        lctx.fillText(a.name || a.role, 256, 32);
+        const tex = new THREE.CanvasTexture(labelCanvas);
+        tex.needsUpdate = true;
+        const sMat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.6, depthWrite: false });
+        labelSprite = new THREE.Sprite(sMat);
+        labelSprite.position.set(pos.x, pos.y + size + 0.45, pos.z);
+        labelSprite.scale.set(2.2, 0.28, 1);
         world.add(labelSprite);
       }
+
+      nodesRef.current[a.id] = {
+        mesh,
+        label: labelSprite,
+        basePos: pos.clone(),
+        vel: new THREE.Vector3(),
+        size
+      };
     });
 
-    // ── Helper: spawn ripple ring ───────────────────────────────
-    const spawnRipple = (agentId: string) => {
-      const node = nodesRef.current[agentId];
-      if (!node) return;
-      const color = new THREE.Color(REALM_COLORS[agents.find((a) => a.id === agentId)?.realm || "research"] || "#3b82f6");
-      const ringGeo = new THREE.RingGeometry(0.01, 0.08, 32);
-      const ringMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
-      const ring = new THREE.Mesh(ringGeo, ringMat);
-      ring.position.copy(node.mesh.position);
-      ring.lookAt(camera.position);
-      world.add(ring);
-      ripplesRef.current.push({ agentId, startTime: performance.now(), ring });
-    };
-
-    // ── Helper: spawn particle trail ────────────────────────────
-    const spawnTrail = (fromId: string, toId: string) => {
-      const fromNode = nodesRef.current[fromId];
-      const toNode = nodesRef.current[toId];
-      if (!fromNode || !toNode) return;
-      const p1 = fromNode.mesh.position.clone();
-      const p2 = toNode.mesh.position.clone();
-      const mid = p1.clone().lerp(p2, 0.5);mid.y += 1.5;
-      const curve = new THREE.QuadraticBezierCurve3(p1, mid, p2);
-
-      const count = 20;
-      const posArr = new Float32Array(count * 3);
-      const alphaArr = new Float32Array(count);
-      for (let i = 0; i < count; i++) {alphaArr[i] = 1 - i / count;}
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.BufferAttribute(posArr, 3));
-
-      const mat = new THREE.PointsMaterial({
-        color: "#a78bfa", size: 0.12, transparent: true, opacity: 0.9,
-        blending: THREE.AdditiveBlending, depthWrite: false
-      });
-      const particles = new THREE.Points(geo, mat);
-      world.add(particles);
-      trailsRef.current.push({ fromId, toId, startTime: performance.now(), particles, curve });
-    };
-
-    // ── Helper: spawn bankruptcy explosion ──────────────────────
-    const spawnBankruptcy = (agentId: string) => {
-      const node = nodesRef.current[agentId];
-      if (!node) return;
-      const count = 40;
-      const posArr = new Float32Array(count * 3);
-      const velArr = new Float32Array(count * 3);
-      for (let i = 0; i < count; i++) {
-        posArr[i * 3] = node.mesh.position.x;
-        posArr[i * 3 + 1] = node.mesh.position.y;
-        posArr[i * 3 + 2] = node.mesh.position.z;
-        velArr[i * 3] = (Math.random() - 0.5) * 0.15;
-        velArr[i * 3 + 1] = (Math.random() - 0.5) * 0.15;
-        velArr[i * 3 + 2] = (Math.random() - 0.5) * 0.15;
-      }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.BufferAttribute(posArr, 3));
-      geo.setAttribute("velocity", new THREE.BufferAttribute(velArr, 3));
-      const mat = new THREE.PointsMaterial({
-        color: "#ef4444", size: 0.15, transparent: true, opacity: 1,
-        blending: THREE.AdditiveBlending, depthWrite: false
-      });
-      const particles = new THREE.Points(geo, mat);
-      world.add(particles);
-
-      const flash = new THREE.PointLight(0xef4444, 3, 8);
-      flash.position.copy(node.mesh.position);
-      world.add(flash);
-
-      bankruptRef.current.push({ agentId, startTime: performance.now(), particles, flash });
-
-      // Fade out the node
-      (node.mesh.material as THREE.MeshStandardMaterial).color.set("#1a0000");
-      (node.mesh.material as THREE.MeshStandardMaterial).emissive.set("#330000");
-      (node.glow.material as THREE.MeshBasicMaterial).opacity = 0.01;
-    };
-
-    // Expose helpers via ref-accessible closure
-    (container as any).__spawnRipple = spawnRipple;
-    (container as any).__spawnTrail = spawnTrail;
-    (container as any).__spawnBankruptcy = spawnBankruptcy;
+    // Ambient dust (lighter)
+    const dustCount = 100;
+    const dustArr = new Float32Array(dustCount * 3);
+    for (let i = 0; i < dustCount; i++) {
+      dustArr[i * 3] = (Math.random() - 0.5) * 30;
+      dustArr[i * 3 + 1] = (Math.random() - 0.5) * 15;
+      dustArr[i * 3 + 2] = (Math.random() - 0.5) * 30;
+    }
+    const dustGeo = new THREE.BufferGeometry();
+    dustGeo.setAttribute("position", new THREE.BufferAttribute(dustArr, 3));
+    const dustMat = new THREE.PointsMaterial({
+      color: "#6366f1", size: 0.03, transparent: true, opacity: 0.2,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    });
+    world.add(new THREE.Points(dustGeo, dustMat));
 
     let running = true;
     const animate = () => {
       if (!running) return;
       frameRef.current++;
-      const t = frameRef.current * 0.008;
-      const now = performance.now();
+      const t = frameRef.current * 0.006;
 
-      // Animate dust
-      const dustPos = dustGeo.attributes.position as THREE.BufferAttribute;
-      for (let i = 0; i < dustCount; i++) {
-        let x = dustPos.getX(i) + dustVelArr[i * 3];
-        let y = dustPos.getY(i) + dustVelArr[i * 3 + 1];
-        let z = dustPos.getZ(i) + dustVelArr[i * 3 + 2];
-        if (Math.abs(x) > 12) dustVelArr[i * 3] *= -1;
-        if (Math.abs(y) > 6) dustVelArr[i * 3 + 1] *= -1;
-        if (Math.abs(z) > 12) dustVelArr[i * 3 + 2] *= -1;
-        dustPos.setXYZ(i, x, y, z);
-      }
-      dustPos.needsUpdate = true;
-      dustMat.opacity = 0.25 + Math.sin(t * 0.5) * 0.1;
-
-      // Animate nodes
+      // Gentle floating
       Object.entries(nodesRef.current).forEach(([id, n]) => {
         const off = parseInt(id.replace(/\D/g, ""), 10) || 0;
-        n.mesh.position.y = n.baseY + Math.sin(t + off * 0.7) * 0.12;
-        n.glow.position.y = n.mesh.position.y;
+        const floatY = Math.sin(t + off * 0.5) * 0.08;
+        n.mesh.position.y = n.basePos.y + floatY;
+        if (n.label) n.label.position.y = n.basePos.y + floatY + n.size + 0.45;
+
+        // Selected pulse
         if (id === selectedId) {
-          n.glow.scale.setScalar(1 + Math.sin(t * 4) * 0.35);
-          (n.mesh.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.6 + Math.sin(t * 4) * 0.2;
+          const pulse = 1 + Math.sin(t * 5) * 0.15;
+          n.mesh.scale.setScalar(pulse);
+          (n.mesh.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.4 + Math.sin(t * 5) * 0.2;
+        } else {
+          n.mesh.scale.setScalar(1);
+          (n.mesh.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.35;
         }
-      });
-
-      // Animate ripples
-      ripplesRef.current = ripplesRef.current.filter((r) => {
-        const elapsed = (now - r.startTime) / 1000;
-        if (elapsed > 1.5) {world.remove(r.ring);r.ring.geometry.dispose();return false;}
-        const scale = 1 + elapsed * 12;
-        r.ring.scale.setScalar(scale);
-        (r.ring.material as THREE.MeshBasicMaterial).opacity = Math.max(0, 0.7 * (1 - elapsed / 1.5));
-        const node = nodesRef.current[r.agentId];
-        if (node) {r.ring.position.copy(node.mesh.position);r.ring.lookAt(camera.position);}
-        return true;
-      });
-
-      // Animate particle trails
-      trailsRef.current = trailsRef.current.filter((tr) => {
-        const elapsed = (now - tr.startTime) / 1000;
-        if (elapsed > 2) {world.remove(tr.particles);tr.particles.geometry.dispose();return false;}
-        const progress = Math.min(elapsed / 1.5, 1);
-        const positions = tr.particles.geometry.attributes.position as THREE.BufferAttribute;
-        const count = positions.count;
-        for (let i = 0; i < count; i++) {
-          const t2 = Math.max(0, progress - i / count * 0.4);
-          const pt = tr.curve.getPoint(Math.min(t2, 1));
-          positions.setXYZ(i, pt.x, pt.y, pt.z);
-        }
-        positions.needsUpdate = true;
-        (tr.particles.material as THREE.PointsMaterial).opacity = Math.max(0, 0.9 * (1 - elapsed / 2));
-        return true;
-      });
-
-      // Animate bankruptcy explosions
-      bankruptRef.current = bankruptRef.current.filter((b) => {
-        const elapsed = (now - b.startTime) / 1000;
-        if (elapsed > 2) {
-          world.remove(b.particles);b.particles.geometry.dispose();
-          world.remove(b.flash);
-          return false;
-        }
-        const positions = b.particles.geometry.attributes.position as THREE.BufferAttribute;
-        const velocities = b.particles.geometry.attributes.velocity as THREE.BufferAttribute;
-        for (let i = 0; i < positions.count; i++) {
-          positions.setX(i, positions.getX(i) + velocities.getX(i));
-          positions.setY(i, positions.getY(i) + velocities.getY(i));
-          positions.setZ(i, positions.getZ(i) + velocities.getZ(i));
-        }
-        positions.needsUpdate = true;
-        (b.particles.material as THREE.PointsMaterial).opacity = Math.max(0, 1 - elapsed / 1.5);
-        b.flash.intensity = Math.max(0, 3 * (1 - elapsed / 0.5));
-        return true;
       });
 
       world.rotation.x = rotRef.current.x;
-      world.rotation.y = rotRef.current.y + t * 0.03;
+      world.rotation.y = rotRef.current.y + t * 0.02;
       renderer.render(scene, camera);
       requestAnimationFrame(animate);
     };
     animate();
 
-    const onDown = (e: MouseEvent) => {mouseRef.current = { down: true, prevX: e.clientX, prevY: e.clientY };};
+    // Mouse handlers
+    const onDown = (e: MouseEvent) => { mouseRef.current = { down: true, prevX: e.clientX, prevY: e.clientY }; };
     const onMove = (e: MouseEvent) => {
       if (!mouseRef.current.down) return;
       rotRef.current.y += (e.clientX - mouseRef.current.prevX) * 0.005;
       rotRef.current.x = Math.max(-1.2, Math.min(1.2, rotRef.current.x + (e.clientY - mouseRef.current.prevY) * 0.005));
-      mouseRef.current.prevX = e.clientX;mouseRef.current.prevY = e.clientY;
+      mouseRef.current.prevX = e.clientX;
+      mouseRef.current.prevY = e.clientY;
     };
-    const onUp = () => {mouseRef.current.down = false;};
+    const onUp = () => { mouseRef.current.down = false; };
     const onClick = (e: MouseEvent) => {
       const rect = container.getBoundingClientRect();
       mouseVec.current.set((e.clientX - rect.left) / w * 2 - 1, -((e.clientY - rect.top) / h) * 2 + 1);
       raycasterRef.current.setFromCamera(mouseVec.current, camera);
-      const hits = raycasterRef.current.intersectObjects(Object.values(nodesRef.current).map((n) => n.mesh));
+      const hits = raycasterRef.current.intersectObjects(Object.values(nodesRef.current).map(n => n.mesh));
       if (hits.length) onSelect(hits[0].object.userData.agentId);
     };
 
@@ -578,8 +429,8 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
     container.addEventListener("click", onClick);
 
     const onResize = () => {
-      const nw = container.clientWidth,nh = container.clientHeight;
-      camera.aspect = nw / nh;camera.updateProjectionMatrix();renderer.setSize(nw, nh);
+      const nw = container.clientWidth, nh = container.clientHeight;
+      camera.aspect = nw / nh; camera.updateProjectionMatrix(); renderer.setSize(nw, nh);
     };
     window.addEventListener("resize", onResize);
 
@@ -594,25 +445,6 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
       renderer.dispose();
     };
   }, [agents, connections, selectedId, onSelect, showZhihuiti, showHedgeFund]);
-
-  // React to new events and trigger 3D effects
-  useEffect(() => {
-    const container = mountRef.current;
-    if (!container) return;
-    const spawnRipple = (container as any).__spawnRipple;
-    const spawnTrail = (container as any).__spawnTrail;
-    const spawnBankruptcy = (container as any).__spawnBankruptcy;
-    if (!spawnRipple) return;
-
-    events.forEach((ev) => {
-      if (processedEventsRef.current.has(ev.id)) return;
-      processedEventsRef.current.add(ev.id);
-
-      if (ev.type === "completed") spawnRipple(ev.agentId);
-      if (ev.type === "transfer" && ev.targetAgentId) spawnTrail(ev.agentId, ev.targetAgentId);
-      if (ev.type === "bankrupt") spawnBankruptcy(ev.agentId);
-    });
-  }, [events]);
 
   return <div ref={mountRef} style={{ width: "100%", height: "100%" }} />;
 }
