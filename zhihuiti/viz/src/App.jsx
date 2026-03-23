@@ -55,6 +55,18 @@ const DEMO_DATA = {
     { goal: "list 3 programming languages and their best use cases", task_count: 4, avg_score: 0.83 },
   ],
   transactions: {},
+  adaptation: {
+    thresholds: { cull: 0.28, promote: 0.82, samples: 9, history: [] },
+    performance: {
+      researcher: { mean: 0.85, trend: 0.012, count: 6, mutation_rate: 0.05, layer_means: { relevance: 0.9, rigor: 0.78, safety: 0.92 }, recent_scores: [0.75, 0.8, 0.82, 0.88, 0.9, 0.85] },
+      analyst: { mean: 0.82, trend: 0.008, count: 4, mutation_rate: 0.10, layer_means: { relevance: 0.88, rigor: 0.82, safety: 0.90 }, recent_scores: [0.78, 0.8, 0.84, 0.86] },
+      custom: { mean: 0.65, trend: -0.015, count: 3, mutation_rate: 0.25, layer_means: { relevance: 0.7, rigor: 0.55, safety: 0.85 }, recent_scores: [0.72, 0.65, 0.58] },
+      coder: { mean: 0.71, trend: 0.005, count: 5, mutation_rate: 0.15, layer_means: { relevance: 0.8, rigor: 0.65, safety: 0.88 }, recent_scores: [0.68, 0.70, 0.72, 0.71, 0.74] },
+    },
+    prompt_evolution: {
+      custom: { total_inspections: 3, failure_rate: 0.33, layer_failures: { rigor: 2 }, worst_layer: "rigor" },
+    },
+  },
 };
 
 // ── 3D Agent Graph ──────────────────────────────────────────────
@@ -466,6 +478,143 @@ function CollisionPanel({ onResult, live }) {
   );
 }
 
+// ── Adaptation Engine Card ───────────────────────────────────────
+function AdaptationCard({ adaptation }) {
+  if (!adaptation) return null;
+  const { thresholds, performance, prompt_evolution } = adaptation;
+  const roles = Object.entries(performance || {});
+  const evolving = Object.entries(prompt_evolution || {}).filter(([_, v]) => v.failure_rate > 0.1);
+
+  return (
+    <div className="p-3 rounded-lg space-y-2" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(34,197,94,0.2)" }}>
+      <div className="text-xs uppercase tracking-wider" style={{ color: "#22c55e" }}>🧠 Adaptation Engine</div>
+
+      {/* Adaptive Thresholds */}
+      <div className="space-y-1">
+        <div className="text-[10px] uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.3)" }}>Adaptive Thresholds</div>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+            <div className="h-full rounded-full" style={{
+              width: `${(thresholds.promote || 0.8) * 100}%`,
+              background: "linear-gradient(90deg, #ef4444, #eab308, #22c55e)",
+            }} />
+          </div>
+        </div>
+        <div className="flex justify-between text-[10px]">
+          <span style={{ color: "#ef4444" }}>Cull: {(thresholds.cull || 0.3).toFixed(2)}</span>
+          <span style={{ color: "rgba(255,255,255,0.3)" }}>n={thresholds.samples || 0}</span>
+          <span style={{ color: "#22c55e" }}>Promote: {(thresholds.promote || 0.8).toFixed(2)}</span>
+        </div>
+        {/* Threshold markers on gradient bar */}
+        <div className="relative h-1 rounded-full" style={{ background: "rgba(255,255,255,0.06)" }}>
+          <div className="absolute top-0 w-0.5 h-1 rounded-full" style={{
+            left: `${(thresholds.cull || 0.3) * 100}%`,
+            background: "#ef4444",
+          }} />
+          <div className="absolute top-0 w-0.5 h-1 rounded-full" style={{
+            left: `${(thresholds.promote || 0.8) * 100}%`,
+            background: "#22c55e",
+          }} />
+        </div>
+      </div>
+
+      {/* Role Performance Mini */}
+      {roles.length > 0 && (
+        <div className="space-y-1 pt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="text-[10px] uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.3)" }}>Role Performance</div>
+          {roles.sort((a, b) => b[1].mean - a[1].mean).slice(0, 6).map(([role, perf]) => {
+            const trend = perf.trend || 0;
+            const tIcon = trend > 0.005 ? "↑" : trend < -0.005 ? "↓" : "→";
+            const tColor = trend > 0.005 ? "#22c55e" : trend < -0.005 ? "#ef4444" : "#eab308";
+            const meanColor = perf.mean >= 0.7 ? "#22c55e" : perf.mean >= 0.4 ? "#eab308" : "#ef4444";
+            return (
+              <div key={role} className="flex items-center gap-1 text-[11px]">
+                <span className="flex-1 truncate" style={{ color: "rgba(255,255,255,0.6)" }}>
+                  {(ROLE_ICONS[role] || "🤖")} {role}
+                </span>
+                <span className="font-mono w-8 text-right" style={{ color: meanColor }}>{perf.mean.toFixed(2)}</span>
+                <span className="w-4 text-center" style={{ color: tColor }}>{tIcon}</span>
+                <span className="font-mono w-8 text-right text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>
+                  μ{(perf.mutation_rate || 0.15).toFixed(2)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Prompt Evolution Status */}
+      {evolving.length > 0 && (
+        <div className="pt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>Prompt Evolution Active</div>
+          {evolving.map(([role, info]) => (
+            <div key={role} className="flex items-center gap-1 text-[10px]">
+              <span style={{ color: "#f97316" }}>⚡</span>
+              <span style={{ color: "rgba(255,255,255,0.5)" }}>{role}</span>
+              <span style={{ color: "#ef4444" }}>{(info.failure_rate * 100).toFixed(0)}% fail</span>
+              {info.worst_layer && (
+                <span style={{ color: "rgba(255,255,255,0.3)" }}>@ {info.worst_layer}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Role Performance Chart (bottom panel) ────────────────────────
+function RolePerformanceChart({ performance }) {
+  const roles = Object.entries(performance || {});
+  if (roles.length === 0) return null;
+
+  const chartData = roles.map(([role, perf]) => ({
+    role: role.slice(0, 8),
+    mean: perf.mean || 0,
+    relevance: (perf.layer_means || {}).relevance || 0,
+    rigor: (perf.layer_means || {}).rigor || 0,
+    safety: (perf.layer_means || {}).safety || 0,
+  }));
+
+  return (
+    <div className="pt-3">
+      <div className="text-xs uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>
+        Role Performance
+      </div>
+      <ResponsiveContainer width="100%" height="85%">
+        <BarChart data={chartData} barCategoryGap="20%">
+          <XAxis dataKey="role" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }} axisLine={false} tickLine={false} />
+          <YAxis hide domain={[0, 1]} />
+          <Tooltip
+            contentStyle={{ background: "#1a1a2e", border: "1px solid #333", borderRadius: 8, fontSize: 11 }}
+            formatter={(v) => v.toFixed(3)}
+          />
+          <Bar dataKey="relevance" stackId="layers" fill="#3b82f630" stroke="#3b82f6" strokeWidth={1} radius={[0, 0, 0, 0]} />
+          <Bar dataKey="rigor" stackId="layers" fill="#a855f730" stroke="#a855f7" strokeWidth={1} radius={[0, 0, 0, 0]} />
+          <Bar dataKey="safety" stackId="layers" fill="#22c55e30" stroke="#22c55e" strokeWidth={1} radius={[2, 2, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ── Sparkline for recent scores ──────────────────────────────────
+function Sparkline({ data, width = 60, height = 16, color = "#a855f7" }) {
+  if (!data || data.length < 2) return null;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const points = data.map((v, i) =>
+    `${(i / (data.length - 1)) * width},${height - ((v - min) / range) * height}`
+  ).join(" ");
+
+  return (
+    <svg width={width} height={height} className="inline-block">
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 // ── Main Dashboard ──────────────────────────────────────────────
 export default function ZhihuiTiDashboard() {
   const [data, setData] = useState(null);
@@ -565,6 +714,9 @@ export default function ZhihuiTiDashboard() {
           {/* Theory Collision Engine */}
           <CollisionPanel onResult={() => fetchData()} live={live} />
 
+          {/* Adaptation Engine */}
+          <AdaptationCard adaptation={data.adaptation} />
+
           <SystemCard icon="🔍" title="3-Layer Inspection" items={[
             ["Inspections", ins.total_inspections || 0],
             ["Accepted", ins.accepted || 0, "#22c55e"],
@@ -651,6 +803,9 @@ export default function ZhihuiTiDashboard() {
 
           {/* Bottom charts */}
           <div className="h-44 flex gap-4 px-4 pb-3" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+            <div className="w-56 pt-3">
+              <RolePerformanceChart performance={(data.adaptation || {}).performance} />
+            </div>
             <div className="flex-1 pt-3">
               <div className="text-xs uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>Token Economy</div>
               <ResponsiveContainer width="100%" height="85%">

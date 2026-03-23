@@ -55,6 +55,7 @@ def _gather_data(orch) -> dict:
         data["futures"] = {"total_stakes": 0, "active": 0, "won": 0, "lost": 0, "total_staked": 0}
         data["arbitration"] = {"total_disputes": 0, "open": 0, "resolved": 0, "dismissed": 0}
         data["factory"] = {"total_orders": 0, "shipped": 0, "qa_fail": 0, "in_progress": 0, "total_revenue": 0}
+        data["adaptation"] = {"thresholds": {"cull": 0.3, "promote": 0.8, "samples": 0, "history": []}, "performance": {}, "prompt_evolution": {}}
         data["goal_history"] = orch.memory.get_recent_goals(limit=10) if hasattr(orch, "memory") else []
         data["messaging"] = {"total_messages": 0, "unread": 0}
         from zhihuiti.collision import THEORIES
@@ -148,6 +149,40 @@ def _gather_data(orch) -> dict:
         "total_messages": all_msgs[0]["c"] if all_msgs else 0,
         "unread": unread[0]["c"] if unread else 0,
     }
+
+    # Adaptation Engine — feedback loop data
+    if hasattr(orch.judge, "adaptive_thresholds"):
+        at = orch.judge.adaptive_thresholds
+        cull_t, promote_t = at.get_thresholds()
+        data["adaptation"] = {
+            "thresholds": {
+                "cull": cull_t,
+                "promote": promote_t,
+                "samples": at.state.samples_used,
+                "history": at.state.history[-20:],  # Last 20 calibrations
+            },
+            "performance": {},
+            "prompt_evolution": orch.judge.prompt_evolver.get_role_report(),
+        }
+        # Per-role performance
+        for role, rp in orch.judge.performance_tracker.roles.items():
+            data["adaptation"]["performance"][role] = {
+                "mean": round(rp.mean_score, 3),
+                "trend": round(rp.score_trend, 4),
+                "count": len(rp.scores),
+                "mutation_rate": round(orch.judge.performance_tracker.suggest_mutation_rate(role), 3),
+                "layer_means": {
+                    layer: round(rp.layer_mean(layer), 3)
+                    for layer in rp.layer_scores
+                },
+                "recent_scores": rp.scores[-30:],  # Last 30 scores for sparkline
+            }
+    else:
+        data["adaptation"] = {
+            "thresholds": {"cull": 0.3, "promote": 0.8, "samples": 0, "history": []},
+            "performance": {},
+            "prompt_evolution": {},
+        }
 
     # P&L Score (real trading performance)
     aa_url_pnl = os.environ.get("ALPHAARENA_URL", "")
