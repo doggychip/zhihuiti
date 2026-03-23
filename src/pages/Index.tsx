@@ -1753,6 +1753,19 @@ export default function ZhihuiTiDashboard() {
                   }}>
                     ⚛️ Collision Engine
                   </button>
+                  <div className="flex items-center gap-1.5 ml-2" style={{ borderLeft: "1px solid rgba(255,255,255,0.08)", paddingLeft: 8 }}>
+                    <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>LOD</span>
+                    <input
+                      type="range"
+                      min={5}
+                      max={Math.max(agents.length, 50)}
+                      value={lodCount}
+                      onChange={e => setLodCount(Number(e.target.value))}
+                      className="w-16 h-1 accent-purple-500 cursor-pointer"
+                      style={{ opacity: 0.6 }}
+                    />
+                    <span className="text-[10px] font-mono" style={{ color: "rgba(167,139,250,0.7)" }}>{lodCount}</span>
+                  </div>
                 </div>
                 {selectedAgent &&
               <AgentDetail agent={selectedAgent} connections={selectedConns} agents={agents} onClose={() => setSelected(null)} onSelect={handleSelect} />
