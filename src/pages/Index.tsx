@@ -1369,6 +1369,7 @@ export default function ZhihuiTiDashboard() {
   const msg = data.messaging;
   const goals = data.goal_history || [];
   const bl = data.bloodline;
+  const risk = data.risk || {} as any;
 
   const econHistory = Array.from({ length: 20 }, (_, i) => ({
     day: i + 1,
