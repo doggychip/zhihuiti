@@ -16,6 +16,8 @@ class Agent:
     created_tick: int = 0
     migration_cooldown: int = 0
     fitness_history: list = field(default_factory=list)  # for replicator dynamics
+    strategy_tenure: int = 0                             # ticks on current strategy
+    adaptation_rate: float = 1.0                         # individual learning speed [0.5, 2.0]
 
 
 @dataclass

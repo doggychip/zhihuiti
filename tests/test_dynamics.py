@@ -6,6 +6,7 @@ from dataclasses import field
 from silicon_realms.models import Agent, SimState, Realm, Ledger
 from silicon_realms.dynamics import (
     evolve_strategies,
+    _fitness_trend,
     strategy_frequencies,
     compute_temperature,
     compute_entropy,
@@ -112,6 +113,148 @@ class TestReplicatorDynamics:
                 switched = True
                 break
         assert switched, "Poor agent should switch strategy with high mutation_rate"
+
+    def test_evolve_increments_strategy_tenure(self):
+        """Strategy tenure should increment each tick."""
+        agents = {"a": _agent("a", 100), "b": _agent("b", 100)}
+        state = _make_state(agents)
+        assert state.agents["a"].strategy_tenure == 0
+        evolve_strategies(state)
+        assert state.agents["a"].strategy_tenure == 1
+        evolve_strategies(state)
+        assert state.agents["a"].strategy_tenure == 2
+
+    def test_tenure_resets_on_switch(self):
+        """When an agent switches strategy, tenure resets to 0."""
+        rich = _agent("rich", 10000, strategy="aggressive")
+        poor = _agent("poor", 1, strategy="conservative")
+        agents = {"rich": rich, "poor": poor}
+        state = _make_state(agents, config={"dynamics": {"mutation_rate": 1.0}})
+
+        # Give poor agent high tenure to verify reset
+        state.agents["poor"].strategy_tenure = 50
+
+        switched = False
+        for _ in range(200):
+            evolve_strategies(state)
+            if state.agents["poor"].strategy != "conservative":
+                assert state.agents["poor"].strategy_tenure == 0
+                switched = True
+                break
+        assert switched
+
+    def test_high_tenure_reduces_switch_probability(self):
+        """Agents with high tenure should switch less often."""
+        switches_low_tenure = 0
+        switches_high_tenure = 0
+        trials = 500
+
+        for trial in range(trials):
+            # Low tenure agent
+            rich = _agent("rich", 10000, strategy="aggressive")
+            poor_low = _agent("poor", 1, strategy="conservative")
+            poor_low.strategy_tenure = 0
+            state_low = _make_state({"rich": rich, "poor": poor_low},
+                                     seed=trial, config={"dynamics": {"mutation_rate": 0.5}})
+            evolve_strategies(state_low)
+            if state_low.agents["poor"].strategy != "conservative":
+                switches_low_tenure += 1
+
+            # High tenure agent (same seed for fair comparison... but different rng state)
+            rich2 = _agent("rich", 10000, strategy="aggressive")
+            poor_high = _agent("poor", 1, strategy="conservative")
+            poor_high.strategy_tenure = 100
+            state_high = _make_state({"rich": rich2, "poor": poor_high},
+                                      seed=trial + 10000, config={"dynamics": {"mutation_rate": 0.5}})
+            evolve_strategies(state_high)
+            if state_high.agents["poor"].strategy != "conservative":
+                switches_high_tenure += 1
+
+        # High tenure agents should switch less
+        assert switches_high_tenure < switches_low_tenure
+
+    def test_negative_gradient_boosts_switching(self):
+        """Negative realm gradient should increase switch probability."""
+        switches_no_grad = 0
+        switches_neg_grad = 0
+        trials = 500
+
+        for trial in range(trials):
+            rich = _agent("rich", 10000, strategy="aggressive")
+            poor = _agent("poor", 1, strategy="conservative")
+
+            # No gradient signal
+            state1 = _make_state({"rich": rich, "poor": poor},
+                                  seed=trial, config={"dynamics": {"mutation_rate": 0.2}})
+            state1.natural_gradient = {"compute": 0.0}
+            state1.fisher_information = 0.0
+            evolve_strategies(state1)
+            if state1.agents["poor"].strategy != "conservative":
+                switches_no_grad += 1
+
+            # Negative gradient (realm declining)
+            rich2 = _agent("rich", 10000, strategy="aggressive")
+            poor2 = _agent("poor", 1, strategy="conservative")
+            state2 = _make_state({"rich": rich2, "poor": poor2},
+                                  seed=trial, config={"dynamics": {"mutation_rate": 0.2}})
+            state2.natural_gradient = {"compute": -5.0}
+            state2.fisher_information = 0.0
+            evolve_strategies(state2)
+            if state2.agents["poor"].strategy != "conservative":
+                switches_neg_grad += 1
+
+        assert switches_neg_grad > switches_no_grad
+
+    def test_fisher_damping_reduces_switching(self):
+        """High Fisher info should suppress strategy switches."""
+        switches_low_fisher = 0
+        switches_high_fisher = 0
+        trials = 500
+
+        for trial in range(trials):
+            rich = _agent("rich", 10000, strategy="aggressive")
+            poor = _agent("poor", 1, strategy="conservative")
+            state1 = _make_state({"rich": rich, "poor": poor},
+                                  seed=trial, config={"dynamics": {"mutation_rate": 0.5}})
+            state1.fisher_information = 0.0
+            evolve_strategies(state1)
+            if state1.agents["poor"].strategy != "conservative":
+                switches_low_fisher += 1
+
+            rich2 = _agent("rich", 10000, strategy="aggressive")
+            poor2 = _agent("poor", 1, strategy="conservative")
+            state2 = _make_state({"rich": rich2, "poor": poor2},
+                                  seed=trial, config={"dynamics": {"mutation_rate": 0.5}})
+            state2.fisher_information = 10.0
+            evolve_strategies(state2)
+            if state2.agents["poor"].strategy != "conservative":
+                switches_high_fisher += 1
+
+        assert switches_high_fisher < switches_low_fisher
+
+
+# ─── 1b. Fitness Trend ──────────────────────────────────────────────────
+
+class TestFitnessTrend:
+    def test_empty_history(self):
+        assert _fitness_trend([]) == 0.0
+
+    def test_short_history(self):
+        assert _fitness_trend([10.0, 20.0]) == 0.0  # needs >= 3 points
+
+    def test_increasing_trend_positive(self):
+        assert _fitness_trend([10, 20, 30, 40, 50]) > 0
+
+    def test_decreasing_trend_negative(self):
+        assert _fitness_trend([50, 40, 30, 20, 10]) < 0
+
+    def test_flat_trend_zero(self):
+        assert abs(_fitness_trend([100, 100, 100, 100])) < 1e-9
+
+    def test_trend_magnitude_proportional(self):
+        slow = _fitness_trend([10, 11, 12, 13, 14])
+        fast = _fitness_trend([10, 20, 30, 40, 50])
+        assert fast > slow > 0
 
 
 # ─── 2. Statistical Mechanics ────────────────────────────────────────────

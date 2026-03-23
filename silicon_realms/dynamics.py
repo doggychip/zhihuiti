@@ -23,26 +23,70 @@ from .models import SimState
 #   agents in below-average strategies occasionally copy a fitter agent's strategy.
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _fitness_trend(history: list[float]) -> float:
+    """
+    Compute the fitness trend (slope) from an agent's fitness history.
+
+    Uses simple linear regression slope: Σ(t - t̄)(y - ȳ) / Σ(t - t̄)².
+    Returns positive for improving, negative for declining, 0 for flat/empty.
+    """
+    n = len(history)
+    if n < 3:
+        return 0.0
+    t_mean = (n - 1) / 2.0
+    y_mean = sum(history) / n
+    num = sum((t - t_mean) * (y - y_mean) for t, y in enumerate(history))
+    den = sum((t - t_mean) ** 2 for t in range(n))
+    if den < 1e-12:
+        return 0.0
+    return num / den
+
+
 def evolve_strategies(state: SimState):
     """
-    Apply replicator dynamics: strategies with above-mean fitness spread.
+    Adaptive strategy evolution with three signal layers:
 
-    Fitness = agent wealth (balance + staked).
-    Each tick, agents in below-average strategies have a small probability
-    of switching to a high-fitness strategy (imitation / selection).
+    Layer 1 — Replicator dynamics (global):
+      Strategies with above-mean fitness spread via imitation.
+      Below-mean agents copy fitter strategies proportional to fitness.
+
+    Layer 2 — Fitness trend (individual):
+      Each agent tracks its own fitness_history slope.
+      Declining trend amplifies switch probability.
+      Improving trend suppresses it (loyalty / exploitation).
+
+    Layer 3 — Natural gradient signal (realm-local):
+      Agents read their realm's natural gradient from information geometry.
+      Negative gradient (realm declining) → boost adaptation pressure.
+      Positive gradient (realm thriving) → agents stay the course.
+      High Fisher information → dampen all switching (sensitive regime).
+
+    Strategy tenure creates inertia: the longer an agent sticks with a
+    strategy, the less likely it is to switch (exploitation over exploration).
+    Individual adaptation_rate varies across agents (heterogeneous learning).
     """
     if not state.agents:
         return
 
-    # Compute per-strategy mean fitness
+    # ── Compute per-strategy mean fitness (global + per-realm) ──
     strat_fitness: dict[str, list[float]] = {}
+    realm_strat_fitness: dict[str, dict[str, list[float]]] = {}
+
     for agent in state.agents.values():
         w = agent.balance + agent.staked
         strat_fitness.setdefault(agent.strategy, []).append(w)
-        # Track individual fitness for history
+
+        # Per-realm strategy fitness for local imitation
+        rsf = realm_strat_fitness.setdefault(agent.realm, {})
+        rsf.setdefault(agent.strategy, []).append(w)
+
+        # Track individual fitness history
         agent.fitness_history.append(w)
         if len(agent.fitness_history) > 20:
             agent.fitness_history.pop(0)
+
+        # Increment strategy tenure
+        agent.strategy_tenure += 1
 
     strat_mean: dict[str, float] = {
         s: sum(ws) / len(ws) for s, ws in strat_fitness.items()
@@ -50,26 +94,78 @@ def evolve_strategies(state: SimState):
     all_fitnesses = [w for ws in strat_fitness.values() for w in ws]
     mean_fitness = sum(all_fitnesses) / len(all_fitnesses)
 
-    # Replicator dynamics imitation rule
-    mutation_rate = state.config.get("dynamics", {}).get("mutation_rate", 0.03)
+    # Per-realm strategy means (for local imitation)
+    realm_strat_mean: dict[str, dict[str, float]] = {}
+    for realm_name, rsf in realm_strat_fitness.items():
+        realm_strat_mean[realm_name] = {
+            s: sum(ws) / len(ws) for s, ws in rsf.items()
+        }
+
+    # ── Natural gradient + Fisher signals ──
+    fisher = state.fisher_information
+    fisher_damping = 1.0 / (1.0 + 2.0 * fisher)  # high sensitivity → cautious
+
+    base_mutation_rate = state.config.get("dynamics", {}).get("mutation_rate", 0.03)
+
     for agent in state.agents.values():
         agent_fitness = agent.balance + agent.staked
-        # Probability of strategy switch proportional to fitness deficit
-        if agent_fitness < mean_fitness:
-            deficit = (mean_fitness - agent_fitness) / (mean_fitness + 1e-9)
-            p_switch = mutation_rate * deficit
-            if state.rng.random() < p_switch:
-                # Pick strategy proportional to its mean fitness (softmax selection)
-                strategies = list(strat_mean.keys())
-                weights = [max(0, strat_mean[s]) for s in strategies]
-                total_w = sum(weights) + 1e-9
-                r = state.rng.random() * total_w
-                cumsum = 0.0
-                for s, w in zip(strategies, weights):
-                    cumsum += w
-                    if r <= cumsum:
-                        agent.strategy = s
-                        break
+
+        # Layer 1: fitness deficit (global replicator pressure)
+        deficit = max(0.0, (mean_fitness - agent_fitness) / (mean_fitness + 1e-9))
+
+        # Layer 2: fitness trend (individual trajectory)
+        trend = _fitness_trend(agent.fitness_history)
+        # Normalize trend relative to current fitness
+        trend_signal = trend / (agent_fitness + 1e-9)
+        # Declining → positive pressure; improving → negative (suppresses switch)
+        trend_pressure = max(0.0, -trend_signal * 10.0)
+
+        # Layer 3: realm natural gradient
+        realm_grad = state.natural_gradient.get(agent.realm, 0.0)
+        # Negative gradient (realm declining) → boost; positive → suppress
+        grad_pressure = max(0.0, -realm_grad * 0.1)
+
+        # Strategy tenure inertia: longer tenure → harder to switch
+        # Inertia = 1 / (1 + tenure/10) — halves switch prob every 10 ticks
+        tenure_inertia = 1.0 / (1.0 + agent.strategy_tenure / 10.0)
+
+        # Combined switch probability
+        p_switch = (
+            base_mutation_rate
+            * agent.adaptation_rate
+            * (deficit + trend_pressure + grad_pressure)
+            * tenure_inertia
+            * fisher_damping
+        )
+
+        if state.rng.random() < p_switch:
+            # Choose new strategy: blend local (realm) and global fitness
+            # Prefer local imitation when realm has diverse strategies
+            local_means = realm_strat_mean.get(agent.realm, {})
+
+            # Merge: local weight 0.7, global weight 0.3
+            all_strategies = set(strat_mean.keys()) | set(local_means.keys())
+            blended: dict[str, float] = {}
+            for s in all_strategies:
+                local_val = local_means.get(s, 0.0)
+                global_val = strat_mean.get(s, 0.0)
+                blended[s] = 0.7 * local_val + 0.3 * global_val
+
+            strategies = list(blended.keys())
+            weights = [max(0, blended[s]) for s in strategies]
+            total_w = sum(weights) + 1e-9
+            r = state.rng.random() * total_w
+            cumsum = 0.0
+            new_strategy = agent.strategy  # fallback
+            for s, w in zip(strategies, weights):
+                cumsum += w
+                if r <= cumsum:
+                    new_strategy = s
+                    break
+
+            if new_strategy != agent.strategy:
+                agent.strategy = new_strategy
+                agent.strategy_tenure = 0  # reset tenure on switch
 
 
 def strategy_frequencies(state: SimState) -> dict[str, float]:
