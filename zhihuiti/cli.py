@@ -709,6 +709,19 @@ def alphaarena_multi_trade(url: str | None):
     console.print(f"\n  [green]{total_trades} trades across {len(results)} agents[/green]")
 
 
+@alphaarena.command("report")
+@click.option("--url", default=None, help="AlphaArena API URL")
+@click.option("--json", "as_json", is_flag=True, help="Export as JSON")
+def alphaarena_report(url: str | None, as_json: bool):
+    """Full performance report — fleet P&L, strategy comparison, agent rankings."""
+    from zhihuiti.performance_report import PerformanceReport
+    report = PerformanceReport(base_url=url)
+    if as_json:
+        console.print(report.export_json())
+    else:
+        report.print_report()
+
+
 @alphaarena.command("register-sql")
 @click.option("--url", default=None, help="AlphaArena API URL")
 def alphaarena_register_sql(url: str | None):
