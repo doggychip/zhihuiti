@@ -1319,29 +1319,6 @@ export default function ZhihuiTiDashboard() {
     </div>);
 
 
-  // Build sparse economy graph: each agent connects to 2-3 peers (same realm, nearest by score)
-  const connections: Connection[] = useMemo(() => {
-    const conns: Connection[] = [];
-    const types = ["transaction", "investment", "bounty", "employment", "subsidy", "bloodline", "competition"];
-    const byRealm: Record<string, Agent[]> = {};
-    agents.forEach(a => {
-      (byRealm[a.realm] ||= []).push(a);
-    });
-    Object.values(byRealm).forEach(group => {
-      const sorted = [...group].sort((a, b) => b.avg_score - a.avg_score);
-      sorted.forEach((a, i) => {
-        // Connect to next 2 agents in score-sorted order (chain topology)
-        for (let d = 1; d <= 2; d++) {
-          const j = i + d;
-          if (j < sorted.length) {
-            conns.push({ from: a.id, to: sorted[j].id, type: types[(i + j) % types.length] });
-          }
-        }
-      });
-    });
-    return conns;
-  }, [agents]);
-
   const selectedAgent = agents.find((a) => a.id === selected);
   const selectedConns = connections.filter((c) => c.from === selected || c.to === selected);
 
