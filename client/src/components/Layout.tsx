@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import {
   Brain, LayoutDashboard, Bot, Lightbulb, Package, BarChart3, Settings,
-  ChevronLeft, ChevronRight, Sun, Moon, Menu,
+  ChevronLeft, ChevronRight, Sun, Moon, Menu, Atom, Zap,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "@/App";
@@ -10,6 +10,8 @@ const navItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
   { path: "/agents", label: "Agents", icon: Bot },
   { path: "/strategies", label: "Strategies", icon: Lightbulb },
+  { path: "/theories", label: "Theories", icon: Atom },
+  { path: "/collisions", label: "Collisions", icon: Zap },
   { path: "/products", label: "Products", icon: Package },
   { path: "/analytics", label: "Analytics", icon: BarChart3 },
   { path: "/settings", label: "Settings", icon: Settings },
