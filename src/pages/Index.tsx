@@ -1910,26 +1910,30 @@ export default function ZhihuiTiDashboard() {
                 <div className="text-xs uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>🌐 Cross-Project</div>
                 <div className="grid grid-cols-4 gap-2">
                   {[
-                    { name: "AlphaArena", icon: "⚔️", alive: true, agents: agents.filter(a => a.alive).length, tasks: mem.total_tasks || 0, score: (mem.avg_task_score || 0).toFixed(2), color: "#a855f7" },
-                    { name: "CriticAI", icon: "🧠", alive: true, agents: Math.floor((mem.total_agents || 0) * 0.15), tasks: Math.floor((mem.total_tasks || 0) * 0.3), score: "0.81", color: "#3b82f6" },
-                    { name: "HeartAI", icon: "❤️", alive: true, agents: Math.floor((mem.total_agents || 0) * 0.1), tasks: Math.floor((mem.total_tasks || 0) * 0.2), score: "0.77", color: "#ef4444" },
-                    { name: "zhihuiti", icon: "🧬", alive: live, agents: mem.total_agents || 0, tasks: mem.total_tasks || 0, score: (mem.avg_task_score || 0).toFixed(2), color: "#eab308" },
+                    { name: "AlphaArena", icon: "⚔️", alive: alphaArenaAgents.length > 0, agents: alphaArenaAgents.filter(a => a.alive).length, tasks: alphaArenaAgents.reduce((s, a) => s + a.tasks, 0), score: alphaArenaAgents.length > 0 ? (alphaArenaAgents.reduce((s, a) => s + a.avg_score, 0) / alphaArenaAgents.length).toFixed(2) : "—", color: "#a855f7", offline: alphaArenaAgents.length === 0 },
+                    { name: "CriticAI", icon: "🧠", alive: false, agents: 0, tasks: 0, score: "—", color: "#3b82f6", offline: true },
+                    { name: "HeartAI", icon: "❤️", alive: false, agents: 0, tasks: 0, score: "—", color: "#ef4444", offline: true },
+                    { name: "zhihuiti", icon: "🧬", alive: live, agents: coreAgents.filter(a => a.alive).length, tasks: mem.total_tasks || 0, score: (ins.avg_score || 0).toFixed(2), color: "#eab308", offline: !live },
                   ].map((proj) => (
                     <div key={proj.name} className="p-2.5 rounded-lg" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
                       <div className="flex items-center gap-1.5 mb-1.5">
                         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: proj.alive ? "#22c55e" : "#ef4444", boxShadow: `0 0 6px ${proj.alive ? "#22c55e" : "#ef4444"}` }} />
                         <span className="text-[11px] font-medium text-white truncate">{proj.icon} {proj.name}</span>
                       </div>
-                      {[
-                        ["Agents", proj.agents, proj.color],
-                        ["Tasks", proj.tasks, "#fff"],
-                        ["Score", proj.score, parseFloat(String(proj.score)) >= 0.8 ? "#22c55e" : "#eab308"],
-                      ].map(([label, value, c]) => (
-                        <div key={String(label)} className="flex justify-between text-[10px] py-0.5">
-                          <span style={{ color: "rgba(255,255,255,0.4)" }}>{label as string}</span>
-                          <span className="font-mono" style={{ color: c as string }}>{value as string | number}</span>
-                        </div>
-                      ))}
+                      {proj.offline ? (
+                        <div className="text-[10px] font-mono py-1 text-center" style={{ color: "rgba(255,255,255,0.2)" }}>OFFLINE</div>
+                      ) : (
+                        [
+                          ["Agents", proj.agents, proj.color],
+                          ["Tasks", proj.tasks, "#fff"],
+                          ["Score", proj.score, parseFloat(String(proj.score)) >= 0.8 ? "#22c55e" : "#eab308"],
+                        ].map(([label, value, c]) => (
+                          <div key={String(label)} className="flex justify-between text-[10px] py-0.5">
+                            <span style={{ color: "rgba(255,255,255,0.4)" }}>{label as string}</span>
+                            <span className="font-mono" style={{ color: c as string }}>{value as string | number}</span>
+                          </div>
+                        ))
+                      )}
                     </div>
                   ))}
                 </div>
