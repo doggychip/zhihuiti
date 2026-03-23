@@ -335,6 +335,27 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
       };
     });
 
+    // Connection lines between agents
+    const visibleIds = new Set(topAgents.map(a => a.id));
+    const visibleConns = connections.filter(c => visibleIds.has(c.from) && visibleIds.has(c.to));
+    visibleConns.forEach(conn => {
+      const p1 = positions[conn.from];
+      const p2 = positions[conn.to];
+      if (!p1 || !p2) return;
+      const points = [p1, p2];
+      const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+      const lineColor = CONN_COLORS[conn.type] || "#555";
+      const lineMat = new THREE.LineBasicMaterial({
+        color: lineColor,
+        transparent: true,
+        opacity: conn.from === selectedId || conn.to === selectedId ? 0.6 : 0.12,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      const line = new THREE.Line(lineGeo, lineMat);
+      world.add(line);
+    });
+
     // Ambient dust
     const dustCount = 80;
     const dustArr = new Float32Array(dustCount * 3);
