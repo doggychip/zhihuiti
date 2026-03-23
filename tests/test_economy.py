@@ -1,76 +1,93 @@
-import random
-from silicon_realms.models import Agent, Ledger, Realm, SimState
-from silicon_realms.economy import mint, transfer, stake, unstake, distribute_staking_rewards, get_summary
+"""Tests for token economy system."""
+
+from zhihuiti.economy import (
+    CentralBank, Economy, RewardEngine, TaxBureau, Treasury,
+    INITIAL_MONEY_SUPPLY, TAX_RATE,
+)
+from zhihuiti.memory import Memory
 
 
-def make_state():
-    state = SimState(
-        rng=random.Random(42),
-        config={"economy": {"transfer_fee": 0.01, "stake_min": 10, "stake_reward_rate": 0.03}},
-    )
-    state.realms["compute"] = Realm("compute", 50, 10)
-    state.agents["a1"] = Agent(id="a1", name="Alpha", realm="compute", balance=100.0)
-    state.agents["a2"] = Agent(id="a2", name="Beta", realm="compute", balance=50.0)
-    return state
+def test_central_bank_genesis():
+    mem = Memory(":memory:")
+    cb = CentralBank(mem)
+    cb.genesis()
+    assert cb.total_minted == INITIAL_MONEY_SUPPLY
+    assert cb.money_supply == INITIAL_MONEY_SUPPLY
+    mem.close()
 
 
-def test_mint():
-    state = make_state()
-    mint(state, "a1", 25.0)
-    assert state.agents["a1"].balance == 125.0
-    assert state.total_supply == 25.0
-    assert len(state.ledger.transactions) == 1
-    assert state.ledger.transactions[0].tx_type == "mint"
+def test_central_bank_mint_burn():
+    mem = Memory(":memory:")
+    cb = CentralBank(mem)
+    cb.mint(100.0, "test", "test mint")
+    assert cb.total_minted == 100.0
+    cb.burn(30.0, "test", "test burn")
+    assert cb.total_burned == 30.0
+    assert cb.money_supply == 70.0
+    mem.close()
 
 
-def test_transfer():
-    state = make_state()
-    state.total_supply = 150.0
-    ok = transfer(state, "a1", "a2", 10.0)
-    assert ok
-    assert state.agents["a1"].balance < 90.0  # 100 - 10 - fee
-    assert state.agents["a2"].balance == 60.0
-    assert state.total_supply < 150.0  # fee burned
+def test_treasury_fund():
+    mem = Memory(":memory:")
+    t = Treasury(mem)
+    t.balance = 500.0
+    assert t.fund_agent_spawn(100.0) is True
+    assert t.balance == 400.0
+    assert t.fund_agent_spawn(500.0) is False
+    mem.close()
 
 
-def test_transfer_insufficient():
-    state = make_state()
-    ok = transfer(state, "a2", "a1", 1000.0)
-    assert not ok
-    assert state.agents["a2"].balance == 50.0
+def test_tax_bureau():
+    mem = Memory(":memory:")
+    t = Treasury(mem)
+    t.balance = 0.0
+    tb = TaxBureau(t, mem)
+    net, tax = tb.tax_earning(100.0, "agent1")
+    assert abs(tax - 100.0 * TAX_RATE) < 0.01
+    assert abs(net - 100.0 * (1 - TAX_RATE)) < 0.01
+    assert t.balance == tax
+    mem.close()
 
 
-def test_stake_and_unstake():
-    state = make_state()
-    ok = stake(state, "a1", 30.0)
-    assert ok
-    assert state.agents["a1"].balance == 70.0
-    assert state.agents["a1"].staked == 30.0
+def test_reward_engine():
+    mem = Memory(":memory:")
+    cb = CentralBank(mem)
+    cb.genesis()
+    t = Treasury(mem)
+    t.balance = INITIAL_MONEY_SUPPLY
+    tb = TaxBureau(t, mem)
+    re = RewardEngine(cb, t, tb, mem)
 
-    ok = unstake(state, "a1", 15.0)
-    assert ok
-    assert state.agents["a1"].balance == 85.0
-    assert state.agents["a1"].staked == 15.0
+    reward = re.calculate_reward(0.0)
+    assert reward == 0.0
 
+    reward = re.calculate_reward(1.0)
+    assert reward > 0
 
-def test_stake_minimum():
-    state = make_state()
-    ok = stake(state, "a1", 5.0)  # below minimum of 10
-    assert not ok
-    assert state.agents["a1"].balance == 100.0
-
-
-def test_staking_rewards():
-    state = make_state()
-    state.agents["a1"].staked = 100.0
-    distribute_staking_rewards(state)
-    assert state.agents["a1"].balance == 100.0 + 100.0 * 0.03
-    assert state.total_supply == 100.0 * 0.03
+    reward_low = re.calculate_reward(0.3)
+    reward_high = re.calculate_reward(0.9)
+    assert reward_high > reward_low
+    mem.close()
 
 
-def test_summary():
-    state = make_state()
-    state.total_supply = 150.0
-    summary = get_summary(state)
-    assert summary["total_supply"] == 150.0
-    assert "compute" in summary["realm_population"]
+def test_economy_full_cycle():
+    mem = Memory(":memory:")
+    econ = Economy(mem)
+
+    # Fund spawn
+    assert econ.fund_spawn(100.0) is True
+
+    # Reward agent
+    budget_ref = [50.0]
+    result = econ.reward_agent("agent1", 0.8, budget_ref)
+    assert result["paid"] is True
+    assert result["net"] > 0
+    assert budget_ref[0] > 50.0  # Budget increased
+
+    # Burn
+    econ.burn_agent_balance("agent1", 10.0)
+
+    report = econ.get_report()
+    assert report["total_minted"] > 0
+    assert report["total_burned"] > 0
+    mem.close()
