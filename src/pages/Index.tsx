@@ -91,7 +91,8 @@ const DEMO_DATA = {
   goal_history: [
   { goal: "list 3 programming languages and their best use cases", task_count: 4, avg_score: 0.83 }],
 
-  transactions: {}
+  transactions: {},
+  risk: { halted: false, peak_equity: 10000, current_drawdown: 0, trades_today: 0, max_drawdown_limit: 20 }
 };
 
 const EVENT_ICONS: Record<string, string> = {
@@ -1369,6 +1370,7 @@ export default function ZhihuiTiDashboard() {
   const msg = data.messaging;
   const goals = data.goal_history || [];
   const bl = data.bloodline;
+  const risk = data.risk || {} as any;
 
   const econHistory = Array.from({ length: 20 }, (_, i) => ({
     day: i + 1,
@@ -1608,6 +1610,36 @@ export default function ZhihuiTiDashboard() {
           </ResizableWidget>
           <ResizableWidget minHeight={50} maxHeight={300}>
             <Stat label="Auctions Won" value={au.total_auctions || 0} sub={`Saved ${(au.total_savings || 0).toFixed(0)} ◆`} color="#3b82f6" />
+          </ResizableWidget>
+
+          {/* Risk Manager */}
+          <ResizableWidget minHeight={50} maxHeight={400}>
+            <div className="p-3 rounded-lg" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="text-xs uppercase tracking-wider mb-2 flex items-center gap-2" style={{ color: "rgba(255,255,255,0.4)" }}>
+                🛡️ Risk Manager
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{
+                    background: risk.halted ? "#ef4444" : "#22c55e",
+                    boxShadow: `0 0 6px ${risk.halted ? "#ef4444" : "#22c55e"}`,
+                  }}
+                />
+                <span className="text-[10px] font-mono" style={{ color: risk.halted ? "#ef4444" : "#22c55e" }}>
+                  {risk.halted ? "HALTED" : "ACTIVE"}
+                </span>
+              </div>
+              {[
+                ["Peak Equity", `${(risk.peak_equity || 0).toLocaleString()} ◆`, "#eab308"],
+                ["Current Drawdown", `${(risk.current_drawdown || 0).toFixed(1)}%`, (risk.current_drawdown || 0) > 10 ? "#ef4444" : "#22c55e"],
+                ["Trades Today", risk.trades_today || 0, "#60a5fa"],
+                ["Max Drawdown Limit", `${(risk.max_drawdown_limit || 0).toFixed(1)}%`, "#a78bfa"],
+              ].map(([label, value, color], i) => (
+                <div key={i} className="flex justify-between text-xs py-0.5">
+                  <span style={{ color: "rgba(255,255,255,0.5)" }}>{label as string}</span>
+                  <span className="font-mono" style={{ color: color as string }}>{value as string | number}</span>
+                </div>
+              ))}
+            </div>
           </ResizableWidget>
 
           <ResizableWidget minHeight={50} maxHeight={400}>
