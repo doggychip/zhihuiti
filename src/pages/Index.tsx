@@ -244,7 +244,7 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
     scene.add(world);
 
     // Realm rings
-    const realmRadii = [2.5, 5.5, 7.5];
+    const realmRadii = [3.5, 7, 10.5];
     const realmKeys = ["central", "research", "execution"];
     const realmChineseLabels: Record<string, string> = { central: "中枢界", research: "研发界", execution: "执行界" };
     realmRadii.forEach((r, ri) => {
