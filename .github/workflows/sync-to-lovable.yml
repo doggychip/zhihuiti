@@ -1,0 +1,61 @@
+name: Sync frontend to Lovable
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - 'tailwind.config.ts'
+      - 'postcss.config.js'
+      - 'components.json'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout zhihuiti
+        uses: actions/checkout@v4
+        with:
+          path: zhihuiti
+
+      - name: Checkout Lovable repo
+        uses: actions/checkout@v4
+        with:
+          repository: doggychip/pixel-perfect-replica-51aecdac
+          token: ${{ secrets.LOVABLE_SYNC_TOKEN }}
+          path: lovable
+
+      - name: Sync frontend code
+        run: |
+          cd lovable
+
+          # Remove old src (keep .git, configs we'll overwrite anyway)
+          rm -rf src index.html tailwind.config.ts postcss.config.js components.json
+
+          # Copy frontend source
+          cp -r ../zhihuiti/client/src ./src
+          cp ../zhihuiti/client/index.html ./index.html
+
+          # Copy configs
+          cp ../zhihuiti/tailwind.config.ts ./tailwind.config.ts
+          cp ../zhihuiti/postcss.config.js ./postcss.config.js
+          cp ../zhihuiti/components.json ./components.json
+
+          # Fix paths (client/src → src)
+          sed -i 's|./client/index.html|./index.html|g' tailwind.config.ts
+          sed -i 's|./client/src|./src|g' tailwind.config.ts
+          sed -i 's|client/src/index.css|src/index.css|g' components.json
+
+      - name: Commit and push
+        run: |
+          cd lovable
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to sync"
+          else
+            git commit -m "sync: auto-import from zhihuiti $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push origin main
+          fi

@@ -29,8 +29,13 @@ if TYPE_CHECKING:
 console = Console()
 
 MAX_GENERATIONS = 7      # How far back ancestry can be traced
-MUTATION_RATE = 0.15     # Probability of a trait mutating during breeding
+MUTATION_RATE = 0.15     # Default probability of a trait mutating during breeding
 CROSSOVER_BIAS = 0.6     # Bias toward higher-scoring parent's traits
+
+# Fitness-proportional selection constants
+FITNESS_SELECTION_POWER = 2.0   # Higher = more elitist selection
+MIN_MUTATION_RATE = 0.03        # Floor — even best agents get some variation
+MAX_MUTATION_RATE = 0.35        # Ceiling — don't make everything random
 
 
 @dataclass
@@ -90,7 +95,8 @@ class Bloodline:
     # ------------------------------------------------------------------
 
     def breed(self, parent_a: AgentConfig, parent_b: AgentConfig,
-              score_a: float = 0.5, score_b: float = 0.5) -> BreedResult:
+              score_a: float = 0.5, score_b: float = 0.5,
+              mutation_rate: float | None = None) -> BreedResult:
         """Breed two agents into a new child agent.
 
         Crossover logic:
@@ -100,9 +106,14 @@ class Bloodline:
         - Gene ID: new unique ID with both parents tracked
 
         Mutation:
+        - Rate is adaptive (from PerformanceTracker) or default MUTATION_RATE
         - Small random changes to temperature
         - Possible prompt emphasis shifts
         """
+        effective_mutation_rate = mutation_rate if mutation_rate is not None else MUTATION_RATE
+        # Clamp to bounds
+        effective_mutation_rate = max(MIN_MUTATION_RATE, min(MAX_MUTATION_RATE, effective_mutation_rate))
+
         # Determine which parent is dominant (higher score)
         if score_a >= score_b:
             dominant, recessive = parent_a, parent_b
@@ -119,9 +130,11 @@ class Bloodline:
         weight = CROSSOVER_BIAS if dom_score > rec_score else 0.5
         child_temp = dominant.temperature * weight + recessive.temperature * (1 - weight)
 
-        # Mutation on temperature
-        if random.random() < MUTATION_RATE:
-            delta = random.uniform(-0.15, 0.15)
+        # Mutation on temperature (uses adaptive rate)
+        if random.random() < effective_mutation_rate:
+            # Scale delta by mutation rate — higher rate = bigger jumps
+            max_delta = 0.1 + 0.2 * effective_mutation_rate
+            delta = random.uniform(-max_delta, max_delta)
             child_temp = max(0.1, min(1.0, child_temp + delta))
             mutations.append(f"temp_mutation({delta:+.2f})")
         child_temp = round(child_temp, 2)
@@ -139,16 +152,18 @@ class Bloodline:
             child_prompt += f"\n\nInherited trait: {rec_unique[:200]}"
             traits_from_rec.append("inherited_prompt_segment")
 
-        # Mutation on prompt emphasis
-        if random.random() < MUTATION_RATE:
+        # Mutation on prompt emphasis (uses adaptive rate)
+        if random.random() < effective_mutation_rate:
             emphasis = random.choice([
                 "\nFocus especially on accuracy and verification.",
                 "\nPrioritize efficiency and conciseness.",
                 "\nEmphasize creative and novel approaches.",
                 "\nFocus on practical, actionable outputs.",
+                "\nPrioritize structured, well-organized responses.",
+                "\nEmphasize quantitative reasoning and evidence.",
             ])
             child_prompt += emphasis
-            mutations.append("prompt_emphasis_mutation")
+            mutations.append(f"prompt_emphasis(rate={effective_mutation_rate:.2f})")
 
         # --- Role: inherit from dominant ---
         child_role = dominant.role
@@ -195,22 +210,33 @@ class Bloodline:
 
         return result
 
-    def breed_from_pool(self, role: AgentRole) -> AgentConfig | None:
-        """Select two top performers from the lineage and breed them.
+    def breed_from_pool(self, role: AgentRole,
+                        mutation_rate: float | None = None) -> AgentConfig | None:
+        """Select two parents via fitness-proportional selection and breed them.
+
+        Uses fitness^FITNESS_SELECTION_POWER weighting so top performers breed
+        disproportionately more often. This is tournament selection with
+        continuous weights — better than uniform random.
+
+        Args:
+            role: The agent role to breed for.
+            mutation_rate: Adaptive mutation rate (from PerformanceTracker).
+                If None, uses the default MUTATION_RATE.
 
         Returns a new child AgentConfig, or None if not enough parents.
         """
-        candidates = self.memory.get_top_lineage_genes(role.value, limit=5)
+        candidates = self.memory.get_top_lineage_genes(role.value, limit=10)
         if len(candidates) < 2:
             return None
 
-        # Pick two parents — weighted random by score
-        weights = [c["avg_score"] + 0.1 for c in candidates]  # +0.1 to avoid zero
-        parent_a_data, parent_b_data = random.sample(
-            list(zip(candidates, weights)),
-            k=2,
-        )
-        parent_a_info, parent_b_info = parent_a_data[0], parent_b_data[0]
+        # Fitness-proportional selection — score^power weighting
+        weights = [
+            (max(c["avg_score"], 0.01)) ** FITNESS_SELECTION_POWER
+            for c in candidates
+        ]
+
+        # Weighted sampling without replacement
+        parent_a_info, parent_b_info = _weighted_sample_two(candidates, weights)
 
         # Reconstruct AgentConfigs from lineage data
         from zhihuiti.prompts import get_prompt
@@ -237,6 +263,7 @@ class Bloodline:
             parent_a, parent_b,
             score_a=parent_a_info["avg_score"],
             score_b=parent_b_info["avg_score"],
+            mutation_rate=mutation_rate,
         )
 
         # Register the child in lineage
@@ -398,6 +425,51 @@ class Bloodline:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def _weighted_sample_two(items: list, weights: list[float]) -> tuple:
+    """Select two distinct items via fitness-proportional sampling.
+
+    Uses roulette-wheel selection: probability of selection is proportional
+    to weight. Samples without replacement.
+    """
+    if len(items) < 2:
+        raise ValueError("Need at least 2 items to sample")
+
+    total = sum(weights)
+    if total <= 0:
+        # All weights zero — fall back to uniform random
+        chosen = random.sample(range(len(items)), 2)
+        return items[chosen[0]], items[chosen[1]]
+
+    # First parent
+    r = random.uniform(0, total)
+    cumulative = 0
+    idx_a = 0
+    for i, w in enumerate(weights):
+        cumulative += w
+        if cumulative >= r:
+            idx_a = i
+            break
+
+    # Second parent (exclude first)
+    remaining_weights = weights[:idx_a] + weights[idx_a + 1:]
+    remaining_items = items[:idx_a] + items[idx_a + 1:]
+    total_b = sum(remaining_weights)
+
+    if total_b <= 0:
+        idx_b = 0
+    else:
+        r = random.uniform(0, total_b)
+        cumulative = 0
+        idx_b = 0
+        for i, w in enumerate(remaining_weights):
+            cumulative += w
+            if cumulative >= r:
+                idx_b = i
+                break
+
+    return items[idx_a], remaining_items[idx_b]
+
 
 def _extract_unique_segments(source: str, reference: str) -> str:
     """Extract sentences from source that don't appear in reference."""

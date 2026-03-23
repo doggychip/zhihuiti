@@ -12,6 +12,9 @@ import StrategiesPage from "@/pages/strategies";
 import ProductsPage from "@/pages/products";
 import AnalyticsPage from "@/pages/analytics";
 import SettingsPage from "@/pages/settings";
+import TheoriesPage from "@/pages/theories";
+import CollisionsPage from "@/pages/collisions";
+import CollisionEnginePage from "@/pages/collision-engine";
 import { useEffect, useState, createContext, useContext } from "react";
 
 const ThemeContext = createContext<{ dark: boolean; toggle: () => void }>({ dark: true, toggle: () => {} });
@@ -48,6 +51,9 @@ function AppRouter() {
         <Route path="/agents" component={AgentsPage} />
         <Route path="/agents/:id" component={AgentDetailPage} />
         <Route path="/strategies" component={StrategiesPage} />
+        <Route path="/theories" component={TheoriesPage} />
+        <Route path="/collisions" component={CollisionsPage} />
+        <Route path="/collision-engine" component={CollisionEnginePage} />
         <Route path="/products" component={ProductsPage} />
         <Route path="/analytics" component={AnalyticsPage} />
         <Route path="/settings" component={SettingsPage} />
