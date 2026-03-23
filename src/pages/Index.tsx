@@ -184,6 +184,7 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
   const mountRef = useRef<HTMLDivElement>(null);
   const nodesRef = useRef<Record<string, {mesh: THREE.Mesh; label?: THREE.Sprite; basePos: THREE.Vector3; vel: THREE.Vector3; size: number;}>>({});
   const linesRef = useRef<{ line: THREE.Line; from: string; to: string; baseColor: string }[]>([]);
+  const tokensRef = useRef<{ mesh: THREE.Mesh; from: string; to: string; progress: number; speed: number; color: string }[]>([]);
   const frameRef = useRef(0);
   const mouseRef = useRef({ down: false, prevX: 0, prevY: 0 });
   const rotRef = useRef({ x: 0.25, y: 0 });
@@ -358,6 +359,29 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
     });
     linesRef.current = lineEntries;
 
+    // Token particles flowing along connections
+    const tokenEntries: typeof tokensRef.current = [];
+    const maxTokens = Math.min(visibleConns.length * 2, 120);
+    for (let i = 0; i < maxTokens; i++) {
+      const conn = visibleConns[i % visibleConns.length];
+      const color = CONN_COLORS[conn.type] || "#aaa";
+      const geo = new THREE.SphereGeometry(0.06, 6, 6);
+      const mat = new THREE.MeshBasicMaterial({
+        color, transparent: true, opacity: 0.8,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.visible = false;
+      world.add(mesh);
+      tokenEntries.push({
+        mesh, from: conn.from, to: conn.to,
+        progress: Math.random(),
+        speed: 0.003 + Math.random() * 0.006,
+        color,
+      });
+    }
+    tokensRef.current = tokenEntries;
+
     // Ambient dust
     const dustCount = 80;
     const dustArr = new Float32Array(dustCount * 3);
@@ -408,6 +432,28 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
           mat.opacity = 0.12;
         }
       });
+
+      // Animate token particles along connections
+      tokensRef.current.forEach(tok => {
+        tok.progress += tok.speed;
+        if (tok.progress > 1) tok.progress -= 1;
+        const p1 = positionsRef.current[tok.from];
+        const p2 = positionsRef.current[tok.to];
+        if (p1 && p2) {
+          tok.mesh.visible = true;
+          tok.mesh.position.lerpVectors(p1, p2, tok.progress);
+          const mat = tok.mesh.material as THREE.MeshBasicMaterial;
+          const isConnected = tok.from === selectedId || tok.to === selectedId;
+          if (hasSelection) {
+            mat.opacity = isConnected ? 0.9 : 0.05;
+            tok.mesh.scale.setScalar(isConnected ? 1.8 : 0.6);
+          } else {
+            mat.opacity = 0.55 + Math.sin(tok.progress * Math.PI) * 0.3;
+            tok.mesh.scale.setScalar(1);
+          }
+        }
+      });
+
       world.rotation.x = rotRef.current.x;
       world.rotation.y = rotRef.current.y + t * 0.02;
       renderer.render(scene, camera);
