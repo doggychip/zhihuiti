@@ -64,7 +64,7 @@ export default function DashboardPage() {
             AI Agent Platform
           </div>
           <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">
-            zhihuiti <span className="text-cyan-400">Dashboard</span>
+            Big Brain <span className="text-cyan-400">Dashboard</span>
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
             Monitor and manage your AI agents across all connected products.

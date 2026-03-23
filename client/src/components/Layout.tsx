@@ -24,8 +24,8 @@ function ZhihuitiLogo({ collapsed }: { collapsed: boolean }) {
       <Brain className="w-6 h-6 text-cyan-400 flex-shrink-0" />
       {!collapsed && (
         <span className="font-semibold text-sm tracking-tight">
-          <span className="text-cyan-400">zhihu</span>
-          <span className="text-foreground">iti</span>
+          <span className="text-cyan-400">Big</span>
+          <span className="text-foreground"> Brain</span>
         </span>
       )}
     </div>
