@@ -5,7 +5,10 @@ from __future__ import annotations
 import pytest
 from unittest.mock import MagicMock
 
-from zhihuiti.collision import CollisionEngine, CollisionResult, THEORIES
+from zhihuiti.collision import (
+    CollisionEngine, CollisionResult, THEORIES,
+    TemporalDynamics, TemporalSnapshot, generate_narrative, _pair_key,
+)
 from zhihuiti.memory import Memory
 from tests.conftest import make_stub_llm
 
@@ -164,3 +167,170 @@ class TestCollisionEngine:
         engine = CollisionEngine()
         with pytest.raises(ValueError, match="Unknown theory"):
             engine.collide("goal", "nonexistent", "mutualist", _make_orchestrator)
+
+
+class TestNewTheories:
+    def test_ecosystem_theory_exists(self):
+        assert "ecosystem" in THEORIES
+        assert THEORIES["ecosystem"]["messaging"] is True
+
+    def test_social_contract_theory_exists(self):
+        assert "social_contract" in THEORIES
+        assert THEORIES["social_contract"]["lending"] is False
+
+
+class TestTemporalDynamics:
+    def _make_result(self, score_a: float, score_b: float,
+                     theory_a: str = "darwinian", theory_b: str = "mutualist") -> CollisionResult:
+        return CollisionResult(
+            goal="test",
+            theory_a=theory_a,
+            theory_b=theory_b,
+            result_a={"tasks": [{"score": score_a}]},
+            result_b={"tasks": [{"score": score_b}]},
+        )
+
+    def test_record_tracks_snapshots(self):
+        td = TemporalDynamics(theory_a="darwinian", theory_b="mutualist")
+        td.record(self._make_result(0.8, 0.6))
+        td.record(self._make_result(0.7, 0.65))
+        assert td.num_runs == 2
+        assert len(td.snapshots) == 2
+
+    def test_dominant_theory(self):
+        td = TemporalDynamics(theory_a="darwinian", theory_b="mutualist")
+        td.record(self._make_result(0.9, 0.5))
+        td.record(self._make_result(0.85, 0.6))
+        td.record(self._make_result(0.6, 0.7))  # mutualist wins once
+        assert td.dominant_theory == "darwinian"
+
+    def test_dominance_ratio(self):
+        td = TemporalDynamics(theory_a="darwinian", theory_b="mutualist")
+        td.record(self._make_result(0.9, 0.5))
+        td.record(self._make_result(0.85, 0.6))
+        td.record(self._make_result(0.6, 0.7))
+        # darwinian wins 2/3
+        assert td.dominance_ratio == pytest.approx(2/3)
+
+    def test_regime_shifts(self):
+        td = TemporalDynamics(theory_a="darwinian", theory_b="mutualist")
+        td.record(self._make_result(0.9, 0.5))   # darwinian
+        td.record(self._make_result(0.4, 0.8))   # mutualist (shift!)
+        td.record(self._make_result(0.85, 0.6))  # darwinian (shift!)
+        assert td.regime_shifts == 2
+
+    def test_no_regime_shifts_with_ties(self):
+        td = TemporalDynamics(theory_a="darwinian", theory_b="mutualist")
+        td.record(self._make_result(0.9, 0.5))   # darwinian
+        td.record(self._make_result(0.7, 0.705)) # tie
+        td.record(self._make_result(0.4, 0.8))   # mutualist
+        # tie transitions are ignored — darwinian→tie and tie→mutualist don't count
+        assert td.regime_shifts == 0
+
+    def test_convergence_rate_stable(self):
+        td = TemporalDynamics(theory_a="darwinian", theory_b="mutualist")
+        for _ in range(5):
+            td.record(self._make_result(0.7, 0.6))
+        assert abs(td.convergence_rate) < 0.01
+
+    def test_convergence_rate_converging(self):
+        td = TemporalDynamics(theory_a="darwinian", theory_b="mutualist")
+        # Margins shrinking: 0.3, 0.2, 0.1, 0.05
+        td.record(self._make_result(0.8, 0.5))
+        td.record(self._make_result(0.75, 0.55))
+        td.record(self._make_result(0.7, 0.6))
+        td.record(self._make_result(0.675, 0.625))
+        assert td.convergence_rate < 0
+
+    def test_score_trajectory(self):
+        td = TemporalDynamics(theory_a="darwinian", theory_b="mutualist")
+        td.record(self._make_result(0.8, 0.6))
+        td.record(self._make_result(0.7, 0.65))
+        assert td.score_trajectory("darwinian") == [0.8, 0.7]
+        assert td.score_trajectory("mutualist") == [0.6, 0.65]
+        assert td.score_trajectory("unknown") == []
+
+    def test_to_dict(self):
+        td = TemporalDynamics(theory_a="darwinian", theory_b="mutualist")
+        td.record(self._make_result(0.8, 0.6))
+        d = td.to_dict()
+        assert d["num_runs"] == 1
+        assert "trajectory_a" in d
+        assert "trajectory_b" in d
+
+
+class TestPairKey:
+    def test_canonical_ordering(self):
+        assert _pair_key("mutualist", "darwinian") == _pair_key("darwinian", "mutualist")
+        assert _pair_key("a", "b") == ("a", "b")
+
+
+class TestNarrative:
+    def test_winner_narrative(self):
+        result = CollisionResult(
+            goal="test goal",
+            theory_a="darwinian",
+            theory_b="mutualist",
+            result_a={"tasks": [{"score": 0.9}]},
+            result_b={"tasks": [{"score": 0.5}]},
+        )
+        narrative = generate_narrative(result)
+        assert "test goal" in narrative
+        assert "Darwinian" in narrative or "darwinian" in narrative.lower()
+
+    def test_tie_narrative(self):
+        result = CollisionResult(
+            goal="test goal",
+            theory_a="darwinian",
+            theory_b="mutualist",
+            result_a={"tasks": [{"score": 0.7}]},
+            result_b={"tasks": [{"score": 0.705}]},
+        )
+        narrative = generate_narrative(result)
+        assert "tie" in narrative.lower()
+
+    def test_narrative_in_to_dict(self):
+        result = CollisionResult(
+            goal="test goal",
+            theory_a="darwinian",
+            theory_b="mutualist",
+            result_a={"tasks": [{"score": 0.9}]},
+            result_b={"tasks": [{"score": 0.5}]},
+        )
+        d = result.to_dict()
+        assert "narrative" in d
+        assert len(d["narrative"]) > 0
+
+    def test_decisive_vs_narrow_language(self):
+        decisive = CollisionResult(
+            goal="g",
+            theory_a="darwinian",
+            theory_b="mutualist",
+            result_a={"tasks": [{"score": 0.95}]},
+            result_b={"tasks": [{"score": 0.4}]},
+        )
+        narrow = CollisionResult(
+            goal="g",
+            theory_a="darwinian",
+            theory_b="mutualist",
+            result_a={"tasks": [{"score": 0.72}]},
+            result_b={"tasks": [{"score": 0.7}]},
+        )
+        assert "decisively" in generate_narrative(decisive)
+        assert "narrowly" in generate_narrative(narrow)
+
+
+class TestCollisionEngineDynamics:
+    def test_dynamics_tracked_on_collide(self):
+        engine = CollisionEngine()
+        engine.collide("g1", "darwinian", "mutualist", _make_orchestrator)
+        engine.collide("g2", "darwinian", "mutualist", _make_orchestrator)
+        dyn = engine.get_temporal_dynamics("darwinian", "mutualist")
+        assert dyn.num_runs == 2
+
+    def test_dynamics_canonical_key(self):
+        engine = CollisionEngine()
+        engine.collide("g1", "darwinian", "mutualist", _make_orchestrator)
+        # Access with reversed order should still find it
+        dyn = engine.get_temporal_dynamics("mutualist", "darwinian")
+        assert dyn.num_runs == 1

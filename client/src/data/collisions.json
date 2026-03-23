@@ -1,0 +1,4148 @@
+[
+  {
+    "a": "simulated_annealing",
+    "b": "mcmc",
+    "score": 0.815,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_based",
+      "energy_entropy_tradeoff",
+      "exploration_exploitation",
+      "phase_transition"
+    ],
+    "shared_operators": [
+      "acceptance",
+      "sampling"
+    ],
+    "bridges": [
+      "Both use 'metropolis hastings' \u2014 same update mechanism",
+      "'state' role: configuration \u2194 markov chain state",
+      "'energy' role: cost function \u2194 negative log target",
+      "'dynamics' role: random perturbation \u2194 proposal kernel"
+    ],
+    "interpretation": "Simulated Annealing and Markov Chain Monte Carlo are near-isomorphic. The same abstract skeleton (energy_based, energy_entropy_tradeoff) appears in both. Mathematical results in one transfer directly "
+  },
+  {
+    "a": "fokker_planck",
+    "b": "diffusion_model",
+    "score": 0.735,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "conservation_of_probability",
+      "energy_based",
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "gradient_descent"
+    ],
+    "shared_operators": [
+      "diffusion",
+      "drift",
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: probability density \u2194 noised sample",
+      "'energy' role: potential function \u2194 denoising loss",
+      "'flow' role: probability current \u2194 reverse diffusion drift",
+      "'temperature' role: noise intensity \u2194 noise level"
+    ],
+    "interpretation": "Fokker-Planck / Langevin Dynamics and Diffusion Model (Score Matching) are near-isomorphic. The same abstract skeleton (conservation_of_probability, energy_based) appears in both. Mathematical results"
+  },
+  {
+    "a": "noether_theorem",
+    "b": "gauge_theory",
+    "score": 0.731,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "dual_variables",
+      "structural_isomorphism",
+      "topological_invariants",
+      "universality",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "action_integral",
+      "symmetry_group"
+    ],
+    "bridges": [
+      "Both optimize 'stationary action'",
+      "'energy' role: lagrangian \u2194 lagrangian density",
+      "'symmetry' role: lie group parameter \u2194 gauge group",
+      "Both conserve 'energy'"
+    ],
+    "interpretation": "Noether's Theorem and Gauge Theory are near-isomorphic. The same abstract skeleton (compositional_structure, dual_variables) appears in both. Mathematical results in one transfer directly to the other"
+  },
+  {
+    "a": "noether_theorem",
+    "b": "lagrangian_mechanics",
+    "score": 0.726,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "dual_variables",
+      "structural_isomorphism",
+      "topological_invariants",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "action_integral",
+      "symmetry_group"
+    ],
+    "bridges": [
+      "Both optimize 'stationary action'",
+      "'state' role: field configuration \u2194 generalized coordinates and velocities",
+      "'symmetry' role: lie group parameter \u2194 continuous symmetry group",
+      "Both conserve 'angular momentum'"
+    ],
+    "interpretation": "Noether's Theorem and Lagrangian Mechanics are near-isomorphic. The same abstract skeleton (compositional_structure, dual_variables) appears in both. Mathematical results in one transfer directly to t"
+  },
+  {
+    "a": "maximum_likelihood",
+    "b": "expectation_maximization",
+    "score": 0.719,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "fixed_point_iteration",
+      "gradient_descent",
+      "optimal_inference",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "expectation",
+      "gradient"
+    ],
+    "bridges": [
+      "Both optimize 'maximize log likelihood'",
+      "'state' role: parameter estimate \u2194 parameters and responsibilities",
+      "'information' role: fisher information \u2194 expected complete log likelihood",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Maximum Likelihood Estimation and Expectation Maximization (EM) are near-isomorphic. The same abstract skeleton (fixed_point_iteration, gradient_descent) appears in both. Mathematical results in one t"
+  },
+  {
+    "a": "markov_decision_process",
+    "b": "optimal_stopping",
+    "score": 0.703,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "exploration_exploitation",
+      "fixed_point_iteration"
+    ],
+    "shared_operators": [
+      "bellman_operator"
+    ],
+    "bridges": [
+      "Both converge to a optimal",
+      "'state' role: value function \u2194 continuation value",
+      "'energy' role: negative expected return \u2194 negative expected payoff",
+      "'dynamics' role: transition probabilities \u2194 stochastic process"
+    ],
+    "interpretation": "Markov Decision Process (MDP) and Optimal Stopping / Secretary Problem are near-isomorphic. The same abstract skeleton (dual_variables, energy_minimization) appears in both. Mathematical results in on"
+  },
+  {
+    "a": "sgd_as_langevin",
+    "b": "diffusion_model",
+    "score": 0.699,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_based",
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "gradient_descent",
+      "phase_transition"
+    ],
+    "shared_operators": [
+      "diffusion",
+      "drift",
+      "gradient",
+      "sampling"
+    ],
+    "bridges": [
+      "'state' role: parameter vector \u2194 noised sample",
+      "'energy' role: loss function \u2194 denoising loss",
+      "'temperature' role: learning rate times noise \u2194 noise level",
+      "Same abstract structure: 'stochastic differential equation'"
+    ],
+    "interpretation": "SGD as Langevin Dynamics and Diffusion Model (Score Matching) are near-isomorphic. The same abstract skeleton (energy_based, energy_entropy_tradeoff) appears in both. Mathematical results in one trans"
+  },
+  {
+    "a": "gauge_theory",
+    "b": "lagrangian_mechanics",
+    "score": 0.671,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "dual_variables",
+      "structural_isomorphism",
+      "topological_invariants",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "action_integral",
+      "symmetry_group"
+    ],
+    "bridges": [
+      "Both optimize 'stationary action'",
+      "'state' role: field configuration \u2194 generalized coordinates and velocities",
+      "'energy' role: lagrangian density \u2194 lagrangian",
+      "'symmetry' role: gauge group \u2194 continuous symmetry group"
+    ],
+    "interpretation": "Gauge Theory and Lagrangian Mechanics are near-isomorphic. The same abstract skeleton (compositional_structure, dual_variables) appears in both. Mathematical results in one transfer directly to the ot"
+  },
+  {
+    "a": "spin_glass",
+    "b": "boltzmann_machine",
+    "score": 0.66,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "correlation_learning",
+      "energy_based",
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "mean_field",
+      "pairwise_coupling"
+    ],
+    "shared_operators": [
+      "pairwise_interaction",
+      "partition_function"
+    ],
+    "bridges": [
+      "'state' role: spin configuration \u2194 visible hidden configuration",
+      "'energy' role: hamiltonian \u2194 energy function",
+      "'coupling' role: random bonds \u2194 weight matrix",
+      "Same abstract structure: 'disordered pairwise energy model'"
+    ],
+    "interpretation": "Spin Glass (Edwards-Anderson) and Boltzmann Machine are near-isomorphic. The same abstract skeleton (correlation_learning, energy_based) appears in both. Mathematical results in one transfer directly "
+  },
+  {
+    "a": "wasserstein_gan",
+    "b": "pareto_optimization",
+    "score": 0.657,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "competitive_dynamics",
+      "dual_variables",
+      "energy_minimization",
+      "exploration_exploitation",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: generator critic parameters \u2194 solution set",
+      "'energy' role: wasserstein distance \u2194 scalarized objective",
+      "'dynamics' role: adversarial training \u2194 front exploration",
+      "'coupling' role: critic potential \u2194 objective tradeoffs"
+    ],
+    "interpretation": "Wasserstein GAN and Multi-Objective / Pareto Optimization are near-isomorphic. The same abstract skeleton (competitive_dynamics, dual_variables) appears in both. Mathematical results in one transfer d"
+  },
+  {
+    "a": "robust_estimation",
+    "b": "frank_wolfe",
+    "score": 0.654,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: parameter estimate \u2194 convex combination",
+      "'energy' role: robust objective \u2194 objective value",
+      "'dynamics' role: irls iteration \u2194 conditional gradient step",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Robust Estimation / M-Estimators and Frank-Wolfe / Conditional Gradient are near-isomorphic. The same abstract skeleton (dual_variables, energy_minimization) appears in both. Mathematical results in o"
+  },
+  {
+    "a": "inverse_problem",
+    "b": "empirical_risk_minimization",
+    "score": 0.652,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "regularizer"
+    ],
+    "bridges": [
+      "'state' role: regularized estimate \u2194 hypothesis",
+      "'energy' role: regularized residual \u2194 empirical risk",
+      "'information' role: noise level \u2194 generalization gap",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Inverse Problem / Tikhonov Regularization and Empirical Risk Minimization (ERM) are near-isomorphic. The same abstract skeleton (dual_variables, energy_minimization) appears in both. Mathematical resu"
+  },
+  {
+    "a": "calculus_of_variations",
+    "b": "elasticity_theory",
+    "score": 0.64,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "conservation_law",
+      "dual_variables",
+      "energy_minimization",
+      "structural_isomorphism",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: extremal function \u2194 displacement field",
+      "'energy' role: action functional \u2194 elastic potential energy",
+      "'dynamics' role: euler lagrange flow \u2194 wave propagation",
+      "'coupling' role: boundary conditions \u2194 stiffness tensor"
+    ],
+    "interpretation": "Calculus of Variations / Euler-Lagrange and Elasticity / Continuum Mechanics are near-isomorphic. The same abstract skeleton (conservation_law, dual_variables) appears in both. Mathematical results in"
+  },
+  {
+    "a": "large_deviations",
+    "b": "concentration_inequalities",
+    "score": 0.638,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "legendre_transform",
+      "moment_generating_function"
+    ],
+    "bridges": [
+      "'state' role: empirical measure \u2194 deviation probability",
+      "'information' role: kl divergence \u2194 sub gaussian parameter",
+      "'energy' role: rate function \u2194 rate exponent",
+      "'coupling' role: tilted distribution \u2194 bounded difference constants"
+    ],
+    "interpretation": "Large Deviations / Cram\u00e9r's Theorem and Concentration of Measure / Tail Bounds are near-isomorphic. The same abstract skeleton (dual_variables, energy_entropy_tradeoff) appears in both. Mathematical r"
+  },
+  {
+    "a": "map_estimation",
+    "b": "empirical_risk_minimization",
+    "score": 0.629,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient",
+      "regularizer"
+    ],
+    "bridges": [
+      "'prior' role: regularization term \u2194 regularization penalty",
+      "'state' role: parameter estimate \u2194 hypothesis",
+      "'energy' role: negative log posterior \u2194 empirical risk",
+      "'information' role: posterior curvature \u2194 generalization gap"
+    ],
+    "interpretation": "Maximum a Posteriori (MAP) Estimation and Empirical Risk Minimization (ERM) are near-isomorphic. The same abstract skeleton (dual_variables, energy_minimization) appears in both. Mathematical results "
+  },
+  {
+    "a": "expectation_maximization",
+    "b": "map_estimation",
+    "score": 0.626,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "gradient_descent",
+      "optimal_inference",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient",
+      "posterior"
+    ],
+    "bridges": [
+      "'state' role: parameters and responsibilities \u2194 parameter estimate",
+      "'energy' role: negative log likelihood \u2194 negative log posterior",
+      "'information' role: expected complete log likelihood \u2194 posterior curvature",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Expectation Maximization (EM) and Maximum a Posteriori (MAP) Estimation are near-isomorphic. The same abstract skeleton (bayesian_inference, energy_minimization) appears in both. Mathematical results "
+  },
+  {
+    "a": "hamilton_jacobi_bellman",
+    "b": "pontryagin_maximum",
+    "score": 0.617,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "hamiltonian"
+    ],
+    "bridges": [
+      "Both converge to a optimal",
+      "'state' role: system state \u2194 state and costate",
+      "'energy' role: value function \u2194 hamiltonian",
+      "'flow' role: state dynamics \u2194 canonical equations"
+    ],
+    "interpretation": "Hamilton-Jacobi-Bellman Equation and Pontryagin Maximum Principle are near-isomorphic. The same abstract skeleton (dual_variables, energy_minimization) appears in both. Mathematical results in one tra"
+  },
+  {
+    "a": "schrodinger_equation",
+    "b": "variational_quantum",
+    "score": 0.613,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "energy_minimization",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "hamiltonian",
+      "measurement"
+    ],
+    "bridges": [
+      "Both optimize 'minimize energy expectation'",
+      "'spectrum' role: energy eigenvalues \u2194 energy landscape",
+      "'state' role: wave function \u2194 circuit parameters",
+      "'dynamics' role: unitary evolution \u2194 quantum classical loop"
+    ],
+    "interpretation": "Schr\u00f6dinger Equation and Variational Quantum Eigensolver (VQE) are near-isomorphic. The same abstract skeleton (compositional_structure, energy_minimization) appears in both. Mathematical results in o"
+  },
+  {
+    "a": "recursive_least_squares",
+    "b": "relevance_vector_machine",
+    "score": 0.61,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "gradient_descent",
+      "information_gain"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: parameter estimate and covariance \u2194 hyperparameters and weights",
+      "'energy' role: cumulative squared error \u2194 negative log evidence",
+      "'information' role: estimation covariance \u2194 model complexity",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Recursive Least Squares / LMS and Relevance Vector Machine / Sparse Bayes are near-isomorphic. The same abstract skeleton (bayesian_inference, energy_minimization) appears in both. Mathematical result"
+  },
+  {
+    "a": "curry_howard",
+    "b": "homotopy_type_theory",
+    "score": 0.608,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "dual_variables",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "Both optimize 'construct proof term'",
+      "'state' role: typing judgment \u2194 proof term",
+      "'energy' role: proof complexity \u2194 type complexity",
+      "'dynamics' role: beta reduction \u2194 normalization"
+    ],
+    "interpretation": "Curry-Howard Correspondence / Type Theory and Homotopy Type Theory / Univalence are near-isomorphic. The same abstract skeleton (compositional_structure, conservation_law) appears in both. Mathematica"
+  },
+  {
+    "a": "stochastic_optimal_control",
+    "b": "optimal_stopping",
+    "score": 0.604,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "exploration_exploitation"
+    ],
+    "shared_operators": [
+      "bellman_operator"
+    ],
+    "bridges": [
+      "Both converge to a optimal",
+      "'state' role: stochastic state process \u2194 continuation value",
+      "'energy' role: expected cost to go \u2194 negative expected payoff",
+      "'dynamics' role: controlled diffusion \u2194 stochastic process"
+    ],
+    "interpretation": "Stochastic Optimal Control and Optimal Stopping / Secretary Problem are near-isomorphic. The same abstract skeleton (dual_variables, energy_minimization) appears in both. Mathematical results in one t"
+  },
+  {
+    "a": "fokker_planck",
+    "b": "sgd_as_langevin",
+    "score": 0.6,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_based",
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "gradient_descent"
+    ],
+    "shared_operators": [
+      "diffusion",
+      "drift",
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: probability density \u2194 parameter vector",
+      "'energy' role: potential function \u2194 loss function",
+      "'temperature' role: noise intensity \u2194 learning rate times noise",
+      "Same abstract structure: 'stochastic differential equation'"
+    ],
+    "interpretation": "Fokker-Planck / Langevin Dynamics and SGD as Langevin Dynamics share significant mathematical structure. The collision enables partial transfer of results, especially around energy_based, energy_entro"
+  },
+  {
+    "a": "online_convex_optimization",
+    "b": "robust_estimation",
+    "score": 0.599,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'prior' role: regularization function \u2194 loss function shape",
+      "'state' role: online iterate \u2194 parameter estimate",
+      "'energy' role: cumulative regret \u2194 robust objective",
+      "'dynamics' role: adversarial loss sequence \u2194 irls iteration"
+    ],
+    "interpretation": "Online Convex Optimization / Regret and Robust Estimation / M-Estimators share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, "
+  },
+  {
+    "a": "map_estimation",
+    "b": "online_convex_optimization",
+    "score": 0.597,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient",
+      "regularizer"
+    ],
+    "bridges": [
+      "'prior' role: regularization term \u2194 regularization function",
+      "'state' role: parameter estimate \u2194 online iterate",
+      "'energy' role: negative log posterior \u2194 cumulative regret",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Maximum a Posteriori (MAP) Estimation and Online Convex Optimization / Regret share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variab"
+  },
+  {
+    "a": "tensor_network",
+    "b": "topological_data_analysis",
+    "score": 0.587,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "information_gain",
+      "renormalization",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: tensor cores \u2194 persistence diagram",
+      "'energy' role: truncation error \u2194 total persistence",
+      "'spectrum' role: singular values \u2194 betti numbers",
+      "'coupling' role: bond indices \u2194 simplicial complex"
+    ],
+    "interpretation": "Tensor Network / Tensor Decomposition and Topological Data Analysis (TDA) share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_s"
+  },
+  {
+    "a": "wasserstein_gan",
+    "b": "lagrange_duality",
+    "score": 0.583,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: generator critic parameters \u2194 primal dual variables",
+      "'energy' role: wasserstein distance \u2194 lagrangian value",
+      "'dynamics' role: adversarial training \u2194 primal dual dynamics",
+      "'coupling' role: critic potential \u2194 constraint jacobian"
+    ],
+    "interpretation": "Wasserstein GAN and Lagrange Duality / KKT Conditions share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, energy_minimization"
+  },
+  {
+    "a": "tensor_network",
+    "b": "wavelet_theory",
+    "score": 0.583,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "energy_minimization",
+      "information_gain",
+      "renormalization",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: tensor cores \u2194 wavelet coefficients",
+      "'energy' role: truncation error \u2194 signal energy",
+      "'spectrum' role: singular values \u2194 scale frequency map",
+      "Same abstract structure: 'renormalization hierarchy'"
+    ],
+    "interpretation": "Tensor Network / Tensor Decomposition and Wavelet Theory / Multiresolution share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_"
+  },
+  {
+    "a": "maximum_likelihood",
+    "b": "normalizing_flows",
+    "score": 0.58,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "gradient_descent",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "Both optimize 'maximize log likelihood'",
+      "'state' role: parameter estimate \u2194 flow parameters",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Maximum Likelihood Estimation and Normalizing Flows share significant mathematical structure. The collision enables partial transfer of results, especially around gradient_descent, information_gain."
+  },
+  {
+    "a": "ito_calculus",
+    "b": "black_scholes",
+    "score": 0.58,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "conservation_law",
+      "energy_entropy_tradeoff",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "girsanov_transform"
+    ],
+    "bridges": [
+      "'state' role: diffusion process \u2194 option price",
+      "'energy' role: quadratic variation \u2194 hedging error",
+      "'dynamics' role: drift and diffusion \u2194 geometric brownian motion",
+      "'coupling' role: correlation structure \u2194 volatility surface"
+    ],
+    "interpretation": "It\u00f4 Calculus / SDE Theory and Black-Scholes / Option Pricing share significant mathematical structure. The collision enables partial transfer of results, especially around conservation_law, energy_ent"
+  },
+  {
+    "a": "inverse_problem",
+    "b": "optimal_design",
+    "score": 0.578,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: regularized estimate \u2194 design measure",
+      "'energy' role: regularized residual \u2194 negative information",
+      "'information' role: noise level \u2194 fisher information matrix",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Inverse Problem / Tikhonov Regularization and Optimal Experiment Design share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, e"
+  },
+  {
+    "a": "topological_data_analysis",
+    "b": "wavelet_theory",
+    "score": 0.578,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "information_gain",
+      "renormalization",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: persistence diagram \u2194 wavelet coefficients",
+      "'energy' role: total persistence \u2194 signal energy",
+      "'spectrum' role: betti numbers \u2194 scale frequency map",
+      "Same abstract structure: 'renormalization hierarchy'"
+    ],
+    "interpretation": "Topological Data Analysis (TDA) and Wavelet Theory / Multiresolution share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_struct"
+  },
+  {
+    "a": "fourier_analysis",
+    "b": "wave_equation",
+    "score": 0.578,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "energy_minimization",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: spectral coefficients \u2194 displacement field",
+      "'energy' role: signal energy \u2194 total wave energy",
+      "'spectrum' role: frequency spectrum \u2194 frequency wavenumber",
+      "Same abstract structure: 'hilbert space optimization'"
+    ],
+    "interpretation": "Fourier Analysis / Spectral Decomposition and Wave Equation / d'Alembert share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_st"
+  },
+  {
+    "a": "landauer_principle",
+    "b": "differential_privacy",
+    "score": 0.578,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "conservation_law",
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "information_gain"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: computational state \u2194 query mechanism",
+      "'energy' role: dissipated work \u2194 utility loss",
+      "'information' role: bits erased \u2194 privacy budget",
+      "Same abstract structure: 'information theoretic bound'"
+    ],
+    "interpretation": "Landauer's Principle / Thermodynamic Computing and Differential Privacy share significant mathematical structure. The collision enables partial transfer of results, especially around conservation_law,"
+  },
+  {
+    "a": "lagrange_duality",
+    "b": "linear_programming",
+    "score": 0.572,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "complementary_slackness"
+    ],
+    "bridges": [
+      "'state' role: primal dual variables \u2194 basic feasible solution",
+      "'energy' role: lagrangian value \u2194 objective value",
+      "'dynamics' role: primal dual dynamics \u2194 simplex path",
+      "'coupling' role: constraint jacobian \u2194 constraint matrix"
+    ],
+    "interpretation": "Lagrange Duality / KKT Conditions and Linear Programming / Simplex Method share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables,"
+  },
+  {
+    "a": "mcts",
+    "b": "world_model",
+    "score": 0.57,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "bayesian_inference",
+      "compositional_structure",
+      "energy_minimization",
+      "exploration_exploitation",
+      "gradient_descent"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "Both converge to a optimal",
+      "'state' role: tree statistics \u2194 model parameters and policy",
+      "'energy' role: negative expected return \u2194 model prediction error",
+      "'dynamics' role: tree traversal policy \u2194 learned transition"
+    ],
+    "interpretation": "Monte Carlo Tree Search (MCTS) and World Models / Model-Based RL share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference, comp"
+  },
+  {
+    "a": "matrix_factorization",
+    "b": "proximal_methods",
+    "score": 0.569,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "dual_variables",
+      "energy_minimization",
+      "fixed_point_iteration"
+    ],
+    "shared_operators": [
+      "projection"
+    ],
+    "bridges": [
+      "'state' role: factor matrices \u2194 primal dual split variables",
+      "'energy' role: reconstruction error \u2194 composite objective",
+      "'coupling' role: factor product \u2194 consensus constraint",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Matrix Factorization / NMF and Proximal Methods / ADMM share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_structure, dual_vari"
+  },
+  {
+    "a": "online_convex_optimization",
+    "b": "frank_wolfe",
+    "score": 0.569,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: online iterate \u2194 convex combination",
+      "'energy' role: cumulative regret \u2194 objective value",
+      "'dynamics' role: adversarial loss sequence \u2194 conditional gradient step",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Online Convex Optimization / Regret and Frank-Wolfe / Conditional Gradient share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables"
+  },
+  {
+    "a": "empirical_risk_minimization",
+    "b": "robust_estimation",
+    "score": 0.569,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'prior' role: regularization penalty \u2194 loss function shape",
+      "'state' role: hypothesis \u2194 parameter estimate",
+      "'energy' role: empirical risk \u2194 robust objective",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Empirical Risk Minimization (ERM) and Robust Estimation / M-Estimators share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, en"
+  },
+  {
+    "a": "fourier_analysis",
+    "b": "schrodinger_equation",
+    "score": 0.569,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "energy_minimization",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [
+      "spectral_decomposition"
+    ],
+    "bridges": [
+      "'state' role: spectral coefficients \u2194 wave function",
+      "'energy' role: signal energy \u2194 hamiltonian expectation",
+      "'spectrum' role: frequency spectrum \u2194 energy eigenvalues",
+      "Same abstract structure: 'hilbert space optimization'"
+    ],
+    "interpretation": "Fourier Analysis / Spectral Decomposition and Schr\u00f6dinger Equation share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_structur"
+  },
+  {
+    "a": "information_geometry",
+    "b": "mirror_descent",
+    "score": 0.568,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "gradient_descent",
+      "information_gain",
+      "structural_isomorphism",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: point on statistical manifold \u2194 primal and dual iterates",
+      "'energy' role: kl divergence \u2194 objective function",
+      "'flow' role: natural gradient direction \u2194 mirror map direction",
+      "'metric' role: fisher information matrix \u2194 bregman divergence"
+    ],
+    "interpretation": "Information Geometry and Mirror Descent share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, gradient_descent."
+  },
+  {
+    "a": "schrodinger_equation",
+    "b": "wave_equation",
+    "score": 0.568,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "energy_minimization",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'spectrum' role: energy eigenvalues \u2194 frequency wavenumber",
+      "'state' role: wave function \u2194 displacement field",
+      "'energy' role: hamiltonian expectation \u2194 total wave energy",
+      "'dynamics' role: unitary evolution \u2194 propagation"
+    ],
+    "interpretation": "Schr\u00f6dinger Equation and Wave Equation / d'Alembert share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_structure, conservation"
+  },
+  {
+    "a": "stochastic_optimal_control",
+    "b": "markov_decision_process",
+    "score": 0.56,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "exploration_exploitation"
+    ],
+    "shared_operators": [
+      "bellman_operator"
+    ],
+    "bridges": [
+      "Both converge to a optimal",
+      "'state' role: stochastic state process \u2194 value function",
+      "'energy' role: expected cost to go \u2194 negative expected return",
+      "'dynamics' role: controlled diffusion \u2194 transition probabilities"
+    ],
+    "interpretation": "Stochastic Optimal Control and Markov Decision Process (MDP) share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, energy_minim"
+  },
+  {
+    "a": "boltzmann_machine",
+    "b": "replica_method",
+    "score": 0.556,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_based",
+      "energy_entropy_tradeoff",
+      "mean_field",
+      "pairwise_coupling",
+      "phase_transition"
+    ],
+    "shared_operators": [
+      "partition_function"
+    ],
+    "bridges": [
+      "'state' role: visible hidden configuration \u2194 replica overlap matrix",
+      "'energy' role: energy function \u2194 quenched free energy",
+      "'coupling' role: weight matrix \u2194 disorder distribution",
+      "Same abstract structure: 'disordered pairwise energy model'"
+    ],
+    "interpretation": "Boltzmann Machine and Replica Method share significant mathematical structure. The collision enables partial transfer of results, especially around energy_based, energy_entropy_tradeoff."
+  },
+  {
+    "a": "calculus_of_variations",
+    "b": "maxwell_equations",
+    "score": 0.555,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "conservation_law",
+      "dual_variables",
+      "energy_minimization",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: extremal function \u2194 electromagnetic field",
+      "'energy' role: action functional \u2194 field energy density",
+      "'dynamics' role: euler lagrange flow \u2194 wave propagation",
+      "'coupling' role: boundary conditions \u2194 charge current source"
+    ],
+    "interpretation": "Calculus of Variations / Euler-Lagrange and Maxwell's Equations / Electrodynamics share significant mathematical structure. The collision enables partial transfer of results, especially around conserv"
+  },
+  {
+    "a": "map_estimation",
+    "b": "inverse_problem",
+    "score": 0.554,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "regularizer"
+    ],
+    "bridges": [
+      "'prior' role: regularization term \u2194 regularization penalty",
+      "'state' role: parameter estimate \u2194 regularized estimate",
+      "'energy' role: negative log posterior \u2194 regularized residual",
+      "'information' role: posterior curvature \u2194 noise level"
+    ],
+    "interpretation": "Maximum a Posteriori (MAP) Estimation and Inverse Problem / Tikhonov Regularization share significant mathematical structure. The collision enables partial transfer of results, especially around dual_"
+  },
+  {
+    "a": "bayesian_optimization",
+    "b": "active_inference",
+    "score": 0.552,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "exploration_exploitation",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: gp posterior \u2194 beliefs about hidden states",
+      "'energy' role: negative acquisition value \u2194 variational free energy",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Bayesian Optimization and Active Inference share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference, energy_minimization."
+  },
+  {
+    "a": "normalizing_flows",
+    "b": "boosting",
+    "score": 0.547,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "energy_minimization",
+      "gradient_descent",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: flow parameters \u2194 ensemble function",
+      "'energy' role: negative log likelihood \u2194 empirical loss",
+      "'dynamics' role: invertible transformation \u2194 residual fitting",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Normalizing Flows and Gradient Boosting / AdaBoost share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_structure, energy_minimi"
+  },
+  {
+    "a": "gan",
+    "b": "wasserstein_gan",
+    "score": 0.545,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "exploration_exploitation",
+      "gradient_descent"
+    ],
+    "shared_operators": [
+      "gradient",
+      "wasserstein_distance"
+    ],
+    "bridges": [
+      "Both use 'alternating gradient' \u2014 same update mechanism",
+      "'state' role: generator discriminator params \u2194 generator critic parameters",
+      "'energy' role: minimax value \u2194 wasserstein distance",
+      "'dynamics' role: adversarial gradient updates \u2194 adversarial training"
+    ],
+    "interpretation": "Generative Adversarial Network (GAN) and Wasserstein GAN share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, energy_minimizat"
+  },
+  {
+    "a": "td_learning",
+    "b": "optimal_stopping",
+    "score": 0.545,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_minimization",
+      "exploration_exploitation",
+      "fixed_point_iteration"
+    ],
+    "shared_operators": [
+      "bellman_operator"
+    ],
+    "bridges": [
+      "'state' role: value function estimate \u2194 continuation value",
+      "'energy' role: mean squared td error \u2194 negative expected payoff",
+      "'dynamics' role: value iteration dynamics \u2194 stochastic process",
+      "Same abstract structure: 'bellman recursion'"
+    ],
+    "interpretation": "Temporal Difference Learning and Optimal Stopping / Secretary Problem share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization"
+  },
+  {
+    "a": "lotka_volterra",
+    "b": "nash_equilibrium",
+    "score": 0.544,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "above_average_grows",
+      "fixed_point_stability",
+      "frequency_dependent",
+      "mean_field",
+      "pairwise_coupling"
+    ],
+    "shared_operators": [
+      "pairwise_interaction"
+    ],
+    "bridges": [
+      "Both converge to a equilibrium",
+      "'state' role: population densities \u2194 strategy profile",
+      "'score' role: growth rate \u2194 utility",
+      "'reference' role: carrying capacity \u2194 opponent strategy"
+    ],
+    "interpretation": "Lotka-Volterra Equations and Nash Equilibrium share significant mathematical structure. The collision enables partial transfer of results, especially around above_average_grows, fixed_point_stability."
+  },
+  {
+    "a": "bayesian_optimization",
+    "b": "optimal_design",
+    "score": 0.539,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: gp posterior \u2194 design measure",
+      "'information' role: posterior variance \u2194 fisher information matrix",
+      "'energy' role: negative acquisition value \u2194 negative information",
+      "'coupling' role: kernel gram matrix \u2194 regression functions"
+    ],
+    "interpretation": "Bayesian Optimization and Optimal Experiment Design share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference, energy_minimizati"
+  },
+  {
+    "a": "optimal_design",
+    "b": "disentangled_representations",
+    "score": 0.539,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: design measure \u2194 encoder decoder parameters",
+      "'information' role: fisher information matrix \u2194 kl regularization",
+      "'energy' role: negative information \u2194 negative elbo",
+      "'coupling' role: regression functions \u2194 latent prior"
+    ],
+    "interpretation": "Optimal Experiment Design and Disentangled Representations / \u03b2-VAE share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference, en"
+  },
+  {
+    "a": "empirical_risk_minimization",
+    "b": "frank_wolfe",
+    "score": 0.539,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: hypothesis \u2194 convex combination",
+      "'energy' role: empirical risk \u2194 objective value",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Empirical Risk Minimization (ERM) and Frank-Wolfe / Conditional Gradient share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, "
+  },
+  {
+    "a": "map_estimation",
+    "b": "boosting",
+    "score": 0.536,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient",
+      "regularizer"
+    ],
+    "bridges": [
+      "'prior' role: regularization term \u2194 learning rate shrinkage",
+      "'state' role: parameter estimate \u2194 ensemble function",
+      "'energy' role: negative log posterior \u2194 empirical loss",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Maximum a Posteriori (MAP) Estimation and Gradient Boosting / AdaBoost share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimizatio"
+  },
+  {
+    "a": "bayesian_optimization",
+    "b": "gaussian_process",
+    "score": 0.536,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "information_gain",
+      "optimal_inference",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "kernel_evaluation",
+      "posterior_update"
+    ],
+    "bridges": [
+      "'state' role: gp posterior \u2194 posterior mean and covariance",
+      "'energy' role: negative acquisition value \u2194 negative log marginal likelihood"
+    ],
+    "interpretation": "Bayesian Optimization and Gaussian Process Regression share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference, energy_minimiza"
+  },
+  {
+    "a": "pac_learning",
+    "b": "kolmogorov_complexity",
+    "score": 0.536,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "information_gain",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: hypothesis class \u2194 description",
+      "'information' role: sample complexity \u2194 algorithmic mutual information",
+      "'energy' role: generalization gap \u2194 program length",
+      "'coupling' role: hypothesis complexity \u2194 conditional complexity"
+    ],
+    "interpretation": "PAC Learning / VC Theory and Kolmogorov Complexity / AIT share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, information_gain"
+  },
+  {
+    "a": "martingale_theory",
+    "b": "landauer_principle",
+    "score": 0.536,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "conservation_law",
+      "dual_variables",
+      "information_gain"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: adapted process \u2194 computational state",
+      "'energy' role: expected value \u2194 dissipated work",
+      "'dynamics' role: conditional increment \u2194 thermodynamic protocol",
+      "'information' role: filtration \u2194 bits erased"
+    ],
+    "interpretation": "Martingale Theory / Optional Stopping and Landauer's Principle / Thermodynamic Computing share significant mathematical structure. The collision enables partial transfer of results, especially around "
+  },
+  {
+    "a": "sheaf_cohomology",
+    "b": "topological_quantum_computing",
+    "score": 0.536,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: local sections \u2194 anyon configuration",
+      "'energy' role: obstruction class \u2194 topological gap",
+      "'dynamics' role: spectral sequence convergence \u2194 braid compilation",
+      "'coupling' role: restriction maps \u2194 braiding statistics"
+    ],
+    "interpretation": "Sheaf Cohomology / Local-to-Global and Topological Quantum Computing / Anyons share significant mathematical structure. The collision enables partial transfer of results, especially around composition"
+  },
+  {
+    "a": "boosting",
+    "b": "inverse_problem",
+    "score": 0.534,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "regularizer"
+    ],
+    "bridges": [
+      "'prior' role: learning rate shrinkage \u2194 regularization penalty",
+      "'state' role: ensemble function \u2194 regularized estimate",
+      "'energy' role: empirical loss \u2194 regularized residual",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Gradient Boosting / AdaBoost and Inverse Problem / Tikhonov Regularization share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimiz"
+  },
+  {
+    "a": "kolmogorov_complexity",
+    "b": "minimum_description_length",
+    "score": 0.534,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "dual_variables",
+      "information_gain"
+    ],
+    "shared_operators": [
+      "prefix_coding"
+    ],
+    "bridges": [
+      "'state' role: description \u2194 model and parameters",
+      "'energy' role: program length \u2194 total codelength",
+      "'information' role: algorithmic mutual information \u2194 stochastic complexity",
+      "Same abstract structure: 'information theoretic bound'"
+    ],
+    "interpretation": "Kolmogorov Complexity / AIT and Minimum Description Length (MDL) share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_structure,"
+  },
+  {
+    "a": "lagrange_duality",
+    "b": "robust_estimation",
+    "score": 0.534,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: primal dual variables \u2194 parameter estimate",
+      "'energy' role: lagrangian value \u2194 robust objective",
+      "'dynamics' role: primal dual dynamics \u2194 irls iteration"
+    ],
+    "interpretation": "Lagrange Duality / KKT Conditions and Robust Estimation / M-Estimators share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, en"
+  },
+  {
+    "a": "online_convex_optimization",
+    "b": "inverse_problem",
+    "score": 0.534,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "regularizer"
+    ],
+    "bridges": [
+      "'prior' role: regularization function \u2194 regularization penalty",
+      "'state' role: online iterate \u2194 regularized estimate",
+      "'energy' role: cumulative regret \u2194 regularized residual",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Online Convex Optimization / Regret and Inverse Problem / Tikhonov Regularization share significant mathematical structure. The collision enables partial transfer of results, especially around dual_va"
+  },
+  {
+    "a": "boosting",
+    "b": "empirical_risk_minimization",
+    "score": 0.533,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_minimization",
+      "gradient_descent",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient",
+      "regularizer"
+    ],
+    "bridges": [
+      "'prior' role: learning rate shrinkage \u2194 regularization penalty",
+      "'state' role: ensemble function \u2194 hypothesis",
+      "'energy' role: empirical loss \u2194 empirical risk",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Gradient Boosting / AdaBoost and Empirical Risk Minimization (ERM) share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, g"
+  },
+  {
+    "a": "online_convex_optimization",
+    "b": "empirical_risk_minimization",
+    "score": 0.533,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient",
+      "regularizer"
+    ],
+    "bridges": [
+      "'prior' role: regularization function \u2194 regularization penalty",
+      "'state' role: online iterate \u2194 hypothesis",
+      "'energy' role: cumulative regret \u2194 empirical risk",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Online Convex Optimization / Regret and Empirical Risk Minimization (ERM) share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables,"
+  },
+  {
+    "a": "quantum_annealing",
+    "b": "variational_quantum",
+    "score": 0.53,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_minimization",
+      "exploration_exploitation",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "hamiltonian"
+    ],
+    "bridges": [
+      "'spectrum' role: spectral gap \u2194 energy landscape",
+      "'state' role: quantum state \u2194 circuit parameters",
+      "'energy' role: instantaneous energy \u2194 hamiltonian expectation",
+      "'dynamics' role: adiabatic schedule \u2194 quantum classical loop"
+    ],
+    "interpretation": "Quantum Annealing / Adiabatic QC and Variational Quantum Eigensolver (VQE) share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimiz"
+  },
+  {
+    "a": "wasserstein_gradient_flow",
+    "b": "calculus_of_variations",
+    "score": 0.529,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "functional_derivative"
+    ],
+    "bridges": [
+      "'state' role: probability density \u2194 extremal function",
+      "'energy' role: free energy functional \u2194 action functional",
+      "'dynamics' role: continuity equation \u2194 euler lagrange flow",
+      "'coupling' role: interaction potential \u2194 boundary conditions"
+    ],
+    "interpretation": "Wasserstein Gradient Flow and Calculus of Variations / Euler-Lagrange share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, ene"
+  },
+  {
+    "a": "boosting",
+    "b": "robust_estimation",
+    "score": 0.529,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'prior' role: learning rate shrinkage \u2194 loss function shape",
+      "'state' role: ensemble function \u2194 parameter estimate",
+      "'energy' role: empirical loss \u2194 robust objective",
+      "'dynamics' role: residual fitting \u2194 irls iteration"
+    ],
+    "interpretation": "Gradient Boosting / AdaBoost and Robust Estimation / M-Estimators share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, gr"
+  },
+  {
+    "a": "lagrange_duality",
+    "b": "domain_adaptation",
+    "score": 0.529,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "gradient_descent"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: primal dual variables \u2194 feature extractor",
+      "'energy' role: lagrangian value \u2194 domain divergence",
+      "'dynamics' role: primal dual dynamics \u2194 adversarial alignment",
+      "'coupling' role: constraint jacobian \u2194 importance weights"
+    ],
+    "interpretation": "Lagrange Duality / KKT Conditions and Domain Adaptation / Distribution Shift share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variabl"
+  },
+  {
+    "a": "pareto_optimization",
+    "b": "domain_adaptation",
+    "score": 0.529,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "competitive_dynamics",
+      "dual_variables",
+      "energy_minimization"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: solution set \u2194 feature extractor",
+      "'energy' role: scalarized objective \u2194 domain divergence",
+      "'dynamics' role: front exploration \u2194 adversarial alignment",
+      "'coupling' role: objective tradeoffs \u2194 importance weights"
+    ],
+    "interpretation": "Multi-Objective / Pareto Optimization and Domain Adaptation / Distribution Shift share significant mathematical structure. The collision enables partial transfer of results, especially around competit"
+  },
+  {
+    "a": "score_matching",
+    "b": "frank_wolfe",
+    "score": 0.529,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: score network parameters \u2194 convex combination",
+      "'energy' role: score matching loss \u2194 objective value",
+      "'dynamics' role: score field \u2194 conditional gradient step",
+      "'coupling' role: noise schedule \u2194 constraint set geometry"
+    ],
+    "interpretation": "Score Matching / Score Function and Frank-Wolfe / Conditional Gradient share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimizatio"
+  },
+  {
+    "a": "kolmogorov_complexity",
+    "b": "error_correcting_codes",
+    "score": 0.528,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "dual_variables",
+      "information_gain",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: description \u2194 codeword",
+      "'information' role: algorithmic mutual information \u2194 mutual information",
+      "'energy' role: program length \u2194 decoding error probability",
+      "'coupling' role: conditional complexity \u2194 parity check matrix"
+    ],
+    "interpretation": "Kolmogorov Complexity / AIT and Error-Correcting Codes / Shannon Capacity share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_s"
+  },
+  {
+    "a": "sat_solving",
+    "b": "traveling_salesman",
+    "score": 0.528,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_minimization",
+      "exploration_exploitation",
+      "fixed_point_iteration",
+      "symmetry_breaking"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: partial assignment \u2194 tour permutation",
+      "'energy' role: number of unsatisfied clauses \u2194 tour length",
+      "'dynamics' role: search tree traversal \u2194 local improvement moves",
+      "'coupling' role: clause variable graph \u2194 distance matrix"
+    ],
+    "interpretation": "Boolean Satisfiability / SAT Solving and Traveling Salesman / Combinatorial Optimization share significant mathematical structure. The collision enables partial transfer of results, especially around "
+  },
+  {
+    "a": "sheaf_cohomology",
+    "b": "homotopy_type_theory",
+    "score": 0.528,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "dual_variables",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: local sections \u2194 proof term",
+      "'energy' role: obstruction class \u2194 type complexity",
+      "'dynamics' role: spectral sequence convergence \u2194 normalization",
+      "'coupling' role: restriction maps \u2194 universe level"
+    ],
+    "interpretation": "Sheaf Cohomology / Local-to-Global and Homotopy Type Theory / Univalence share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_st"
+  },
+  {
+    "a": "proximal_methods",
+    "b": "robust_estimation",
+    "score": 0.525,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "gradient_descent"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: primal dual split variables \u2194 parameter estimate",
+      "'energy' role: composite objective \u2194 robust objective",
+      "'dynamics' role: splitting iteration \u2194 irls iteration",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Proximal Methods / ADMM and Robust Estimation / M-Estimators share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, energy_minim"
+  },
+  {
+    "a": "hidden_markov_model",
+    "b": "recursive_least_squares",
+    "score": 0.525,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "information_gain"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: latent state sequence \u2194 parameter estimate and covariance",
+      "'energy' role: negative log likelihood \u2194 cumulative squared error",
+      "'dynamics' role: transition probabilities \u2194 recursive update",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Hidden Markov Model (HMM) and Recursive Least Squares / LMS share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference, energy_mi"
+  },
+  {
+    "a": "optimal_design",
+    "b": "empirical_risk_minimization",
+    "score": 0.525,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: design measure \u2194 hypothesis",
+      "'energy' role: negative information \u2194 empirical risk",
+      "'information' role: fisher information matrix \u2194 generalization gap",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Optimal Experiment Design and Empirical Risk Minimization (ERM) share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, energy_mi"
+  },
+  {
+    "a": "schrodinger_equation",
+    "b": "spectral_methods",
+    "score": 0.525,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "energy_minimization",
+      "structural_isomorphism",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: wave function \u2194 spectral coefficients",
+      "'energy' role: hamiltonian expectation \u2194 residual norm",
+      "'dynamics' role: unitary evolution \u2194 coefficient evolution",
+      "Same abstract structure: 'hilbert space optimization'"
+    ],
+    "interpretation": "Schr\u00f6dinger Equation and Spectral Methods / Chebyshev-Galerkin share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_structure, e"
+  },
+  {
+    "a": "fisher_information",
+    "b": "natural_gradient",
+    "score": 0.523,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "information_gain",
+      "optimal_inference",
+      "precision_weighted_update"
+    ],
+    "shared_operators": [
+      "expectation",
+      "gradient",
+      "matrix_inverse"
+    ],
+    "bridges": [
+      "Same abstract structure: 'riemannian metric on statistical manifold'"
+    ],
+    "interpretation": "Fisher Information and Natural Gradient Descent share significant mathematical structure. The collision enables partial transfer of results, especially around information_gain, optimal_inference."
+  },
+  {
+    "a": "expectation_maximization",
+    "b": "robust_estimation",
+    "score": 0.523,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_minimization",
+      "fixed_point_iteration",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: parameters and responsibilities \u2194 parameter estimate",
+      "'energy' role: negative log likelihood \u2194 robust objective",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Expectation Maximization (EM) and Robust Estimation / M-Estimators share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, f"
+  },
+  {
+    "a": "expectation_maximization",
+    "b": "frank_wolfe",
+    "score": 0.523,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_minimization",
+      "fixed_point_iteration",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: parameters and responsibilities \u2194 convex combination",
+      "'energy' role: negative log likelihood \u2194 objective value",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Expectation Maximization (EM) and Frank-Wolfe / Conditional Gradient share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization,"
+  },
+  {
+    "a": "map_estimation",
+    "b": "frank_wolfe",
+    "score": 0.523,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: parameter estimate \u2194 convex combination",
+      "'energy' role: negative log posterior \u2194 objective value",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Maximum a Posteriori (MAP) Estimation and Frank-Wolfe / Conditional Gradient share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variabl"
+  },
+  {
+    "a": "lagrange_duality",
+    "b": "mean_field_game",
+    "score": 0.522,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_minimization",
+      "fixed_point_iteration",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: primal dual variables \u2194 value and distribution",
+      "'energy' role: lagrangian value \u2194 social cost",
+      "'dynamics' role: primal dual dynamics \u2194 coupled pde system",
+      "'coupling' role: constraint jacobian \u2194 mean field interaction"
+    ],
+    "interpretation": "Lagrange Duality / KKT Conditions and Mean-Field Game share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, fixed_point_it"
+  },
+  {
+    "a": "calculus_of_variations",
+    "b": "black_scholes",
+    "score": 0.522,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "conservation_law",
+      "dual_variables",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: extremal function \u2194 option price",
+      "'energy' role: action functional \u2194 hedging error",
+      "'dynamics' role: euler lagrange flow \u2194 geometric brownian motion",
+      "'coupling' role: boundary conditions \u2194 volatility surface"
+    ],
+    "interpretation": "Calculus of Variations / Euler-Lagrange and Black-Scholes / Option Pricing share significant mathematical structure. The collision enables partial transfer of results, especially around conservation_l"
+  },
+  {
+    "a": "ito_calculus",
+    "b": "elasticity_theory",
+    "score": 0.522,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "conservation_law",
+      "structural_isomorphism",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: diffusion process \u2194 displacement field",
+      "'energy' role: quadratic variation \u2194 elastic potential energy",
+      "'dynamics' role: drift and diffusion \u2194 wave propagation",
+      "'coupling' role: correlation structure \u2194 stiffness tensor"
+    ],
+    "interpretation": "It\u00f4 Calculus / SDE Theory and Elasticity / Continuum Mechanics share significant mathematical structure. The collision enables partial transfer of results, especially around conservation_law, structur"
+  },
+  {
+    "a": "black_scholes",
+    "b": "elasticity_theory",
+    "score": 0.522,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "conservation_law",
+      "dual_variables",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: option price \u2194 displacement field",
+      "'energy' role: hedging error \u2194 elastic potential energy",
+      "'dynamics' role: geometric brownian motion \u2194 wave propagation",
+      "'coupling' role: volatility surface \u2194 stiffness tensor"
+    ],
+    "interpretation": "Black-Scholes / Option Pricing and Elasticity / Continuum Mechanics share significant mathematical structure. The collision enables partial transfer of results, especially around conservation_law, dua"
+  },
+  {
+    "a": "expectation_maximization",
+    "b": "bayesian_optimization",
+    "score": 0.521,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "optimal_inference",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: parameters and responsibilities \u2194 gp posterior",
+      "'energy' role: negative log likelihood \u2194 negative acquisition value",
+      "'information' role: expected complete log likelihood \u2194 posterior variance",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Expectation Maximization (EM) and Bayesian Optimization share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference, energy_minimi"
+  },
+  {
+    "a": "map_estimation",
+    "b": "bayesian_optimization",
+    "score": 0.521,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "optimal_inference",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: parameter estimate \u2194 gp posterior",
+      "'energy' role: negative log posterior \u2194 negative acquisition value",
+      "'information' role: posterior curvature \u2194 posterior variance",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Maximum a Posteriori (MAP) Estimation and Bayesian Optimization share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference, energ"
+  },
+  {
+    "a": "stein_variational",
+    "b": "active_inference",
+    "score": 0.521,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: particle positions \u2194 beliefs about hidden states",
+      "'energy' role: kl divergence \u2194 variational free energy",
+      "'dynamics' role: deterministic particle flow \u2194 belief updating",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Stein Variational Gradient Descent (SVGD) and Active Inference share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference, energy"
+  },
+  {
+    "a": "wasserstein_gradient_flow",
+    "b": "black_scholes",
+    "score": 0.52,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: probability density \u2194 option price",
+      "'energy' role: free energy functional \u2194 hedging error",
+      "'dynamics' role: continuity equation \u2194 geometric brownian motion",
+      "'coupling' role: interaction potential \u2194 volatility surface"
+    ],
+    "interpretation": "Wasserstein Gradient Flow and Black-Scholes / Option Pricing share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, energy_entro"
+  },
+  {
+    "a": "stein_variational",
+    "b": "frank_wolfe",
+    "score": 0.52,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: particle positions \u2194 convex combination",
+      "'energy' role: kl divergence \u2194 objective value",
+      "'dynamics' role: deterministic particle flow \u2194 conditional gradient step",
+      "'coupling' role: kernel gram matrix \u2194 constraint set geometry"
+    ],
+    "interpretation": "Stein Variational Gradient Descent (SVGD) and Frank-Wolfe / Conditional Gradient share significant mathematical structure. The collision enables partial transfer of results, especially around energy_m"
+  },
+  {
+    "a": "pac_learning",
+    "b": "large_deviations",
+    "score": 0.52,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "information_gain"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: hypothesis class \u2194 empirical measure",
+      "'information' role: sample complexity \u2194 kl divergence",
+      "'energy' role: generalization gap \u2194 rate function",
+      "'coupling' role: hypothesis complexity \u2194 tilted distribution"
+    ],
+    "interpretation": "PAC Learning / VC Theory and Large Deviations / Cram\u00e9r's Theorem share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, energy_m"
+  },
+  {
+    "a": "pac_learning",
+    "b": "error_correcting_codes",
+    "score": 0.52,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "information_gain",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: hypothesis class \u2194 codeword",
+      "'information' role: sample complexity \u2194 mutual information",
+      "'energy' role: generalization gap \u2194 decoding error probability",
+      "'coupling' role: hypothesis complexity \u2194 parity check matrix"
+    ],
+    "interpretation": "PAC Learning / VC Theory and Error-Correcting Codes / Shannon Capacity share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, in"
+  },
+  {
+    "a": "mean_field_game",
+    "b": "pareto_optimization",
+    "score": 0.52,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "competitive_dynamics",
+      "energy_minimization",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: value and distribution \u2194 solution set",
+      "'energy' role: social cost \u2194 scalarized objective",
+      "'dynamics' role: coupled pde system \u2194 front exploration",
+      "'coupling' role: mean field interaction \u2194 objective tradeoffs"
+    ],
+    "interpretation": "Mean-Field Game and Multi-Objective / Pareto Optimization share significant mathematical structure. The collision enables partial transfer of results, especially around competitive_dynamics, energy_mi"
+  },
+  {
+    "a": "concentration_inequalities",
+    "b": "differential_privacy",
+    "score": 0.52,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "information_gain"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: deviation probability \u2194 query mechanism",
+      "'information' role: sub gaussian parameter \u2194 privacy budget",
+      "'energy' role: rate exponent \u2194 utility loss",
+      "'coupling' role: bounded difference constants \u2194 sensitivity"
+    ],
+    "interpretation": "Concentration of Measure / Tail Bounds and Differential Privacy share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, energy_en"
+  },
+  {
+    "a": "markowitz_portfolio",
+    "b": "frank_wolfe",
+    "score": 0.52,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: portfolio weights \u2194 convex combination",
+      "'energy' role: portfolio variance \u2194 objective value",
+      "'dynamics' role: efficient frontier \u2194 conditional gradient step",
+      "'coupling' role: covariance matrix \u2194 constraint set geometry"
+    ],
+    "interpretation": "Markowitz Portfolio / Mean-Variance and Frank-Wolfe / Conditional Gradient share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables"
+  },
+  {
+    "a": "curry_howard",
+    "b": "sheaf_cohomology",
+    "score": 0.52,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "dual_variables",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: typing judgment \u2194 local sections",
+      "'energy' role: proof complexity \u2194 obstruction class",
+      "'dynamics' role: beta reduction \u2194 spectral sequence convergence",
+      "'coupling' role: type context \u2194 restriction maps"
+    ],
+    "interpretation": "Curry-Howard Correspondence / Type Theory and Sheaf Cohomology / Local-to-Global share significant mathematical structure. The collision enables partial transfer of results, especially around composit"
+  },
+  {
+    "a": "homotopy_type_theory",
+    "b": "topological_quantum_computing",
+    "score": 0.52,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: proof term \u2194 anyon configuration",
+      "'energy' role: type complexity \u2194 topological gap",
+      "'dynamics' role: normalization \u2194 braid compilation",
+      "'coupling' role: universe level \u2194 braiding statistics"
+    ],
+    "interpretation": "Homotopy Type Theory / Univalence and Topological Quantum Computing / Anyons share significant mathematical structure. The collision enables partial transfer of results, especially around compositiona"
+  },
+  {
+    "a": "maxwell_equations",
+    "b": "magnetohydrodynamics",
+    "score": 0.519,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "energy_minimization",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [
+      "lorentz_force"
+    ],
+    "bridges": [
+      "'state' role: electromagnetic field \u2194 velocity magnetic field",
+      "'energy' role: field energy density \u2194 total mhd energy",
+      "'dynamics' role: wave propagation \u2194 wave instability",
+      "'coupling' role: charge current source \u2194 magnetic reynolds number"
+    ],
+    "interpretation": "Maxwell's Equations / Electrodynamics and Magnetohydrodynamics (MHD) share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_struct"
+  },
+  {
+    "a": "bayesian_optimization",
+    "b": "multi_armed_bandit",
+    "score": 0.518,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "exploration_exploitation",
+      "information_gain",
+      "optimal_inference"
+    ],
+    "shared_operators": [
+      "posterior_update"
+    ],
+    "bridges": [
+      "'state' role: gp posterior \u2194 arm statistics",
+      "'energy' role: negative acquisition value \u2194 cumulative regret",
+      "'information' role: posterior variance \u2194 posterior uncertainty"
+    ],
+    "interpretation": "Bayesian Optimization and Multi-Armed Bandit / UCB share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference, energy_minimizatio"
+  },
+  {
+    "a": "stochastic_optimal_control",
+    "b": "world_model",
+    "score": 0.516,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_minimization",
+      "exploration_exploitation",
+      "gradient_descent"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "Both converge to a optimal",
+      "'state' role: stochastic state process \u2194 model parameters and policy",
+      "'energy' role: expected cost to go \u2194 model prediction error",
+      "'dynamics' role: controlled diffusion \u2194 learned transition"
+    ],
+    "interpretation": "Stochastic Optimal Control and World Models / Model-Based RL share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, explora"
+  },
+  {
+    "a": "expectation_maximization",
+    "b": "recursive_least_squares",
+    "score": 0.511,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "gradient_descent"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: parameters and responsibilities \u2194 parameter estimate and covariance",
+      "'energy' role: negative log likelihood \u2194 cumulative squared error",
+      "'information' role: expected complete log likelihood \u2194 estimation covariance",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Expectation Maximization (EM) and Recursive Least Squares / LMS share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference, energ"
+  },
+  {
+    "a": "bayesian_optimization",
+    "b": "stein_variational",
+    "score": 0.511,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient",
+      "kernel_evaluation"
+    ],
+    "bridges": [
+      "'state' role: gp posterior \u2194 particle positions",
+      "'energy' role: negative acquisition value \u2194 kl divergence",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Bayesian Optimization and Stein Variational Gradient Descent (SVGD) share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference, e"
+  },
+  {
+    "a": "wasserstein_gan",
+    "b": "linear_programming",
+    "score": 0.509,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: generator critic parameters \u2194 basic feasible solution",
+      "'energy' role: wasserstein distance \u2194 objective value",
+      "'dynamics' role: adversarial training \u2194 simplex path",
+      "'coupling' role: critic potential \u2194 constraint matrix"
+    ],
+    "interpretation": "Wasserstein GAN and Linear Programming / Simplex Method share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, energy_minimizati"
+  },
+  {
+    "a": "bayesian_optimization",
+    "b": "particle_filter",
+    "score": 0.509,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "exploration_exploitation",
+      "information_gain"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: gp posterior \u2194 weighted particle set",
+      "'energy' role: negative acquisition value \u2194 negative log likelihood",
+      "'information' role: posterior variance \u2194 effective sample size",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Bayesian Optimization and Particle Filter / Sequential Monte Carlo share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference, en"
+  },
+  {
+    "a": "bayesian_optimization",
+    "b": "kernel_density_estimation",
+    "score": 0.509,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: gp posterior \u2194 density estimate",
+      "'energy' role: negative acquisition value \u2194 integrated squared error",
+      "'information' role: posterior variance \u2194 bandwidth parameter",
+      "'coupling' role: kernel gram matrix \u2194 kernel function"
+    ],
+    "interpretation": "Bayesian Optimization and Kernel Density Estimation (KDE) share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, informatio"
+  },
+  {
+    "a": "stein_variational",
+    "b": "markowitz_portfolio",
+    "score": 0.509,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_minimization",
+      "pairwise_coupling",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: particle positions \u2194 portfolio weights",
+      "'energy' role: kl divergence \u2194 portfolio variance",
+      "'dynamics' role: deterministic particle flow \u2194 efficient frontier",
+      "'coupling' role: kernel gram matrix \u2194 covariance matrix"
+    ],
+    "interpretation": "Stein Variational Gradient Descent (SVGD) and Markowitz Portfolio / Mean-Variance share significant mathematical structure. The collision enables partial transfer of results, especially around energy_"
+  },
+  {
+    "a": "active_inference",
+    "b": "particle_filter",
+    "score": 0.509,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "exploration_exploitation",
+      "information_gain"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: beliefs about hidden states \u2194 weighted particle set",
+      "'energy' role: variational free energy \u2194 negative log likelihood",
+      "'dynamics' role: belief updating \u2194 sequential importance sampling",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Active Inference and Particle Filter / Sequential Monte Carlo share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference, energy_"
+  },
+  {
+    "a": "minimum_description_length",
+    "b": "large_deviations",
+    "score": 0.509,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: model and parameters \u2194 empirical measure",
+      "'energy' role: total codelength \u2194 rate function",
+      "'information' role: stochastic complexity \u2194 kl divergence",
+      "Same abstract structure: 'information theoretic bound'"
+    ],
+    "interpretation": "Minimum Description Length (MDL) and Large Deviations / Cram\u00e9r's Theorem share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, "
+  },
+  {
+    "a": "mean_field_game",
+    "b": "linear_programming",
+    "score": 0.509,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_minimization",
+      "fixed_point_iteration",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: value and distribution \u2194 basic feasible solution",
+      "'energy' role: social cost \u2194 objective value",
+      "'dynamics' role: coupled pde system \u2194 simplex path",
+      "'coupling' role: mean field interaction \u2194 constraint matrix"
+    ],
+    "interpretation": "Mean-Field Game and Linear Programming / Simplex Method share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, fixed_point_"
+  },
+  {
+    "a": "recursive_least_squares",
+    "b": "disentangled_representations",
+    "score": 0.509,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "gradient_descent",
+      "information_gain"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: parameter estimate and covariance \u2194 encoder decoder parameters",
+      "'energy' role: cumulative squared error \u2194 negative elbo",
+      "'information' role: estimation covariance \u2194 kl regularization",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Recursive Least Squares / LMS and Disentangled Representations / \u03b2-VAE share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference"
+  },
+  {
+    "a": "kernel_density_estimation",
+    "b": "disentangled_representations",
+    "score": 0.509,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: density estimate \u2194 encoder decoder parameters",
+      "'information' role: bandwidth parameter \u2194 kl regularization",
+      "'energy' role: integrated squared error \u2194 negative elbo",
+      "'coupling' role: kernel function \u2194 latent prior"
+    ],
+    "interpretation": "Kernel Density Estimation (KDE) and Disentangled Representations / \u03b2-VAE share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimizat"
+  },
+  {
+    "a": "active_inference",
+    "b": "disentangled_representations",
+    "score": 0.508,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: beliefs about hidden states \u2194 encoder decoder parameters",
+      "'energy' role: variational free energy \u2194 negative elbo",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Active Inference and Disentangled Representations / \u03b2-VAE share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference, energy_entr"
+  },
+  {
+    "a": "wasserstein_gan",
+    "b": "wasserstein_gradient_flow",
+    "score": 0.507,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient",
+      "wasserstein_distance"
+    ],
+    "bridges": [
+      "'state' role: generator critic parameters \u2194 probability density",
+      "'energy' role: wasserstein distance \u2194 free energy functional",
+      "'dynamics' role: adversarial training \u2194 continuity equation",
+      "'coupling' role: critic potential \u2194 interaction potential"
+    ],
+    "interpretation": "Wasserstein GAN and Wasserstein Gradient Flow share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, energy_minimization."
+  },
+  {
+    "a": "bayesian_optimization",
+    "b": "disentangled_representations",
+    "score": 0.507,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: gp posterior \u2194 encoder decoder parameters",
+      "'information' role: posterior variance \u2194 kl regularization",
+      "'energy' role: negative acquisition value \u2194 negative elbo",
+      "'coupling' role: kernel gram matrix \u2194 latent prior"
+    ],
+    "interpretation": "Bayesian Optimization and Disentangled Representations / \u03b2-VAE share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference, energy"
+  },
+  {
+    "a": "inverse_problem",
+    "b": "kernel_density_estimation",
+    "score": 0.506,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: regularized estimate \u2194 density estimate",
+      "'energy' role: regularized residual \u2194 integrated squared error",
+      "'information' role: noise level \u2194 bandwidth parameter",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Inverse Problem / Tikhonov Regularization and Kernel Density Estimation (KDE) share significant mathematical structure. The collision enables partial transfer of results, especially around energy_mini"
+  },
+  {
+    "a": "concentration_inequalities",
+    "b": "landauer_principle",
+    "score": 0.506,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "information_gain"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: deviation probability \u2194 computational state",
+      "'energy' role: rate exponent \u2194 dissipated work",
+      "'information' role: sub gaussian parameter \u2194 bits erased",
+      "Same abstract structure: 'information theoretic bound'"
+    ],
+    "interpretation": "Concentration of Measure / Tail Bounds and Landauer's Principle / Thermodynamic Computing share significant mathematical structure. The collision enables partial transfer of results, especially around"
+  },
+  {
+    "a": "markowitz_portfolio",
+    "b": "kernel_density_estimation",
+    "score": 0.506,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_minimization",
+      "pairwise_coupling",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: portfolio weights \u2194 density estimate",
+      "'energy' role: portfolio variance \u2194 integrated squared error",
+      "'coupling' role: covariance matrix \u2194 kernel function",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Markowitz Portfolio / Mean-Variance and Kernel Density Estimation (KDE) share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimizati"
+  },
+  {
+    "a": "mean_field_theory",
+    "b": "boltzmann_machine",
+    "score": 0.505,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_based",
+      "energy_entropy_tradeoff",
+      "mean_field",
+      "pairwise_coupling",
+      "phase_transition"
+    ],
+    "shared_operators": [
+      "expectation",
+      "pairwise_interaction",
+      "partition_function"
+    ],
+    "bridges": [
+      "'state' role: order parameter \u2194 visible hidden configuration",
+      "'energy' role: free energy functional \u2194 energy function",
+      "'coupling' role: interaction strength \u2194 weight matrix"
+    ],
+    "interpretation": "Mean Field Theory and Boltzmann Machine share significant mathematical structure. The collision enables partial transfer of results, especially around energy_based, energy_entropy_tradeoff."
+  },
+  {
+    "a": "wasserstein_gan",
+    "b": "domain_adaptation",
+    "score": 0.503,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "competitive_dynamics",
+      "dual_variables",
+      "energy_minimization",
+      "gradient_descent"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: generator critic parameters \u2194 feature extractor",
+      "'energy' role: wasserstein distance \u2194 domain divergence",
+      "'dynamics' role: adversarial training \u2194 adversarial alignment",
+      "'coupling' role: critic potential \u2194 importance weights"
+    ],
+    "interpretation": "Wasserstein GAN and Domain Adaptation / Distribution Shift share significant mathematical structure. The collision enables partial transfer of results, especially around competitive_dynamics, dual_var"
+  },
+  {
+    "a": "contrastive_learning",
+    "b": "knowledge_distillation",
+    "score": 0.501,
+    "collision_strength": "deep",
+    "shared_patterns": [
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "gradient_descent",
+      "information_gain",
+      "pairwise_coupling"
+    ],
+    "shared_operators": [
+      "gradient",
+      "temperature_scaling"
+    ],
+    "bridges": [
+      "'state' role: encoder parameters \u2194 student parameters",
+      "'energy' role: contrastive loss \u2194 distillation loss",
+      "'coupling' role: similarity matrix \u2194 teacher soft labels",
+      "'temperature' role: softmax temperature \u2194 distillation temperature"
+    ],
+    "interpretation": "Contrastive Learning / NCE and Knowledge Distillation share significant mathematical structure. The collision enables partial transfer of results, especially around energy_entropy_tradeoff, energy_min"
+  },
+  {
+    "a": "navier_stokes",
+    "b": "heat_equation",
+    "score": 0.5,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "conservation_law",
+      "energy_entropy_tradeoff",
+      "energy_minimization"
+    ],
+    "shared_operators": [
+      "laplacian"
+    ],
+    "bridges": [
+      "'state' role: velocity field \u2194 temperature field",
+      "'energy' role: kinetic energy \u2194 thermal energy",
+      "'dynamics' role: momentum equation \u2194 diffusive transport",
+      "'dissipation' role: viscous dissipation \u2194 entropy production"
+    ],
+    "interpretation": "Navier-Stokes Equations and Heat Equation / Diffusion PDE share significant mathematical structure. The collision enables partial transfer of results, especially around conservation_law, energy_entrop"
+  },
+  {
+    "a": "ising_model",
+    "b": "reaction_diffusion",
+    "score": 0.499,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "critical_phenomena",
+      "mean_field",
+      "order_parameter",
+      "pairwise_coupling",
+      "phase_transition",
+      "spontaneous_symmetry_breaking"
+    ],
+    "shared_operators": [
+      "pairwise_interaction"
+    ],
+    "bridges": [
+      "'state' role: spin configuration \u2194 concentration field",
+      "'field' role: external bias \u2194 chemical potential",
+      "'coupling' role: interaction strength \u2194 diffusion ratio",
+      "'score' role: hamiltonian energy \u2194 pattern wavelength"
+    ],
+    "interpretation": "Ising Model and Turing Reaction-Diffusion share significant mathematical structure. The collision enables partial transfer of results, especially around critical_phenomena, mean_field."
+  },
+  {
+    "a": "maximum_likelihood",
+    "b": "empirical_risk_minimization",
+    "score": 0.499,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "gradient_descent",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: parameter estimate \u2194 hypothesis",
+      "'energy' role: negative log likelihood \u2194 empirical risk",
+      "'information' role: fisher information \u2194 generalization gap",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Maximum Likelihood Estimation and Empirical Risk Minimization (ERM) share significant mathematical structure. The collision enables partial transfer of results, especially around gradient_descent, inf"
+  },
+  {
+    "a": "constraint_satisfaction",
+    "b": "sat_solving",
+    "score": 0.499,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "exploration_exploitation",
+      "fixed_point_iteration"
+    ],
+    "shared_operators": [
+      "backtracking",
+      "unit_propagation"
+    ],
+    "bridges": [
+      "'state' role: variable assignment \u2194 partial assignment",
+      "'energy' role: number of violated constraints \u2194 number of unsatisfied clauses",
+      "'dynamics' role: search trajectory \u2194 search tree traversal",
+      "'coupling' role: clause structure \u2194 clause variable graph"
+    ],
+    "interpretation": "Constraint Satisfaction / SAT and Boolean Satisfiability / SAT Solving share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimizatio"
+  },
+  {
+    "a": "wasserstein_gan",
+    "b": "mean_field_game",
+    "score": 0.499,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "competitive_dynamics",
+      "energy_minimization",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: generator critic parameters \u2194 value and distribution",
+      "'energy' role: wasserstein distance \u2194 social cost",
+      "'dynamics' role: adversarial training \u2194 coupled pde system",
+      "'coupling' role: critic potential \u2194 mean field interaction"
+    ],
+    "interpretation": "Wasserstein GAN and Mean-Field Game share significant mathematical structure. The collision enables partial transfer of results, especially around competitive_dynamics, energy_minimization."
+  },
+  {
+    "a": "wasserstein_gradient_flow",
+    "b": "neural_ode",
+    "score": 0.499,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: probability density \u2194 hidden trajectory",
+      "'energy' role: free energy functional \u2194 terminal loss",
+      "'dynamics' role: continuity equation \u2194 learned vector field",
+      "Same abstract structure: 'dynamical system on manifold'"
+    ],
+    "interpretation": "Wasserstein Gradient Flow and Neural ODE share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, gradient_descent."
+  },
+  {
+    "a": "boosting",
+    "b": "frank_wolfe",
+    "score": 0.499,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: ensemble function \u2194 convex combination",
+      "'energy' role: empirical loss \u2194 objective value",
+      "'dynamics' role: residual fitting \u2194 conditional gradient step",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Gradient Boosting / AdaBoost and Frank-Wolfe / Conditional Gradient share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, "
+  },
+  {
+    "a": "online_convex_optimization",
+    "b": "proximal_methods",
+    "score": 0.499,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "gradient_descent"
+    ],
+    "shared_operators": [
+      "projection"
+    ],
+    "bridges": [
+      "'state' role: online iterate \u2194 primal dual split variables",
+      "'energy' role: cumulative regret \u2194 composite objective",
+      "'dynamics' role: adversarial loss sequence \u2194 splitting iteration",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Online Convex Optimization / Regret and Proximal Methods / ADMM share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, energy_mi"
+  },
+  {
+    "a": "score_matching",
+    "b": "robust_estimation",
+    "score": 0.499,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: score network parameters \u2194 parameter estimate",
+      "'energy' role: score matching loss \u2194 robust objective",
+      "'dynamics' role: score field \u2194 irls iteration",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Score Matching / Score Function and Robust Estimation / M-Estimators share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization,"
+  },
+  {
+    "a": "optimal_stopping",
+    "b": "traveling_salesman",
+    "score": 0.498,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "exploration_exploitation",
+      "fixed_point_iteration"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "Both converge to a optimal",
+      "'state' role: continuation value \u2194 tour permutation",
+      "'energy' role: negative expected payoff \u2194 tour length",
+      "'dynamics' role: stochastic process \u2194 local improvement moves"
+    ],
+    "interpretation": "Optimal Stopping / Secretary Problem and Traveling Salesman / Combinatorial Optimization share significant mathematical structure. The collision enables partial transfer of results, especially around "
+  },
+  {
+    "a": "wavelet_theory",
+    "b": "quantum_error_correction",
+    "score": 0.495,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "compositional_structure",
+      "energy_minimization",
+      "information_gain",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: wavelet coefficients \u2194 code space",
+      "'energy' role: signal energy \u2194 logical error rate",
+      "Same abstract structure: 'renormalization hierarchy'"
+    ],
+    "interpretation": "Wavelet Theory / Multiresolution and Quantum Error Correction share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_structure, en"
+  },
+  {
+    "a": "boosting",
+    "b": "online_convex_optimization",
+    "score": 0.493,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient",
+      "regularizer"
+    ],
+    "bridges": [
+      "'prior' role: learning rate shrinkage \u2194 regularization function",
+      "'state' role: ensemble function \u2194 online iterate",
+      "'energy' role: empirical loss \u2194 cumulative regret",
+      "'dynamics' role: residual fitting \u2194 adversarial loss sequence"
+    ],
+    "interpretation": "Gradient Boosting / AdaBoost and Online Convex Optimization / Regret share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization,"
+  },
+  {
+    "a": "maximum_likelihood",
+    "b": "bayesian_optimization",
+    "score": 0.492,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "information_gain",
+      "optimal_inference",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: parameter estimate \u2194 gp posterior",
+      "'energy' role: negative log likelihood \u2194 negative acquisition value",
+      "'information' role: fisher information \u2194 posterior variance",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Maximum Likelihood Estimation and Bayesian Optimization share significant mathematical structure. The collision enables partial transfer of results, especially around information_gain, optimal_inferen"
+  },
+  {
+    "a": "active_inference",
+    "b": "boosting",
+    "score": 0.492,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: beliefs about hidden states \u2194 ensemble function",
+      "'energy' role: variational free energy \u2194 empirical loss",
+      "'dynamics' role: belief updating \u2194 residual fitting",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Active Inference and Gradient Boosting / AdaBoost share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, information_gain."
+  },
+  {
+    "a": "active_inference",
+    "b": "online_convex_optimization",
+    "score": 0.492,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "exploration_exploitation",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: beliefs about hidden states \u2194 online iterate",
+      "'energy' role: variational free energy \u2194 cumulative regret",
+      "'dynamics' role: belief updating \u2194 adversarial loss sequence",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Active Inference and Online Convex Optimization / Regret share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, exploration"
+  },
+  {
+    "a": "active_inference",
+    "b": "score_matching",
+    "score": 0.492,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: beliefs about hidden states \u2194 score network parameters",
+      "'energy' role: variational free energy \u2194 score matching loss",
+      "'dynamics' role: belief updating \u2194 score field",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Active Inference and Score Matching / Score Function share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, information_gai"
+  },
+  {
+    "a": "map_estimation",
+    "b": "stein_variational",
+    "score": 0.491,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: parameter estimate \u2194 particle positions",
+      "'energy' role: negative log posterior \u2194 kl divergence",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Maximum a Posteriori (MAP) Estimation and Stein Variational Gradient Descent (SVGD) share significant mathematical structure. The collision enables partial transfer of results, especially around bayes"
+  },
+  {
+    "a": "td_learning",
+    "b": "stochastic_optimal_control",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "exploration_exploitation",
+      "gradient_descent"
+    ],
+    "shared_operators": [
+      "bellman_operator"
+    ],
+    "bridges": [
+      "'state' role: value function estimate \u2194 stochastic state process",
+      "'energy' role: mean squared td error \u2194 expected cost to go",
+      "'dynamics' role: value iteration dynamics \u2194 controlled diffusion",
+      "Same abstract structure: 'bellman recursion'"
+    ],
+    "interpretation": "Temporal Difference Learning and Stochastic Optimal Control share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, explorat"
+  },
+  {
+    "a": "normalizing_flows",
+    "b": "robust_estimation",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: flow parameters \u2194 parameter estimate",
+      "'energy' role: negative log likelihood \u2194 robust objective",
+      "'dynamics' role: invertible transformation \u2194 irls iteration",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Normalizing Flows and Robust Estimation / M-Estimators share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, gradient_desc"
+  },
+  {
+    "a": "normalizing_flows",
+    "b": "frank_wolfe",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: flow parameters \u2194 convex combination",
+      "'energy' role: negative log likelihood \u2194 objective value",
+      "'dynamics' role: invertible transformation \u2194 conditional gradient step",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Normalizing Flows and Frank-Wolfe / Conditional Gradient share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, gradient_de"
+  },
+  {
+    "a": "bayesian_optimization",
+    "b": "empirical_risk_minimization",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: gp posterior \u2194 hypothesis",
+      "'energy' role: negative acquisition value \u2194 empirical risk",
+      "'information' role: posterior variance \u2194 generalization gap",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Bayesian Optimization and Empirical Risk Minimization (ERM) share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, informat"
+  },
+  {
+    "a": "bayesian_optimization",
+    "b": "score_matching",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: gp posterior \u2194 score network parameters",
+      "'energy' role: negative acquisition value \u2194 score matching loss",
+      "'coupling' role: kernel gram matrix \u2194 noise schedule",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Bayesian Optimization and Score Matching / Score Function share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, informatio"
+  },
+  {
+    "a": "stein_variational",
+    "b": "robust_estimation",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: particle positions \u2194 parameter estimate",
+      "'energy' role: kl divergence \u2194 robust objective",
+      "'dynamics' role: deterministic particle flow \u2194 irls iteration",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Stein Variational Gradient Descent (SVGD) and Robust Estimation / M-Estimators share significant mathematical structure. The collision enables partial transfer of results, especially around energy_min"
+  },
+  {
+    "a": "markov_decision_process",
+    "b": "shortest_path",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "compositional_structure",
+      "energy_minimization",
+      "fixed_point_iteration"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: value function \u2194 distance labels",
+      "'energy' role: negative expected return \u2194 total path cost",
+      "'dynamics' role: transition probabilities \u2194 relaxation order",
+      "Same abstract structure: 'bellman recursion'"
+    ],
+    "interpretation": "Markov Decision Process (MDP) and Shortest Path / Dijkstra-Bellman-Ford share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_str"
+  },
+  {
+    "a": "matrix_factorization",
+    "b": "shapley_value",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "compositional_structure",
+      "dual_variables",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: factor matrices \u2194 allocation vector",
+      "'energy' role: reconstruction error \u2194 deviation from core",
+      "'coupling' role: factor product \u2194 coalition function",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Matrix Factorization / NMF and Shapley Value / Cooperative Games share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_structure,"
+  },
+  {
+    "a": "online_convex_optimization",
+    "b": "markowitz_portfolio",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: online iterate \u2194 portfolio weights",
+      "'energy' role: cumulative regret \u2194 portfolio variance",
+      "'dynamics' role: adversarial loss sequence \u2194 efficient frontier",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Online Convex Optimization / Regret and Markowitz Portfolio / Mean-Variance share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variable"
+  },
+  {
+    "a": "large_deviations",
+    "b": "landauer_principle",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "information_gain"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: empirical measure \u2194 computational state",
+      "'energy' role: rate function \u2194 dissipated work",
+      "'information' role: kl divergence \u2194 bits erased",
+      "Same abstract structure: 'information theoretic bound'"
+    ],
+    "interpretation": "Large Deviations / Cram\u00e9r's Theorem and Landauer's Principle / Thermodynamic Computing share significant mathematical structure. The collision enables partial transfer of results, especially around du"
+  },
+  {
+    "a": "inverse_problem",
+    "b": "robust_estimation",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'prior' role: regularization penalty \u2194 loss function shape",
+      "'state' role: regularized estimate \u2194 parameter estimate",
+      "'energy' role: regularized residual \u2194 robust objective",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Inverse Problem / Tikhonov Regularization and Robust Estimation / M-Estimators share significant mathematical structure. The collision enables partial transfer of results, especially around dual_varia"
+  },
+  {
+    "a": "robbins_monro",
+    "b": "robust_estimation",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "fixed_point_iteration",
+      "gradient_descent"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: stochastic iterate \u2194 parameter estimate",
+      "'energy' role: distance to root \u2194 robust objective",
+      "'dynamics' role: mean ode \u2194 irls iteration",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Robbins-Monro / Stochastic Approximation and Robust Estimation / M-Estimators share significant mathematical structure. The collision enables partial transfer of results, especially around energy_mini"
+  },
+  {
+    "a": "robbins_monro",
+    "b": "recursive_least_squares",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "fixed_point_iteration",
+      "gradient_descent"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: stochastic iterate \u2194 parameter estimate and covariance",
+      "'energy' role: distance to root \u2194 cumulative squared error",
+      "'dynamics' role: mean ode \u2194 recursive update",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Robbins-Monro / Stochastic Approximation and Recursive Least Squares / LMS share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimiz"
+  },
+  {
+    "a": "operator_semigroup",
+    "b": "maxwell_equations",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: semigroup element \u2194 electromagnetic field",
+      "'energy' role: spectral bound \u2194 field energy density",
+      "'dynamics' role: abstract cauchy problem \u2194 wave propagation",
+      "Same abstract structure: 'dynamical system on manifold'"
+    ],
+    "interpretation": "Operator Semigroups / Hille-Yosida and Maxwell's Equations / Electrodynamics share significant mathematical structure. The collision enables partial transfer of results, especially around compositiona"
+  },
+  {
+    "a": "operator_semigroup",
+    "b": "magnetohydrodynamics",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: semigroup element \u2194 velocity magnetic field",
+      "'energy' role: spectral bound \u2194 total mhd energy",
+      "'dynamics' role: abstract cauchy problem \u2194 wave instability",
+      "Same abstract structure: 'dynamical system on manifold'"
+    ],
+    "interpretation": "Operator Semigroups / Hille-Yosida and Magnetohydrodynamics (MHD) share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_structure"
+  },
+  {
+    "a": "topological_data_analysis",
+    "b": "quantum_error_correction",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "compositional_structure",
+      "information_gain",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: persistence diagram \u2194 code space",
+      "'energy' role: total persistence \u2194 logical error rate",
+      "'coupling' role: simplicial complex \u2194 stabilizer group",
+      "Same abstract structure: 'renormalization hierarchy'"
+    ],
+    "interpretation": "Topological Data Analysis (TDA) and Quantum Error Correction share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_structure, inf"
+  },
+  {
+    "a": "martingale_theory",
+    "b": "error_correcting_codes",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "dual_variables",
+      "fixed_point_iteration",
+      "information_gain"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: adapted process \u2194 codeword",
+      "'energy' role: expected value \u2194 decoding error probability",
+      "'information' role: filtration \u2194 mutual information",
+      "Same abstract structure: 'information theoretic bound'"
+    ],
+    "interpretation": "Martingale Theory / Optional Stopping and Error-Correcting Codes / Shannon Capacity share significant mathematical structure. The collision enables partial transfer of results, especially around dual_"
+  },
+  {
+    "a": "martingale_theory",
+    "b": "differential_privacy",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "conservation_law",
+      "dual_variables",
+      "information_gain"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: adapted process \u2194 query mechanism",
+      "'energy' role: expected value \u2194 utility loss",
+      "'information' role: filtration \u2194 privacy budget",
+      "Same abstract structure: 'information theoretic bound'"
+    ],
+    "interpretation": "Martingale Theory / Optional Stopping and Differential Privacy share significant mathematical structure. The collision enables partial transfer of results, especially around conservation_law, dual_var"
+  },
+  {
+    "a": "optimal_design",
+    "b": "markowitz_portfolio",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: design measure \u2194 portfolio weights",
+      "'energy' role: negative information \u2194 portfolio variance",
+      "'coupling' role: regression functions \u2194 covariance matrix",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Optimal Experiment Design and Markowitz Portfolio / Mean-Variance share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, energy_"
+  },
+  {
+    "a": "empirical_risk_minimization",
+    "b": "kernel_density_estimation",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: hypothesis \u2194 density estimate",
+      "'energy' role: empirical risk \u2194 integrated squared error",
+      "'information' role: generalization gap \u2194 bandwidth parameter",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Empirical Risk Minimization (ERM) and Kernel Density Estimation (KDE) share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization"
+  },
+  {
+    "a": "fourier_analysis",
+    "b": "maxwell_equations",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "dual_variables",
+      "energy_minimization",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: spectral coefficients \u2194 electromagnetic field",
+      "'energy' role: signal energy \u2194 field energy density",
+      "'coupling' role: convolution kernel \u2194 charge current source"
+    ],
+    "interpretation": "Fourier Analysis / Spectral Decomposition and Maxwell's Equations / Electrodynamics share significant mathematical structure. The collision enables partial transfer of results, especially around compo"
+  },
+  {
+    "a": "markowitz_portfolio",
+    "b": "robust_estimation",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: portfolio weights \u2194 parameter estimate",
+      "'energy' role: portfolio variance \u2194 robust objective",
+      "'dynamics' role: efficient frontier \u2194 irls iteration",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Markowitz Portfolio / Mean-Variance and Robust Estimation / M-Estimators share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, "
+  },
+  {
+    "a": "curry_howard",
+    "b": "quantum_error_correction",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: typing judgment \u2194 code space",
+      "'energy' role: proof complexity \u2194 logical error rate",
+      "'coupling' role: type context \u2194 stabilizer group",
+      "Same abstract structure: 'renormalization hierarchy'"
+    ],
+    "interpretation": "Curry-Howard Correspondence / Type Theory and Quantum Error Correction share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_stru"
+  },
+  {
+    "a": "wave_equation",
+    "b": "spectral_methods",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "compositional_structure",
+      "energy_minimization",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: displacement field \u2194 spectral coefficients",
+      "'energy' role: total wave energy \u2194 residual norm",
+      "'dynamics' role: propagation \u2194 coefficient evolution",
+      "Same abstract structure: 'hilbert space optimization'"
+    ],
+    "interpretation": "Wave Equation / d'Alembert and Spectral Methods / Chebyshev-Galerkin share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_struct"
+  },
+  {
+    "a": "score_matching",
+    "b": "kernel_density_estimation",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: score network parameters \u2194 density estimate",
+      "'energy' role: score matching loss \u2194 integrated squared error",
+      "'coupling' role: noise schedule \u2194 kernel function",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Score Matching / Score Function and Kernel Density Estimation (KDE) share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, "
+  },
+  {
+    "a": "knowledge_distillation",
+    "b": "kernel_density_estimation",
+    "score": 0.49,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "information_gain",
+      "pairwise_coupling"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: student parameters \u2194 density estimate",
+      "'energy' role: distillation loss \u2194 integrated squared error",
+      "'coupling' role: teacher soft labels \u2194 kernel function",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Knowledge Distillation and Kernel Density Estimation (KDE) share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, informati"
+  },
+  {
+    "a": "boosting",
+    "b": "score_matching",
+    "score": 0.489,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "gradient_descent",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: ensemble function \u2194 score network parameters",
+      "'energy' role: empirical loss \u2194 score matching loss",
+      "'dynamics' role: residual fitting \u2194 score field",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Gradient Boosting / AdaBoost and Score Matching / Score Function share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, gra"
+  },
+  {
+    "a": "fokker_planck",
+    "b": "boltzmann_machine",
+    "score": 0.488,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_based",
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "mean_field"
+    ],
+    "shared_operators": [
+      "gradient",
+      "partition_function"
+    ],
+    "bridges": [
+      "'state' role: probability density \u2194 visible hidden configuration",
+      "'energy' role: potential function \u2194 energy function",
+      "'temperature' role: noise intensity \u2194 inverse beta",
+      "Both conserve 'total probability'"
+    ],
+    "interpretation": "Fokker-Planck / Langevin Dynamics and Boltzmann Machine share significant mathematical structure. The collision enables partial transfer of results, especially around energy_based, energy_entropy_trad"
+  },
+  {
+    "a": "max_flow_min_cut",
+    "b": "maxwell_equations",
+    "score": 0.488,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "dual_variables",
+      "energy_minimization"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: flow assignment \u2194 electromagnetic field",
+      "'energy' role: negative total flow \u2194 field energy density",
+      "'dynamics' role: augmentation sequence \u2194 wave propagation",
+      "'coupling' role: capacity graph \u2194 charge current source"
+    ],
+    "interpretation": "Max Flow / Min Cut and Maxwell's Equations / Electrodynamics share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_structure, con"
+  },
+  {
+    "a": "curry_howard",
+    "b": "maxwell_equations",
+    "score": 0.488,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "dual_variables",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: typing judgment \u2194 electromagnetic field",
+      "'energy' role: proof complexity \u2194 field energy density",
+      "'dynamics' role: beta reduction \u2194 wave propagation",
+      "'coupling' role: type context \u2194 charge current source"
+    ],
+    "interpretation": "Curry-Howard Correspondence / Type Theory and Maxwell's Equations / Electrodynamics share significant mathematical structure. The collision enables partial transfer of results, especially around compo"
+  },
+  {
+    "a": "maxwell_equations",
+    "b": "sheaf_cohomology",
+    "score": 0.488,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "dual_variables",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: electromagnetic field \u2194 local sections",
+      "'energy' role: field energy density \u2194 obstruction class",
+      "'dynamics' role: wave propagation \u2194 spectral sequence convergence",
+      "'coupling' role: charge current source \u2194 restriction maps"
+    ],
+    "interpretation": "Maxwell's Equations / Electrodynamics and Sheaf Cohomology / Local-to-Global share significant mathematical structure. The collision enables partial transfer of results, especially around compositiona"
+  },
+  {
+    "a": "topological_quantum_computing",
+    "b": "social_choice",
+    "score": 0.488,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "structural_isomorphism",
+      "symmetry_breaking"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: anyon configuration \u2194 preference profile",
+      "'energy' role: topological gap \u2194 social welfare",
+      "'dynamics' role: braid compilation \u2194 strategic manipulation",
+      "'coupling' role: braiding statistics \u2194 voting rule"
+    ],
+    "interpretation": "Topological Quantum Computing / Anyons and Social Choice / Arrow's Theorem share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_"
+  },
+  {
+    "a": "stochastic_optimal_control",
+    "b": "mcts",
+    "score": 0.486,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "exploration_exploitation",
+      "gradient_descent"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "Both converge to a optimal",
+      "'state' role: stochastic state process \u2194 tree statistics",
+      "'energy' role: expected cost to go \u2194 negative expected return",
+      "'dynamics' role: controlled diffusion \u2194 tree traversal policy"
+    ],
+    "interpretation": "Stochastic Optimal Control and Monte Carlo Tree Search (MCTS) share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, explor"
+  },
+  {
+    "a": "wasserstein_gradient_flow",
+    "b": "elasticity_theory",
+    "score": 0.485,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: probability density \u2194 displacement field",
+      "'energy' role: free energy functional \u2194 elastic potential energy",
+      "'dynamics' role: continuity equation \u2194 wave propagation",
+      "'coupling' role: interaction potential \u2194 stiffness tensor"
+    ],
+    "interpretation": "Wasserstein Gradient Flow and Elasticity / Continuum Mechanics share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, energy_min"
+  },
+  {
+    "a": "large_deviations",
+    "b": "differential_privacy",
+    "score": 0.485,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "information_gain"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: empirical measure \u2194 query mechanism",
+      "'information' role: kl divergence \u2194 privacy budget",
+      "'energy' role: rate function \u2194 utility loss",
+      "'coupling' role: tilted distribution \u2194 sensitivity"
+    ],
+    "interpretation": "Large Deviations / Cram\u00e9r's Theorem and Differential Privacy share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, energy_entro"
+  },
+  {
+    "a": "proximal_methods",
+    "b": "hidden_markov_model",
+    "score": 0.485,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "compositional_structure",
+      "energy_minimization",
+      "fixed_point_iteration"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: primal dual split variables \u2194 latent state sequence",
+      "'energy' role: composite objective \u2194 negative log likelihood",
+      "'dynamics' role: splitting iteration \u2194 transition probabilities",
+      "'coupling' role: consensus constraint \u2194 emission probabilities"
+    ],
+    "interpretation": "Proximal Methods / ADMM and Hidden Markov Model (HMM) share significant mathematical structure. The collision enables partial transfer of results, especially around compositional_structure, energy_min"
+  },
+  {
+    "a": "preferential_attachment",
+    "b": "wright_fisher",
+    "score": 0.485,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "mean_field",
+      "population_dynamics",
+      "symmetry_breaking"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: degree sequence \u2194 allele frequencies",
+      "'energy' role: network entropy \u2194 negative fitness",
+      "'dynamics' role: preferential growth \u2194 selection drift balance",
+      "'coupling' role: attachment kernel \u2194 population size"
+    ],
+    "interpretation": "Preferential Attachment / Scale-Free Networks and Wright-Fisher / Population Genetics share significant mathematical structure. The collision enables partial transfer of results, especially around mea"
+  },
+  {
+    "a": "calculus_of_variations",
+    "b": "magnetohydrodynamics",
+    "score": 0.485,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "conservation_law",
+      "energy_minimization",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: extremal function \u2194 velocity magnetic field",
+      "'energy' role: action functional \u2194 total mhd energy",
+      "'dynamics' role: euler lagrange flow \u2194 wave instability",
+      "'coupling' role: boundary conditions \u2194 magnetic reynolds number"
+    ],
+    "interpretation": "Calculus of Variations / Euler-Lagrange and Magnetohydrodynamics (MHD) share significant mathematical structure. The collision enables partial transfer of results, especially around conservation_law, "
+  },
+  {
+    "a": "particle_filter",
+    "b": "recursive_least_squares",
+    "score": 0.485,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "information_gain"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: weighted particle set \u2194 parameter estimate and covariance",
+      "'energy' role: negative log likelihood \u2194 cumulative squared error",
+      "'dynamics' role: sequential importance sampling \u2194 recursive update",
+      "'information' role: effective sample size \u2194 estimation covariance"
+    ],
+    "interpretation": "Particle Filter / Sequential Monte Carlo and Recursive Least Squares / LMS share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_infer"
+  },
+  {
+    "a": "optimal_design",
+    "b": "relevance_vector_machine",
+    "score": 0.485,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "information_gain"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: design measure \u2194 hyperparameters and weights",
+      "'information' role: fisher information matrix \u2194 model complexity",
+      "'energy' role: negative information \u2194 negative log evidence",
+      "'coupling' role: regression functions \u2194 basis functions"
+    ],
+    "interpretation": "Optimal Experiment Design and Relevance Vector Machine / Sparse Bayes share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference,"
+  },
+  {
+    "a": "replicator_dynamics",
+    "b": "price_equation",
+    "score": 0.484,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "above_average_grows",
+      "conservation_of_probability",
+      "frequency_dependent",
+      "mean_field",
+      "selection"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "Both optimize 'maximize mean fitness'",
+      "'state' role: strategy frequency \u2194 trait frequency",
+      "Both conserve 'total probability'"
+    ],
+    "interpretation": "Replicator Dynamics (EGT) and Price Equation (Multilevel Selection) share significant mathematical structure. The collision enables partial transfer of results, especially around above_average_grows, "
+  },
+  {
+    "a": "simulated_annealing",
+    "b": "sgd_as_langevin",
+    "score": 0.484,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_based",
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "exploration_exploitation",
+      "gradient_descent",
+      "phase_transition"
+    ],
+    "shared_operators": [
+      "sampling"
+    ],
+    "bridges": [
+      "'state' role: configuration \u2194 parameter vector",
+      "'energy' role: cost function \u2194 loss function",
+      "'dynamics' role: random perturbation \u2194 gradient plus noise",
+      "'temperature' role: annealing schedule \u2194 learning rate times noise"
+    ],
+    "interpretation": "Simulated Annealing and SGD as Langevin Dynamics share significant mathematical structure. The collision enables partial transfer of results, especially around energy_based, energy_entropy_tradeoff."
+  },
+  {
+    "a": "lagrange_duality",
+    "b": "frank_wolfe",
+    "score": 0.484,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: primal dual variables \u2194 convex combination",
+      "'energy' role: lagrangian value \u2194 objective value",
+      "'dynamics' role: primal dual dynamics \u2194 conditional gradient step",
+      "'coupling' role: constraint jacobian \u2194 constraint set geometry"
+    ],
+    "interpretation": "Lagrange Duality / KKT Conditions and Frank-Wolfe / Conditional Gradient share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, "
+  },
+  {
+    "a": "stein_variational",
+    "b": "kernel_density_estimation",
+    "score": 0.48,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "pairwise_coupling",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: particle positions \u2194 density estimate",
+      "'energy' role: kl divergence \u2194 integrated squared error",
+      "'coupling' role: kernel gram matrix \u2194 kernel function",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Stein Variational Gradient Descent (SVGD) and Kernel Density Estimation (KDE) share significant mathematical structure. The collision enables partial transfer of results, especially around energy_mini"
+  },
+  {
+    "a": "contraction_mapping",
+    "b": "robbins_monro",
+    "score": 0.48,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "convergence_guarantee",
+      "energy_minimization",
+      "fixed_point_iteration"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: iterate \u2194 stochastic iterate",
+      "'energy' role: distance to fixed point \u2194 distance to root",
+      "'dynamics' role: contraction operator \u2194 mean ode",
+      "'rate' role: contraction coefficient \u2194 step size decay"
+    ],
+    "interpretation": "Contraction Mapping / Banach Fixed Point and Robbins-Monro / Stochastic Approximation share significant mathematical structure. The collision enables partial transfer of results, especially around con"
+  },
+  {
+    "a": "minimum_description_length",
+    "b": "concentration_inequalities",
+    "score": 0.48,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "dual_variables",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: model and parameters \u2194 deviation probability",
+      "'energy' role: total codelength \u2194 rate exponent",
+      "'information' role: stochastic complexity \u2194 sub gaussian parameter",
+      "Same abstract structure: 'information theoretic bound'"
+    ],
+    "interpretation": "Minimum Description Length (MDL) and Concentration of Measure / Tail Bounds share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variable"
+  },
+  {
+    "a": "linear_programming",
+    "b": "pareto_optimization",
+    "score": 0.48,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "Both converge to a optimal",
+      "'state' role: basic feasible solution \u2194 solution set",
+      "'energy' role: objective value \u2194 scalarized objective",
+      "'dynamics' role: simplex path \u2194 front exploration"
+    ],
+    "interpretation": "Linear Programming / Simplex Method and Multi-Objective / Pareto Optimization share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variab"
+  },
+  {
+    "a": "optimal_design",
+    "b": "kernel_density_estimation",
+    "score": 0.48,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "Both converge to a optimal",
+      "'state' role: design measure \u2194 density estimate",
+      "'energy' role: negative information \u2194 integrated squared error",
+      "'information' role: fisher information matrix \u2194 bandwidth parameter"
+    ],
+    "interpretation": "Optimal Experiment Design and Kernel Density Estimation (KDE) share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, inform"
+  },
+  {
+    "a": "expectation_maximization",
+    "b": "normalizing_flows",
+    "score": 0.479,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "Both optimize 'maximize log likelihood'",
+      "'state' role: parameters and responsibilities \u2194 flow parameters",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Expectation Maximization (EM) and Normalizing Flows share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, gradient_descent"
+  },
+  {
+    "a": "bayesian_optimization",
+    "b": "inverse_problem",
+    "score": 0.479,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: gp posterior \u2194 regularized estimate",
+      "'energy' role: negative acquisition value \u2194 regularized residual",
+      "'information' role: posterior variance \u2194 noise level",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Bayesian Optimization and Inverse Problem / Tikhonov Regularization share significant mathematical structure. The collision enables partial transfer of results, especially around energy_minimization, "
+  },
+  {
+    "a": "active_inference",
+    "b": "optimal_design",
+    "score": 0.479,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: beliefs about hidden states \u2194 design measure",
+      "'energy' role: variational free energy \u2194 negative information",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Active Inference and Optimal Experiment Design share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference, energy_minimization."
+  },
+  {
+    "a": "inverse_problem",
+    "b": "disentangled_representations",
+    "score": 0.479,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: regularized estimate \u2194 encoder decoder parameters",
+      "'energy' role: regularized residual \u2194 negative elbo",
+      "'information' role: noise level \u2194 kl regularization",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Inverse Problem / Tikhonov Regularization and Disentangled Representations / \u03b2-VAE share significant mathematical structure. The collision enables partial transfer of results, especially around energy"
+  },
+  {
+    "a": "map_estimation",
+    "b": "disentangled_representations",
+    "score": 0.478,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: parameter estimate \u2194 encoder decoder parameters",
+      "'energy' role: negative log posterior \u2194 negative elbo",
+      "'information' role: posterior curvature \u2194 kl regularization",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Maximum a Posteriori (MAP) Estimation and Disentangled Representations / \u03b2-VAE share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_i"
+  },
+  {
+    "a": "minimum_description_length",
+    "b": "optimal_design",
+    "score": 0.478,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "bayesian_inference",
+      "dual_variables",
+      "energy_minimization",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "fisher_information"
+    ],
+    "bridges": [
+      "Both converge to a optimal",
+      "'state' role: model and parameters \u2194 design measure",
+      "'energy' role: total codelength \u2194 negative information",
+      "'information' role: stochastic complexity \u2194 fisher information matrix"
+    ],
+    "interpretation": "Minimum Description Length (MDL) and Optimal Experiment Design share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference, dual_v"
+  },
+  {
+    "a": "hamilton_jacobi_bellman",
+    "b": "lagrange_duality",
+    "score": 0.477,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: system state \u2194 primal dual variables",
+      "'energy' role: value function \u2194 lagrangian value"
+    ],
+    "interpretation": "Hamilton-Jacobi-Bellman Equation and Lagrange Duality / KKT Conditions share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, en"
+  },
+  {
+    "a": "hamilton_jacobi_bellman",
+    "b": "robust_estimation",
+    "score": 0.477,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: system state \u2194 parameter estimate",
+      "'energy' role: value function \u2194 robust objective"
+    ],
+    "interpretation": "Hamilton-Jacobi-Bellman Equation and Robust Estimation / M-Estimators share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, ene"
+  },
+  {
+    "a": "hamilton_jacobi_bellman",
+    "b": "frank_wolfe",
+    "score": 0.477,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "gradient_descent",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: system state \u2194 convex combination",
+      "'energy' role: value function \u2194 objective value"
+    ],
+    "interpretation": "Hamilton-Jacobi-Bellman Equation and Frank-Wolfe / Conditional Gradient share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, e"
+  },
+  {
+    "a": "mirror_descent",
+    "b": "empirical_risk_minimization",
+    "score": 0.477,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "gradient_descent",
+      "information_gain",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: primal and dual iterates \u2194 hypothesis",
+      "'energy' role: objective function \u2194 empirical risk"
+    ],
+    "interpretation": "Mirror Descent and Empirical Risk Minimization (ERM) share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, energy_minimization."
+  },
+  {
+    "a": "bayesian_optimization",
+    "b": "relevance_vector_machine",
+    "score": 0.476,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "information_gain"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: gp posterior \u2194 hyperparameters and weights",
+      "'information' role: posterior variance \u2194 model complexity",
+      "'energy' role: negative acquisition value \u2194 negative log evidence",
+      "'coupling' role: kernel gram matrix \u2194 basis functions"
+    ],
+    "interpretation": "Bayesian Optimization and Relevance Vector Machine / Sparse Bayes share significant mathematical structure. The collision enables partial transfer of results, especially around bayesian_inference, ene"
+  },
+  {
+    "a": "spiking_neural_network",
+    "b": "cellular_automaton",
+    "score": 0.476,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "conservation_law",
+      "fixed_point_iteration",
+      "population_dynamics"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: membrane potential \u2194 lattice configuration",
+      "'energy' role: spike timing error \u2194 pattern complexity",
+      "'dynamics' role: integrate and fire \u2194 deterministic update rule",
+      "'coupling' role: synaptic weights \u2194 neighborhood topology"
+    ],
+    "interpretation": "Spiking Neural Network / Integrate-and-Fire and Cellular Automaton / Rule Systems share significant mathematical structure. The collision enables partial transfer of results, especially around conserv"
+  },
+  {
+    "a": "inverse_problem",
+    "b": "markowitz_portfolio",
+    "score": 0.476,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "variational_principle"
+    ],
+    "shared_operators": [],
+    "bridges": [
+      "'state' role: regularized estimate \u2194 portfolio weights",
+      "'energy' role: regularized residual \u2194 portfolio variance",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Inverse Problem / Tikhonov Regularization and Markowitz Portfolio / Mean-Variance share significant mathematical structure. The collision enables partial transfer of results, especially around dual_va"
+  },
+  {
+    "a": "kernel_methods",
+    "b": "neural_tangent_kernel",
+    "score": 0.475,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "structural_isomorphism"
+    ],
+    "shared_operators": [
+      "eigenvalue_decomposition",
+      "inner_product",
+      "kernel_evaluation"
+    ],
+    "bridges": [
+      "'state' role: function in RKHS \u2194 function output",
+      "'energy' role: regularized loss \u2194 squared loss",
+      "'coupling' role: kernel matrix \u2194 ntk kernel matrix",
+      "Same abstract structure: 'optimization in reproducing kernel hilbert space'"
+    ],
+    "interpretation": "Kernel Methods / RKHS and Neural Tangent Kernel (NTK) share significant mathematical structure. The collision enables partial transfer of results, especially around dual_variables, energy_minimization"
+  },
+  {
+    "a": "stein_variational",
+    "b": "knowledge_distillation",
+    "score": 0.475,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "gradient_descent",
+      "pairwise_coupling"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "bridges": [
+      "'state' role: particle positions \u2194 student parameters",
+      "'energy' role: kl divergence \u2194 distillation loss",
+      "'coupling' role: kernel gram matrix \u2194 teacher soft labels",
+      "Same abstract structure: 'optimization over parameter space'"
+    ],
+    "interpretation": "Stein Variational Gradient Descent (SVGD) and Knowledge Distillation share significant mathematical structure. The collision enables partial transfer of results, especially around energy_entropy_trade"
+  }
+]

@@ -4,12 +4,18 @@ Theories:
   - darwinian: Pure competition. No messaging, no lending, aggressive culling.
   - mutualist: Full cooperation. Messaging enabled, lending active, no culling.
   - hybrid: Default zhihuiti behavior (both forces active).
+  - elitist: Only the top performers survive — extreme selection pressure.
 
 The engine runs the same goal under two theories, scores both, and declares a winner.
+
+Extended features:
+  - Temporal dynamics: track how collision outcomes evolve over repeated runs.
+  - Collision narratives: auto-generated natural language explanations.
 """
 
 from __future__ import annotations
 
+import math
 import uuid
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
@@ -57,6 +63,22 @@ THEORIES = {
         "messaging": False,
         "lending": False,
     },
+    "ecosystem": {
+        "label": "🌿 Ecosystem Dynamics",
+        "description": "Agents form niches — specialists thrive, generalists adapt, diversity matters",
+        "cull_threshold": 0.25,
+        "promote_threshold": 0.75,
+        "messaging": True,
+        "lending": True,
+    },
+    "social_contract": {
+        "label": "📜 Social Contract",
+        "description": "Collective agreement — agents vote on norms, defectors face sanctions",
+        "cull_threshold": 0.35,
+        "promote_threshold": 0.85,
+        "messaging": True,
+        "lending": False,
+    },
 }
 
 
@@ -90,6 +112,11 @@ class CollisionResult:
             return self.theory_b
         return "tie"
 
+    @property
+    def narrative(self) -> str:
+        """Auto-generated natural language explanation of the collision outcome."""
+        return generate_narrative(self)
+
     def to_dict(self) -> dict:
         return {
             "id": self.id,
@@ -101,6 +128,7 @@ class CollisionResult:
             "winner": self.winner,
             "tasks_a": len(self.result_a.get("tasks", [])),
             "tasks_b": len(self.result_b.get("tasks", [])),
+            "narrative": self.narrative,
         }
 
 
@@ -109,6 +137,7 @@ class CollisionEngine:
 
     def __init__(self):
         self.history: list[CollisionResult] = []
+        self.dynamics: dict[tuple[str, str], TemporalDynamics] = {}
 
     def collide(
         self,
@@ -163,6 +192,12 @@ class CollisionEngine:
         )
         self.history.append(collision)
 
+        # Track temporal dynamics for this theory pair
+        key = _pair_key(theory_a, theory_b)
+        if key not in self.dynamics:
+            self.dynamics[key] = TemporalDynamics(theory_a=key[0], theory_b=key[1])
+        self.dynamics[key].record(collision)
+
         self._print_result(collision, config_a, config_b)
         return collision
 
@@ -209,6 +244,13 @@ class CollisionEngine:
                 f"(margin: {margin:.3f})"
             )
 
+    def get_temporal_dynamics(self, theory_a: str, theory_b: str) -> TemporalDynamics:
+        """Get the temporal dynamics for a specific theory pair."""
+        key = _pair_key(theory_a, theory_b)
+        if key not in self.dynamics:
+            self.dynamics[key] = TemporalDynamics(theory_a=key[0], theory_b=key[1])
+        return self.dynamics[key]
+
     def print_history(self) -> None:
         if not self.history:
             console.print("  [dim]No collisions yet.[/dim]")
@@ -235,3 +277,244 @@ class CollisionEngine:
                 winner_label,
             )
         console.print(table)
+
+    def print_dynamics(self) -> None:
+        """Print temporal dynamics for all tracked theory pairs."""
+        if not self.dynamics:
+            console.print("  [dim]No temporal dynamics yet.[/dim]")
+            return
+        for dyn in self.dynamics.values():
+            dyn.print_summary()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TEMPORAL DYNAMICS — track how collision outcomes evolve over repeated runs
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _pair_key(a: str, b: str) -> tuple[str, str]:
+    """Canonical key for a theory pair (sorted for consistency)."""
+    return (min(a, b), max(a, b))
+
+
+@dataclass
+class TemporalSnapshot:
+    """A single point in the temporal evolution of a collision pair."""
+    tick: int
+    score_a: float
+    score_b: float
+    winner: str
+    margin: float
+
+
+@dataclass
+class TemporalDynamics:
+    """Tracks how a theory pair's collision outcomes evolve over time.
+
+    Records score trajectories, detects convergence/divergence,
+    and identifies regime shifts (when dominance flips).
+    """
+    theory_a: str
+    theory_b: str
+    snapshots: list[TemporalSnapshot] = field(default_factory=list)
+
+    def record(self, result: CollisionResult) -> None:
+        tick = len(self.snapshots) + 1
+        self.snapshots.append(TemporalSnapshot(
+            tick=tick,
+            score_a=result.score_a,
+            score_b=result.score_b,
+            winner=result.winner,
+            margin=abs(result.score_a - result.score_b),
+        ))
+
+    @property
+    def num_runs(self) -> int:
+        return len(self.snapshots)
+
+    @property
+    def dominant_theory(self) -> str:
+        """Which theory wins most often across all runs."""
+        if not self.snapshots:
+            return "none"
+        wins: dict[str, int] = {}
+        for s in self.snapshots:
+            wins[s.winner] = wins.get(s.winner, 0) + 1
+        return max(wins, key=wins.get)  # type: ignore[arg-type]
+
+    @property
+    def dominance_ratio(self) -> float:
+        """Fraction of runs won by the dominant theory (0.5 = even, 1.0 = total)."""
+        if not self.snapshots:
+            return 0.5
+        wins: dict[str, int] = {}
+        for s in self.snapshots:
+            wins[s.winner] = wins.get(s.winner, 0) + 1
+        return max(wins.values()) / len(self.snapshots)
+
+    @property
+    def regime_shifts(self) -> int:
+        """Count how many times the winning theory flipped."""
+        if len(self.snapshots) < 2:
+            return 0
+        shifts = 0
+        for i in range(1, len(self.snapshots)):
+            prev = self.snapshots[i - 1].winner
+            curr = self.snapshots[i].winner
+            if prev != curr and prev != "tie" and curr != "tie":
+                shifts += 1
+        return shifts
+
+    @property
+    def convergence_rate(self) -> float:
+        """How quickly the margin between theories is shrinking.
+
+        Negative = converging (gap closing), positive = diverging.
+        Returns slope of margin over time via linear regression.
+        """
+        if len(self.snapshots) < 3:
+            return 0.0
+        margins = [s.margin for s in self.snapshots[-20:]]
+        n = len(margins)
+        x_mean = (n - 1) / 2.0
+        y_mean = sum(margins) / n
+        num = sum((i - x_mean) * (y - y_mean) for i, y in enumerate(margins))
+        den = sum((i - x_mean) ** 2 for i in range(n))
+        if den == 0:
+            return 0.0
+        return num / den
+
+    def score_trajectory(self, theory: str) -> list[float]:
+        """Get the score trajectory for a specific theory."""
+        if theory == self.theory_a:
+            return [s.score_a for s in self.snapshots]
+        elif theory == self.theory_b:
+            return [s.score_b for s in self.snapshots]
+        return []
+
+    def to_dict(self) -> dict:
+        return {
+            "theory_a": self.theory_a,
+            "theory_b": self.theory_b,
+            "num_runs": self.num_runs,
+            "dominant_theory": self.dominant_theory,
+            "dominance_ratio": round(self.dominance_ratio, 3),
+            "regime_shifts": self.regime_shifts,
+            "convergence_rate": round(self.convergence_rate, 4),
+            "trajectory_a": [round(s.score_a, 3) for s in self.snapshots],
+            "trajectory_b": [round(s.score_b, 3) for s in self.snapshots],
+        }
+
+    def print_summary(self) -> None:
+        la = THEORIES.get(self.theory_a, {}).get("label", self.theory_a)
+        lb = THEORIES.get(self.theory_b, {}).get("label", self.theory_b)
+
+        table = Table(title=f"Temporal Dynamics: {la} vs {lb}", border_style="cyan")
+        table.add_column("Metric", style="bold")
+        table.add_column("Value", justify="center")
+
+        dom = THEORIES.get(self.dominant_theory, {}).get("label", self.dominant_theory)
+        conv = self.convergence_rate
+        conv_label = "converging" if conv < -0.005 else "diverging" if conv > 0.005 else "stable"
+
+        table.add_row("Runs", str(self.num_runs))
+        table.add_row("Dominant", dom)
+        table.add_row("Dominance Ratio", f"{self.dominance_ratio:.1%}")
+        table.add_row("Regime Shifts", str(self.regime_shifts))
+        table.add_row("Convergence", f"{conv:+.4f} ({conv_label})")
+
+        console.print(Panel(table))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# COLLISION NARRATIVES — auto-generated explanations
+# ─────────────────────────────────────────────────────────────────────────────
+
+def generate_narrative(result: CollisionResult) -> str:
+    """Generate a natural language explanation of why a collision went the way it did.
+
+    Analyzes score distributions, task completion patterns, reward flows,
+    and theory properties to build a coherent narrative.
+    """
+    ca = THEORIES.get(result.theory_a, {})
+    cb = THEORIES.get(result.theory_b, {})
+    la = ca.get("label", result.theory_a)
+    lb = cb.get("label", result.theory_b)
+    sa, sb = result.score_a, result.score_b
+    winner = result.winner
+
+    tasks_a = result.result_a.get("tasks", [])
+    tasks_b = result.result_b.get("tasks", [])
+    completed_a = sum(1 for t in tasks_a if t.get("status") == "completed")
+    completed_b = sum(1 for t in tasks_b if t.get("status") == "completed")
+
+    parts: list[str] = []
+
+    # Opening: what was tested
+    parts.append(
+        f"In this collision, {la} and {lb} competed on the goal "
+        f"\"{result.goal}\"."
+    )
+
+    # Score comparison
+    if winner == "tie":
+        parts.append(
+            f"The result was a tie — both theories scored within 1% "
+            f"({sa:.3f} vs {sb:.3f}), suggesting neither approach has a clear "
+            f"advantage for this type of goal."
+        )
+    else:
+        margin = abs(sa - sb)
+        winner_label = la if winner == result.theory_a else lb
+        loser_label = lb if winner == result.theory_a else la
+        if margin > 0.2:
+            parts.append(
+                f"{winner_label} won decisively (margin: {margin:.3f}), "
+                f"significantly outperforming {loser_label}."
+            )
+        elif margin > 0.05:
+            parts.append(
+                f"{winner_label} won with a moderate advantage "
+                f"(margin: {margin:.3f}) over {loser_label}."
+            )
+        else:
+            parts.append(
+                f"{winner_label} won narrowly (margin: {margin:.3f}), "
+                f"barely edging out {loser_label}."
+            )
+
+    # Task completion analysis
+    if len(tasks_a) > 0 and len(tasks_b) > 0:
+        rate_a = completed_a / len(tasks_a) if tasks_a else 0
+        rate_b = completed_b / len(tasks_b) if tasks_b else 0
+        if abs(rate_a - rate_b) > 0.15:
+            higher = la if rate_a > rate_b else lb
+            parts.append(
+                f"{higher} had a notably higher task completion rate, "
+                f"suggesting its strategy better supports task execution."
+            )
+
+    # Theory-specific insights
+    cull_a = ca.get("cull_threshold", 0)
+    cull_b = cb.get("cull_threshold", 0)
+    if cull_a > cull_b + 0.15 and sa > sb:
+        parts.append(
+            "Higher selection pressure appears to have driven better outcomes, "
+            "filtering out low performers early."
+        )
+    elif cull_b > cull_a + 0.15 and sb > sa:
+        parts.append(
+            "Higher selection pressure appears to have driven better outcomes, "
+            "filtering out low performers early."
+        )
+    elif ca.get("messaging") and not cb.get("messaging") and sa > sb:
+        parts.append(
+            "Inter-agent communication gave the cooperative strategy an edge, "
+            "enabling knowledge sharing across the population."
+        )
+    elif cb.get("messaging") and not ca.get("messaging") and sb > sa:
+        parts.append(
+            "Inter-agent communication gave the cooperative strategy an edge, "
+            "enabling knowledge sharing across the population."
+        )
+
+    return " ".join(parts)
