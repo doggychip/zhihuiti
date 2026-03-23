@@ -226,7 +226,7 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(55, w / h, 0.1, 1000);
-    camera.position.z = 18;
+    camera.position.z = 26;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(w, h);
