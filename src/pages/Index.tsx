@@ -175,8 +175,11 @@ function useSimulatedFeed(agents: Agent[]): TaskEvent[] {
   return events;
 }
 
-// ── 3D Force-Directed Graph ─────────────────────────────────────
-function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhihuiti = true, showHedgeFund = true, lodCount = 50
+// ── 3D Realm-Grouped Graph ─────────────────────────────────────
+const REALM_X: Record<string, number> = { research: -10, execution: 0, central: 10 };
+const REALM_SPHERE_COLORS: Record<string, string> = { research: "#3b82f6", execution: "#f97316", central: "#a855f7" };
+
+function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhihuiti = true, showHedgeFund = true, lodCount = 30
 }: {agents: Agent[];connections: Connection[];onSelect: (id: string) => void;selectedId: string | null;events: TaskEvent[];showZhihuiti?: boolean;showHedgeFund?: boolean;lodCount?: number;}) {
   const mountRef = useRef<HTMLDivElement>(null);
   const nodesRef = useRef<Record<string, {mesh: THREE.Mesh; label?: THREE.Sprite; basePos: THREE.Vector3; vel: THREE.Vector3; size: number;}>>({});
@@ -186,9 +189,6 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
   const raycasterRef = useRef(new THREE.Raycaster());
   const mouseVec = useRef(new THREE.Vector2());
   const worldRef = useRef<THREE.Group | null>(null);
-  const linesRef = useRef<THREE.Line[]>([]);
-  const hoveredRef = useRef<string | null>(null);
-  // Store positions for minimap access
   const positionsRef = useRef<Record<string, THREE.Vector3>>({});
 
   useEffect(() => {
@@ -198,7 +198,6 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
     const w = container.clientWidth;
     const h = container.clientHeight;
     nodesRef.current = {};
-    linesRef.current = [];
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 500);
@@ -210,7 +209,6 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
     renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
 
-    // Lighting
     scene.add(new THREE.AmbientLight(0x334466, 0.8));
     const keyLight = new THREE.DirectionalLight(0x6366f1, 0.6);
     keyLight.position.set(10, 12, 15);
@@ -223,203 +221,132 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
     worldRef.current = world;
     scene.add(world);
 
-    const GROUP_COLORS = { zhihuiti: "#eab308", hedge_fund: "#3b82f6" };
-
-    // Filter agents
+    // Filter & score agents
     const visibleAgents = agents.filter(a => {
       if (a.group === "zhihuiti" && !showZhihuiti) return false;
       if (a.group === "hedge_fund" && !showHedgeFund) return false;
-      return true;
+      return a.alive;
     });
 
-    // Initialize positions randomly in a sphere
-    const positions: Record<string, THREE.Vector3> = {};
-    visibleAgents.forEach(a => {
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      const r = 3 + Math.random() * 8;
-      positions[a.id] = new THREE.Vector3(
-        Math.sin(phi) * Math.cos(theta) * r,
-        Math.cos(phi) * r * 0.6,
-        Math.sin(phi) * Math.sin(theta) * r
-      );
-    });
-
-    // Run force-directed layout simulation (offline, ~80 iterations)
-    const velocities: Record<string, THREE.Vector3> = {};
-    visibleAgents.forEach(a => { velocities[a.id] = new THREE.Vector3(); });
-
-    for (let iter = 0; iter < 80; iter++) {
-      const damping = 0.85;
-      const repulsionStrength = 2.5;
-      const attractionStrength = 0.008;
-      const centerPull = 0.002;
-
-      // Repulsion between all pairs
-      for (let i = 0; i < visibleAgents.length; i++) {
-        for (let j = i + 1; j < visibleAgents.length; j++) {
-          const a = visibleAgents[i], b = visibleAgents[j];
-          const diff = positions[a.id].clone().sub(positions[b.id]);
-          const dist = Math.max(diff.length(), 0.5);
-          const force = diff.normalize().multiplyScalar(repulsionStrength / (dist * dist));
-          velocities[a.id].add(force);
-          velocities[b.id].sub(force);
-        }
-      }
-
-      // Attraction along connections
-      connections.forEach(c => {
-        const p1 = positions[c.from], p2 = positions[c.to];
-        if (!p1 || !p2) return;
-        const diff = p2.clone().sub(p1);
-        const dist = diff.length();
-        const force = diff.normalize().multiplyScalar(dist * attractionStrength);
-        if (velocities[c.from]) velocities[c.from].add(force);
-        if (velocities[c.to]) velocities[c.to].sub(force);
-      });
-
-      // Center pull
-      visibleAgents.forEach(a => {
-        const pull = positions[a.id].clone().negate().multiplyScalar(centerPull);
-        velocities[a.id].add(pull);
-      });
-
-      // Apply velocities
-      visibleAgents.forEach(a => {
-        velocities[a.id].multiplyScalar(damping);
-        positions[a.id].add(velocities[a.id]);
-      });
-    }
-
-    positionsRef.current = positions;
-
-    // Connection lines
-    connections.forEach(c => {
-      const p1 = positions[c.from], p2 = positions[c.to];
-      if (!p1 || !p2) return;
-      const geo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
-      const mat = new THREE.LineBasicMaterial({
-        color: CONN_COLORS[c.type] || "#444",
-        transparent: true,
-        opacity: 0.08
-      });
-      const line = new THREE.Line(geo, mat);
-      world.add(line);
-      linesRef.current.push(line);
-    });
-
-    // Score agents for LOD ranking
     const INITIAL_BUDGET = 100;
-    const scoredAgents = visibleAgents.map(a => {
+    const scored = visibleAgents.map(a => {
       const returnPct = ((a.budget - INITIAL_BUDGET) / INITIAL_BUDGET) * 100;
       const score = (a.avg_score * 0.4) + (Math.max(0, returnPct) / 100 * 0.3) + (a.avg_score * 0.3);
       return { ...a, lodScore: score };
     }).sort((a, b) => b.lodScore - a.lodScore);
 
-    const topAgentIds = new Set(scoredAgents.slice(0, lodCount).map(a => a.id));
+    // Only show top N
+    const showCount = lodCount === -1 ? scored.length : Math.min(lodCount, scored.length);
+    const topAgents = scored.slice(0, showCount);
 
-    // Agent nodes
-    const maxBudget = Math.max(...visibleAgents.map(x => x.budget), 1);
-
-    // Batch geometry for dot agents (small points)
-    const dotPositions: number[] = [];
-    const dotColors: number[] = [];
-    const dotAgentIds: string[] = [];
-
-    visibleAgents.forEach(a => {
-      const pos = positions[a.id];
-      if (!pos) return;
-      const color = a.group ? GROUP_COLORS[a.group] : (REALM_COLORS[a.realm] || "#888");
-
-      if (topAgentIds.has(a.id)) {
-        // Full LOD: sphere + label
-        const size = 0.15 + (a.budget / maxBudget) * 0.4;
-        const geo = new THREE.SphereGeometry(size, 24, 24);
-        const mat = new THREE.MeshStandardMaterial({
-          color: a.alive ? color : "#333",
-          emissive: a.alive ? color : "#111",
-          emissiveIntensity: a.alive ? 0.35 : 0.05,
-          metalness: 0.5,
-          roughness: 0.3,
-        });
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.copy(pos);
-        mesh.userData = { agentId: a.id };
-        world.add(mesh);
-
-        let labelSprite: THREE.Sprite | undefined;
-        {
-          const displayName = a.name || a.role;
-          const subtitle = a.role;
-          const labelCanvas = document.createElement("canvas");
-          labelCanvas.width = 512; labelCanvas.height = 96;
-          const lctx = labelCanvas.getContext("2d")!;
-          lctx.clearRect(0, 0, 512, 96);
-          // Name line
-          lctx.font = "bold 26px 'Inter', system-ui, sans-serif";
-          lctx.textAlign = "center";
-          lctx.textBaseline = "middle";
-          lctx.fillStyle = "rgba(255,255,255,0.7)";
-          lctx.fillText(displayName, 256, a.name ? 30 : 48);
-          // Subtitle (strategy/role) — only if name exists
-          if (a.name) {
-            lctx.font = "italic 18px 'Inter', system-ui, sans-serif";
-            lctx.fillStyle = "rgba(255,255,255,0.35)";
-            lctx.fillText(subtitle, 256, 62);
-          }
-          const tex = new THREE.CanvasTexture(labelCanvas);
-          tex.needsUpdate = true;
-          const sMat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.7, depthWrite: false });
-          labelSprite = new THREE.Sprite(sMat);
-          labelSprite.position.set(pos.x, pos.y + size + 0.55, pos.z);
-          labelSprite.scale.set(2.4, 0.45, 1);
-          world.add(labelSprite);
-        }
-
-        nodesRef.current[a.id] = {
-          mesh,
-          label: labelSprite,
-          basePos: pos.clone(),
-          vel: new THREE.Vector3(),
-          size
-        };
-      } else {
-        // Low LOD: collect for batch points
-        dotPositions.push(pos.x, pos.y, pos.z);
-        const c = new THREE.Color(a.alive ? color : "#333");
-        dotColors.push(c.r, c.g, c.b);
-        dotAgentIds.push(a.id);
-      }
+    // Group by realm and position
+    const realmGroups: Record<string, typeof topAgents> = { research: [], execution: [], central: [] };
+    topAgents.forEach(a => {
+      const r = a.realm in realmGroups ? a.realm : "execution";
+      realmGroups[r].push(a);
     });
 
-    // Render dot agents as a single Points object
-    if (dotPositions.length > 0) {
-      const dotGeo = new THREE.BufferGeometry();
-      dotGeo.setAttribute("position", new THREE.Float32BufferAttribute(dotPositions, 3));
-      dotGeo.setAttribute("color", new THREE.Float32BufferAttribute(dotColors, 3));
-      const dotMat = new THREE.PointsMaterial({
-        size: 0.08,
-        vertexColors: true,
-        transparent: true,
-        opacity: 0.5,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-      });
-      world.add(new THREE.Points(dotGeo, dotMat));
-    }
+    const positions: Record<string, THREE.Vector3> = {};
+    const maxBudget = Math.max(...topAgents.map(x => x.budget), 1);
 
-    // Ambient dust (lighter)
-    const dustCount = 100;
+    Object.entries(realmGroups).forEach(([realm, group]) => {
+      const cx = REALM_X[realm] || 0;
+      const cols = Math.ceil(Math.sqrt(group.length));
+      group.forEach((a, i) => {
+        const row = Math.floor(i / cols);
+        const col = i % cols;
+        const spacing = 2.2;
+        const x = cx + (col - (cols - 1) / 2) * spacing;
+        const y = (row - (Math.ceil(group.length / cols) - 1) / 2) * spacing * 0.8;
+        const z = (Math.random() - 0.5) * 1.5;
+        positions[a.id] = new THREE.Vector3(x, y, z);
+      });
+    });
+
+    positionsRef.current = positions;
+
+    // Realm labels
+    Object.entries(REALM_X).forEach(([realm, cx]) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 256; canvas.height = 48;
+      const ctx = canvas.getContext("2d")!;
+      ctx.clearRect(0, 0, 256, 48);
+      ctx.font = "bold 20px 'Inter', system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = REALM_SPHERE_COLORS[realm] || "#888";
+      ctx.fillText(realm.toUpperCase(), 128, 24);
+      const tex = new THREE.CanvasTexture(canvas);
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.4, depthWrite: false });
+      const sprite = new THREE.Sprite(mat);
+      const maxRows = Math.ceil((realmGroups[realm]?.length || 1) / Math.ceil(Math.sqrt(realmGroups[realm]?.length || 1)));
+      sprite.position.set(cx, maxRows * 1.1 + 1.5, 0);
+      sprite.scale.set(4, 0.75, 1);
+      world.add(sprite);
+    });
+
+    // Create spheres
+    topAgents.forEach(a => {
+      const pos = positions[a.id];
+      if (!pos) return;
+      const color = REALM_SPHERE_COLORS[a.realm] || "#888";
+      const size = 0.2 + (a.budget / maxBudget) * 0.6;
+
+      const geo = new THREE.SphereGeometry(size, 24, 24);
+      const mat = new THREE.MeshStandardMaterial({
+        color,
+        emissive: color,
+        emissiveIntensity: 0.35,
+        metalness: 0.5,
+        roughness: 0.3,
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.copy(pos);
+      mesh.userData = { agentId: a.id };
+      world.add(mesh);
+
+      // Label: role + score
+      const labelCanvas = document.createElement("canvas");
+      labelCanvas.width = 512; labelCanvas.height = 96;
+      const lctx = labelCanvas.getContext("2d")!;
+      lctx.clearRect(0, 0, 512, 96);
+      lctx.font = "bold 24px 'Inter', system-ui, sans-serif";
+      lctx.textAlign = "center";
+      lctx.textBaseline = "middle";
+      lctx.fillStyle = "rgba(255,255,255,0.75)";
+      lctx.fillText(a.name || a.role, 256, 30);
+      lctx.font = "16px 'Inter', system-ui, sans-serif";
+      lctx.fillStyle = "rgba(255,255,255,0.4)";
+      lctx.fillText(`${a.role} · ${a.avg_score.toFixed(2)}`, 256, 62);
+      const tex = new THREE.CanvasTexture(labelCanvas);
+      tex.needsUpdate = true;
+      const sMat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.7, depthWrite: false });
+      const labelSprite = new THREE.Sprite(sMat);
+      labelSprite.position.set(pos.x, pos.y + size + 0.55, pos.z);
+      labelSprite.scale.set(2.4, 0.45, 1);
+      world.add(labelSprite);
+
+      nodesRef.current[a.id] = {
+        mesh,
+        label: labelSprite,
+        basePos: pos.clone(),
+        vel: new THREE.Vector3(),
+        size
+      };
+    });
+
+    // Ambient dust
+    const dustCount = 80;
     const dustArr = new Float32Array(dustCount * 3);
     for (let i = 0; i < dustCount; i++) {
-      dustArr[i * 3] = (Math.random() - 0.5) * 30;
+      dustArr[i * 3] = (Math.random() - 0.5) * 35;
       dustArr[i * 3 + 1] = (Math.random() - 0.5) * 15;
-      dustArr[i * 3 + 2] = (Math.random() - 0.5) * 30;
+      dustArr[i * 3 + 2] = (Math.random() - 0.5) * 20;
     }
     const dustGeo = new THREE.BufferGeometry();
     dustGeo.setAttribute("position", new THREE.BufferAttribute(dustArr, 3));
     const dustMat = new THREE.PointsMaterial({
-      color: "#6366f1", size: 0.03, transparent: true, opacity: 0.2,
+      color: "#6366f1", size: 0.03, transparent: true, opacity: 0.15,
       blending: THREE.AdditiveBlending, depthWrite: false
     });
     world.add(new THREE.Points(dustGeo, dustMat));
@@ -430,14 +357,12 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
       frameRef.current++;
       const t = frameRef.current * 0.006;
 
-      // Gentle floating
       Object.entries(nodesRef.current).forEach(([id, n]) => {
         const off = parseInt(id.replace(/\D/g, ""), 10) || 0;
         const floatY = Math.sin(t + off * 0.5) * 0.08;
         n.mesh.position.y = n.basePos.y + floatY;
-        if (n.label) n.label.position.y = n.basePos.y + floatY + n.size + 0.45;
+        if (n.label) n.label.position.y = n.basePos.y + floatY + n.size + 0.55;
 
-        // Selected pulse
         if (id === selectedId) {
           const pulse = 1 + Math.sin(t * 5) * 0.15;
           n.mesh.scale.setScalar(pulse);
@@ -455,7 +380,6 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
     };
     animate();
 
-    // Mouse handlers
     const onDown = (e: MouseEvent) => { mouseRef.current = { down: true, prevX: e.clientX, prevY: e.clientY }; };
     const onMove = (e: MouseEvent) => {
       if (!mouseRef.current.down) return;
@@ -1217,7 +1141,7 @@ export default function ZhihuiTiDashboard() {
   const [live, setLive] = useState(true);
   const [showCollision, setShowCollision] = useState(false);
   const [graphFullscreen, setGraphFullscreen] = useState(false);
-  const [lodCount, setLodCount] = useState(50);
+  const [lodCount, setLodCount] = useState(30);
   const [booted, setBooted] = useState(false);
   const handleBootComplete = useCallback(() => setBooted(true), []);
   const [showZhihuiti, setShowZhihuiti] = useState(true);
@@ -1794,18 +1718,20 @@ export default function ZhihuiTiDashboard() {
                   }}>
                     ⚛️ Collision Engine
                   </button>
-                  <div className="flex items-center gap-1.5 ml-2" style={{ borderLeft: "1px solid rgba(255,255,255,0.08)", paddingLeft: 8 }}>
-                    <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>LOD</span>
-                    <input
-                      type="range"
-                      min={5}
-                      max={Math.max(agents.length, 50)}
-                      value={lodCount}
-                      onChange={e => setLodCount(Number(e.target.value))}
-                      className="w-16 h-1 accent-purple-500 cursor-pointer"
-                      style={{ opacity: 0.6 }}
-                    />
-                    <span className="text-[10px] font-mono" style={{ color: "rgba(167,139,250,0.7)" }}>{lodCount}</span>
+                  <div className="flex items-center gap-1 ml-2" style={{ borderLeft: "1px solid rgba(255,255,255,0.08)", paddingLeft: 8 }}>
+                    <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>Show:</span>
+                    {[{ label: "Top 30", value: 30 }, { label: "Top 50", value: 50 }, { label: "All", value: -1 }].map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setLodCount(opt.value)}
+                        className="text-[10px] px-1.5 py-0.5 rounded cursor-pointer transition-colors"
+                        style={{
+                          background: lodCount === opt.value ? "rgba(167,139,250,0.2)" : "rgba(255,255,255,0.04)",
+                          color: lodCount === opt.value ? "#a78bfa" : "rgba(255,255,255,0.3)",
+                          border: `1px solid ${lodCount === opt.value ? "rgba(167,139,250,0.4)" : "rgba(255,255,255,0.08)"}`
+                        }}
+                      >{opt.label}</button>
+                    ))}
                   </div>
                 </div>
                 {selectedAgent &&
