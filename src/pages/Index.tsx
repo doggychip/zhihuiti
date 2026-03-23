@@ -252,13 +252,13 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
 
     Object.entries(realmGroups).forEach(([realm, group]) => {
       const cx = REALM_X[realm] || 0;
-      const radius = Math.sqrt(group.length) * 1.4;
+      const radius = Math.sqrt(group.length) * 2.2;
       group.forEach((a, i) => {
-        const angle = (i / group.length) * Math.PI * 2 + (Math.random() - 0.5) * 0.8;
+        const angle = (i / group.length) * Math.PI * 2 + (Math.random() - 0.5) * 1.2;
         const r = Math.sqrt(Math.random()) * radius;
-        const x = cx + Math.cos(angle) * r + (Math.random() - 0.5) * 1.2;
-        const y = Math.sin(angle) * r + (Math.random() - 0.5) * 1.2;
-        const z = (Math.random() - 0.5) * 3;
+        const x = cx + Math.cos(angle) * r + (Math.random() - 0.5) * 2.5;
+        const y = Math.sin(angle) * r + (Math.random() - 0.5) * 2.5;
+        const z = (Math.random() - 0.5) * 4;
         positions[a.id] = new THREE.Vector3(x, y, z);
       });
     });
