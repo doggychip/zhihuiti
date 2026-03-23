@@ -359,6 +359,29 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
     });
     linesRef.current = lineEntries;
 
+    // Token particles flowing along connections
+    const tokenEntries: typeof tokensRef.current = [];
+    const maxTokens = Math.min(visibleConns.length * 2, 120);
+    for (let i = 0; i < maxTokens; i++) {
+      const conn = visibleConns[i % visibleConns.length];
+      const color = CONN_COLORS[conn.type] || "#aaa";
+      const geo = new THREE.SphereGeometry(0.06, 6, 6);
+      const mat = new THREE.MeshBasicMaterial({
+        color, transparent: true, opacity: 0.8,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.visible = false;
+      world.add(mesh);
+      tokenEntries.push({
+        mesh, from: conn.from, to: conn.to,
+        progress: Math.random(),
+        speed: 0.003 + Math.random() * 0.006,
+        color,
+      });
+    }
+    tokensRef.current = tokenEntries;
+
     // Ambient dust
     const dustCount = 80;
     const dustArr = new Float32Array(dustCount * 3);
