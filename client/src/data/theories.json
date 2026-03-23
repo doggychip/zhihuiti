@@ -6155,5 +6155,612 @@
     },
     "conservation": [],
     "structure": "risk_measure"
+  },
+  "lotka_volterra": {
+    "id": "lotka_volterra",
+    "name": "Lotka-Volterra / Predator-Prey",
+    "domain": "Biology",
+    "equation": "dx/dt = αx − βxy;  dy/dt = δxy − γy",
+    "update_form": "coupled_population_dynamics",
+    "optimization": "none_oscillatory",
+    "fixed_points": "coexistence_equilibrium",
+    "operators": [
+      "bilinear_interaction",
+      "differential",
+      "growth",
+      "predation"
+    ],
+    "patterns": [
+      "coupled_oscillation",
+      "ecological_cycle",
+      "neutral_stability",
+      "nonlinear_dynamics",
+      "predator_prey"
+    ],
+    "variables": {
+      "state": "population_sizes",
+      "score": "growth_rate",
+      "reference": "carrying_capacity"
+    },
+    "conservation": [
+      "conserved_quantity_V"
+    ],
+    "structure": "coupled_ode"
+  },
+  "logistic_growth": {
+    "id": "logistic_growth",
+    "name": "Logistic Growth / Verhulst Equation",
+    "domain": "Biology",
+    "equation": "dN/dt = rN(1 − N/K)",
+    "update_form": "density_dependent_growth",
+    "optimization": "maximize_population",
+    "fixed_points": "carrying_capacity",
+    "operators": [
+      "differential",
+      "growth",
+      "saturation"
+    ],
+    "patterns": [
+      "density_dependence",
+      "s_curve",
+      "saturation",
+      "self_limiting",
+      "sigmoid"
+    ],
+    "variables": {
+      "state": "population_size",
+      "score": "growth_rate",
+      "reference": "carrying_capacity"
+    },
+    "conservation": [],
+    "structure": "scalar_ode"
+  },
+  "turing_morphogenesis": {
+    "id": "turing_morphogenesis",
+    "name": "Turing Morphogenesis / Reaction-Diffusion",
+    "domain": "Biology",
+    "equation": "∂u/∂t = Dᵤ∇²u + f(u,v);  ∂v/∂t = Dᵥ∇²v + g(u,v)",
+    "update_form": "activator_inhibitor_diffusion",
+    "optimization": "pattern_selection",
+    "fixed_points": "spatially_patterned_steady_state",
+    "operators": [
+      "diffusion",
+      "laplacian",
+      "nonlinear_reaction",
+      "reaction_diffusion"
+    ],
+    "patterns": [
+      "activator_inhibitor",
+      "diffusion_driven_instability",
+      "pattern_formation",
+      "reaction_diffusion",
+      "spatial_symmetry_breaking",
+      "turing_instability"
+    ],
+    "variables": {
+      "state": "morphogen_concentration",
+      "score": "diffusion_ratio",
+      "reference": "homogeneous_steady_state"
+    },
+    "conservation": [],
+    "structure": "reaction_diffusion_pde"
+  },
+  "genetic_algorithm": {
+    "id": "genetic_algorithm",
+    "name": "Genetic Algorithm / Evolutionary Computation",
+    "domain": "Biology",
+    "equation": "xₜ₊₁ = Select(Crossover(Mutate(xₜ)), fitness)",
+    "update_form": "selection_variation_cycle",
+    "optimization": "maximize_fitness",
+    "fixed_points": "convergence_to_optimum",
+    "operators": [
+      "crossover",
+      "mutation",
+      "selection",
+      "tournament"
+    ],
+    "patterns": [
+      "exploration_exploitation",
+      "fitness_landscape",
+      "genetic_diversity",
+      "population_based_search",
+      "schema_theorem",
+      "selection"
+    ],
+    "variables": {
+      "state": "population_of_genotypes",
+      "score": "fitness",
+      "reference": "best_known_solution"
+    },
+    "conservation": [
+      "population_size"
+    ],
+    "structure": "iterative_stochastic_search"
+  },
+  "hardy_weinberg": {
+    "id": "hardy_weinberg",
+    "name": "Hardy-Weinberg Equilibrium",
+    "domain": "Biology",
+    "equation": "p² + 2pq + q² = 1;  p + q = 1",
+    "update_form": "random_mating_equilibrium",
+    "optimization": "none_neutral",
+    "fixed_points": "genotype_frequency_equilibrium",
+    "operators": [
+      "binomial_expansion",
+      "frequency_counting",
+      "normalization"
+    ],
+    "patterns": [
+      "conservation_of_probability",
+      "equilibrium_in_one_step",
+      "neutral_evolution",
+      "null_model",
+      "random_mating"
+    ],
+    "variables": {
+      "state": "allele_frequency",
+      "score": "genotype_frequency",
+      "reference": "null_hypothesis"
+    },
+    "conservation": [
+      "allele_frequencies",
+      "total_probability"
+    ],
+    "structure": "algebraic_identity"
+  },
+  "kimura_neutral_theory": {
+    "id": "kimura_neutral_theory",
+    "name": "Kimura Neutral Theory / Genetic Drift",
+    "domain": "Biology",
+    "equation": "∂φ/∂t = (1/4N)∂²[x(1−x)φ]/∂x² − μ∂[(aₘ−x)φ]/∂x",
+    "update_form": "diffusion_approximation",
+    "optimization": "none_stochastic",
+    "fixed_points": "mutation_drift_balance",
+    "operators": [
+      "diffusion",
+      "drift",
+      "fokker_planck",
+      "mutation"
+    ],
+    "patterns": [
+      "diffusion_approximation",
+      "fixation_probability",
+      "genetic_drift",
+      "mutation_drift_balance",
+      "neutral_evolution",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "allele_frequency_distribution",
+      "score": "fixation_probability",
+      "reference": "effective_population_size"
+    },
+    "conservation": [
+      "total_probability"
+    ],
+    "structure": "fokker_planck_pde"
+  },
+  "quasispecies": {
+    "id": "quasispecies",
+    "name": "Eigen Quasispecies / Error Threshold",
+    "domain": "Biology",
+    "equation": "dxᵢ/dt = Σⱼ Qᵢⱼ fⱼ xⱼ − φ̄xᵢ",
+    "update_form": "mutation_selection_dynamics",
+    "optimization": "maximize_fitness_with_mutation",
+    "fixed_points": "quasispecies_distribution",
+    "operators": [
+      "differential",
+      "matrix_multiply",
+      "mutation_matrix",
+      "selection",
+      "subtract_mean"
+    ],
+    "patterns": [
+      "error_catastrophe",
+      "error_threshold",
+      "mutation_selection_balance",
+      "quasispecies",
+      "selection"
+    ],
+    "variables": {
+      "state": "sequence_frequency",
+      "score": "fitness",
+      "reference": "mutation_rate"
+    },
+    "conservation": [
+      "total_probability"
+    ],
+    "structure": "ode_on_simplex"
+  },
+  "hodgkin_huxley": {
+    "id": "hodgkin_huxley",
+    "name": "Hodgkin-Huxley / Neural Spiking",
+    "domain": "Biology",
+    "equation": "C dV/dt = −gₙₐm³h(V−Eₙₐ) − gₖn⁴(V−Eₖ) − gₗ(V−Eₗ) + I",
+    "update_form": "conductance_based_dynamics",
+    "optimization": "action_potential_generation",
+    "fixed_points": "resting_potential",
+    "operators": [
+      "differential",
+      "gating_variable",
+      "ionic_current",
+      "nonlinear_conductance"
+    ],
+    "patterns": [
+      "all_or_nothing",
+      "excitability",
+      "limit_cycle",
+      "relaxation_oscillation",
+      "threshold_behavior"
+    ],
+    "variables": {
+      "state": "membrane_potential",
+      "score": "ionic_conductance",
+      "reference": "reversal_potential"
+    },
+    "conservation": [
+      "charge_conservation"
+    ],
+    "structure": "coupled_ode"
+  },
+  "price_equation": {
+    "id": "price_equation",
+    "name": "Price Equation / Multilevel Selection",
+    "domain": "Biology",
+    "equation": "Δz̄ = Cov(wᵢ, zᵢ)/w̄ + E(wᵢ Δzᵢ)/w̄",
+    "update_form": "covariance_selection",
+    "optimization": "none_descriptive",
+    "fixed_points": "selection_transmission_balance",
+    "operators": [
+      "covariance",
+      "expectation",
+      "fitness_weighting",
+      "partition"
+    ],
+    "patterns": [
+      "covariance_selection",
+      "exact_decomposition",
+      "multilevel_selection",
+      "natural_selection",
+      "transmission_bias"
+    ],
+    "variables": {
+      "state": "mean_trait",
+      "score": "fitness",
+      "reference": "trait_value"
+    },
+    "conservation": [],
+    "structure": "exact_identity"
+  },
+  "competitive_exclusion": {
+    "id": "competitive_exclusion",
+    "name": "Competitive Exclusion / Gause's Law",
+    "domain": "Biology",
+    "equation": "dNᵢ/dt = rᵢNᵢ(Kᵢ − Σⱼ αᵢⱼNⱼ)/Kᵢ",
+    "update_form": "interspecific_competition",
+    "optimization": "none_equilibrium_selection",
+    "fixed_points": "competitive_equilibrium_or_exclusion",
+    "operators": [
+      "competition_matrix",
+      "differential",
+      "growth",
+      "saturation"
+    ],
+    "patterns": [
+      "competitive_exclusion",
+      "coexistence_criteria",
+      "density_dependence",
+      "niche_differentiation",
+      "resource_competition"
+    ],
+    "variables": {
+      "state": "species_abundances",
+      "score": "competitive_fitness",
+      "reference": "competition_coefficients"
+    },
+    "conservation": [],
+    "structure": "coupled_ode"
+  },
+  "fitness_landscape": {
+    "id": "fitness_landscape",
+    "name": "NK Fitness Landscape (Kauffman)",
+    "domain": "Biology",
+    "equation": "F(s) = (1/N) Σᵢ fᵢ(sᵢ, sᵢ₁, ..., sᵢₖ)",
+    "update_form": "epistatic_fitness_decomposition",
+    "optimization": "landscape_navigation",
+    "fixed_points": "local_optima",
+    "operators": [
+      "averaging",
+      "epistatic_coupling",
+      "random_assignment"
+    ],
+    "patterns": [
+      "epistasis",
+      "fitness_landscape",
+      "local_optima",
+      "ruggedness",
+      "tunably_rugged"
+    ],
+    "variables": {
+      "state": "genotype",
+      "score": "fitness",
+      "reference": "landscape_ruggedness"
+    },
+    "conservation": [],
+    "structure": "combinatorial_landscape"
+  },
+  "gillespie_ssa": {
+    "id": "gillespie_ssa",
+    "name": "Gillespie Stochastic Simulation / Chemical Master Eq",
+    "domain": "Biology",
+    "equation": "dP(x,t)/dt = Σⱼ [aⱼ(x−νⱼ)P(x−νⱼ,t) − aⱼ(x)P(x,t)]",
+    "update_form": "exact_stochastic_simulation",
+    "optimization": "exact_sampling",
+    "fixed_points": "stationary_distribution",
+    "operators": [
+      "exponential_waiting",
+      "propensity_function",
+      "state_transition",
+      "stoichiometry"
+    ],
+    "patterns": [
+      "birth_death_process",
+      "continuous_time_markov",
+      "exact_simulation",
+      "intrinsic_noise",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "molecule_counts",
+      "score": "propensity",
+      "reference": "stoichiometric_matrix"
+    },
+    "conservation": [
+      "total_probability",
+      "mass_conservation"
+    ],
+    "structure": "continuous_time_markov_chain"
+  },
+  "michaelis_menten": {
+    "id": "michaelis_menten",
+    "name": "Michaelis-Menten Enzyme Kinetics",
+    "domain": "Biology",
+    "equation": "v = Vₘₐₓ[S] / (Kₘ + [S])",
+    "update_form": "saturation_kinetics",
+    "optimization": "maximize_catalytic_rate",
+    "fixed_points": "steady_state_rate",
+    "operators": [
+      "hyperbolic_function",
+      "quasi_steady_state",
+      "saturation"
+    ],
+    "patterns": [
+      "cooperative_binding",
+      "enzyme_saturation",
+      "hyperbolic_response",
+      "quasi_steady_state",
+      "substrate_inhibition"
+    ],
+    "variables": {
+      "state": "substrate_concentration",
+      "score": "reaction_rate",
+      "reference": "michaelis_constant"
+    },
+    "conservation": [
+      "total_enzyme"
+    ],
+    "structure": "algebraic_rate_law"
+  },
+  "gene_regulatory_network": {
+    "id": "gene_regulatory_network",
+    "name": "Gene Regulatory Network / Boolean Network",
+    "domain": "Biology",
+    "equation": "xᵢ(t+1) = fᵢ(xⱼ₁(t), ..., xⱼₖ(t));  fᵢ ∈ {Boolean functions}",
+    "update_form": "discrete_state_transition",
+    "optimization": "none_dynamical",
+    "fixed_points": "attractor_states",
+    "operators": [
+      "boolean_function",
+      "state_transition",
+      "synchronous_update"
+    ],
+    "patterns": [
+      "attractor_landscape",
+      "cell_fate_decision",
+      "discrete_dynamics",
+      "edge_of_chaos",
+      "robustness"
+    ],
+    "variables": {
+      "state": "gene_expression_pattern",
+      "score": "attractor_basin_size",
+      "reference": "regulatory_topology"
+    },
+    "conservation": [],
+    "structure": "discrete_dynamical_system"
+  },
+  "phylogenetic_coalescent": {
+    "id": "phylogenetic_coalescent",
+    "name": "Coalescent Theory (Kingman)",
+    "domain": "Biology",
+    "equation": "P(Tₖ = t) = C(k,2)/(2N) · exp(−C(k,2)t/(2N))",
+    "update_form": "backward_time_merging",
+    "optimization": "infer_genealogy",
+    "fixed_points": "most_recent_common_ancestor",
+    "operators": [
+      "exponential_waiting",
+      "merging",
+      "pairwise_rate"
+    ],
+    "patterns": [
+      "backward_in_time",
+      "coalescence",
+      "exponential_decay",
+      "genealogical",
+      "tree_structure"
+    ],
+    "variables": {
+      "state": "number_of_lineages",
+      "score": "coalescence_time",
+      "reference": "effective_population_size"
+    },
+    "conservation": [
+      "total_lineages_merge_to_one"
+    ],
+    "structure": "continuous_time_markov_chain"
+  },
+  "chemotaxis": {
+    "id": "chemotaxis",
+    "name": "Keller-Segel Chemotaxis",
+    "domain": "Biology",
+    "equation": "∂ρ/∂t = D∇²ρ − χ∇·(ρ∇c);  ∂c/∂t = Dᶜ∇²c + αρ − βc",
+    "update_form": "drift_diffusion_with_signal",
+    "optimization": "maximize_signal_concentration",
+    "fixed_points": "uniform_or_aggregated",
+    "operators": [
+      "chemotactic_drift",
+      "diffusion",
+      "divergence",
+      "gradient",
+      "laplacian"
+    ],
+    "patterns": [
+      "aggregation",
+      "blowup",
+      "chemotaxis",
+      "drift_diffusion",
+      "pattern_formation",
+      "self_organization"
+    ],
+    "variables": {
+      "state": "cell_density",
+      "score": "chemoattractant",
+      "reference": "chemotactic_sensitivity"
+    },
+    "conservation": [
+      "total_cell_mass"
+    ],
+    "structure": "coupled_pde"
+  },
+  "epidemic_seir": {
+    "id": "epidemic_seir",
+    "name": "SEIR / Epidemic with Exposed Class",
+    "domain": "Biology",
+    "equation": "dS/dt=−βSI/N; dE/dt=βSI/N−σE; dI/dt=σE−γI; dR/dt=γI",
+    "update_form": "compartmental_flow",
+    "optimization": "minimize_peak_infections",
+    "fixed_points": "disease_free_or_endemic",
+    "operators": [
+      "bilinear_interaction",
+      "compartment_flow",
+      "differential",
+      "mass_action"
+    ],
+    "patterns": [
+      "basic_reproduction_number",
+      "compartmental",
+      "epidemic_threshold",
+      "herd_immunity",
+      "mass_action"
+    ],
+    "variables": {
+      "state": "compartment_sizes",
+      "score": "basic_reproduction_number",
+      "reference": "herd_immunity_threshold"
+    },
+    "conservation": [
+      "total_population"
+    ],
+    "structure": "coupled_ode"
+  },
+  "waddington_landscape": {
+    "id": "waddington_landscape",
+    "name": "Waddington Epigenetic Landscape",
+    "domain": "Biology",
+    "equation": "dx/dt = −∇U(x) + σξ(t);  cell_fate = attractor_basin(x₀)",
+    "update_form": "gradient_flow_with_noise",
+    "optimization": "cell_fate_specification",
+    "fixed_points": "differentiated_cell_types",
+    "operators": [
+      "gradient",
+      "noise",
+      "potential_function",
+      "stochastic_dynamics"
+    ],
+    "patterns": [
+      "attractor_landscape",
+      "bifurcation",
+      "canalization",
+      "cell_fate_decision",
+      "irreversibility",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "gene_expression_state",
+      "score": "quasi_potential",
+      "reference": "attractor_basins"
+    },
+    "conservation": [],
+    "structure": "gradient_sde"
+  },
+  "evolutionary_graph_theory": {
+    "id": "evolutionary_graph_theory",
+    "name": "Evolutionary Graph Theory (Lieberman-Hauert)",
+    "domain": "Biology",
+    "equation": "ρ = (1 − 1/r) / (1 − 1/rᴺ)  on structured populations",
+    "update_form": "birth_death_on_graph",
+    "optimization": "fixation_probability",
+    "fixed_points": "fixation_or_extinction",
+    "operators": [
+      "birth_death",
+      "graph_adjacency",
+      "random_walk",
+      "selection"
+    ],
+    "patterns": [
+      "amplifier_of_selection",
+      "fixation_probability",
+      "isothermal_theorem",
+      "spatial_structure",
+      "suppressor_of_selection"
+    ],
+    "variables": {
+      "state": "mutant_frequency_on_graph",
+      "score": "fixation_probability",
+      "reference": "graph_topology"
+    },
+    "conservation": [
+      "total_population"
+    ],
+    "structure": "markov_chain_on_graph"
+  },
+  "adaptive_dynamics": {
+    "id": "adaptive_dynamics",
+    "name": "Adaptive Dynamics / Canonical Equation",
+    "domain": "Biology",
+    "equation": "dx*/dt = (1/2)μ(x*)σ²(x*)N*(x*) ∂sₓ(y)/∂y|_{y=x*}",
+    "update_form": "phenotype_evolution",
+    "optimization": "invasion_fitness_gradient",
+    "fixed_points": "evolutionary_singular_strategy",
+    "operators": [
+      "differential",
+      "invasion_fitness",
+      "mutation_kernel",
+      "selection_gradient"
+    ],
+    "patterns": [
+      "branching_point",
+      "convergence_stability",
+      "evolutionary_branching",
+      "evolutionary_singularity",
+      "invasion_analysis"
+    ],
+    "variables": {
+      "state": "resident_trait",
+      "score": "invasion_fitness",
+      "reference": "selection_gradient"
+    },
+    "conservation": [],
+    "structure": "ode_on_trait_space"
   }
 }
