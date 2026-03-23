@@ -1291,6 +1291,28 @@ export default function ZhihuiTiDashboard() {
   const agents: Agent[] = useMemo(() => [...coreAgents, ...alphaArenaAgents], [coreAgents, alphaArenaAgents]);
   const events = useSimulatedFeed(agents);
 
+  // Build sparse economy graph: each agent connects to 2-3 peers (same realm, nearest by score)
+  const connections: Connection[] = useMemo(() => {
+    const conns: Connection[] = [];
+    const types = ["transaction", "investment", "bounty", "employment", "subsidy", "bloodline", "competition"];
+    const byRealm: Record<string, Agent[]> = {};
+    agents.forEach(a => {
+      (byRealm[a.realm] ||= []).push(a);
+    });
+    Object.values(byRealm).forEach(group => {
+      const sorted = [...group].sort((a, b) => b.avg_score - a.avg_score);
+      sorted.forEach((a, i) => {
+        for (let d = 1; d <= 2; d++) {
+          const j = i + d;
+          if (j < sorted.length) {
+            conns.push({ from: a.id, to: sorted[j].id, type: types[(i + j) % types.length] });
+          }
+        }
+      });
+    });
+    return conns;
+  }, [agents]);
+
   if (!data) return (
     <div className="min-h-screen flex items-center justify-center text-white" style={{ background: "#0a0a14" }}>
       <div className="animate-pulse text-xl" style={{ color: "#a855f7" }}>Loading 智慧体...</div>
