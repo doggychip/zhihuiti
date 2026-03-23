@@ -183,6 +183,7 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
 }: {agents: Agent[];connections: Connection[];onSelect: (id: string) => void;selectedId: string | null;events: TaskEvent[];showZhihuiti?: boolean;showHedgeFund?: boolean;lodCount?: number;}) {
   const mountRef = useRef<HTMLDivElement>(null);
   const nodesRef = useRef<Record<string, {mesh: THREE.Mesh; label?: THREE.Sprite; basePos: THREE.Vector3; vel: THREE.Vector3; size: number;}>>({});
+  const linesRef = useRef<{ line: THREE.Line; from: string; to: string; baseColor: string }[]>([]);
   const frameRef = useRef(0);
   const mouseRef = useRef({ down: false, prevX: 0, prevY: 0 });
   const rotRef = useRef({ x: 0.25, y: 0 });
@@ -338,23 +339,25 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
     // Connection lines between agents
     const visibleIds = new Set(topAgents.map(a => a.id));
     const visibleConns = connections.filter(c => visibleIds.has(c.from) && visibleIds.has(c.to));
+    const lineEntries: typeof linesRef.current = [];
     visibleConns.forEach(conn => {
       const p1 = positions[conn.from];
       const p2 = positions[conn.to];
       if (!p1 || !p2) return;
-      const points = [p1, p2];
-      const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+      const lineGeo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
       const lineColor = CONN_COLORS[conn.type] || "#555";
       const lineMat = new THREE.LineBasicMaterial({
         color: lineColor,
         transparent: true,
-        opacity: conn.from === selectedId || conn.to === selectedId ? 0.6 : 0.12,
+        opacity: 0.12,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
       });
       const line = new THREE.Line(lineGeo, lineMat);
       world.add(line);
+      lineEntries.push({ line, from: conn.from, to: conn.to, baseColor: lineColor });
     });
+    linesRef.current = lineEntries;
 
     // Ambient dust
     const dustCount = 80;
@@ -394,6 +397,18 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
         }
       });
 
+      // Dynamic line highlighting
+      const hasSelection = !!selectedId;
+      linesRef.current.forEach(({ line, from, to }) => {
+        const mat = line.material as THREE.LineBasicMaterial;
+        const connected = from === selectedId || to === selectedId;
+        if (hasSelection) {
+          mat.opacity = connected ? 0.7 + Math.sin(t * 4) * 0.15 : 0.03;
+          mat.linewidth = connected ? 2 : 1;
+        } else {
+          mat.opacity = 0.12;
+        }
+      });
       world.rotation.x = rotRef.current.x;
       world.rotation.y = rotRef.current.y + t * 0.02;
       renderer.render(scene, camera);
