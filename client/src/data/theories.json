@@ -5559,5 +5559,601 @@
       "pareto_efficiency"
     ],
     "structure": "population_dynamics"
+  },
+  "efficient_market_hypothesis": {
+    "id": "efficient_market_hypothesis",
+    "name": "Efficient Market Hypothesis (Fama)",
+    "domain": "Economics",
+    "equation": "E[Pₜ₊₁ | Φₜ] = Pₜ(1 + E[rₜ₊₁ | Φₜ])",
+    "update_form": "martingale_process",
+    "optimization": "no_arbitrage",
+    "fixed_points": "informational_equilibrium",
+    "operators": [
+      "conditional_expectation",
+      "filtration",
+      "projection"
+    ],
+    "patterns": [
+      "information_aggregation",
+      "martingale",
+      "no_free_lunch",
+      "random_walk",
+      "rational_expectations"
+    ],
+    "variables": {
+      "state": "asset_price",
+      "score": "expected_return",
+      "reference": "information_set"
+    },
+    "conservation": [
+      "no_arbitrage_condition"
+    ],
+    "structure": "stochastic_process"
+  },
+  "capm": {
+    "id": "capm",
+    "name": "Capital Asset Pricing Model (CAPM)",
+    "domain": "Economics",
+    "equation": "E[Rᵢ] = Rᶠ + βᵢ(E[Rₘ] − Rᶠ)",
+    "update_form": "linear_risk_pricing",
+    "optimization": "maximize_sharpe_ratio",
+    "fixed_points": "market_equilibrium",
+    "operators": [
+      "covariance",
+      "linear_combination",
+      "normalize",
+      "regression"
+    ],
+    "patterns": [
+      "diversification",
+      "linear_factor_model",
+      "mean_variance",
+      "risk_return_tradeoff",
+      "systematic_risk"
+    ],
+    "variables": {
+      "state": "expected_return",
+      "score": "beta",
+      "reference": "market_portfolio"
+    },
+    "conservation": [
+      "market_clearing"
+    ],
+    "structure": "linear_equilibrium"
+  },
+  "arbitrage_pricing_theory": {
+    "id": "arbitrage_pricing_theory",
+    "name": "Arbitrage Pricing Theory (Ross)",
+    "domain": "Economics",
+    "equation": "E[Rᵢ] = Rᶠ + Σⱼ βᵢⱼ λⱼ",
+    "update_form": "multi_factor_pricing",
+    "optimization": "no_arbitrage",
+    "fixed_points": "factor_equilibrium",
+    "operators": [
+      "factor_decomposition",
+      "linear_combination",
+      "projection",
+      "regression"
+    ],
+    "patterns": [
+      "dimensionality_reduction",
+      "factor_model",
+      "linear_pricing",
+      "no_free_lunch",
+      "systematic_risk"
+    ],
+    "variables": {
+      "state": "asset_return",
+      "score": "factor_loading",
+      "reference": "risk_premium"
+    },
+    "conservation": [
+      "law_of_one_price"
+    ],
+    "structure": "linear_factor_model"
+  },
+  "nash_equilibrium": {
+    "id": "nash_equilibrium",
+    "name": "Nash Equilibrium",
+    "domain": "Economics",
+    "equation": "uᵢ(σᵢ*, σ₋ᵢ*) ≥ uᵢ(σᵢ, σ₋ᵢ*)  ∀σᵢ ∈ Σᵢ, ∀i",
+    "update_form": "best_response_fixed_point",
+    "optimization": "maximize_individual_payoff",
+    "fixed_points": "mutual_best_response",
+    "operators": [
+      "best_response",
+      "comparison",
+      "fixed_point",
+      "payoff_matrix"
+    ],
+    "patterns": [
+      "fixed_point_stability",
+      "game_theoretic_equilibrium",
+      "mutual_consistency",
+      "no_unilateral_deviation",
+      "strategic_interaction"
+    ],
+    "variables": {
+      "state": "strategy_profile",
+      "score": "utility",
+      "reference": "opponents_strategy"
+    },
+    "conservation": [],
+    "structure": "equilibrium_concept"
+  },
+  "prospect_theory": {
+    "id": "prospect_theory",
+    "name": "Prospect Theory (Kahneman-Tversky)",
+    "domain": "Economics",
+    "equation": "V = Σ π(pᵢ) · v(xᵢ − r), where v(x) = xᵅ if x≥0, −λ(−x)ᵝ if x<0",
+    "update_form": "reference_dependent_valuation",
+    "optimization": "maximize_prospect_value",
+    "fixed_points": "reference_point_adaptation",
+    "operators": [
+      "nonlinear_weighting",
+      "piecewise_function",
+      "probability_distortion",
+      "reference_shift"
+    ],
+    "patterns": [
+      "asymmetric_response",
+      "diminishing_sensitivity",
+      "framing_dependence",
+      "loss_aversion",
+      "reference_dependence"
+    ],
+    "variables": {
+      "state": "subjective_value",
+      "score": "decision_weight",
+      "reference": "reference_point"
+    },
+    "conservation": [],
+    "structure": "nonlinear_utility"
+  },
+  "modigliani_miller": {
+    "id": "modigliani_miller",
+    "name": "Modigliani-Miller Theorem",
+    "domain": "Economics",
+    "equation": "V_L = V_U  (no taxes);  V_L = V_U + τD  (with taxes)",
+    "update_form": "capital_structure_irrelevance",
+    "optimization": "maximize_firm_value",
+    "fixed_points": "value_invariance",
+    "operators": [
+      "arbitrage",
+      "linear_combination",
+      "present_value"
+    ],
+    "patterns": [
+      "conservation_law",
+      "irrelevance_theorem",
+      "no_free_lunch",
+      "value_additivity"
+    ],
+    "variables": {
+      "state": "firm_value",
+      "score": "cost_of_capital",
+      "reference": "debt_equity_ratio"
+    },
+    "conservation": [
+      "total_firm_value"
+    ],
+    "structure": "conservation_law"
+  },
+  "kelly_criterion": {
+    "id": "kelly_criterion",
+    "name": "Kelly Criterion",
+    "domain": "Economics",
+    "equation": "f* = (bp − q) / b = p − q/b",
+    "update_form": "log_growth_maximization",
+    "optimization": "maximize_log_wealth",
+    "fixed_points": "optimal_fraction",
+    "operators": [
+      "expectation",
+      "logarithm",
+      "maximize"
+    ],
+    "patterns": [
+      "geometric_growth",
+      "information_theoretic",
+      "log_utility",
+      "optimal_sizing",
+      "risk_of_ruin"
+    ],
+    "variables": {
+      "state": "bet_fraction",
+      "score": "expected_log_growth",
+      "reference": "edge_over_odds"
+    },
+    "conservation": [
+      "wealth_non_negativity"
+    ],
+    "structure": "optimization"
+  },
+  "mean_reversion": {
+    "id": "mean_reversion",
+    "name": "Ornstein-Uhlenbeck / Mean Reversion",
+    "domain": "Economics",
+    "equation": "dXₜ = θ(μ − Xₜ)dt + σdWₜ",
+    "update_form": "stochastic_mean_reversion",
+    "optimization": "minimize_deviation_from_mean",
+    "fixed_points": "long_run_mean",
+    "operators": [
+      "brownian_motion",
+      "differential",
+      "linear_restoring_force",
+      "stochastic_integral"
+    ],
+    "patterns": [
+      "ergodic",
+      "gaussian_stationary",
+      "mean_reverting",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "price_spread",
+      "score": "reversion_speed",
+      "reference": "long_run_mean"
+    },
+    "conservation": [],
+    "structure": "stochastic_ode"
+  },
+  "risk_neutral_pricing": {
+    "id": "risk_neutral_pricing",
+    "name": "Risk-Neutral Pricing / Fundamental Theorem",
+    "domain": "Economics",
+    "equation": "V₀ = E^Q[e^{−rT} V_T]",
+    "update_form": "discounted_expectation",
+    "optimization": "no_arbitrage",
+    "fixed_points": "risk_neutral_measure",
+    "operators": [
+      "change_of_measure",
+      "conditional_expectation",
+      "discounting",
+      "martingale"
+    ],
+    "patterns": [
+      "equivalent_martingale_measure",
+      "girsanov_transform",
+      "no_free_lunch",
+      "numeraire_invariance",
+      "risk_neutral_valuation"
+    ],
+    "variables": {
+      "state": "derivative_price",
+      "score": "risk_free_rate",
+      "reference": "risk_neutral_measure"
+    },
+    "conservation": [
+      "self_financing_portfolio"
+    ],
+    "structure": "martingale_pricing"
+  },
+  "heston_stochastic_volatility": {
+    "id": "heston_stochastic_volatility",
+    "name": "Heston Stochastic Volatility Model",
+    "domain": "Economics",
+    "equation": "dSₜ = μSₜdt + √vₜ Sₜ dW¹ₜ;  dvₜ = κ(θ−vₜ)dt + ξ√vₜ dW²ₜ",
+    "update_form": "coupled_stochastic_dynamics",
+    "optimization": "fit_volatility_surface",
+    "fixed_points": "long_run_variance",
+    "operators": [
+      "brownian_motion",
+      "correlation",
+      "differential",
+      "mean_reversion",
+      "square_root_process"
+    ],
+    "patterns": [
+      "fat_tails",
+      "leverage_effect",
+      "mean_reverting",
+      "stochastic_dynamics",
+      "volatility_clustering",
+      "volatility_smile"
+    ],
+    "variables": {
+      "state": "asset_price",
+      "score": "instantaneous_variance",
+      "reference": "long_run_variance"
+    },
+    "conservation": [],
+    "structure": "coupled_sde"
+  },
+  "market_microstructure": {
+    "id": "market_microstructure",
+    "name": "Kyle's Lambda / Market Microstructure",
+    "domain": "Economics",
+    "equation": "ΔP = λ · OrderFlow + noise;  λ = σᵥ / σᵤ",
+    "update_form": "price_impact_model",
+    "optimization": "maximize_informed_profit",
+    "fixed_points": "kyle_equilibrium",
+    "operators": [
+      "conditional_expectation",
+      "linear_regression",
+      "signal_extraction"
+    ],
+    "patterns": [
+      "adverse_selection",
+      "information_asymmetry",
+      "linear_price_impact",
+      "noise_trading",
+      "price_discovery"
+    ],
+    "variables": {
+      "state": "market_price",
+      "score": "price_impact",
+      "reference": "order_flow"
+    },
+    "conservation": [
+      "zero_expected_profit_for_market_maker"
+    ],
+    "structure": "bayesian_equilibrium"
+  },
+  "garch": {
+    "id": "garch",
+    "name": "GARCH Volatility Model",
+    "domain": "Economics",
+    "equation": "σ²ₜ = ω + α ε²ₜ₋₁ + β σ²ₜ₋₁",
+    "update_form": "autoregressive_conditional",
+    "optimization": "maximize_likelihood",
+    "fixed_points": "unconditional_variance",
+    "operators": [
+      "autoregression",
+      "conditional_variance",
+      "exponential_smoothing",
+      "maximum_likelihood"
+    ],
+    "patterns": [
+      "autoregressive",
+      "conditional_heteroskedasticity",
+      "exponential_decay",
+      "persistence",
+      "volatility_clustering"
+    ],
+    "variables": {
+      "state": "conditional_variance",
+      "score": "shock_squared",
+      "reference": "unconditional_variance"
+    },
+    "conservation": [
+      "variance_stationarity_constraint"
+    ],
+    "structure": "autoregressive_process"
+  },
+  "jump_diffusion": {
+    "id": "jump_diffusion",
+    "name": "Merton Jump-Diffusion Model",
+    "domain": "Economics",
+    "equation": "dS/S = (μ−λk̄)dt + σdW + JdN(λ)",
+    "update_form": "diffusion_plus_jumps",
+    "optimization": "fit_option_smiles",
+    "fixed_points": "risk_neutral_jump_measure",
+    "operators": [
+      "brownian_motion",
+      "compound_poisson",
+      "differential",
+      "jump_operator"
+    ],
+    "patterns": [
+      "fat_tails",
+      "jump_discontinuity",
+      "leptokurtic",
+      "mixed_process",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "asset_price",
+      "score": "jump_intensity",
+      "reference": "jump_size_distribution"
+    },
+    "conservation": [],
+    "structure": "jump_diffusion_sde"
+  },
+  "coase_theorem": {
+    "id": "coase_theorem",
+    "name": "Coase Theorem / Transaction Costs",
+    "domain": "Economics",
+    "equation": "If TC = 0: allocation is efficient regardless of initial rights assignment",
+    "update_form": "bargaining_to_efficiency",
+    "optimization": "maximize_joint_surplus",
+    "fixed_points": "pareto_optimal_allocation",
+    "operators": [
+      "bargaining",
+      "externality_pricing",
+      "property_rights_assignment"
+    ],
+    "patterns": [
+      "efficiency_theorem",
+      "externality_internalization",
+      "irrelevance_theorem",
+      "transaction_cost_friction"
+    ],
+    "variables": {
+      "state": "resource_allocation",
+      "score": "social_surplus",
+      "reference": "transaction_costs"
+    },
+    "conservation": [
+      "total_surplus"
+    ],
+    "structure": "equilibrium_concept"
+  },
+  "walrasian_tatonnement": {
+    "id": "walrasian_tatonnement",
+    "name": "Walrasian Tâtonnement / Price Adjustment",
+    "domain": "Economics",
+    "equation": "dpᵢ/dt = κ · zᵢ(p), where zᵢ = demand − supply",
+    "update_form": "excess_demand_adjustment",
+    "optimization": "clear_all_markets",
+    "fixed_points": "walrasian_equilibrium",
+    "operators": [
+      "differential",
+      "excess_demand",
+      "gradient_descent",
+      "price_adjustment"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "gradient_flow",
+      "market_clearing",
+      "price_discovery",
+      "tatonnement"
+    ],
+    "variables": {
+      "state": "price_vector",
+      "score": "excess_demand",
+      "reference": "equilibrium_price"
+    },
+    "conservation": [
+      "walras_law"
+    ],
+    "structure": "gradient_dynamics"
+  },
+  "rational_expectations": {
+    "id": "rational_expectations",
+    "name": "Rational Expectations (Muth-Lucas)",
+    "domain": "Economics",
+    "equation": "E[Xₜ₊₁ | Ωₜ] = E[Xₜ₊₁ | model]",
+    "update_form": "model_consistent_expectations",
+    "optimization": "minimize_forecast_error",
+    "fixed_points": "rational_expectations_equilibrium",
+    "operators": [
+      "conditional_expectation",
+      "fixed_point",
+      "projection"
+    ],
+    "patterns": [
+      "consistency",
+      "fixed_point_stability",
+      "information_aggregation",
+      "model_consistent",
+      "self_referential"
+    ],
+    "variables": {
+      "state": "expectation",
+      "score": "forecast_error",
+      "reference": "true_model"
+    },
+    "conservation": [
+      "unbiasedness"
+    ],
+    "structure": "fixed_point_equilibrium"
+  },
+  "fiscal_multiplier": {
+    "id": "fiscal_multiplier",
+    "name": "Keynesian Multiplier / IS-LM",
+    "domain": "Economics",
+    "equation": "ΔY = ΔG / (1 − MPC);  IS: Y = C(Y−T) + I(r) + G;  LM: M/P = L(r,Y)",
+    "update_form": "income_expenditure_feedback",
+    "optimization": "output_gap_stabilization",
+    "fixed_points": "goods_money_equilibrium",
+    "operators": [
+      "feedback_loop",
+      "geometric_series",
+      "simultaneous_equations"
+    ],
+    "patterns": [
+      "amplification",
+      "demand_driven",
+      "feedback_loop",
+      "multiplier_effect",
+      "simultaneous_equilibrium"
+    ],
+    "variables": {
+      "state": "output",
+      "score": "multiplier",
+      "reference": "marginal_propensity_to_consume"
+    },
+    "conservation": [
+      "income_equals_expenditure"
+    ],
+    "structure": "simultaneous_equilibrium"
+  },
+  "yield_curve_vasicek": {
+    "id": "yield_curve_vasicek",
+    "name": "Vasicek / Term Structure Model",
+    "domain": "Economics",
+    "equation": "drₜ = a(b − rₜ)dt + σdWₜ;  P(t,T) = exp(A(τ) − B(τ)rₜ)",
+    "update_form": "affine_term_structure",
+    "optimization": "fit_yield_curve",
+    "fixed_points": "long_run_rate",
+    "operators": [
+      "affine_transform",
+      "brownian_motion",
+      "differential",
+      "exponential",
+      "mean_reversion"
+    ],
+    "patterns": [
+      "affine_structure",
+      "mean_reverting",
+      "no_free_lunch",
+      "stochastic_dynamics",
+      "term_structure"
+    ],
+    "variables": {
+      "state": "short_rate",
+      "score": "bond_price",
+      "reference": "long_run_mean_rate"
+    },
+    "conservation": [],
+    "structure": "affine_sde"
+  },
+  "order_book_dynamics": {
+    "id": "order_book_dynamics",
+    "name": "Limit Order Book Dynamics",
+    "domain": "Economics",
+    "equation": "∂ρ/∂t = D ∂²ρ/∂p² + λ⁺(p) − λ⁻(p) − μ(p)ρ",
+    "update_form": "reaction_diffusion_orders",
+    "optimization": "minimize_execution_cost",
+    "fixed_points": "stationary_book_shape",
+    "operators": [
+      "arrival_rate",
+      "cancellation",
+      "diffusion",
+      "reaction_diffusion"
+    ],
+    "patterns": [
+      "birth_death_process",
+      "diffusion",
+      "mean_reverting",
+      "queueing",
+      "reaction_diffusion"
+    ],
+    "variables": {
+      "state": "order_density",
+      "score": "spread",
+      "reference": "mid_price"
+    },
+    "conservation": [],
+    "structure": "reaction_diffusion_pde"
+  },
+  "var_cvar": {
+    "id": "var_cvar",
+    "name": "Value-at-Risk / Conditional VaR",
+    "domain": "Economics",
+    "equation": "VaR_α = inf{x : P(L > x) ≤ 1−α};  CVaR_α = E[L | L ≥ VaR_α]",
+    "update_form": "tail_risk_quantile",
+    "optimization": "minimize_tail_risk",
+    "fixed_points": "risk_budget_equilibrium",
+    "operators": [
+      "conditional_expectation",
+      "quantile",
+      "tail_integral"
+    ],
+    "patterns": [
+      "coherent_risk_measure",
+      "convex_optimization",
+      "fat_tails",
+      "subadditivity",
+      "tail_risk"
+    ],
+    "variables": {
+      "state": "portfolio_loss",
+      "score": "risk_level",
+      "reference": "confidence_level"
+    },
+    "conservation": [],
+    "structure": "risk_measure"
   }
 }
