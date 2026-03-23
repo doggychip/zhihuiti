@@ -339,23 +339,25 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
     // Connection lines between agents
     const visibleIds = new Set(topAgents.map(a => a.id));
     const visibleConns = connections.filter(c => visibleIds.has(c.from) && visibleIds.has(c.to));
+    const lineEntries: typeof linesRef.current = [];
     visibleConns.forEach(conn => {
       const p1 = positions[conn.from];
       const p2 = positions[conn.to];
       if (!p1 || !p2) return;
-      const points = [p1, p2];
-      const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+      const lineGeo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
       const lineColor = CONN_COLORS[conn.type] || "#555";
       const lineMat = new THREE.LineBasicMaterial({
         color: lineColor,
         transparent: true,
-        opacity: conn.from === selectedId || conn.to === selectedId ? 0.6 : 0.12,
+        opacity: 0.12,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
       });
       const line = new THREE.Line(lineGeo, lineMat);
       world.add(line);
+      lineEntries.push({ line, from: conn.from, to: conn.to, baseColor: lineColor });
     });
+    linesRef.current = lineEntries;
 
     // Ambient dust
     const dustCount = 80;
