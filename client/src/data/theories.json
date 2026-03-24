@@ -401,7 +401,7 @@
   "predictive_coding": {
     "id": "predictive_coding",
     "name": "Predictive Coding",
-    "domain": "Neuroscience / Cognitive Science",
+    "domain": "Neuroscience",
     "equation": "\u03b5_l = x_l \u2212 \u03bc_l;  d\u03bc_l/dt = \u2212\u03b5_l + (\u2202f/\u2202\u03bc)\u03b5_{l+1}",
     "update_form": "hierarchical_error_propagation",
     "optimization": "minimize_prediction_error",
@@ -612,8 +612,8 @@
     ],
     "structure": "functional_integral"
   },
-  "renormalization_group": {
-    "id": "renormalization_group",
+  "renormalization_group_mf": {
+    "id": "renormalization_group_mf",
     "name": "Renormalization Group",
     "domain": "Meta-Frameworks",
     "equation": "dg/dl = \u03b2(g);  \u03b2(g*) = 0  (fixed point)",
@@ -2312,8 +2312,8 @@
     ],
     "structure": "riemannian_manifold_of_distributions"
   },
-  "lyapunov_stability": {
-    "id": "lyapunov_stability",
+  "lyapunov_stability_ds": {
+    "id": "lyapunov_stability_ds",
     "name": "Lyapunov Stability Theory",
     "domain": "Dynamic Systems",
     "equation": "V(x) > 0, V(0) = 0;  V\u0307(x) = \u2207V\u00b7f(x) \u2264 0;  V\u0307 < 0 \u2192 asymptotic stability;  V\u0307 \u2264 0 \u2192 stability",
@@ -3387,8 +3387,8 @@
     ],
     "structure": "bellman_recursion"
   },
-  "large_deviations": {
-    "id": "large_deviations",
+  "large_deviations_math": {
+    "id": "large_deviations_math",
     "name": "Large Deviations / Cram\u00e9r's Theorem",
     "domain": "Mathematics",
     "equation": "P(S_n/n \u2208 A) \u2248 exp(\u2212n inf_{x\u2208A} I(x));  I(x) = sup_\u03b8[\u03b8x \u2212 log M(\u03b8)];  Sanov: I(Q) = D_KL(Q||P);  Varadhan: lim 1/n log E[e^{nF}] = sup[F\u2212I]",
@@ -5663,8 +5663,8 @@
     ],
     "structure": "linear_factor_model"
   },
-  "nash_equilibrium": {
-    "id": "nash_equilibrium",
+  "nash_equilibrium_econ": {
+    "id": "nash_equilibrium_econ",
     "name": "Nash Equilibrium",
     "domain": "Economics",
     "equation": "uᵢ(σᵢ*, σ₋ᵢ*) ≥ uᵢ(σᵢ, σ₋ᵢ*)  ∀σᵢ ∈ Σᵢ, ∀i",
@@ -6222,8 +6222,8 @@
     "conservation": [],
     "structure": "risk_measure"
   },
-  "lotka_volterra": {
-    "id": "lotka_volterra",
+  "lotka_volterra_bio": {
+    "id": "lotka_volterra_bio",
     "name": "Lotka-Volterra / Predator-Prey",
     "domain": "Biology",
     "equation": "dx/dt = αx − βxy;  dy/dt = δxy − γy",
@@ -6324,8 +6324,8 @@
     "conservation": [],
     "structure": "reaction_diffusion_pde"
   },
-  "genetic_algorithm": {
-    "id": "genetic_algorithm",
+  "genetic_algorithm_bio": {
+    "id": "genetic_algorithm_bio",
     "name": "Genetic Algorithm / Evolutionary Computation",
     "domain": "Biology",
     "equation": "xₜ₊₁ = Select(Crossover(Mutate(xₜ)), fitness)",
@@ -6502,8 +6502,8 @@
     ],
     "structure": "coupled_ode"
   },
-  "price_equation": {
-    "id": "price_equation",
+  "price_equation_bio": {
+    "id": "price_equation_bio",
     "name": "Price Equation / Multilevel Selection",
     "domain": "Biology",
     "equation": "Δz̄ = Cov(wᵢ, zᵢ)/w̄ + E(wᵢ Δzᵢ)/w̄",
@@ -7038,8 +7038,8 @@
     "conservation": [],
     "structure": "coupled_ode"
   },
-  "spectral_graph_theory": {
-    "id": "spectral_graph_theory",
+  "spectral_graph_theory_net": {
+    "id": "spectral_graph_theory_net",
     "name": "Spectral Graph Theory / Graph Laplacian",
     "domain": "Network Science",
     "equation": "Lf = λf;  L = D − A;  λ₂ = algebraic_connectivity;  cuts ∝ fᵀLf",
@@ -7466,8 +7466,8 @@
     "conservation": [],
     "structure": "optimization_over_parameter_space"
   },
-  "schrodinger_equation": {
-    "id": "schrodinger_equation",
+  "schrodinger_equation_qp": {
+    "id": "schrodinger_equation_qp",
     "name": "Schrödinger Equation",
     "domain": "Quantum Physics",
     "equation": "iℏ ∂ψ/∂t = Ĥψ = [−ℏ²/(2m)∇² + V(x)]ψ",
@@ -7690,8 +7690,8 @@
     ],
     "structure": "open_system_ode"
   },
-  "quantum_error_correction": {
-    "id": "quantum_error_correction",
+  "quantum_error_correction_qp": {
+    "id": "quantum_error_correction_qp",
     "name": "Quantum Error Correction / Stabilizer Codes",
     "domain": "Quantum Physics",
     "equation": "[[n,k,d]]: encode k logical qubits in n physical;  syndrome S(E) = {gᵢ: [gᵢ,E]≠0}",
@@ -7722,8 +7722,8 @@
     ],
     "structure": "algebraic_code"
   },
-  "quantum_computing": {
-    "id": "quantum_computing",
+  "quantum_computing_qp": {
+    "id": "quantum_computing_qp",
     "name": "Quantum Computing / Gate Model",
     "domain": "Quantum Physics",
     "equation": "|ψ_out⟩ = Uₙ···U₂U₁|ψ_in⟩;  U ∈ SU(2ⁿ);  universal: {H, T, CNOT}",
@@ -7880,8 +7880,8 @@
     ],
     "structure": "cyclic_process"
   },
-  "free_energy_thermo": {
-    "id": "free_energy_thermo",
+  "free_energy_thermo_thermo": {
+    "id": "free_energy_thermo_thermo",
     "name": "Free Energy / Legendre Transforms",
     "domain": "Thermodynamics",
     "equation": "F = U − TS;  G = H − TS;  dF = −SdT − PdV;  minimum F at equilibrium",
@@ -7941,8 +7941,8 @@
     "conservation": [],
     "structure": "exact_identity"
   },
-  "landauer_principle": {
-    "id": "landauer_principle",
+  "landauer_principle_thermo": {
+    "id": "landauer_principle_thermo",
     "name": "Landauer's Principle / Information Thermodynamics",
     "domain": "Thermodynamics",
     "equation": "W ≥ kT ln 2  per bit erased;  ΔS_env ≥ kB ΔH(X)",
@@ -8400,8 +8400,8 @@
     "conservation": [],
     "structure": "bellman_recursion"
   },
-  "compressed_sensing": {
-    "id": "compressed_sensing",
+  "compressed_sensing_sp": {
+    "id": "compressed_sensing_sp",
     "name": "Compressed Sensing / Sparse Recovery",
     "domain": "Signal Processing",
     "equation": "min ||x||₁ s.t. y = Ax;  RIP: (1−δ)||x||² ≤ ||Ax||² ≤ (1+δ)||x||²",
@@ -8432,8 +8432,8 @@
     ],
     "structure": "convex_program"
   },
-  "kalman_filter": {
-    "id": "kalman_filter",
+  "kalman_filter_sp": {
+    "id": "kalman_filter_sp",
     "name": "Kalman Filter / State Estimation",
     "domain": "Signal Processing",
     "equation": "x̂ₖ|ₖ = x̂ₖ|ₖ₋₁ + Kₖ(yₖ − Hx̂ₖ|ₖ₋₁);  Kₖ = Pₖ|ₖ₋₁Hᵀ(HPₖ|ₖ₋₁Hᵀ+R)⁻¹",
@@ -8464,8 +8464,8 @@
     "conservation": [],
     "structure": "recursive_bayesian_estimation"
   },
-  "fourier_analysis": {
-    "id": "fourier_analysis",
+  "fourier_transform_sp": {
+    "id": "fourier_transform_sp",
     "name": "Fourier Transform / Spectral Analysis",
     "domain": "Signal Processing",
     "equation": "F(ω) = ∫f(t)e^{−iωt}dt;  f(t) = (1/2π)∫F(ω)e^{iωt}dω;  ||f||² = ||F||²",
@@ -8617,8 +8617,8 @@
     "conservation": [],
     "structure": "online_optimization"
   },
-  "sparse_coding": {
-    "id": "sparse_coding",
+  "sparse_coding_sp": {
+    "id": "sparse_coding_sp",
     "name": "Sparse Coding / Dictionary Learning",
     "domain": "Signal Processing",
     "equation": "min ||X−DA||²F + λΣᵢ||aᵢ||₁;  alternating: fix D optimize A, fix A optimize D",
@@ -8706,8 +8706,8 @@
     "conservation": [],
     "structure": "optimization_over_parameter_space"
   },
-  "predictive_coding": {
-    "id": "predictive_coding",
+  "predictive_coding_cog": {
+    "id": "predictive_coding_cog",
     "name": "Predictive Coding / Hierarchical Inference",
     "domain": "Cognitive Science",
     "equation": "εₗ = xₗ − g(μₗ₊₁);  μ̇ₗ = εₗ − ∂g/∂μ·Πₗ₊₁·εₗ₊₁;  F = Σₗ εₗᵀΠₗεₗ",
@@ -8946,8 +8946,8 @@
     ],
     "structure": "competitive_dynamics"
   },
-  "lyapunov_stability": {
-    "id": "lyapunov_stability",
+  "lyapunov_stability_ct": {
+    "id": "lyapunov_stability_ct",
     "name": "Lyapunov Stability Theory",
     "domain": "Control Theory",
     "equation": "V(x)>0, V(0)=0, V̇(x)≤0 ⟹ stable;  V̇<0 ⟹ asymptotically stable;  V̇≤−αV ⟹ exponentially stable",
@@ -9120,8 +9120,8 @@
     "conservation": [],
     "structure": "rewriting_system"
   },
-  "kolmogorov_complexity": {
-    "id": "kolmogorov_complexity",
+  "kolmogorov_complexity_cs": {
+    "id": "kolmogorov_complexity_cs",
     "name": "Kolmogorov Complexity / Algorithmic Information",
     "domain": "Computer Science",
     "equation": "K(x) = min{|p| : U(p)=x};  K(x|y) ≤ K(x) + O(1);  K(x,y) = K(x) + K(y|x*) + O(log n);  incompressible: K(x)≥|x|",
@@ -9211,8 +9211,8 @@
     ],
     "structure": "information_theoretic_bound"
   },
-  "renormalization_group": {
-    "id": "renormalization_group",
+  "renormalization_group_statphys": {
+    "id": "renormalization_group_statphys",
     "name": "Renormalization Group",
     "domain": "Statistical Physics",
     "equation": "H' = R(H);  K' = f(K);  fixed point: K* = f(K*);  ξ ~ |T−Tₖ|^{−ν};  universality: critical exponents depend only on d, n",
@@ -9273,8 +9273,8 @@
     ],
     "structure": "fluctuation_response_identity"
   },
-  "large_deviations": {
-    "id": "large_deviations",
+  "large_deviations_statphys": {
+    "id": "large_deviations_statphys",
     "name": "Large Deviations / Cramér's Theorem",
     "domain": "Statistical Physics",
     "equation": "P(S_n/n ∈ A) ≈ e^{−n·inf_{x∈A} I(x)};  I(x) = sup_λ[λx − log M(λ)];  Varadhan: lim (1/n)log E[e^{nF}] = sup[F−I]",
