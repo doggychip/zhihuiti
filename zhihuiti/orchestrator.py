@@ -15,16 +15,19 @@ from zhihuiti.bidding import BiddingHouse
 from zhihuiti.bloodline import Bloodline
 from zhihuiti.causal import CausalGraph, CausalReasoner, CausalValidator, load_arb_causal_data
 from zhihuiti.circuit_breaker import CircuitBreaker
+from zhihuiti.consolidation import ConsolidationEngine
 from zhihuiti.economy import Economy
 from zhihuiti.judge import Judge
 from zhihuiti.llm import LLM
 from zhihuiti.memory import Memory
 from zhihuiti.messaging import MessageBoard
+from zhihuiti.metacognition import MetacognitionEngine
 from zhihuiti.models import AgentRole, Task, TaskStatus
 from zhihuiti.arbitration import ArbitrationBureau
 from zhihuiti.factory import Factory
 from zhihuiti.futures import FuturesMarket
 from zhihuiti.market import TradingMarket
+from zhihuiti.prediction import PredictionEngine
 from zhihuiti.prompts import get_prompt
 from zhihuiti.realms import RealmManager
 from zhihuiti.relationships import LendingSystem, RelationshipGraph, RelationType
@@ -82,6 +85,19 @@ class Orchestrator:
                 console.print(f"  [dim]因果图: {n_loaded} causal edges loaded[/dim]")
         except Exception:
             pass  # Non-critical: prediction-arb data may not be available
+
+        # Brain Intelligence: load accumulated causal knowledge from prior runs
+        try:
+            n_accumulated = self.causal_graph.load_from_db(self.memory)
+        except Exception:
+            pass  # Non-critical
+
+        # Brain Intelligence engines
+        self.metacognition = MetacognitionEngine(self.memory, self.llm)
+        self.consolidation = ConsolidationEngine(self.memory, self.llm)
+        self.prediction = PredictionEngine(
+            self.memory, causal_graph=self.causal_graph,
+        )
 
         self.tasks: dict[str, Task] = {}
         self.max_workers = 4
@@ -251,6 +267,16 @@ class Orchestrator:
             if msg_context:
                 task.description = f"{task.description}\n\n{msg_context}"
 
+            # Inject consolidated institutional knowledge
+            consol_context = self.consolidation.get_context_for_role(
+                agent.config.role.value,
+            )
+            if consol_context:
+                task.description = f"{task.description}\n\n{consol_context}"
+
+            # Brain Intelligence: predict outcome before execution
+            prediction = self.prediction.predict(agent, task, goal_id)
+
             output = self.agent_manager.execute_task(agent, task)
 
             # Store output so dependent tasks can read it
@@ -299,6 +325,9 @@ class Orchestrator:
                 self.judge.inspection.history[-1]
                 if self.judge.inspection.history else None
             )
+
+            # Brain Intelligence: resolve prediction and learn from surprise
+            self.prediction.resolve(prediction, actual_score=score, actual_outcome=output[:200])
 
             # ── Phase 5 (locked): penalties, realm, reward, checkpoint ──
             with _lock:
@@ -515,6 +544,27 @@ class Orchestrator:
             self.causal_validator.print_report()
         if getattr(self, 'causal_graph', None) and self.causal_graph.edges:
             self.causal_graph.print_graph()
+
+        # Brain Intelligence: prediction error report
+        if self.prediction.predictions:
+            self.prediction.print_report()
+
+        # Brain Intelligence: persist causal knowledge for future runs
+        if self.causal_graph.edges:
+            try:
+                n_saved = self.causal_graph.save_to_db(self.memory)
+                if n_saved > 0:
+                    console.print(
+                        f"  [dim]因果图: Saved {n_saved} causal edges for future runs[/dim]"
+                    )
+            except Exception:
+                pass  # Non-critical
+
+        # Brain Intelligence: run memory consolidation
+        try:
+            self.consolidation.consolidate(purge=True)
+        except Exception:
+            pass  # Non-critical
 
         # Save goal to history for cross-goal learning
         scores = [r["score"] for r in results if r["score"] > 0]

@@ -10,6 +10,10 @@ from zhihuiti.collision import (
     TemporalDynamics, TemporalSnapshot, generate_narrative, _pair_key,
 )
 from zhihuiti.memory import Memory
+from zhihuiti.metacognition import MetacognitionEngine
+from zhihuiti.consolidation import ConsolidationEngine
+from zhihuiti.prediction import PredictionEngine
+from zhihuiti.causal import CausalGraph
 from tests.conftest import make_stub_llm
 
 INSPECTION_PASS = {"score": 0.8, "reasoning": "good", "pass": True}
@@ -69,6 +73,10 @@ def _make_orchestrator(theory_config):
     orch.factory = Factory(llm=stub, memory=mem)
     orch.bidding = BiddingHouse(stub, mem, orch.economy)
     orch.messages = MessageBoard(mem)
+    orch.causal_graph = CausalGraph()
+    orch.metacognition = MetacognitionEngine(mem)
+    orch.consolidation = ConsolidationEngine(mem)
+    orch.prediction = PredictionEngine(mem, causal_graph=orch.causal_graph)
     orch.tasks = {}
     orch.max_workers = 4
     orch.max_retries = 0

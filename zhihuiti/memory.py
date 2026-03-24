@@ -202,6 +202,77 @@ class Memory:
 
             CREATE INDEX IF NOT EXISTS idx_snapshots_goal ON snapshots(goal_id);
             CREATE INDEX IF NOT EXISTS idx_snapshots_phase ON snapshots(phase);
+
+            -- Brain Intelligence: Collision history for metacognition
+            CREATE TABLE IF NOT EXISTS collision_history (
+                id TEXT PRIMARY KEY,
+                goal TEXT NOT NULL,
+                domain TEXT DEFAULT '',
+                theory_a TEXT NOT NULL,
+                theory_b TEXT NOT NULL,
+                score_a REAL NOT NULL,
+                score_b REAL NOT NULL,
+                winner TEXT NOT NULL,
+                tasks_a INTEGER DEFAULT 0,
+                tasks_b INTEGER DEFAULT 0,
+                metadata TEXT DEFAULT '{}',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            -- Brain Intelligence: Regime preferences learned from collisions
+            CREATE TABLE IF NOT EXISTS regime_preferences (
+                id TEXT PRIMARY KEY,
+                domain TEXT NOT NULL,
+                theory TEXT NOT NULL,
+                win_count INTEGER DEFAULT 0,
+                total_count INTEGER DEFAULT 0,
+                avg_score REAL DEFAULT 0.0,
+                confidence REAL DEFAULT 0.0,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            -- Brain Intelligence: Consolidated knowledge (memory compression)
+            CREATE TABLE IF NOT EXISTS consolidated_knowledge (
+                id TEXT PRIMARY KEY,
+                principle TEXT NOT NULL,
+                domain TEXT DEFAULT '',
+                evidence_count INTEGER DEFAULT 1,
+                confidence REAL DEFAULT 0.5,
+                source_goals TEXT DEFAULT '[]',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            -- Brain Intelligence: Persistent causal edges across runs
+            CREATE TABLE IF NOT EXISTS causal_knowledge (
+                id TEXT PRIMARY KEY,
+                source TEXT NOT NULL,
+                target TEXT NOT NULL,
+                edge_type TEXT NOT NULL DEFAULT 'causes',
+                strength TEXT NOT NULL DEFAULT 'weak',
+                confidence REAL DEFAULT 0.5,
+                evidence TEXT DEFAULT '{}',
+                domain TEXT DEFAULT '',
+                observation_count INTEGER DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            -- Brain Intelligence: Prediction error tracking
+            CREATE TABLE IF NOT EXISTS predictions (
+                id TEXT PRIMARY KEY,
+                agent_id TEXT NOT NULL,
+                task_id TEXT NOT NULL,
+                goal_id TEXT DEFAULT '',
+                predicted_score REAL NOT NULL,
+                predicted_outcome TEXT DEFAULT '',
+                actual_score REAL,
+                actual_outcome TEXT DEFAULT '',
+                prediction_error REAL,
+                causal_update TEXT DEFAULT '{}',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                resolved_at TIMESTAMP
+            );
         """)
         self.conn.commit()
 
@@ -829,6 +900,254 @@ class Memory:
             current_id = row["parent_snapshot_id"]
             depth += 1
         return chain
+
+    # Brain Intelligence: Collision history & regime preferences
+    # ------------------------------------------------------------------
+
+    def save_collision(self, collision_id: str, goal: str, domain: str,
+                       theory_a: str, theory_b: str, score_a: float,
+                       score_b: float, winner: str, tasks_a: int = 0,
+                       tasks_b: int = 0, metadata: dict | None = None) -> None:
+        with self._lock:
+            self.conn.execute(
+                """INSERT OR REPLACE INTO collision_history
+                   (id, goal, domain, theory_a, theory_b, score_a, score_b,
+                    winner, tasks_a, tasks_b, metadata)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (collision_id, goal, domain, theory_a, theory_b, score_a,
+                 score_b, winner, tasks_a, tasks_b, json.dumps(metadata or {})),
+            )
+            self.conn.commit()
+
+    def get_collision_history(self, domain: str | None = None,
+                              limit: int = 50) -> list[dict]:
+        if domain:
+            rows = self._query(
+                "SELECT * FROM collision_history WHERE domain = ? ORDER BY created_at DESC LIMIT ?",
+                (domain, limit),
+            )
+        else:
+            rows = self._query(
+                "SELECT * FROM collision_history ORDER BY created_at DESC LIMIT ?",
+                (limit,),
+            )
+        return [dict(r) for r in rows]
+
+    def save_regime_preference(self, pref_id: str, domain: str, theory: str,
+                                win_count: int, total_count: int,
+                                avg_score: float, confidence: float) -> None:
+        with self._lock:
+            self.conn.execute(
+                """INSERT OR REPLACE INTO regime_preferences
+                   (id, domain, theory, win_count, total_count, avg_score,
+                    confidence, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
+                (pref_id, domain, theory, win_count, total_count,
+                 avg_score, confidence),
+            )
+            self.conn.commit()
+
+    def get_regime_preference(self, domain: str) -> dict | None:
+        row = self._query_one(
+            "SELECT * FROM regime_preferences WHERE domain = ? ORDER BY confidence DESC LIMIT 1",
+            (domain,),
+        )
+        return dict(row) if row else None
+
+    def get_all_regime_preferences(self) -> list[dict]:
+        rows = self._query(
+            "SELECT * FROM regime_preferences ORDER BY confidence DESC"
+        )
+        return [dict(r) for r in rows]
+
+    # ------------------------------------------------------------------
+    # Brain Intelligence: Memory consolidation
+    # ------------------------------------------------------------------
+
+    def save_consolidated_knowledge(self, knowledge_id: str, principle: str,
+                                     domain: str, evidence_count: int,
+                                     confidence: float,
+                                     source_goals: list[str] | None = None) -> None:
+        with self._lock:
+            self.conn.execute(
+                """INSERT OR REPLACE INTO consolidated_knowledge
+                   (id, principle, domain, evidence_count, confidence,
+                    source_goals, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
+                (knowledge_id, principle, domain, evidence_count, confidence,
+                 json.dumps(source_goals or [])),
+            )
+            self.conn.commit()
+
+    def get_consolidated_knowledge(self, domain: str | None = None,
+                                    limit: int = 20) -> list[dict]:
+        if domain:
+            rows = self._query(
+                "SELECT * FROM consolidated_knowledge WHERE domain = ? ORDER BY confidence DESC LIMIT ?",
+                (domain, limit),
+            )
+        else:
+            rows = self._query(
+                "SELECT * FROM consolidated_knowledge ORDER BY confidence DESC LIMIT ?",
+                (limit,),
+            )
+        return [dict(r) for r in rows]
+
+    def get_stale_goals(self, max_age_days: int = 30, limit: int = 50) -> list[dict]:
+        """Get old goal history entries for consolidation."""
+        rows = self._query(
+            """SELECT * FROM goal_history
+               WHERE created_at < datetime('now', ?)
+               ORDER BY created_at ASC LIMIT ?""",
+            (f"-{max_age_days} days", limit),
+        )
+        return [dict(r) for r in rows]
+
+    def get_old_task_history(self, max_age_days: int = 30,
+                             limit: int = 100) -> list[dict]:
+        """Get old task history for consolidation."""
+        rows = self._query(
+            """SELECT * FROM task_history
+               WHERE created_at < datetime('now', ?)
+               ORDER BY created_at ASC LIMIT ?""",
+            (f"-{max_age_days} days", limit),
+        )
+        return [dict(r) for r in rows]
+
+    def purge_old_task_history(self, max_age_days: int = 30) -> int:
+        """Delete old task history entries after consolidation."""
+        with self._lock:
+            cursor = self.conn.execute(
+                "DELETE FROM task_history WHERE created_at < datetime('now', ?)",
+                (f"-{max_age_days} days",),
+            )
+            self.conn.commit()
+            return cursor.rowcount
+
+    # ------------------------------------------------------------------
+    # Brain Intelligence: Persistent causal knowledge
+    # ------------------------------------------------------------------
+
+    def save_causal_knowledge(self, edge_id: str, source: str, target: str,
+                               edge_type: str, strength: str, confidence: float,
+                               evidence: dict | None = None, domain: str = "",
+                               observation_count: int = 1) -> None:
+        with self._lock:
+            self.conn.execute(
+                """INSERT OR REPLACE INTO causal_knowledge
+                   (id, source, target, edge_type, strength, confidence,
+                    evidence, domain, observation_count, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
+                (edge_id, source, target, edge_type, strength, confidence,
+                 json.dumps(evidence or {}), domain, observation_count),
+            )
+            self.conn.commit()
+
+    def get_causal_knowledge(self, domain: str | None = None,
+                              min_confidence: float = 0.0) -> list[dict]:
+        if domain:
+            rows = self._query(
+                """SELECT * FROM causal_knowledge
+                   WHERE domain = ? AND confidence >= ?
+                   ORDER BY confidence DESC""",
+                (domain, min_confidence),
+            )
+        else:
+            rows = self._query(
+                """SELECT * FROM causal_knowledge
+                   WHERE confidence >= ?
+                   ORDER BY confidence DESC""",
+                (min_confidence,),
+            )
+        return [dict(r) for r in rows]
+
+    def find_causal_edge(self, source: str, target: str,
+                          domain: str = "") -> dict | None:
+        row = self._query_one(
+            "SELECT * FROM causal_knowledge WHERE source = ? AND target = ? AND domain = ?",
+            (source, target, domain),
+        )
+        return dict(row) if row else None
+
+    def increment_causal_observation(self, edge_id: str,
+                                      new_confidence: float) -> None:
+        with self._lock:
+            self.conn.execute(
+                """UPDATE causal_knowledge
+                   SET observation_count = observation_count + 1,
+                       confidence = ?,
+                       updated_at = CURRENT_TIMESTAMP
+                   WHERE id = ?""",
+                (new_confidence, edge_id),
+            )
+            self.conn.commit()
+
+    # ------------------------------------------------------------------
+    # Brain Intelligence: Prediction error tracking
+    # ------------------------------------------------------------------
+
+    def save_prediction(self, pred_id: str, agent_id: str, task_id: str,
+                        predicted_score: float, predicted_outcome: str = "",
+                        goal_id: str = "") -> None:
+        with self._lock:
+            self.conn.execute(
+                """INSERT OR REPLACE INTO predictions
+                   (id, agent_id, task_id, goal_id, predicted_score,
+                    predicted_outcome)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (pred_id, agent_id, task_id, goal_id, predicted_score,
+                 predicted_outcome),
+            )
+            self.conn.commit()
+
+    def resolve_prediction(self, pred_id: str, actual_score: float,
+                           actual_outcome: str = "",
+                           prediction_error: float = 0.0,
+                           causal_update: dict | None = None) -> None:
+        with self._lock:
+            self.conn.execute(
+                """UPDATE predictions
+                   SET actual_score = ?, actual_outcome = ?,
+                       prediction_error = ?, causal_update = ?,
+                       resolved_at = CURRENT_TIMESTAMP
+                   WHERE id = ?""",
+                (actual_score, actual_outcome, prediction_error,
+                 json.dumps(causal_update or {}), pred_id),
+            )
+            self.conn.commit()
+
+    def get_agent_predictions(self, agent_id: str, resolved: bool = True,
+                               limit: int = 20) -> list[dict]:
+        if resolved:
+            rows = self._query(
+                """SELECT * FROM predictions
+                   WHERE agent_id = ? AND resolved_at IS NOT NULL
+                   ORDER BY resolved_at DESC LIMIT ?""",
+                (agent_id, limit),
+            )
+        else:
+            rows = self._query(
+                """SELECT * FROM predictions
+                   WHERE agent_id = ? AND resolved_at IS NULL
+                   ORDER BY created_at DESC LIMIT ?""",
+                (agent_id, limit),
+            )
+        return [dict(r) for r in rows]
+
+    def get_prediction_stats(self) -> dict:
+        total = self._query_one("SELECT COUNT(*) as c FROM predictions")["c"]
+        resolved = self._query_one(
+            "SELECT COUNT(*) as c FROM predictions WHERE resolved_at IS NOT NULL"
+        )["c"]
+        avg_error = self._query_one(
+            "SELECT AVG(ABS(prediction_error)) as a FROM predictions WHERE prediction_error IS NOT NULL"
+        )["a"]
+        return {
+            "total_predictions": total,
+            "resolved": resolved,
+            "pending": total - resolved,
+            "avg_absolute_error": round(avg_error or 0.0, 4),
+        }
 
     def close(self) -> None:
         self.conn.close()

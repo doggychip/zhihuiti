@@ -140,9 +140,26 @@ class RealmManager:
     # Budget allocation
     # ------------------------------------------------------------------
 
-    def allocate_budgets(self, total_budget: float) -> None:
-        """Distribute budget across realms according to ratios."""
-        for realm, ratio in REALM_BUDGET_RATIO.items():
+    def allocate_budgets(self, total_budget: float,
+                         attention: dict[str, float] | None = None) -> None:
+        """Distribute budget across realms according to ratios.
+
+        Args:
+            total_budget: Total budget to distribute.
+            attention: Optional override ratios from theory config.
+                       Dict with keys 'research', 'execution', 'central'.
+                       If None, uses default REALM_BUDGET_RATIO.
+        """
+        if attention:
+            ratios = {
+                Realm.RESEARCH: attention.get("research", 0.50),
+                Realm.EXECUTION: attention.get("execution", 0.35),
+                Realm.CENTRAL: attention.get("central", 0.15),
+            }
+        else:
+            ratios = REALM_BUDGET_RATIO
+
+        for realm, ratio in ratios.items():
             allocation = total_budget * ratio
             self.realms[realm].budget_allocated += allocation
             self._save_state(realm)
