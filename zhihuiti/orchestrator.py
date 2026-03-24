@@ -28,6 +28,9 @@ from zhihuiti.market import TradingMarket
 from zhihuiti.prompts import get_prompt
 from zhihuiti.realms import RealmManager
 from zhihuiti.relationships import LendingSystem, RelationshipGraph, RelationType
+from zhihuiti.retry import RetryProtocol, EscalationAction
+from zhihuiti.rice import estimate_rice_scores
+from zhihuiti.phase_gate import PhaseGate, GateMode
 
 console = Console()
 
@@ -66,6 +69,8 @@ class Orchestrator:
         self.factory = Factory(llm=self.llm, memory=self.memory)
         self.bidding = BiddingHouse(self.llm, self.memory, self.economy)
         self.messages = MessageBoard(self.memory)
+        self.retry_protocol = RetryProtocol(max_retries=3)
+        self.phase_gate = PhaseGate(mode=GateMode.SOFT)
 
         # Causal reasoning engine (因果推理)
         self.causal_graph = CausalGraph()
@@ -281,6 +286,7 @@ class Orchestrator:
                         "reward": {"gross": 0, "tax": 0, "net": 0, "paid": False},
                         "bid": auction.winning_bid if auction.winning_bid else None,
                         "num_bids": len(auction.bids) if auction else 0,
+                        "_fuse_event": fuse_event,
                     }
 
                 deep = self.behavior.should_deep_analyze(agent)
@@ -288,6 +294,11 @@ class Orchestrator:
 
             # ── Phase 4 (free): judge scoring — 3 more LLM calls ──
             score = self.judge.score_task(task, agent)
+            # Capture inspection result for structured retry feedback
+            _inspection_result = (
+                self.judge.inspection.history[-1]
+                if self.judge.inspection.history else None
+            )
 
             # ── Phase 5 (locked): penalties, realm, reward, checkpoint ──
             with _lock:
@@ -344,32 +355,74 @@ class Orchestrator:
                 "reward": reward_info,
                 "bid": auction.winning_bid if auction.winning_bid else None,
                 "num_bids": len(auction.bids) if auction else 0,
+                "_inspection_result": _inspection_result,
             }
 
         def _run_with_retry(task: Task) -> dict:
-            """Run a task with retry on failure (re-auction to a different agent)."""
+            """Run a task with structured retry and escalation protocol.
+
+            On failure:
+            1. Record structured QA feedback (what failed, why, which layer)
+            2. Inject feedback into the task for the next attempt
+            3. After max attempts, escalate (reassign/decompose/defer/accept)
+            """
+            original_desc = task.description
             result = _run_task(task)
-            attempt = 0
-            while (
-                result["status"] in ("fuse_tripped", "failed")
-                and attempt < self.max_retries
-            ):
-                attempt += 1
-                console.print(
-                    f"\n  [yellow]⟳ Retry {attempt}/{self.max_retries}:[/yellow] "
-                    f"{task.description[:60]}..."
+
+            while result["status"] in ("fuse_tripped", "failed"):
+                # Record failure with structured feedback
+                retry_state = self.retry_protocol.record_failure(
+                    task,
+                    score=result.get("score", 0.0),
+                    result=task.result,
+                    inspection_result=result.get("_inspection_result"),
+                    fuse_event=result.get("_fuse_event"),
                 )
-                # Reset task state for retry
+
+                if not self.retry_protocol.should_retry(task):
+                    # Exhausted retries — escalate
+                    action = self.retry_protocol.escalate(task)
+                    if action == EscalationAction.ACCEPT:
+                        # Use the best result we got
+                        task.result = retry_state.best_result
+                        task.score = retry_state.best_score
+                        result["score"] = retry_state.best_score
+                        result["status"] = "accepted_with_issues"
+                    # For REASSIGN/DECOMPOSE/DEFER, the caller can inspect
+                    # result["escalation"] to decide what to do
+                    result["escalation"] = action.value
+                    break
+
+                attempt = retry_state.attempt + 1
+                console.print(
+                    f"\n  [yellow]⟳ Retry {attempt}/{self.retry_protocol.max_retries} "
+                    f"(with QA feedback):[/yellow] {original_desc[:60]}..."
+                )
+
+                # Reset task state and inject QA feedback
                 task.status = TaskStatus.PENDING
                 task.result = ""
                 task.score = None
+                feedback = self.retry_protocol.get_retry_context(task)
+                task.description = f"{original_desc}\n\n{feedback}" if feedback else original_desc
+
                 result = _run_task(task)
+
+            # Restore original description (remove injected feedback)
+            task.description = original_desc
             return result
 
         # Execute wave-by-wave; tasks within a wave run in parallel
         max_w = self.max_workers
         for wave_idx, wave_ids in enumerate(waves):
             wave_tasks = [dag_id_to_task[did] for did in wave_ids]
+
+            # RICE prioritization: order tasks within each wave by impact
+            if len(wave_tasks) > 1:
+                rice_scores = estimate_rice_scores(self.llm, wave_tasks, goal)
+                rice_order = {s.task_id: i for i, s in enumerate(rice_scores)}
+                wave_tasks.sort(key=lambda t: rice_order.get(t.id, 999))
+
             if len(waves) > 1:
                 console.print(
                     f"\n[bold magenta]── Wave {wave_idx} "
@@ -377,13 +430,30 @@ class Orchestrator:
                     f"──[/bold magenta]"
                 )
 
+            wave_results: list[dict] = []
             if len(wave_tasks) > 1:
                 with ThreadPoolExecutor(max_workers=min(len(wave_tasks), max_w)) as executor:
                     futures = {executor.submit(_run_with_retry, t): t for t in wave_tasks}
                     for future in as_completed(futures):
-                        results.append(future.result())
+                        wave_results.append(future.result())
             else:
-                results.extend(_run_with_retry(t) for t in wave_tasks)
+                wave_results.extend(_run_with_retry(t) for t in wave_tasks)
+
+            results.extend(wave_results)
+
+            # Phase gate: evaluate wave quality before proceeding to next wave
+            if (
+                getattr(self, 'phase_gate', None)
+                and len(waves) > 1
+                and wave_idx < len(waves) - 1
+            ):
+                gate_result = self.phase_gate.evaluate(wave_idx, wave_results)
+                if not self.phase_gate.should_continue(gate_result):
+                    console.print(
+                        "\n  [bold red]Pipeline halted by phase gate.[/bold red] "
+                        "Remaining waves skipped."
+                    )
+                    break
 
         # Print agent tree if any sub-agents were spawned
         has_subagents = any(r.get("subtask_count", 0) > 0 for r in results)
@@ -401,6 +471,8 @@ class Orchestrator:
             self.circuit_breaker.print_report()
         if self.behavior.violations:
             self.behavior.print_report()
+        if getattr(self, 'phase_gate', None) and self.phase_gate.history:
+            self.phase_gate.print_report()
         if self.lending.active_loans:
             self.lending.print_report()
         if getattr(self, 'causal_validator', None) and self.causal_validator.history:
