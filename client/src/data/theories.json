@@ -5559,5 +5559,3954 @@
       "pareto_efficiency"
     ],
     "structure": "population_dynamics"
+  },
+  "efficient_market_hypothesis": {
+    "id": "efficient_market_hypothesis",
+    "name": "Efficient Market Hypothesis (Fama)",
+    "domain": "Economics",
+    "equation": "E[Pₜ₊₁ | Φₜ] = Pₜ(1 + E[rₜ₊₁ | Φₜ])",
+    "update_form": "martingale_process",
+    "optimization": "no_arbitrage",
+    "fixed_points": "informational_equilibrium",
+    "operators": [
+      "conditional_expectation",
+      "drift",
+      "filtration",
+      "projection"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "diffusion_approximation",
+      "information_aggregation",
+      "martingale",
+      "no_free_lunch",
+      "random_walk",
+      "rational_expectations",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "asset_price",
+      "score": "expected_return",
+      "reference": "information_set"
+    },
+    "conservation": [
+      "no_arbitrage_condition"
+    ],
+    "structure": "stochastic_process"
+  },
+  "capm": {
+    "id": "capm",
+    "name": "Capital Asset Pricing Model (CAPM)",
+    "domain": "Economics",
+    "equation": "E[Rᵢ] = Rᶠ + βᵢ(E[Rₘ] − Rᶠ)",
+    "update_form": "linear_risk_pricing",
+    "optimization": "maximize_sharpe_ratio",
+    "fixed_points": "market_equilibrium",
+    "operators": [
+      "covariance",
+      "expectation",
+      "linear_combination",
+      "normalize",
+      "projection",
+      "regression"
+    ],
+    "patterns": [
+      "dimensionality_reduction",
+      "diversification",
+      "energy_minimization",
+      "linear_factor_model",
+      "mean_variance",
+      "risk_return_tradeoff",
+      "systematic_risk"
+    ],
+    "variables": {
+      "state": "expected_return",
+      "score": "beta",
+      "reference": "market_portfolio"
+    },
+    "conservation": [
+      "market_clearing"
+    ],
+    "structure": "linear_equilibrium"
+  },
+  "arbitrage_pricing_theory": {
+    "id": "arbitrage_pricing_theory",
+    "name": "Arbitrage Pricing Theory (Ross)",
+    "domain": "Economics",
+    "equation": "E[Rᵢ] = Rᶠ + Σⱼ βᵢⱼ λⱼ",
+    "update_form": "multi_factor_pricing",
+    "optimization": "no_arbitrage",
+    "fixed_points": "factor_equilibrium",
+    "operators": [
+      "eigenvalue_decomposition",
+      "factor_decomposition",
+      "linear_combination",
+      "projection",
+      "regression"
+    ],
+    "patterns": [
+      "dimensionality_reduction",
+      "dual_variables",
+      "factor_model",
+      "linear_pricing",
+      "no_free_lunch",
+      "spectral_decomposition",
+      "systematic_risk"
+    ],
+    "variables": {
+      "state": "asset_return",
+      "score": "factor_loading",
+      "reference": "risk_premium"
+    },
+    "conservation": [
+      "law_of_one_price"
+    ],
+    "structure": "linear_factor_model"
+  },
+  "nash_equilibrium": {
+    "id": "nash_equilibrium",
+    "name": "Nash Equilibrium",
+    "domain": "Economics",
+    "equation": "uᵢ(σᵢ*, σ₋ᵢ*) ≥ uᵢ(σᵢ, σ₋ᵢ*)  ∀σᵢ ∈ Σᵢ, ∀i",
+    "update_form": "best_response_fixed_point",
+    "optimization": "maximize_individual_payoff",
+    "fixed_points": "mutual_best_response",
+    "operators": [
+      "best_response",
+      "comparison",
+      "fixed_point",
+      "payoff_matrix"
+    ],
+    "patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "fixed_point_stability",
+      "game_theoretic_equilibrium",
+      "mutual_consistency",
+      "no_unilateral_deviation",
+      "strategic_interaction",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "strategy_profile",
+      "score": "utility",
+      "reference": "opponents_strategy"
+    },
+    "conservation": [],
+    "structure": "equilibrium_concept"
+  },
+  "prospect_theory": {
+    "id": "prospect_theory",
+    "name": "Prospect Theory (Kahneman-Tversky)",
+    "domain": "Economics",
+    "equation": "V = Σ π(pᵢ) · v(xᵢ − r), where v(x) = xᵅ if x≥0, −λ(−x)ᵝ if x<0",
+    "update_form": "reference_dependent_valuation",
+    "optimization": "maximize_prospect_value",
+    "fixed_points": "reference_point_adaptation",
+    "operators": [
+      "nonlinear_weighting",
+      "piecewise_function",
+      "probability_distortion",
+      "reference_shift",
+      "softmax"
+    ],
+    "patterns": [
+      "asymmetric_response",
+      "diminishing_sensitivity",
+      "energy_entropy_tradeoff",
+      "framing_dependence",
+      "loss_aversion",
+      "nonlinear_dynamics",
+      "reference_dependence"
+    ],
+    "variables": {
+      "state": "subjective_value",
+      "score": "decision_weight",
+      "reference": "reference_point"
+    },
+    "conservation": [],
+    "structure": "nonlinear_utility"
+  },
+  "modigliani_miller": {
+    "id": "modigliani_miller",
+    "name": "Modigliani-Miller Theorem",
+    "domain": "Economics",
+    "equation": "V_L = V_U  (no taxes);  V_L = V_U + τD  (with taxes)",
+    "update_form": "capital_structure_irrelevance",
+    "optimization": "maximize_firm_value",
+    "fixed_points": "value_invariance",
+    "operators": [
+      "arbitrage",
+      "linear_combination",
+      "present_value"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "dual_variables",
+      "irrelevance_theorem",
+      "no_free_lunch",
+      "value_additivity"
+    ],
+    "variables": {
+      "state": "firm_value",
+      "score": "cost_of_capital",
+      "reference": "debt_equity_ratio"
+    },
+    "conservation": [
+      "total_firm_value"
+    ],
+    "structure": "conservation_law"
+  },
+  "kelly_criterion": {
+    "id": "kelly_criterion",
+    "name": "Kelly Criterion",
+    "domain": "Economics",
+    "equation": "f* = (bp − q) / b = p − q/b",
+    "update_form": "log_growth_maximization",
+    "optimization": "maximize_log_wealth",
+    "fixed_points": "optimal_fraction",
+    "operators": [
+      "expectation",
+      "gradient",
+      "logarithm",
+      "maximize"
+    ],
+    "patterns": [
+      "energy_entropy_tradeoff",
+      "geometric_growth",
+      "information_gain",
+      "information_theoretic",
+      "log_utility",
+      "optimal_sizing",
+      "risk_of_ruin",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "bet_fraction",
+      "score": "expected_log_growth",
+      "reference": "edge_over_odds"
+    },
+    "conservation": [
+      "wealth_non_negativity"
+    ],
+    "structure": "optimization"
+  },
+  "mean_reversion": {
+    "id": "mean_reversion",
+    "name": "Ornstein-Uhlenbeck / Mean Reversion",
+    "domain": "Economics",
+    "equation": "dXₜ = θ(μ − Xₜ)dt + σdWₜ",
+    "update_form": "stochastic_mean_reversion",
+    "optimization": "minimize_deviation_from_mean",
+    "fixed_points": "long_run_mean",
+    "operators": [
+      "brownian_motion",
+      "differential",
+      "fokker_planck",
+      "linear_restoring_force",
+      "stochastic_integral"
+    ],
+    "patterns": [
+      "diffusion_approximation",
+      "energy_minimization",
+      "ergodic",
+      "gaussian_stationary",
+      "mean_reverting",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "price_spread",
+      "score": "reversion_speed",
+      "reference": "long_run_mean"
+    },
+    "conservation": [],
+    "structure": "stochastic_ode"
+  },
+  "risk_neutral_pricing": {
+    "id": "risk_neutral_pricing",
+    "name": "Risk-Neutral Pricing / Fundamental Theorem",
+    "domain": "Economics",
+    "equation": "V₀ = E^Q[e^{−rT} V_T]",
+    "update_form": "discounted_expectation",
+    "optimization": "no_arbitrage",
+    "fixed_points": "risk_neutral_measure",
+    "operators": [
+      "change_of_measure",
+      "conditional_expectation",
+      "discounting",
+      "exponential",
+      "martingale"
+    ],
+    "patterns": [
+      "dual_variables",
+      "equivalent_martingale_measure",
+      "girsanov_transform",
+      "no_free_lunch",
+      "numeraire_invariance",
+      "risk_neutral_valuation",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "derivative_price",
+      "score": "risk_free_rate",
+      "reference": "risk_neutral_measure"
+    },
+    "conservation": [
+      "self_financing_portfolio"
+    ],
+    "structure": "martingale_pricing"
+  },
+  "heston_stochastic_volatility": {
+    "id": "heston_stochastic_volatility",
+    "name": "Heston Stochastic Volatility Model",
+    "domain": "Economics",
+    "equation": "dSₜ = μSₜdt + √vₜ Sₜ dW¹ₜ;  dvₜ = κ(θ−vₜ)dt + ξ√vₜ dW²ₜ",
+    "update_form": "coupled_stochastic_dynamics",
+    "optimization": "fit_volatility_surface",
+    "fixed_points": "long_run_variance",
+    "operators": [
+      "brownian_motion",
+      "correlation",
+      "differential",
+      "fokker_planck",
+      "mean_reversion",
+      "square_root_process"
+    ],
+    "patterns": [
+      "coupled_oscillation",
+      "diffusion_approximation",
+      "fat_tails",
+      "leverage_effect",
+      "mean_reverting",
+      "stochastic_dynamics",
+      "volatility_clustering",
+      "volatility_smile"
+    ],
+    "variables": {
+      "state": "asset_price",
+      "score": "instantaneous_variance",
+      "reference": "long_run_variance"
+    },
+    "conservation": [],
+    "structure": "coupled_sde"
+  },
+  "market_microstructure": {
+    "id": "market_microstructure",
+    "name": "Kyle's Lambda / Market Microstructure",
+    "domain": "Economics",
+    "equation": "ΔP = λ · OrderFlow + noise;  λ = σᵥ / σᵤ",
+    "update_form": "price_impact_model",
+    "optimization": "maximize_informed_profit",
+    "fixed_points": "kyle_equilibrium",
+    "operators": [
+      "conditional_expectation",
+      "linear_regression",
+      "signal_extraction"
+    ],
+    "patterns": [
+      "adverse_selection",
+      "bayesian_updating",
+      "information_asymmetry",
+      "information_gain",
+      "linear_price_impact",
+      "noise_trading",
+      "price_discovery",
+      "signal_noise_separation"
+    ],
+    "variables": {
+      "state": "market_price",
+      "score": "price_impact",
+      "reference": "order_flow"
+    },
+    "conservation": [
+      "zero_expected_profit_for_market_maker"
+    ],
+    "structure": "bayesian_equilibrium"
+  },
+  "garch": {
+    "id": "garch",
+    "name": "GARCH Volatility Model",
+    "domain": "Economics",
+    "equation": "σ²ₜ = ω + α ε²ₜ₋₁ + β σ²ₜ₋₁",
+    "update_form": "autoregressive_conditional",
+    "optimization": "maximize_likelihood",
+    "fixed_points": "unconditional_variance",
+    "operators": [
+      "autoregression",
+      "conditional_variance",
+      "exponential_smoothing",
+      "fokker_planck",
+      "maximum_likelihood"
+    ],
+    "patterns": [
+      "autoregressive",
+      "conditional_heteroskedasticity",
+      "energy_minimization",
+      "exponential_decay",
+      "information_gain",
+      "persistence",
+      "stochastic_dynamics",
+      "volatility_clustering"
+    ],
+    "variables": {
+      "state": "conditional_variance",
+      "score": "shock_squared",
+      "reference": "unconditional_variance"
+    },
+    "conservation": [
+      "variance_stationarity_constraint"
+    ],
+    "structure": "autoregressive_process"
+  },
+  "jump_diffusion": {
+    "id": "jump_diffusion",
+    "name": "Merton Jump-Diffusion Model",
+    "domain": "Economics",
+    "equation": "dS/S = (μ−λk̄)dt + σdW + JdN(λ)",
+    "update_form": "diffusion_plus_jumps",
+    "optimization": "fit_option_smiles",
+    "fixed_points": "risk_neutral_jump_measure",
+    "operators": [
+      "brownian_motion",
+      "compound_poisson",
+      "differential",
+      "jump_operator",
+      "state_transition"
+    ],
+    "patterns": [
+      "birth_death_process",
+      "fat_tails",
+      "jump_discontinuity",
+      "leptokurtic",
+      "mixed_process",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "asset_price",
+      "score": "jump_intensity",
+      "reference": "jump_size_distribution"
+    },
+    "conservation": [],
+    "structure": "jump_diffusion_sde"
+  },
+  "coase_theorem": {
+    "id": "coase_theorem",
+    "name": "Coase Theorem / Transaction Costs",
+    "domain": "Economics",
+    "equation": "If TC = 0: allocation is efficient regardless of initial rights assignment",
+    "update_form": "bargaining_to_efficiency",
+    "optimization": "maximize_joint_surplus",
+    "fixed_points": "pareto_optimal_allocation",
+    "operators": [
+      "bargaining",
+      "externality_pricing",
+      "fixed_point",
+      "property_rights_assignment"
+    ],
+    "patterns": [
+      "dual_variables",
+      "efficiency_theorem",
+      "energy_minimization",
+      "externality_internalization",
+      "game_theoretic_equilibrium",
+      "irrelevance_theorem",
+      "transaction_cost_friction"
+    ],
+    "variables": {
+      "state": "resource_allocation",
+      "score": "social_surplus",
+      "reference": "transaction_costs"
+    },
+    "conservation": [
+      "total_surplus"
+    ],
+    "structure": "equilibrium_concept"
+  },
+  "walrasian_tatonnement": {
+    "id": "walrasian_tatonnement",
+    "name": "Walrasian Tâtonnement / Price Adjustment",
+    "domain": "Economics",
+    "equation": "dpᵢ/dt = κ · zᵢ(p), where zᵢ = demand − supply",
+    "update_form": "excess_demand_adjustment",
+    "optimization": "clear_all_markets",
+    "fixed_points": "walrasian_equilibrium",
+    "operators": [
+      "differential",
+      "excess_demand",
+      "gradient",
+      "gradient_descent",
+      "price_adjustment"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "gradient_flow",
+      "lyapunov_stability",
+      "market_clearing",
+      "price_discovery",
+      "tatonnement",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "price_vector",
+      "score": "excess_demand",
+      "reference": "equilibrium_price"
+    },
+    "conservation": [
+      "walras_law"
+    ],
+    "structure": "gradient_dynamics"
+  },
+  "rational_expectations": {
+    "id": "rational_expectations",
+    "name": "Rational Expectations (Muth-Lucas)",
+    "domain": "Economics",
+    "equation": "E[Xₜ₊₁ | Ωₜ] = E[Xₜ₊₁ | model]",
+    "update_form": "model_consistent_expectations",
+    "optimization": "minimize_forecast_error",
+    "fixed_points": "rational_expectations_equilibrium",
+    "operators": [
+      "conditional_expectation",
+      "fixed_point",
+      "projection"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "consistency",
+      "fixed_point_iteration",
+      "fixed_point_stability",
+      "information_aggregation",
+      "model_consistent",
+      "self_referential"
+    ],
+    "variables": {
+      "state": "expectation",
+      "score": "forecast_error",
+      "reference": "true_model"
+    },
+    "conservation": [
+      "unbiasedness"
+    ],
+    "structure": "fixed_point_equilibrium"
+  },
+  "fiscal_multiplier": {
+    "id": "fiscal_multiplier",
+    "name": "Keynesian Multiplier / IS-LM",
+    "domain": "Economics",
+    "equation": "ΔY = ΔG / (1 − MPC);  IS: Y = C(Y−T) + I(r) + G;  LM: M/P = L(r,Y)",
+    "update_form": "income_expenditure_feedback",
+    "optimization": "output_gap_stabilization",
+    "fixed_points": "goods_money_equilibrium",
+    "operators": [
+      "eigenvalue_decomposition",
+      "feedback_loop",
+      "geometric_series",
+      "simultaneous_equations"
+    ],
+    "patterns": [
+      "amplification",
+      "demand_driven",
+      "feedback_loop",
+      "fixed_point_iteration",
+      "multiplier_effect",
+      "positive_feedback",
+      "simultaneous_equilibrium"
+    ],
+    "variables": {
+      "state": "output",
+      "score": "multiplier",
+      "reference": "marginal_propensity_to_consume"
+    },
+    "conservation": [
+      "income_equals_expenditure"
+    ],
+    "structure": "simultaneous_equilibrium"
+  },
+  "yield_curve_vasicek": {
+    "id": "yield_curve_vasicek",
+    "name": "Vasicek / Term Structure Model",
+    "domain": "Economics",
+    "equation": "drₜ = a(b − rₜ)dt + σdWₜ;  P(t,T) = exp(A(τ) − B(τ)rₜ)",
+    "update_form": "affine_term_structure",
+    "optimization": "fit_yield_curve",
+    "fixed_points": "long_run_rate",
+    "operators": [
+      "affine_transform",
+      "brownian_motion",
+      "differential",
+      "exponential",
+      "fokker_planck",
+      "mean_reversion"
+    ],
+    "patterns": [
+      "affine_structure",
+      "energy_minimization",
+      "mean_reverting",
+      "no_free_lunch",
+      "spectral_decomposition",
+      "stochastic_dynamics",
+      "term_structure"
+    ],
+    "variables": {
+      "state": "short_rate",
+      "score": "bond_price",
+      "reference": "long_run_mean_rate"
+    },
+    "conservation": [],
+    "structure": "affine_sde"
+  },
+  "order_book_dynamics": {
+    "id": "order_book_dynamics",
+    "name": "Limit Order Book Dynamics",
+    "domain": "Economics",
+    "equation": "∂ρ/∂t = D ∂²ρ/∂p² + λ⁺(p) − λ⁻(p) − μ(p)ρ",
+    "update_form": "reaction_diffusion_orders",
+    "optimization": "minimize_execution_cost",
+    "fixed_points": "stationary_book_shape",
+    "operators": [
+      "arrival_rate",
+      "cancellation",
+      "diffusion",
+      "laplacian",
+      "reaction_diffusion"
+    ],
+    "patterns": [
+      "birth_death_process",
+      "continuous_time_markov",
+      "diffusion",
+      "mean_reverting",
+      "pattern_formation",
+      "queueing",
+      "reaction_diffusion"
+    ],
+    "variables": {
+      "state": "order_density",
+      "score": "spread",
+      "reference": "mid_price"
+    },
+    "conservation": [],
+    "structure": "reaction_diffusion_pde"
+  },
+  "var_cvar": {
+    "id": "var_cvar",
+    "name": "Value-at-Risk / Conditional VaR",
+    "domain": "Economics",
+    "equation": "VaR_α = inf{x : P(L > x) ≤ 1−α};  CVaR_α = E[L | L ≥ VaR_α]",
+    "update_form": "tail_risk_quantile",
+    "optimization": "minimize_tail_risk",
+    "fixed_points": "risk_budget_equilibrium",
+    "operators": [
+      "conditional_expectation",
+      "expectation",
+      "quantile",
+      "tail_integral"
+    ],
+    "patterns": [
+      "coherent_risk_measure",
+      "convex_optimization",
+      "dual_variables",
+      "energy_minimization",
+      "extreme_value_theory",
+      "fat_tails",
+      "subadditivity",
+      "tail_risk"
+    ],
+    "variables": {
+      "state": "portfolio_loss",
+      "score": "risk_level",
+      "reference": "confidence_level"
+    },
+    "conservation": [],
+    "structure": "risk_measure"
+  },
+  "lotka_volterra": {
+    "id": "lotka_volterra",
+    "name": "Lotka-Volterra / Predator-Prey",
+    "domain": "Biology",
+    "equation": "dx/dt = αx − βxy;  dy/dt = δxy − γy",
+    "update_form": "coupled_population_dynamics",
+    "optimization": "none_oscillatory",
+    "fixed_points": "coexistence_equilibrium",
+    "operators": [
+      "bilinear_interaction",
+      "differential",
+      "growth",
+      "mass_action",
+      "predation"
+    ],
+    "patterns": [
+      "conservation_law",
+      "coupled_oscillation",
+      "ecological_cycle",
+      "energy_minimization",
+      "fixed_point_stability",
+      "neutral_stability",
+      "nonlinear_dynamics",
+      "pairwise_coupling",
+      "predator_prey"
+    ],
+    "variables": {
+      "state": "population_sizes",
+      "score": "growth_rate",
+      "reference": "carrying_capacity"
+    },
+    "conservation": [
+      "conserved_quantity_V"
+    ],
+    "structure": "coupled_ode"
+  },
+  "logistic_growth": {
+    "id": "logistic_growth",
+    "name": "Logistic Growth / Verhulst Equation",
+    "domain": "Biology",
+    "equation": "dN/dt = rN(1 − N/K)",
+    "update_form": "density_dependent_growth",
+    "optimization": "maximize_population",
+    "fixed_points": "carrying_capacity",
+    "operators": [
+      "differential",
+      "growth",
+      "nonlinear_reaction",
+      "saturation"
+    ],
+    "patterns": [
+      "density_dependence",
+      "fixed_point_stability",
+      "nonlinear_dynamics",
+      "s_curve",
+      "saturation",
+      "self_limiting",
+      "sigmoid"
+    ],
+    "variables": {
+      "state": "population_size",
+      "score": "growth_rate",
+      "reference": "carrying_capacity"
+    },
+    "conservation": [],
+    "structure": "scalar_ode"
+  },
+  "turing_morphogenesis": {
+    "id": "turing_morphogenesis",
+    "name": "Turing Morphogenesis / Reaction-Diffusion",
+    "domain": "Biology",
+    "equation": "∂u/∂t = Dᵤ∇²u + f(u,v);  ∂v/∂t = Dᵥ∇²v + g(u,v)",
+    "update_form": "activator_inhibitor_diffusion",
+    "optimization": "pattern_selection",
+    "fixed_points": "spatially_patterned_steady_state",
+    "operators": [
+      "diffusion",
+      "eigenvalue_decomposition",
+      "laplacian",
+      "nonlinear_reaction",
+      "reaction_diffusion"
+    ],
+    "patterns": [
+      "activator_inhibitor",
+      "bifurcation",
+      "diffusion_driven_instability",
+      "energy_entropy_tradeoff",
+      "pairwise_coupling",
+      "pattern_formation",
+      "reaction_diffusion",
+      "self_organization",
+      "spatial_symmetry_breaking",
+      "turing_instability"
+    ],
+    "variables": {
+      "state": "morphogen_concentration",
+      "score": "diffusion_ratio",
+      "reference": "homogeneous_steady_state"
+    },
+    "conservation": [],
+    "structure": "reaction_diffusion_pde"
+  },
+  "genetic_algorithm": {
+    "id": "genetic_algorithm",
+    "name": "Genetic Algorithm / Evolutionary Computation",
+    "domain": "Biology",
+    "equation": "xₜ₊₁ = Select(Crossover(Mutate(xₜ)), fitness)",
+    "update_form": "selection_variation_cycle",
+    "optimization": "maximize_fitness",
+    "fixed_points": "convergence_to_optimum",
+    "operators": [
+      "crossover",
+      "mutation",
+      "selection",
+      "stochastic_dynamics",
+      "tournament"
+    ],
+    "patterns": [
+      "energy_minimization",
+      "exploration_exploitation",
+      "fitness_landscape",
+      "genetic_diversity",
+      "information_gain",
+      "multiplicative_update",
+      "population_based_search",
+      "schema_theorem",
+      "selection"
+    ],
+    "variables": {
+      "state": "population_of_genotypes",
+      "score": "fitness",
+      "reference": "best_known_solution"
+    },
+    "conservation": [
+      "population_size"
+    ],
+    "structure": "iterative_stochastic_search"
+  },
+  "hardy_weinberg": {
+    "id": "hardy_weinberg",
+    "name": "Hardy-Weinberg Equilibrium",
+    "domain": "Biology",
+    "equation": "p² + 2pq + q² = 1;  p + q = 1",
+    "update_form": "random_mating_equilibrium",
+    "optimization": "none_neutral",
+    "fixed_points": "genotype_frequency_equilibrium",
+    "operators": [
+      "binomial_expansion",
+      "frequency_counting",
+      "normalize",
+      "normalization"
+    ],
+    "patterns": [
+      "conservation_of_probability",
+      "equilibrium_in_one_step",
+      "exponential_family",
+      "fixed_point_stability",
+      "neutral_evolution",
+      "null_model",
+      "random_mating"
+    ],
+    "variables": {
+      "state": "allele_frequency",
+      "score": "genotype_frequency",
+      "reference": "null_hypothesis"
+    },
+    "conservation": [
+      "allele_frequencies",
+      "total_probability"
+    ],
+    "structure": "algebraic_identity"
+  },
+  "kimura_neutral_theory": {
+    "id": "kimura_neutral_theory",
+    "name": "Kimura Neutral Theory / Genetic Drift",
+    "domain": "Biology",
+    "equation": "∂φ/∂t = (1/4N)∂²[x(1−x)φ]/∂x² − μ∂[(aₘ−x)φ]/∂x",
+    "update_form": "diffusion_approximation",
+    "optimization": "none_stochastic",
+    "fixed_points": "mutation_drift_balance",
+    "operators": [
+      "brownian_motion",
+      "diffusion",
+      "drift",
+      "fokker_planck",
+      "mutation"
+    ],
+    "patterns": [
+      "diffusion_approximation",
+      "energy_entropy_tradeoff",
+      "fixation_probability",
+      "genetic_drift",
+      "mean_field",
+      "mutation_drift_balance",
+      "neutral_evolution",
+      "random_walk",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "allele_frequency_distribution",
+      "score": "fixation_probability",
+      "reference": "effective_population_size"
+    },
+    "conservation": [
+      "total_probability"
+    ],
+    "structure": "fokker_planck_pde"
+  },
+  "quasispecies": {
+    "id": "quasispecies",
+    "name": "Eigen Quasispecies / Error Threshold",
+    "domain": "Biology",
+    "equation": "dxᵢ/dt = Σⱼ Qᵢⱼ fⱼ xⱼ − φ̄xᵢ",
+    "update_form": "mutation_selection_dynamics",
+    "optimization": "maximize_fitness_with_mutation",
+    "fixed_points": "quasispecies_distribution",
+    "operators": [
+      "differential",
+      "eigenvalue_decomposition",
+      "matrix_multiply",
+      "mutation_matrix",
+      "selection",
+      "subtract_mean"
+    ],
+    "patterns": [
+      "energy_entropy_tradeoff",
+      "error_catastrophe",
+      "error_threshold",
+      "information_gain",
+      "mutation_selection_balance",
+      "phase_transition",
+      "quasispecies",
+      "selection",
+      "spectral_decomposition"
+    ],
+    "variables": {
+      "state": "sequence_frequency",
+      "score": "fitness",
+      "reference": "mutation_rate"
+    },
+    "conservation": [
+      "total_probability"
+    ],
+    "structure": "ode_on_simplex"
+  },
+  "hodgkin_huxley": {
+    "id": "hodgkin_huxley",
+    "name": "Hodgkin-Huxley / Neural Spiking",
+    "domain": "Biology",
+    "equation": "C dV/dt = −gₙₐm³h(V−Eₙₐ) − gₖn⁴(V−Eₖ) − gₗ(V−Eₗ) + I",
+    "update_form": "conductance_based_dynamics",
+    "optimization": "action_potential_generation",
+    "fixed_points": "resting_potential",
+    "operators": [
+      "differential",
+      "gating_variable",
+      "ionic_current",
+      "nonlinear_conductance"
+    ],
+    "patterns": [
+      "all_or_nothing",
+      "bifurcation",
+      "coupled_oscillation",
+      "dissipative_system",
+      "excitability",
+      "limit_cycle",
+      "nonlinear_dynamics",
+      "relaxation_oscillation",
+      "threshold_behavior"
+    ],
+    "variables": {
+      "state": "membrane_potential",
+      "score": "ionic_conductance",
+      "reference": "reversal_potential"
+    },
+    "conservation": [
+      "charge_conservation"
+    ],
+    "structure": "coupled_ode"
+  },
+  "price_equation": {
+    "id": "price_equation",
+    "name": "Price Equation / Multilevel Selection",
+    "domain": "Biology",
+    "equation": "Δz̄ = Cov(wᵢ, zᵢ)/w̄ + E(wᵢ Δzᵢ)/w̄",
+    "update_form": "covariance_selection",
+    "optimization": "none_descriptive",
+    "fixed_points": "selection_transmission_balance",
+    "operators": [
+      "covariance",
+      "expectation",
+      "fitness_weighting",
+      "partition",
+      "regression"
+    ],
+    "patterns": [
+      "covariance_selection",
+      "exact_decomposition",
+      "information_gain",
+      "mean_field",
+      "multilevel_selection",
+      "natural_selection",
+      "transmission_bias",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "mean_trait",
+      "score": "fitness",
+      "reference": "trait_value"
+    },
+    "conservation": [],
+    "structure": "exact_identity"
+  },
+  "competitive_exclusion": {
+    "id": "competitive_exclusion",
+    "name": "Competitive Exclusion / Gause's Law",
+    "domain": "Biology",
+    "equation": "dNᵢ/dt = rᵢNᵢ(Kᵢ − Σⱼ αᵢⱼNⱼ)/Kᵢ",
+    "update_form": "interspecific_competition",
+    "optimization": "none_equilibrium_selection",
+    "fixed_points": "competitive_equilibrium_or_exclusion",
+    "operators": [
+      "competition_matrix",
+      "differential",
+      "eigenvalue_decomposition",
+      "growth",
+      "saturation"
+    ],
+    "patterns": [
+      "competitive_exclusion",
+      "coexistence_criteria",
+      "density_dependence",
+      "fixed_point_stability",
+      "game_theoretic_equilibrium",
+      "lyapunov_stability",
+      "niche_differentiation",
+      "pairwise_coupling",
+      "resource_competition"
+    ],
+    "variables": {
+      "state": "species_abundances",
+      "score": "competitive_fitness",
+      "reference": "competition_coefficients"
+    },
+    "conservation": [],
+    "structure": "coupled_ode"
+  },
+  "fitness_landscape": {
+    "id": "fitness_landscape",
+    "name": "NK Fitness Landscape (Kauffman)",
+    "domain": "Biology",
+    "equation": "F(s) = (1/N) Σᵢ fᵢ(sᵢ, sᵢ₁, ..., sᵢₖ)",
+    "update_form": "epistatic_fitness_decomposition",
+    "optimization": "landscape_navigation",
+    "fixed_points": "local_optima",
+    "operators": [
+      "averaging",
+      "epistatic_coupling",
+      "gradient",
+      "random_assignment"
+    ],
+    "patterns": [
+      "energy_minimization",
+      "epistasis",
+      "exploration_exploitation",
+      "fitness_landscape",
+      "local_optima",
+      "pairwise_coupling",
+      "ruggedness",
+      "spin_glass",
+      "tunably_rugged"
+    ],
+    "variables": {
+      "state": "genotype",
+      "score": "fitness",
+      "reference": "landscape_ruggedness"
+    },
+    "conservation": [],
+    "structure": "combinatorial_landscape"
+  },
+  "gillespie_ssa": {
+    "id": "gillespie_ssa",
+    "name": "Gillespie Stochastic Simulation / Chemical Master Eq",
+    "domain": "Biology",
+    "equation": "dP(x,t)/dt = Σⱼ [aⱼ(x−νⱼ)P(x−νⱼ,t) − aⱼ(x)P(x,t)]",
+    "update_form": "exact_stochastic_simulation",
+    "optimization": "exact_sampling",
+    "fixed_points": "stationary_distribution",
+    "operators": [
+      "exponential_waiting",
+      "mass_action",
+      "propensity_function",
+      "state_transition",
+      "stoichiometry"
+    ],
+    "patterns": [
+      "birth_death_process",
+      "continuous_time_markov",
+      "ergodic",
+      "exact_simulation",
+      "information_gain",
+      "intrinsic_noise",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "molecule_counts",
+      "score": "propensity",
+      "reference": "stoichiometric_matrix"
+    },
+    "conservation": [
+      "total_probability",
+      "mass_conservation"
+    ],
+    "structure": "continuous_time_markov_chain"
+  },
+  "michaelis_menten": {
+    "id": "michaelis_menten",
+    "name": "Michaelis-Menten Enzyme Kinetics",
+    "domain": "Biology",
+    "equation": "v = Vₘₐₓ[S] / (Kₘ + [S])",
+    "update_form": "saturation_kinetics",
+    "optimization": "maximize_catalytic_rate",
+    "fixed_points": "steady_state_rate",
+    "operators": [
+      "exponential",
+      "hyperbolic_function",
+      "quasi_steady_state",
+      "saturation"
+    ],
+    "patterns": [
+      "cooperative_binding",
+      "energy_minimization",
+      "enzyme_saturation",
+      "exponential_family",
+      "fixed_point_stability",
+      "hyperbolic_response",
+      "quasi_steady_state",
+      "saturation",
+      "substrate_inhibition"
+    ],
+    "variables": {
+      "state": "substrate_concentration",
+      "score": "reaction_rate",
+      "reference": "michaelis_constant"
+    },
+    "conservation": [
+      "total_enzyme"
+    ],
+    "structure": "algebraic_rate_law"
+  },
+  "gene_regulatory_network": {
+    "id": "gene_regulatory_network",
+    "name": "Gene Regulatory Network / Boolean Network",
+    "domain": "Biology",
+    "equation": "xᵢ(t+1) = fᵢ(xⱼ₁(t), ..., xⱼₖ(t));  fᵢ ∈ {Boolean functions}",
+    "update_form": "discrete_state_transition",
+    "optimization": "none_dynamical",
+    "fixed_points": "attractor_states",
+    "operators": [
+      "boolean_function",
+      "graph_adjacency",
+      "state_transition",
+      "synchronous_update"
+    ],
+    "patterns": [
+      "attractor_landscape",
+      "bifurcation",
+      "cell_fate_decision",
+      "discrete_dynamics",
+      "edge_of_chaos",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "phase_transition",
+      "robustness"
+    ],
+    "variables": {
+      "state": "gene_expression_pattern",
+      "score": "attractor_basin_size",
+      "reference": "regulatory_topology"
+    },
+    "conservation": [],
+    "structure": "discrete_dynamical_system"
+  },
+  "phylogenetic_coalescent": {
+    "id": "phylogenetic_coalescent",
+    "name": "Coalescent Theory (Kingman)",
+    "domain": "Biology",
+    "equation": "P(Tₖ = t) = C(k,2)/(2N) · exp(−C(k,2)t/(2N))",
+    "update_form": "backward_time_merging",
+    "optimization": "infer_genealogy",
+    "fixed_points": "most_recent_common_ancestor",
+    "operators": [
+      "exponential_waiting",
+      "merging",
+      "pairwise_rate",
+      "state_transition"
+    ],
+    "patterns": [
+      "backward_in_time",
+      "birth_death_process",
+      "coalescence",
+      "continuous_time_markov",
+      "exponential_decay",
+      "genealogical",
+      "tree_structure"
+    ],
+    "variables": {
+      "state": "number_of_lineages",
+      "score": "coalescence_time",
+      "reference": "effective_population_size"
+    },
+    "conservation": [
+      "total_lineages_merge_to_one"
+    ],
+    "structure": "continuous_time_markov_chain"
+  },
+  "chemotaxis": {
+    "id": "chemotaxis",
+    "name": "Keller-Segel Chemotaxis",
+    "domain": "Biology",
+    "equation": "∂ρ/∂t = D∇²ρ − χ∇·(ρ∇c);  ∂c/∂t = Dᶜ∇²c + αρ − βc",
+    "update_form": "drift_diffusion_with_signal",
+    "optimization": "maximize_signal_concentration",
+    "fixed_points": "uniform_or_aggregated",
+    "operators": [
+      "chemotactic_drift",
+      "diffusion",
+      "divergence",
+      "gradient",
+      "laplacian"
+    ],
+    "patterns": [
+      "aggregation",
+      "bifurcation",
+      "blowup",
+      "chemotaxis",
+      "drift_diffusion",
+      "energy_entropy_tradeoff",
+      "nonlinear_dynamics",
+      "pattern_formation",
+      "self_organization"
+    ],
+    "variables": {
+      "state": "cell_density",
+      "score": "chemoattractant",
+      "reference": "chemotactic_sensitivity"
+    },
+    "conservation": [
+      "total_cell_mass"
+    ],
+    "structure": "coupled_pde"
+  },
+  "epidemic_seir": {
+    "id": "epidemic_seir",
+    "name": "SEIR / Epidemic with Exposed Class",
+    "domain": "Biology",
+    "equation": "dS/dt=−βSI/N; dE/dt=βSI/N−σE; dI/dt=σE−γI; dR/dt=γI",
+    "update_form": "compartmental_flow",
+    "optimization": "minimize_peak_infections",
+    "fixed_points": "disease_free_or_endemic",
+    "operators": [
+      "bilinear_interaction",
+      "compartment_flow",
+      "differential",
+      "mass_action",
+      "state_transition"
+    ],
+    "patterns": [
+      "basic_reproduction_number",
+      "compartmental",
+      "epidemic_threshold",
+      "fixed_point_stability",
+      "herd_immunity",
+      "mass_action",
+      "mean_field",
+      "phase_transition"
+    ],
+    "variables": {
+      "state": "compartment_sizes",
+      "score": "basic_reproduction_number",
+      "reference": "herd_immunity_threshold"
+    },
+    "conservation": [
+      "total_population"
+    ],
+    "structure": "coupled_ode"
+  },
+  "waddington_landscape": {
+    "id": "waddington_landscape",
+    "name": "Waddington Epigenetic Landscape",
+    "domain": "Biology",
+    "equation": "dx/dt = −∇U(x) + σξ(t);  cell_fate = attractor_basin(x₀)",
+    "update_form": "gradient_flow_with_noise",
+    "optimization": "cell_fate_specification",
+    "fixed_points": "differentiated_cell_types",
+    "operators": [
+      "fokker_planck",
+      "gradient",
+      "noise",
+      "potential_function",
+      "stochastic_dynamics"
+    ],
+    "patterns": [
+      "attractor_landscape",
+      "bifurcation",
+      "canalization",
+      "cell_fate_decision",
+      "energy_minimization",
+      "gradient_flow",
+      "irreversibility",
+      "lyapunov_stability",
+      "stochastic_dynamics",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "gene_expression_state",
+      "score": "quasi_potential",
+      "reference": "attractor_basins"
+    },
+    "conservation": [],
+    "structure": "gradient_sde"
+  },
+  "evolutionary_graph_theory": {
+    "id": "evolutionary_graph_theory",
+    "name": "Evolutionary Graph Theory (Lieberman-Hauert)",
+    "domain": "Biology",
+    "equation": "ρ = (1 − 1/r) / (1 − 1/rᴺ)  on structured populations",
+    "update_form": "birth_death_on_graph",
+    "optimization": "fixation_probability",
+    "fixed_points": "fixation_or_extinction",
+    "operators": [
+      "birth_death",
+      "graph_adjacency",
+      "random_walk",
+      "selection",
+      "state_transition"
+    ],
+    "patterns": [
+      "amplifier_of_selection",
+      "birth_death_process",
+      "continuous_time_markov",
+      "fixation_probability",
+      "isothermal_theorem",
+      "mean_field",
+      "spatial_structure",
+      "suppressor_of_selection"
+    ],
+    "variables": {
+      "state": "mutant_frequency_on_graph",
+      "score": "fixation_probability",
+      "reference": "graph_topology"
+    },
+    "conservation": [
+      "total_population"
+    ],
+    "structure": "markov_chain_on_graph"
+  },
+  "adaptive_dynamics": {
+    "id": "adaptive_dynamics",
+    "name": "Adaptive Dynamics / Canonical Equation",
+    "domain": "Biology",
+    "equation": "dx*/dt = (1/2)μ(x*)σ²(x*)N*(x*) ∂sₓ(y)/∂y|_{y=x*}",
+    "update_form": "phenotype_evolution",
+    "optimization": "invasion_fitness_gradient",
+    "fixed_points": "evolutionary_singular_strategy",
+    "operators": [
+      "differential",
+      "gradient",
+      "invasion_fitness",
+      "mutation_kernel",
+      "selection_gradient"
+    ],
+    "patterns": [
+      "bifurcation",
+      "branching_point",
+      "convergence_stability",
+      "evolutionary_branching",
+      "evolutionary_singularity",
+      "gradient_flow",
+      "invasion_analysis",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "resident_trait",
+      "score": "invasion_fitness",
+      "reference": "selection_gradient"
+    },
+    "conservation": [],
+    "structure": "ode_on_trait_space"
+  },
+  "erdos_renyi": {
+    "id": "erdos_renyi",
+    "name": "Erdős-Rényi Random Graph",
+    "domain": "Network Science",
+    "equation": "G(n,p): P(edge) = p;  giant component emerges at p = 1/n;  P(k) = C(n,k)pᵏ(1−p)ⁿ⁻ᵏ → Poisson",
+    "update_form": "independent_edge_model",
+    "optimization": "none_generative",
+    "fixed_points": "giant_component_threshold",
+    "operators": [
+      "binomial_sampling",
+      "normalize",
+      "random_assignment",
+      "state_transition"
+    ],
+    "patterns": [
+      "birth_death_process",
+      "conservation_of_probability",
+      "exponential_family",
+      "mean_field",
+      "null_model",
+      "percolation",
+      "phase_transition"
+    ],
+    "variables": {
+      "state": "graph_adjacency",
+      "score": "edge_probability",
+      "reference": "critical_threshold"
+    },
+    "conservation": [],
+    "structure": "random_graph_ensemble"
+  },
+  "small_world": {
+    "id": "small_world",
+    "name": "Watts-Strogatz Small World",
+    "domain": "Network Science",
+    "equation": "L(p) ∝ log(N)/log(K);  C(p) ≈ C(0)(1−p)³;  rewire each edge with prob p",
+    "update_form": "interpolating_rewire",
+    "optimization": "minimize_path_length",
+    "fixed_points": "small_world_regime",
+    "operators": [
+      "graph_adjacency",
+      "random_walk",
+      "rewiring"
+    ],
+    "patterns": [
+      "clustering",
+      "interpolation",
+      "phase_transition",
+      "random_walk",
+      "short_path_length",
+      "spatial_structure"
+    ],
+    "variables": {
+      "state": "network_topology",
+      "score": "path_length",
+      "reference": "rewiring_probability"
+    },
+    "conservation": [
+      "total_edges"
+    ],
+    "structure": "random_graph_ensemble"
+  },
+  "network_centrality": {
+    "id": "network_centrality",
+    "name": "Network Centrality / PageRank",
+    "domain": "Network Science",
+    "equation": "πᵢ = (1−d)/N + d Σⱼ Aⱼᵢ πⱼ/kⱼ_out",
+    "update_form": "random_walk_stationary",
+    "optimization": "rank_nodes",
+    "fixed_points": "stationary_distribution",
+    "operators": [
+      "eigenvalue_decomposition",
+      "matrix_multiply",
+      "normalize",
+      "random_walk"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "eigenvector_centrality",
+      "ergodic",
+      "fixed_point_iteration",
+      "mean_field",
+      "spectral_decomposition",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "node_importance",
+      "score": "centrality_score",
+      "reference": "damping_factor"
+    },
+    "conservation": [
+      "total_probability"
+    ],
+    "structure": "markov_chain_on_graph"
+  },
+  "network_epidemic": {
+    "id": "network_epidemic",
+    "name": "Epidemic Spreading on Networks",
+    "domain": "Network Science",
+    "equation": "dρᵢ/dt = −ρᵢ + (1−ρᵢ)λΣⱼ Aᵢⱼρⱼ;  threshold: λc = ⟨k⟩/⟨k²⟩",
+    "update_form": "heterogeneous_mean_field",
+    "optimization": "minimize_spread",
+    "fixed_points": "endemic_or_disease_free",
+    "operators": [
+      "bilinear_interaction",
+      "differential",
+      "graph_adjacency",
+      "mass_action"
+    ],
+    "patterns": [
+      "epidemic_threshold",
+      "fixed_point_stability",
+      "heterogeneous_mean_field",
+      "mass_action",
+      "mean_field",
+      "percolation",
+      "phase_transition"
+    ],
+    "variables": {
+      "state": "infection_probability",
+      "score": "spectral_radius",
+      "reference": "epidemic_threshold"
+    },
+    "conservation": [],
+    "structure": "coupled_ode"
+  },
+  "spectral_graph_theory": {
+    "id": "spectral_graph_theory",
+    "name": "Spectral Graph Theory / Graph Laplacian",
+    "domain": "Network Science",
+    "equation": "Lf = λf;  L = D − A;  λ₂ = algebraic_connectivity;  cuts ∝ fᵀLf",
+    "update_form": "spectral_embedding",
+    "optimization": "minimize_graph_cut",
+    "fixed_points": "spectral_partition",
+    "operators": [
+      "eigenvalue_decomposition",
+      "laplacian",
+      "matrix_multiply",
+      "projection"
+    ],
+    "patterns": [
+      "dimensionality_reduction",
+      "dual_variables",
+      "energy_minimization",
+      "relaxation",
+      "spectral_decomposition",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "graph_embedding",
+      "score": "eigenvalue",
+      "reference": "graph_laplacian"
+    },
+    "conservation": [],
+    "structure": "spectral_problem"
+  },
+  "network_flow": {
+    "id": "network_flow",
+    "name": "Max-Flow Min-Cut / Network Flow",
+    "domain": "Network Science",
+    "equation": "max Σⱼ f(s,j) s.t. f(u,v) ≤ c(u,v), Σⱼ f(j,v) = Σⱼ f(v,j)",
+    "update_form": "augmenting_path",
+    "optimization": "maximize_flow",
+    "fixed_points": "max_flow_min_cut",
+    "operators": [
+      "augmenting_path",
+      "graph_adjacency",
+      "linear_combination"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "duality",
+      "energy_minimization",
+      "linear_pricing"
+    ],
+    "variables": {
+      "state": "edge_flow",
+      "score": "total_flow",
+      "reference": "capacity_constraint"
+    },
+    "conservation": [
+      "flow_conservation"
+    ],
+    "structure": "linear_program"
+  },
+  "opinion_dynamics": {
+    "id": "opinion_dynamics",
+    "name": "Voter Model / Opinion Dynamics",
+    "domain": "Network Science",
+    "equation": "P(xᵢ→σ) = (1/kᵢ)Σⱼ Aᵢⱼ δ(xⱼ,σ);  DeGroot: x(t+1) = Wx(t)",
+    "update_form": "imitation_dynamics",
+    "optimization": "none_consensus",
+    "fixed_points": "consensus_or_fragmentation",
+    "operators": [
+      "graph_adjacency",
+      "matrix_multiply",
+      "random_walk",
+      "state_transition"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "diffusion",
+      "fixation_probability",
+      "information_aggregation",
+      "mean_field",
+      "selection",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "opinion_vector",
+      "score": "consensus_time",
+      "reference": "network_topology"
+    },
+    "conservation": [
+      "mean_opinion_degroot"
+    ],
+    "structure": "markov_chain_on_graph"
+  },
+  "network_robustness": {
+    "id": "network_robustness",
+    "name": "Network Robustness / Percolation",
+    "domain": "Network Science",
+    "equation": "S∞ = 1 − G₀(u);  u = 1 − p + pG₁(u);  fc = 1/(κ−1), κ = ⟨k²⟩/⟨k⟩",
+    "update_form": "percolation_on_graph",
+    "optimization": "maximize_resilience",
+    "fixed_points": "percolation_threshold",
+    "operators": [
+      "fixed_point",
+      "generating_function",
+      "random_walk"
+    ],
+    "patterns": [
+      "birth_death_process",
+      "fixed_point_iteration",
+      "mean_field",
+      "percolation",
+      "phase_transition",
+      "robustness"
+    ],
+    "variables": {
+      "state": "giant_component_fraction",
+      "score": "percolation_threshold",
+      "reference": "degree_distribution"
+    },
+    "conservation": [],
+    "structure": "fixed_point_equilibrium"
+  },
+  "network_game_theory": {
+    "id": "network_game_theory",
+    "name": "Games on Networks / Spatial Games",
+    "domain": "Network Science",
+    "equation": "πᵢ = Σⱼ Aᵢⱼ u(sᵢ,sⱼ);  update: P(sᵢ→sⱼ) = 1/(1+exp(−β(πⱼ−πᵢ)))",
+    "update_form": "fermi_imitation_on_graph",
+    "optimization": "maximize_local_payoff",
+    "fixed_points": "spatial_equilibrium",
+    "operators": [
+      "graph_adjacency",
+      "payoff_matrix",
+      "selection",
+      "softmax",
+      "state_transition"
+    ],
+    "patterns": [
+      "cooperation_dilemma",
+      "energy_entropy_tradeoff",
+      "exploration_exploitation",
+      "game_theoretic_equilibrium",
+      "pairwise_coupling",
+      "selection",
+      "spatial_structure"
+    ],
+    "variables": {
+      "state": "strategy_configuration",
+      "score": "local_payoff",
+      "reference": "network_topology"
+    },
+    "conservation": [],
+    "structure": "markov_chain_on_graph"
+  },
+  "network_motifs": {
+    "id": "network_motifs",
+    "name": "Network Motifs / Subgraph Census",
+    "domain": "Network Science",
+    "equation": "Z_G = (N_G − ⟨N_G^rand⟩) / σ(N_G^rand);  significance profile SP_i = Z_i / √(Σⱼ Z_j²)",
+    "update_form": "subgraph_enumeration",
+    "optimization": "identify_significant_patterns",
+    "fixed_points": "motif_significance_profile",
+    "operators": [
+      "comparison",
+      "graph_adjacency",
+      "normalize",
+      "random_assignment"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "information_gain",
+      "null_model",
+      "pattern_formation",
+      "signal_noise_separation"
+    ],
+    "variables": {
+      "state": "subgraph_count",
+      "score": "z_score",
+      "reference": "random_ensemble"
+    },
+    "conservation": [],
+    "structure": "statistical_test"
+  },
+  "influence_maximization": {
+    "id": "influence_maximization",
+    "name": "Influence Maximization / Cascade Model",
+    "domain": "Network Science",
+    "equation": "σ(S) = E[|activated|];  IC: P(u→v) = pᵤᵥ;  LT: activate if Σⱼ wⱼᵢ xⱼ ≥ θᵢ",
+    "update_form": "greedy_submodular",
+    "optimization": "maximize_spread",
+    "fixed_points": "cascade_completion",
+    "operators": [
+      "expectation",
+      "graph_adjacency",
+      "state_transition",
+      "threshold"
+    ],
+    "patterns": [
+      "amplification",
+      "diminishing_returns",
+      "exploration_exploitation",
+      "information_gain",
+      "percolation",
+      "positive_feedback",
+      "subadditivity"
+    ],
+    "variables": {
+      "state": "activated_set",
+      "score": "expected_influence",
+      "reference": "seed_set"
+    },
+    "conservation": [],
+    "structure": "submodular_optimization"
+  },
+  "graph_signal_processing": {
+    "id": "graph_signal_processing",
+    "name": "Graph Signal Processing / Graph Fourier",
+    "domain": "Network Science",
+    "equation": "x̂(λₗ) = ⟨x, uₗ⟩;  h(L)x = Σₗ ĥ(λₗ)⟨x,uₗ⟩uₗ;  graph wavelet: ψₛ = g(sL)δᵢ",
+    "update_form": "spectral_graph_filtering",
+    "optimization": "denoise_graph_signal",
+    "fixed_points": "spectral_components",
+    "operators": [
+      "eigenvalue_decomposition",
+      "fourier_transform",
+      "laplacian",
+      "projection"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "dimensionality_reduction",
+      "dual_variables",
+      "energy_minimization",
+      "spectral_decomposition",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "graph_signal",
+      "score": "graph_frequency",
+      "reference": "graph_laplacian"
+    },
+    "conservation": [
+      "parseval_energy"
+    ],
+    "structure": "spectral_problem"
+  },
+  "network_embedding": {
+    "id": "network_embedding",
+    "name": "Network Embedding / Node2Vec",
+    "domain": "Network Science",
+    "equation": "max Σᵢ log P(N(i) | zᵢ);  P(j|i) = exp(zᵢᵀzⱼ) / Σₖ exp(zᵢᵀzₖ)",
+    "update_form": "skip_gram_on_graph",
+    "optimization": "maximize_likelihood",
+    "fixed_points": "embedding_convergence",
+    "operators": [
+      "gradient",
+      "random_walk",
+      "softmax",
+      "stochastic_integral"
+    ],
+    "patterns": [
+      "dimensionality_reduction",
+      "energy_minimization",
+      "exploration_exploitation",
+      "information_gain",
+      "random_walk",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "node_embedding",
+      "score": "log_likelihood",
+      "reference": "random_walk_context"
+    },
+    "conservation": [],
+    "structure": "optimization_over_parameter_space"
+  },
+  "temporal_network": {
+    "id": "temporal_network",
+    "name": "Temporal Networks / Time-Varying Graphs",
+    "domain": "Network Science",
+    "equation": "G(t) = (V, E(t));  reachability: i→j iff ∃ time-respecting path;  burstiness B = (σ−μ)/(σ+μ)",
+    "update_form": "time_ordered_graph",
+    "optimization": "maximize_temporal_reachability",
+    "fixed_points": "stationary_temporal_pattern",
+    "operators": [
+      "convolution",
+      "graph_adjacency",
+      "state_transition",
+      "temporal_ordering"
+    ],
+    "patterns": [
+      "autoregressive",
+      "birth_death_process",
+      "continuous_time_markov",
+      "diffusion",
+      "stochastic_dynamics",
+      "temporal_correlation"
+    ],
+    "variables": {
+      "state": "time_varying_adjacency",
+      "score": "temporal_reachability",
+      "reference": "interevent_time_distribution"
+    },
+    "conservation": [],
+    "structure": "temporal_process"
+  },
+  "network_controllability": {
+    "id": "network_controllability",
+    "name": "Network Controllability (Liu-Barabási)",
+    "domain": "Network Science",
+    "equation": "dx/dt = Ax + Bu;  Nₐ = max(1, N − |maximum_matching|);  structural controllability",
+    "update_form": "structural_control",
+    "optimization": "minimize_driver_nodes",
+    "fixed_points": "controllable_subspace",
+    "operators": [
+      "differential",
+      "eigenvalue_decomposition",
+      "graph_adjacency",
+      "linear_combination",
+      "matrix_multiply"
+    ],
+    "patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "lyapunov_stability",
+      "spectral_decomposition",
+      "structural_stability"
+    ],
+    "variables": {
+      "state": "node_state_vector",
+      "score": "driver_node_count",
+      "reference": "maximum_matching"
+    },
+    "conservation": [],
+    "structure": "linear_control_system"
+  },
+  "multilayer_network": {
+    "id": "multilayer_network",
+    "name": "Multilayer / Multiplex Networks",
+    "domain": "Network Science",
+    "equation": "L̃ = Σα Lα + ω Σα≠β Iαβ;  supra-adjacency: Ã = [A₁ ωI; ωI A₂]",
+    "update_form": "layer_coupled_dynamics",
+    "optimization": "identify_cross_layer_structure",
+    "fixed_points": "multiplex_equilibrium",
+    "operators": [
+      "eigenvalue_decomposition",
+      "graph_adjacency",
+      "laplacian",
+      "matrix_multiply"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "coupled_oscillation",
+      "dimensionality_reduction",
+      "mean_field",
+      "pairwise_coupling",
+      "phase_transition",
+      "spectral_decomposition"
+    ],
+    "variables": {
+      "state": "multilayer_state",
+      "score": "interlayer_coupling",
+      "reference": "supra_laplacian"
+    },
+    "conservation": [],
+    "structure": "coupled_spectral_problem"
+  },
+  "network_synchronization": {
+    "id": "network_synchronization",
+    "name": "Kuramoto / Network Synchronization",
+    "domain": "Network Science",
+    "equation": "dθᵢ/dt = ωᵢ + (K/N) Σⱼ Aᵢⱼ sin(θⱼ−θᵢ);  r·e^{iψ} = (1/N)Σⱼ e^{iθⱼ}",
+    "update_form": "coupled_oscillator_sync",
+    "optimization": "maximize_order_parameter",
+    "fixed_points": "synchronized_state",
+    "operators": [
+      "differential",
+      "graph_adjacency",
+      "nonlinear_reaction",
+      "order_parameter"
+    ],
+    "patterns": [
+      "bifurcation",
+      "convergence_to_equilibrium",
+      "coupled_oscillation",
+      "mean_field",
+      "nonlinear_dynamics",
+      "pairwise_coupling",
+      "phase_transition",
+      "self_organization"
+    ],
+    "variables": {
+      "state": "phase_angles",
+      "score": "order_parameter",
+      "reference": "coupling_strength"
+    },
+    "conservation": [],
+    "structure": "coupled_ode"
+  },
+  "link_prediction": {
+    "id": "link_prediction",
+    "name": "Link Prediction / Network Evolution",
+    "domain": "Network Science",
+    "equation": "score(i,j) = |Γ(i) ∩ Γ(j)| / |Γ(i) ∪ Γ(j)|;  AA: Σₖ∈Γ(i)∩Γ(j) 1/log(kₖ)",
+    "update_form": "similarity_scoring",
+    "optimization": "maximize_auc",
+    "fixed_points": "predicted_edge_set",
+    "operators": [
+      "comparison",
+      "graph_adjacency",
+      "normalize",
+      "random_walk"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "exploration_exploitation",
+      "information_gain",
+      "null_model",
+      "random_walk"
+    ],
+    "variables": {
+      "state": "node_pair_scores",
+      "score": "prediction_accuracy",
+      "reference": "network_topology"
+    },
+    "conservation": [],
+    "structure": "optimization_over_parameter_space"
+  },
+  "schrodinger_equation": {
+    "id": "schrodinger_equation",
+    "name": "Schrödinger Equation",
+    "domain": "Quantum Physics",
+    "equation": "iℏ ∂ψ/∂t = Ĥψ = [−ℏ²/(2m)∇² + V(x)]ψ",
+    "update_form": "unitary_evolution",
+    "optimization": "minimize_energy_eigenvalue",
+    "fixed_points": "energy_eigenstates",
+    "operators": [
+      "differential",
+      "eigenvalue_decomposition",
+      "exponential",
+      "laplacian",
+      "linear_combination"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "energy_minimization",
+      "spectral_decomposition",
+      "superposition",
+      "variational_principle",
+      "wave_equation"
+    ],
+    "variables": {
+      "state": "wave_function",
+      "score": "energy_eigenvalue",
+      "reference": "hamiltonian"
+    },
+    "conservation": [
+      "total_probability",
+      "unitarity"
+    ],
+    "structure": "linear_pde"
+  },
+  "quantum_measurement": {
+    "id": "quantum_measurement",
+    "name": "Quantum Measurement / Born Rule",
+    "domain": "Quantum Physics",
+    "equation": "P(aₙ) = |⟨φₙ|ψ⟩|²;  post-measurement: |ψ⟩ → |φₙ⟩",
+    "update_form": "projective_collapse",
+    "optimization": "maximize_measurement_information",
+    "fixed_points": "eigenstate",
+    "operators": [
+      "inner_product",
+      "normalize",
+      "projection"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "conservation_of_probability",
+      "information_gain",
+      "irreversibility",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "quantum_state",
+      "score": "measurement_probability",
+      "reference": "observable_eigenstates"
+    },
+    "conservation": [
+      "total_probability"
+    ],
+    "structure": "projection_postulate"
+  },
+  "quantum_entanglement": {
+    "id": "quantum_entanglement",
+    "name": "Quantum Entanglement / Bell Inequalities",
+    "domain": "Quantum Physics",
+    "equation": "|ψ⟩ = (|00⟩+|11⟩)/√2;  S = E(a,b)−E(a,b')+E(a',b)+E(a',b') ≤ 2 (CHSH)",
+    "update_form": "nonlocal_correlation",
+    "optimization": "maximize_bell_violation",
+    "fixed_points": "maximally_entangled_state",
+    "operators": [
+      "inner_product",
+      "linear_combination",
+      "normalize",
+      "tensor_product"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "information_gain",
+      "nonlocality",
+      "pairwise_coupling",
+      "superposition"
+    ],
+    "variables": {
+      "state": "composite_state",
+      "score": "entanglement_entropy",
+      "reference": "bell_bound"
+    },
+    "conservation": [
+      "total_probability",
+      "unitarity"
+    ],
+    "structure": "tensor_product_hilbert_space"
+  },
+  "density_matrix": {
+    "id": "density_matrix",
+    "name": "Density Matrix / Von Neumann Equation",
+    "domain": "Quantum Physics",
+    "equation": "dρ/dt = −(i/ℏ)[H,ρ];  S = −Tr(ρ log ρ);  ρ = Σᵢ pᵢ|ψᵢ⟩⟨ψᵢ|",
+    "update_form": "mixed_state_evolution",
+    "optimization": "minimize_von_neumann_entropy",
+    "fixed_points": "thermal_equilibrium",
+    "operators": [
+      "commutator",
+      "eigenvalue_decomposition",
+      "logarithm",
+      "matrix_multiply",
+      "trace"
+    ],
+    "patterns": [
+      "conservation_of_probability",
+      "energy_entropy_tradeoff",
+      "exponential_family",
+      "information_gain",
+      "spectral_decomposition"
+    ],
+    "variables": {
+      "state": "density_operator",
+      "score": "von_neumann_entropy",
+      "reference": "hamiltonian"
+    },
+    "conservation": [
+      "trace_one",
+      "unitarity"
+    ],
+    "structure": "matrix_ode"
+  },
+  "quantum_harmonic_oscillator": {
+    "id": "quantum_harmonic_oscillator",
+    "name": "Quantum Harmonic Oscillator",
+    "domain": "Quantum Physics",
+    "equation": "Eₙ = ℏω(n+½);  â|n⟩ = √n|n−1⟩;  â†|n⟩ = √(n+1)|n+1⟩",
+    "update_form": "ladder_operator_algebra",
+    "optimization": "minimize_energy",
+    "fixed_points": "fock_states",
+    "operators": [
+      "commutator",
+      "eigenvalue_decomposition",
+      "linear_combination",
+      "state_transition"
+    ],
+    "patterns": [
+      "algebraic_structure",
+      "compositional_structure",
+      "energy_minimization",
+      "spectral_decomposition",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "occupation_number",
+      "score": "energy_level",
+      "reference": "zero_point_energy"
+    },
+    "conservation": [
+      "total_energy"
+    ],
+    "structure": "operator_algebra"
+  },
+  "quantum_tunneling": {
+    "id": "quantum_tunneling",
+    "name": "Quantum Tunneling / WKB Approximation",
+    "domain": "Quantum Physics",
+    "equation": "T ≈ exp(−2∫√(2m(V−E))/ℏ dx);  ψ ∝ exp(±i∫p(x)dx/ℏ)",
+    "update_form": "semiclassical_transmission",
+    "optimization": "none_barrier_penetration",
+    "fixed_points": "transmission_coefficient",
+    "operators": [
+      "exponential",
+      "integration",
+      "saddle_point_approximation"
+    ],
+    "patterns": [
+      "energy_minimization",
+      "exponential_decay",
+      "saddle_point_approximation",
+      "threshold_behavior",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "transmission_amplitude",
+      "score": "tunneling_rate",
+      "reference": "barrier_height"
+    },
+    "conservation": [
+      "probability_current"
+    ],
+    "structure": "semiclassical_approximation"
+  },
+  "decoherence": {
+    "id": "decoherence",
+    "name": "Quantum Decoherence / Lindblad Equation",
+    "domain": "Quantum Physics",
+    "equation": "dρ/dt = −(i/ℏ)[H,ρ] + Σₖ(LₖρLₖ† − ½{Lₖ†Lₖ,ρ})",
+    "update_form": "open_quantum_dynamics",
+    "optimization": "minimize_decoherence",
+    "fixed_points": "pointer_states",
+    "operators": [
+      "commutator",
+      "dissipation",
+      "matrix_multiply",
+      "trace"
+    ],
+    "patterns": [
+      "dissipative_system",
+      "energy_entropy_tradeoff",
+      "information_gain",
+      "irreversibility",
+      "mean_field",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "density_operator",
+      "score": "coherence_length",
+      "reference": "environment_coupling"
+    },
+    "conservation": [
+      "trace_one"
+    ],
+    "structure": "open_system_ode"
+  },
+  "quantum_error_correction": {
+    "id": "quantum_error_correction",
+    "name": "Quantum Error Correction / Stabilizer Codes",
+    "domain": "Quantum Physics",
+    "equation": "[[n,k,d]]: encode k logical qubits in n physical;  syndrome S(E) = {gᵢ: [gᵢ,E]≠0}",
+    "update_form": "syndrome_correction",
+    "optimization": "maximize_code_distance",
+    "fixed_points": "code_space",
+    "operators": [
+      "group_action",
+      "projection",
+      "state_transition",
+      "tensor_product"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "dual_variables",
+      "information_gain",
+      "redundancy",
+      "robustness",
+      "spectral_decomposition"
+    ],
+    "variables": {
+      "state": "encoded_state",
+      "score": "code_distance",
+      "reference": "stabilizer_group"
+    },
+    "conservation": [
+      "logical_information"
+    ],
+    "structure": "algebraic_code"
+  },
+  "quantum_computing": {
+    "id": "quantum_computing",
+    "name": "Quantum Computing / Gate Model",
+    "domain": "Quantum Physics",
+    "equation": "|ψ_out⟩ = Uₙ···U₂U₁|ψ_in⟩;  U ∈ SU(2ⁿ);  universal: {H, T, CNOT}",
+    "update_form": "gate_sequence",
+    "optimization": "minimize_circuit_depth",
+    "fixed_points": "computational_output",
+    "operators": [
+      "composition",
+      "matrix_multiply",
+      "state_transition",
+      "tensor_product"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "information_gain",
+      "superposition",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "qubit_register",
+      "score": "circuit_depth",
+      "reference": "universal_gate_set"
+    },
+    "conservation": [
+      "unitarity"
+    ],
+    "structure": "circuit_model"
+  },
+  "quantum_field_theory": {
+    "id": "quantum_field_theory",
+    "name": "Quantum Field Theory / Second Quantization",
+    "domain": "Quantum Physics",
+    "equation": "Z = ∫Dφ exp(i∫d⁴x L[φ,∂φ]);  ⟨Ω|T{φ(x₁)···φ(xₙ)}|Ω⟩ = δⁿ ln Z / δJⁿ",
+    "update_form": "functional_integral_over_fields",
+    "optimization": "stationary_action",
+    "fixed_points": "vacuum_state",
+    "operators": [
+      "action",
+      "exponential",
+      "functional_integral",
+      "sum_over_paths"
+    ],
+    "patterns": [
+      "conservation_law",
+      "energy_entropy_tradeoff",
+      "partition_function",
+      "phase_transition",
+      "saddle_point_approximation",
+      "spontaneous_symmetry_breaking",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "field_configuration",
+      "score": "vacuum_energy",
+      "reference": "lagrangian_density"
+    },
+    "conservation": [
+      "charge_conservation",
+      "unitarity"
+    ],
+    "structure": "functional_integral"
+  },
+  "adiabatic_theorem": {
+    "id": "adiabatic_theorem",
+    "name": "Adiabatic Quantum Computing / Annealing",
+    "domain": "Quantum Physics",
+    "equation": "H(t) = (1−t/T)H₀ + (t/T)Hₚ;  gap condition: T ≫ 1/Δ²min",
+    "update_form": "slow_hamiltonian_deformation",
+    "optimization": "find_ground_state",
+    "fixed_points": "ground_state_of_Hp",
+    "operators": [
+      "eigenvalue_decomposition",
+      "interpolation",
+      "matrix_multiply"
+    ],
+    "patterns": [
+      "energy_minimization",
+      "exploration_exploitation",
+      "phase_transition",
+      "spectral_decomposition",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "instantaneous_eigenstate",
+      "score": "spectral_gap",
+      "reference": "problem_hamiltonian"
+    },
+    "conservation": [
+      "unitarity"
+    ],
+    "structure": "parametric_spectral_problem"
+  },
+  "maximum_entropy_thermo": {
+    "id": "maximum_entropy_thermo",
+    "name": "Maximum Entropy / Jaynes Formalism",
+    "domain": "Thermodynamics",
+    "equation": "max S = −Σᵢ pᵢ log pᵢ  s.t. Σᵢ pᵢ fₖ(xᵢ) = ⟨fₖ⟩;  → pᵢ = exp(−Σₖ λₖfₖ(xᵢ))/Z",
+    "update_form": "constrained_entropy_maximization",
+    "optimization": "maximize_entropy",
+    "fixed_points": "maximum_entropy_distribution",
+    "operators": [
+      "exponential",
+      "lagrange_multiplier",
+      "logarithm",
+      "normalize",
+      "partition_function"
+    ],
+    "patterns": [
+      "conservation_of_probability",
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "exponential_family",
+      "information_gain",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "probability_distribution",
+      "score": "entropy",
+      "reference": "constraint_expectations"
+    },
+    "conservation": [
+      "total_probability",
+      "constraint_satisfaction"
+    ],
+    "structure": "constrained_optimization"
+  },
+  "carnot_cycle": {
+    "id": "carnot_cycle",
+    "name": "Carnot Cycle / Second Law Bounds",
+    "domain": "Thermodynamics",
+    "equation": "η = 1 − Tc/Th;  ΔS_total ≥ 0;  W = Qh − Qc",
+    "update_form": "cyclic_heat_engine",
+    "optimization": "maximize_efficiency",
+    "fixed_points": "reversible_limit",
+    "operators": [
+      "comparison",
+      "integration",
+      "logarithm"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "irreversibility",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "thermodynamic_state",
+      "score": "efficiency",
+      "reference": "carnot_bound"
+    },
+    "conservation": [
+      "total_energy"
+    ],
+    "structure": "cyclic_process"
+  },
+  "free_energy_thermo": {
+    "id": "free_energy_thermo",
+    "name": "Free Energy / Legendre Transforms",
+    "domain": "Thermodynamics",
+    "equation": "F = U − TS;  G = H − TS;  dF = −SdT − PdV;  minimum F at equilibrium",
+    "update_form": "legendre_transform",
+    "optimization": "minimize_free_energy",
+    "fixed_points": "thermodynamic_equilibrium",
+    "operators": [
+      "differential",
+      "gradient",
+      "lagrange_multiplier",
+      "legendre_transform"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "lyapunov_stability",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "thermodynamic_potential",
+      "score": "free_energy",
+      "reference": "natural_variables"
+    },
+    "conservation": [
+      "total_energy"
+    ],
+    "structure": "convex_conjugate"
+  },
+  "fluctuation_theorem": {
+    "id": "fluctuation_theorem",
+    "name": "Fluctuation Theorems / Jarzynski Equality",
+    "domain": "Thermodynamics",
+    "equation": "⟨exp(−W/kT)⟩ = exp(−ΔF/kT);  P(σ)/P(−σ) = exp(σ)",
+    "update_form": "nonequilibrium_work_relation",
+    "optimization": "estimate_free_energy",
+    "fixed_points": "equilibrium_limit",
+    "operators": [
+      "averaging",
+      "exponential",
+      "logarithm",
+      "stochastic_integral"
+    ],
+    "patterns": [
+      "energy_entropy_tradeoff",
+      "exact_decomposition",
+      "irreversibility",
+      "stochastic_dynamics",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "nonequilibrium_trajectory",
+      "score": "dissipated_work",
+      "reference": "free_energy_difference"
+    },
+    "conservation": [],
+    "structure": "exact_identity"
+  },
+  "landauer_principle": {
+    "id": "landauer_principle",
+    "name": "Landauer's Principle / Information Thermodynamics",
+    "domain": "Thermodynamics",
+    "equation": "W ≥ kT ln 2  per bit erased;  ΔS_env ≥ kB ΔH(X)",
+    "update_form": "information_erasure_bound",
+    "optimization": "minimize_erasure_cost",
+    "fixed_points": "reversible_computation_limit",
+    "operators": [
+      "comparison",
+      "logarithm"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "information_gain",
+      "irreversibility"
+    ],
+    "variables": {
+      "state": "information_content",
+      "score": "minimum_heat_dissipation",
+      "reference": "information_erased"
+    },
+    "conservation": [
+      "total_energy"
+    ],
+    "structure": "information_theoretic_bound"
+  },
+  "onsager_reciprocal": {
+    "id": "onsager_reciprocal",
+    "name": "Onsager Reciprocal Relations / Linear Response",
+    "domain": "Thermodynamics",
+    "equation": "Jᵢ = Σⱼ Lᵢⱼ Xⱼ;  Lᵢⱼ = Lⱼᵢ;  σ = Σᵢⱼ Lᵢⱼ Xᵢ Xⱼ ≥ 0",
+    "update_form": "linear_transport",
+    "optimization": "minimize_entropy_production",
+    "fixed_points": "steady_state",
+    "operators": [
+      "linear_combination",
+      "matrix_multiply"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "linear_response",
+      "lyapunov_stability",
+      "spectral_decomposition"
+    ],
+    "variables": {
+      "state": "thermodynamic_flux",
+      "score": "entropy_production",
+      "reference": "thermodynamic_force"
+    },
+    "conservation": [
+      "total_energy"
+    ],
+    "structure": "linear_response_theory"
+  },
+  "stochastic_thermodynamics": {
+    "id": "stochastic_thermodynamics",
+    "name": "Stochastic Thermodynamics / Entropy Production",
+    "domain": "Thermodynamics",
+    "equation": "dS_tot/dt = dS_sys/dt + dS_env/dt ≥ 0;  ṡ = Σᵢⱼ (Rᵢⱼpⱼ−Rⱼᵢpᵢ)ln(Rᵢⱼpⱼ/Rⱼᵢpᵢ)/2",
+    "update_form": "trajectory_entropy_accounting",
+    "optimization": "minimize_dissipation",
+    "fixed_points": "detailed_balance",
+    "operators": [
+      "fokker_planck",
+      "logarithm",
+      "state_transition",
+      "stochastic_integral"
+    ],
+    "patterns": [
+      "continuous_time_markov",
+      "dissipative_system",
+      "energy_entropy_tradeoff",
+      "ergodic",
+      "information_gain",
+      "irreversibility",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "mesoscopic_trajectory",
+      "score": "entropy_production_rate",
+      "reference": "detailed_balance_condition"
+    },
+    "conservation": [
+      "total_probability"
+    ],
+    "structure": "continuous_time_markov_chain"
+  },
+  "thermodynamic_uncertainty": {
+    "id": "thermodynamic_uncertainty",
+    "name": "Thermodynamic Uncertainty Relations",
+    "domain": "Thermodynamics",
+    "equation": "Var(J)/⟨J⟩² ≥ 2kB/⟨σ⟩;  precision costs dissipation",
+    "update_form": "precision_dissipation_tradeoff",
+    "optimization": "optimize_current_precision",
+    "fixed_points": "optimal_tradeoff",
+    "operators": [
+      "comparison",
+      "conditional_variance",
+      "expectation"
+    ],
+    "patterns": [
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "information_gain",
+      "stochastic_dynamics",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "current_statistics",
+      "score": "signal_to_noise",
+      "reference": "entropy_production"
+    },
+    "conservation": [],
+    "structure": "information_theoretic_bound"
+  },
+  "maxwell_demon": {
+    "id": "maxwell_demon",
+    "name": "Maxwell's Demon / Szilard Engine",
+    "domain": "Thermodynamics",
+    "equation": "W_extracted ≤ kT · I(X;M);  feedback: ΔF = kT ΔI",
+    "update_form": "information_feedback_engine",
+    "optimization": "maximize_work_extraction",
+    "fixed_points": "equilibrium_with_memory",
+    "operators": [
+      "conditional_expectation",
+      "logarithm",
+      "mutual_information"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "feedback_loop",
+      "information_gain",
+      "irreversibility"
+    ],
+    "variables": {
+      "state": "system_plus_memory",
+      "score": "extracted_work",
+      "reference": "mutual_information"
+    },
+    "conservation": [
+      "total_energy"
+    ],
+    "structure": "information_engine"
+  },
+  "correlated_equilibrium": {
+    "id": "correlated_equilibrium",
+    "name": "Correlated Equilibrium (Aumann)",
+    "domain": "Game Theory",
+    "equation": "Σ_s₋ᵢ μ(s|sᵢ)[uᵢ(sᵢ,s₋ᵢ) − uᵢ(s'ᵢ,s₋ᵢ)] ≥ 0  ∀i, ∀sᵢ, ∀s'ᵢ",
+    "update_form": "signal_conditional_optimality",
+    "optimization": "maximize_social_welfare",
+    "fixed_points": "correlated_equilibrium",
+    "operators": [
+      "conditional_expectation",
+      "linear_combination",
+      "payoff_matrix"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "conservation_of_probability",
+      "dual_variables",
+      "game_theoretic_equilibrium",
+      "information_gain",
+      "linear_pricing"
+    ],
+    "variables": {
+      "state": "joint_signal_distribution",
+      "score": "expected_payoff",
+      "reference": "recommendation_device"
+    },
+    "conservation": [
+      "total_probability"
+    ],
+    "structure": "linear_program"
+  },
+  "minimax_theorem": {
+    "id": "minimax_theorem",
+    "name": "Minimax Theorem (Von Neumann)",
+    "domain": "Game Theory",
+    "equation": "max_x min_y xᵀAy = min_y max_x xᵀAy = v*",
+    "update_form": "saddle_point_equilibrium",
+    "optimization": "minimax",
+    "fixed_points": "saddle_point",
+    "operators": [
+      "linear_combination",
+      "maximize",
+      "payoff_matrix"
+    ],
+    "patterns": [
+      "convex_optimization",
+      "dual_variables",
+      "duality",
+      "energy_minimization",
+      "game_theoretic_equilibrium",
+      "saddle_point_approximation",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "mixed_strategy",
+      "score": "game_value",
+      "reference": "payoff_matrix"
+    },
+    "conservation": [],
+    "structure": "saddle_point_problem"
+  },
+  "bayesian_game": {
+    "id": "bayesian_game",
+    "name": "Bayesian Game / Incomplete Information",
+    "domain": "Game Theory",
+    "equation": "σᵢ*(θᵢ) ∈ argmax E_{θ₋ᵢ}[uᵢ(σᵢ, σ*₋ᵢ(θ₋ᵢ), θᵢ) | θᵢ]",
+    "update_form": "type_conditional_best_response",
+    "optimization": "maximize_interim_payoff",
+    "fixed_points": "bayesian_nash_equilibrium",
+    "operators": [
+      "best_response",
+      "conditional_expectation",
+      "fixed_point",
+      "payoff_matrix"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "fixed_point_iteration",
+      "game_theoretic_equilibrium",
+      "information_asymmetry",
+      "information_gain",
+      "strategic_interaction"
+    ],
+    "variables": {
+      "state": "type_contingent_strategy",
+      "score": "interim_payoff",
+      "reference": "prior_beliefs"
+    },
+    "conservation": [],
+    "structure": "bayesian_equilibrium"
+  },
+  "repeated_game": {
+    "id": "repeated_game",
+    "name": "Repeated Games / Folk Theorem",
+    "domain": "Game Theory",
+    "equation": "Vᵢ = (1−δ)Σₜ δᵗ uᵢ(aₜ);  Folk: any v ∈ F with vᵢ > vᵢ* is sustainable if δ→1",
+    "update_form": "discounted_repeated_interaction",
+    "optimization": "sustain_cooperation",
+    "fixed_points": "subgame_perfect_equilibrium",
+    "operators": [
+      "comparison",
+      "discounting",
+      "geometric_series",
+      "payoff_matrix"
+    ],
+    "patterns": [
+      "cooperation_dilemma",
+      "exponential_decay",
+      "feedback_loop",
+      "game_theoretic_equilibrium",
+      "multiplier_effect",
+      "strategic_interaction"
+    ],
+    "variables": {
+      "state": "history_dependent_strategy",
+      "score": "average_payoff",
+      "reference": "minmax_value"
+    },
+    "conservation": [],
+    "structure": "dynamic_game"
+  },
+  "evolutionary_stability": {
+    "id": "evolutionary_stability",
+    "name": "Evolutionary Stability / Hawk-Dove",
+    "domain": "Game Theory",
+    "equation": "x* stable iff: u(x*,x*) > u(y,x*) OR [= AND u(x*,y) > u(y,y)];  Hawk-Dove: x* = V/C",
+    "update_form": "invasion_barrier",
+    "optimization": "maximize_invasion_fitness",
+    "fixed_points": "evolutionarily_stable_strategy",
+    "operators": [
+      "best_response",
+      "comparison",
+      "fixed_point",
+      "payoff_matrix",
+      "selection"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "fixed_point_stability",
+      "game_theoretic_equilibrium",
+      "invasion_analysis",
+      "pairwise_coupling",
+      "selection"
+    ],
+    "variables": {
+      "state": "population_strategy_mix",
+      "score": "invasion_fitness",
+      "reference": "resident_strategy"
+    },
+    "conservation": [
+      "total_probability"
+    ],
+    "structure": "equilibrium_concept"
+  },
+  "congestion_game": {
+    "id": "congestion_game",
+    "name": "Congestion / Potential Games",
+    "domain": "Game Theory",
+    "equation": "Φ(s) = Σᵣ Σₖ₌₁^{nᵣ(s)} cᵣ(k);  s* = argmin Φ(s);  Nash iff local min of Φ",
+    "update_form": "potential_minimization",
+    "optimization": "minimize_potential",
+    "fixed_points": "nash_of_potential_game",
+    "operators": [
+      "gradient",
+      "gradient_descent",
+      "summation"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "energy_minimization",
+      "game_theoretic_equilibrium",
+      "gradient_flow",
+      "lyapunov_stability",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "resource_allocation",
+      "score": "potential_function",
+      "reference": "congestion_cost"
+    },
+    "conservation": [],
+    "structure": "gradient_dynamics"
+  },
+  "auction_theory": {
+    "id": "auction_theory",
+    "name": "Auction Theory / Revenue Equivalence",
+    "domain": "Game Theory",
+    "equation": "b*(v) = v − ∫₀ᵛ F(t)ⁿ⁻¹dt / F(v)ⁿ⁻¹;  E[Rev] = E[2nd highest value] (IPV)",
+    "update_form": "bayesian_bidding_equilibrium",
+    "optimization": "maximize_revenue",
+    "fixed_points": "symmetric_bidding_equilibrium",
+    "operators": [
+      "conditional_expectation",
+      "integration",
+      "maximize"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "dual_variables",
+      "game_theoretic_equilibrium",
+      "information_asymmetry",
+      "irrelevance_theorem",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "bid_function",
+      "score": "expected_revenue",
+      "reference": "value_distribution"
+    },
+    "conservation": [
+      "budget_balance"
+    ],
+    "structure": "bayesian_equilibrium"
+  },
+  "no_regret_learning": {
+    "id": "no_regret_learning",
+    "name": "No-Regret Learning / Multiplicative Weights",
+    "domain": "Game Theory",
+    "equation": "wᵢ(t+1) = wᵢ(t)·exp(−η·ℓᵢ(t));  pᵢ(t) = wᵢ(t)/Σⱼwⱼ(t);  regret ≤ √(T ln N)",
+    "update_form": "multiplicative_weight_update",
+    "optimization": "minimize_regret",
+    "fixed_points": "coarse_correlated_equilibrium",
+    "operators": [
+      "exponential",
+      "gradient",
+      "normalize",
+      "softmax"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "exploration_exploitation",
+      "game_theoretic_equilibrium",
+      "information_gain",
+      "multiplicative_update"
+    ],
+    "variables": {
+      "state": "weight_vector",
+      "score": "cumulative_regret",
+      "reference": "best_fixed_action"
+    },
+    "conservation": [
+      "total_probability"
+    ],
+    "structure": "online_optimization"
+  },
+  "mechanism_design_vcg": {
+    "id": "mechanism_design_vcg",
+    "name": "VCG Mechanism / Incentive Compatibility",
+    "domain": "Game Theory",
+    "equation": "tᵢ(θ̂) = Σⱼ≠ᵢ vⱼ(f(θ̂),θⱼ) − hᵢ(θ̂₋ᵢ);  truth-telling: θ̂ᵢ = θᵢ is dominant",
+    "update_form": "externality_payment",
+    "optimization": "maximize_social_welfare",
+    "fixed_points": "truthful_equilibrium",
+    "operators": [
+      "maximize",
+      "payoff_matrix",
+      "summation"
+    ],
+    "patterns": [
+      "dual_variables",
+      "game_theoretic_equilibrium",
+      "information_asymmetry",
+      "information_gain",
+      "linear_pricing",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "allocation_and_payments",
+      "score": "social_welfare",
+      "reference": "reported_types"
+    },
+    "conservation": [
+      "budget_balance"
+    ],
+    "structure": "mechanism"
+  },
+  "extensive_form_game": {
+    "id": "extensive_form_game",
+    "name": "Extensive Form / Sequential Games",
+    "domain": "Game Theory",
+    "equation": "σᵢ*(h) ∈ argmax E[uᵢ | h, σ*₋ᵢ]  ∀h ∈ Hᵢ;  backward induction on game tree",
+    "update_form": "backward_induction",
+    "optimization": "subgame_perfect_equilibrium",
+    "fixed_points": "sequential_equilibrium",
+    "operators": [
+      "backward_recursion",
+      "best_response",
+      "conditional_expectation",
+      "state_transition"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "compositional_structure",
+      "fixed_point_iteration",
+      "game_theoretic_equilibrium",
+      "strategic_interaction",
+      "tree_structure"
+    ],
+    "variables": {
+      "state": "behavioral_strategy",
+      "score": "continuation_payoff",
+      "reference": "information_set"
+    },
+    "conservation": [],
+    "structure": "bellman_recursion"
+  },
+  "compressed_sensing": {
+    "id": "compressed_sensing",
+    "name": "Compressed Sensing / Sparse Recovery",
+    "domain": "Signal Processing",
+    "equation": "min ||x||₁ s.t. y = Ax;  RIP: (1−δ)||x||² ≤ ||Ax||² ≤ (1+δ)||x||²",
+    "update_form": "basis_pursuit",
+    "optimization": "minimize_l1_norm",
+    "fixed_points": "sparse_solution",
+    "operators": [
+      "linear_combination",
+      "matrix_multiply",
+      "projection",
+      "threshold"
+    ],
+    "patterns": [
+      "convex_optimization",
+      "dimensionality_reduction",
+      "dual_variables",
+      "energy_minimization",
+      "signal_noise_separation",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "sparse_signal",
+      "score": "sparsity_level",
+      "reference": "measurement_matrix"
+    },
+    "conservation": [
+      "measurement_consistency"
+    ],
+    "structure": "convex_program"
+  },
+  "kalman_filter": {
+    "id": "kalman_filter",
+    "name": "Kalman Filter / State Estimation",
+    "domain": "Signal Processing",
+    "equation": "x̂ₖ|ₖ = x̂ₖ|ₖ₋₁ + Kₖ(yₖ − Hx̂ₖ|ₖ₋₁);  Kₖ = Pₖ|ₖ₋₁Hᵀ(HPₖ|ₖ₋₁Hᵀ+R)⁻¹",
+    "update_form": "bayesian_state_update",
+    "optimization": "minimize_estimation_error",
+    "fixed_points": "steady_state_kalman_gain",
+    "operators": [
+      "conditional_expectation",
+      "covariance",
+      "linear_combination",
+      "matrix_multiply",
+      "projection"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "dual_variables",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "information_gain",
+      "lyapunov_stability",
+      "signal_noise_separation"
+    ],
+    "variables": {
+      "state": "state_estimate",
+      "score": "estimation_error_covariance",
+      "reference": "kalman_gain"
+    },
+    "conservation": [],
+    "structure": "recursive_bayesian_estimation"
+  },
+  "fourier_analysis": {
+    "id": "fourier_analysis",
+    "name": "Fourier Transform / Spectral Analysis",
+    "domain": "Signal Processing",
+    "equation": "F(ω) = ∫f(t)e^{−iωt}dt;  f(t) = (1/2π)∫F(ω)e^{iωt}dω;  ||f||² = ||F||²",
+    "update_form": "frequency_decomposition",
+    "optimization": "spectral_analysis",
+    "fixed_points": "spectral_components",
+    "operators": [
+      "convolution",
+      "eigenvalue_decomposition",
+      "exponential",
+      "fourier_transform",
+      "integration"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "dual_variables",
+      "energy_minimization",
+      "spectral_decomposition",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "signal",
+      "score": "power_spectrum",
+      "reference": "frequency_basis"
+    },
+    "conservation": [
+      "parseval_energy"
+    ],
+    "structure": "spectral_problem"
+  },
+  "wiener_filter": {
+    "id": "wiener_filter",
+    "name": "Wiener Filter / Optimal Linear Filter",
+    "domain": "Signal Processing",
+    "equation": "H(ω) = Sₓᵧ(ω)/Sᵧᵧ(ω);  minimize E[|x(t)−x̂(t)|²]",
+    "update_form": "spectral_domain_optimization",
+    "optimization": "minimize_mse",
+    "fixed_points": "optimal_filter",
+    "operators": [
+      "convolution",
+      "covariance",
+      "fourier_transform",
+      "regression"
+    ],
+    "patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "linear_response",
+      "signal_noise_separation",
+      "spectral_decomposition",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "filter_transfer_function",
+      "score": "mean_square_error",
+      "reference": "signal_noise_spectra"
+    },
+    "conservation": [],
+    "structure": "optimization_over_parameter_space"
+  },
+  "sampling_theorem": {
+    "id": "sampling_theorem",
+    "name": "Nyquist-Shannon Sampling Theorem",
+    "domain": "Signal Processing",
+    "equation": "f(t) = Σₙ f(nT)sinc((t−nT)/T);  fₛ ≥ 2B;  aliasing if fₛ < 2B",
+    "update_form": "interpolation_from_samples",
+    "optimization": "perfect_reconstruction",
+    "fixed_points": "bandlimited_signal",
+    "operators": [
+      "convolution",
+      "fourier_transform",
+      "interpolation",
+      "projection"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "dimensionality_reduction",
+      "dual_variables",
+      "information_gain",
+      "spectral_decomposition"
+    ],
+    "variables": {
+      "state": "sampled_signal",
+      "score": "sampling_rate",
+      "reference": "bandwidth"
+    },
+    "conservation": [
+      "signal_information"
+    ],
+    "structure": "information_theoretic_bound"
+  },
+  "matched_filter": {
+    "id": "matched_filter",
+    "name": "Matched Filter / Optimal Detection",
+    "domain": "Signal Processing",
+    "equation": "h(t) = s*(T−t);  SNR_out = 2E/N₀;  maximizes output SNR",
+    "update_form": "correlation_detection",
+    "optimization": "maximize_snr",
+    "fixed_points": "optimal_detector",
+    "operators": [
+      "convolution",
+      "inner_product",
+      "maximize"
+    ],
+    "patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "information_gain",
+      "signal_noise_separation",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "filter_impulse_response",
+      "score": "output_snr",
+      "reference": "noise_spectral_density"
+    },
+    "conservation": [],
+    "structure": "optimization_over_parameter_space"
+  },
+  "adaptive_filtering": {
+    "id": "adaptive_filtering",
+    "name": "Adaptive Filtering / LMS-NLMS",
+    "domain": "Signal Processing",
+    "equation": "wₙ₊₁ = wₙ + μeₙxₙ/(xₙᵀxₙ+ε);  eₙ = dₙ − wₙᵀxₙ",
+    "update_form": "stochastic_gradient_adaptation",
+    "optimization": "minimize_mse_online",
+    "fixed_points": "wiener_solution",
+    "operators": [
+      "gradient",
+      "gradient_descent",
+      "inner_product",
+      "normalize"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "energy_minimization",
+      "exploration_exploitation",
+      "gradient_flow",
+      "signal_noise_separation",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "filter_weights",
+      "score": "mean_square_error",
+      "reference": "step_size"
+    },
+    "conservation": [],
+    "structure": "online_optimization"
+  },
+  "sparse_coding": {
+    "id": "sparse_coding",
+    "name": "Sparse Coding / Dictionary Learning",
+    "domain": "Signal Processing",
+    "equation": "min ||X−DA||²F + λΣᵢ||aᵢ||₁;  alternating: fix D optimize A, fix A optimize D",
+    "update_form": "alternating_minimization",
+    "optimization": "minimize_reconstruction_plus_sparsity",
+    "fixed_points": "learned_dictionary",
+    "operators": [
+      "gradient",
+      "matrix_multiply",
+      "projection",
+      "threshold"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "convex_optimization",
+      "dimensionality_reduction",
+      "energy_minimization",
+      "information_gain",
+      "signal_noise_separation"
+    ],
+    "variables": {
+      "state": "dictionary_and_codes",
+      "score": "reconstruction_error",
+      "reference": "sparsity_penalty"
+    },
+    "conservation": [],
+    "structure": "alternating_optimization"
+  },
+  "pll_synchronization": {
+    "id": "pll_synchronization",
+    "name": "Phase-Locked Loop / Synchronization",
+    "domain": "Signal Processing",
+    "equation": "dφ/dt = ωfree + Kd·sin(θin−φ);  lock range: |Δω| < KdKvco",
+    "update_form": "phase_tracking_feedback",
+    "optimization": "minimize_phase_error",
+    "fixed_points": "phase_lock",
+    "operators": [
+      "differential",
+      "feedback_loop",
+      "nonlinear_reaction"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "coupled_oscillation",
+      "feedback_loop",
+      "lyapunov_stability",
+      "nonlinear_dynamics",
+      "self_organization"
+    ],
+    "variables": {
+      "state": "output_phase",
+      "score": "phase_error",
+      "reference": "input_frequency"
+    },
+    "conservation": [],
+    "structure": "nonlinear_feedback_ode"
+  },
+  "source_separation": {
+    "id": "source_separation",
+    "name": "Independent Component Analysis / Blind Source Separation",
+    "domain": "Signal Processing",
+    "equation": "x = As;  maximize non-Gaussianity: max |E[G(wᵀx)]−E[G(ν)]|;  W = A⁻¹",
+    "update_form": "independence_maximization",
+    "optimization": "maximize_non_gaussianity",
+    "fixed_points": "unmixed_sources",
+    "operators": [
+      "eigenvalue_decomposition",
+      "fixed_point",
+      "matrix_multiply",
+      "normalize"
+    ],
+    "patterns": [
+      "dimensionality_reduction",
+      "energy_entropy_tradeoff",
+      "fixed_point_iteration",
+      "information_gain",
+      "signal_noise_separation",
+      "spectral_decomposition"
+    ],
+    "variables": {
+      "state": "unmixing_matrix",
+      "score": "statistical_independence",
+      "reference": "mixing_matrix"
+    },
+    "conservation": [],
+    "structure": "optimization_over_parameter_space"
+  },
+  "predictive_coding": {
+    "id": "predictive_coding",
+    "name": "Predictive Coding / Hierarchical Inference",
+    "domain": "Cognitive Science",
+    "equation": "εₗ = xₗ − g(μₗ₊₁);  μ̇ₗ = εₗ − ∂g/∂μ·Πₗ₊₁·εₗ₊₁;  F = Σₗ εₗᵀΠₗεₗ",
+    "update_form": "hierarchical_prediction_error",
+    "optimization": "minimize_prediction_error",
+    "fixed_points": "hierarchical_equilibrium",
+    "operators": [
+      "conditional_expectation",
+      "differential",
+      "gradient",
+      "subtraction"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "compositional_structure",
+      "energy_minimization",
+      "feedback_loop",
+      "hierarchical_decomposition",
+      "information_gain",
+      "signal_noise_separation"
+    ],
+    "variables": {
+      "state": "prediction_and_error",
+      "score": "variational_free_energy",
+      "reference": "generative_model"
+    },
+    "conservation": [],
+    "structure": "hierarchical_bayesian"
+  },
+  "global_workspace": {
+    "id": "global_workspace",
+    "name": "Global Workspace Theory (Baars)",
+    "domain": "Cognitive Science",
+    "equation": "broadcast(x) iff salience(x) > θ AND competition(x) = max;  access = ∫ attention·activation dx > θ_conscious",
+    "update_form": "competitive_broadcast",
+    "optimization": "maximize_global_coherence",
+    "fixed_points": "conscious_broadcast_state",
+    "operators": [
+      "comparison",
+      "competition",
+      "threshold"
+    ],
+    "patterns": [
+      "competition_selection",
+      "feedback_loop",
+      "information_gain",
+      "phase_transition",
+      "self_organization",
+      "winner_take_all"
+    ],
+    "variables": {
+      "state": "workspace_content",
+      "score": "global_coherence",
+      "reference": "attention_threshold"
+    },
+    "conservation": [
+      "processing_capacity"
+    ],
+    "structure": "broadcasting_architecture"
+  },
+  "integrated_information": {
+    "id": "integrated_information",
+    "name": "Integrated Information Theory (Tononi)",
+    "domain": "Cognitive Science",
+    "equation": "Φ = min_partition [I(past;future) − Σᵢ I(pastᵢ;futureᵢ)];  consciousness iff Φ > 0",
+    "update_form": "information_integration",
+    "optimization": "maximize_integrated_information",
+    "fixed_points": "irreducible_cause_effect_structure",
+    "operators": [
+      "conditional_expectation",
+      "mutual_information",
+      "partition",
+      "subtraction"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "emergence",
+      "information_gain",
+      "irreducibility",
+      "phase_transition",
+      "spectral_decomposition"
+    ],
+    "variables": {
+      "state": "system_state",
+      "score": "phi",
+      "reference": "minimum_information_partition"
+    },
+    "conservation": [],
+    "structure": "information_theoretic_measure"
+  },
+  "decision_field_theory": {
+    "id": "decision_field_theory",
+    "name": "Decision Field Theory / Drift-Diffusion",
+    "domain": "Cognitive Science",
+    "equation": "dx = (μA−μB)dt + σdW;  decide A if x≥a, B if x≤−a;  RT = a/(μA−μB)·tanh(a(μA−μB)/σ²)",
+    "update_form": "evidence_accumulation",
+    "optimization": "speed_accuracy_tradeoff",
+    "fixed_points": "decision_boundary",
+    "operators": [
+      "comparison",
+      "differential",
+      "threshold"
+    ],
+    "patterns": [
+      "brownian_motion",
+      "exploration_exploitation",
+      "first_passage",
+      "signal_noise_separation",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "accumulated_evidence",
+      "score": "decision_threshold",
+      "reference": "drift_rate"
+    },
+    "conservation": [],
+    "structure": "stochastic_ode"
+  },
+  "cognitive_load": {
+    "id": "cognitive_load",
+    "name": "Working Memory / Cognitive Load Theory",
+    "domain": "Cognitive Science",
+    "equation": "capacity ≈ 4±1 chunks;  interference: P(recall) = e^{−θ·n_similar};  load = intrinsic + extraneous + germane ≤ WM_max",
+    "update_form": "resource_allocation",
+    "optimization": "maximize_learning_efficiency",
+    "fixed_points": "optimal_chunk_size",
+    "operators": [
+      "comparison",
+      "exponential",
+      "summation"
+    ],
+    "patterns": [
+      "capacity_constraint",
+      "compositional_structure",
+      "exponential_decay",
+      "hierarchical_decomposition",
+      "information_gain"
+    ],
+    "variables": {
+      "state": "working_memory_contents",
+      "score": "cognitive_load",
+      "reference": "capacity_limit"
+    },
+    "conservation": [
+      "processing_capacity"
+    ],
+    "structure": "resource_model"
+  },
+  "reinforcement_learning_brain": {
+    "id": "reinforcement_learning_brain",
+    "name": "Reward Prediction Error / Dopamine RL",
+    "domain": "Cognitive Science",
+    "equation": "δₜ = rₜ + γV(sₜ₊₁) − V(sₜ);  ΔV(sₜ) = αδₜ;  dopamine ∝ δₜ",
+    "update_form": "temporal_difference_learning",
+    "optimization": "maximize_expected_reward",
+    "fixed_points": "optimal_value_function",
+    "operators": [
+      "discounting",
+      "gradient",
+      "subtraction"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "convergence_to_equilibrium",
+      "exploration_exploitation",
+      "feedback_loop",
+      "information_gain",
+      "temporal_difference"
+    ],
+    "variables": {
+      "state": "value_estimate",
+      "score": "prediction_error",
+      "reference": "reward_signal"
+    },
+    "conservation": [],
+    "structure": "bellman_recursion"
+  },
+  "embodied_cognition": {
+    "id": "embodied_cognition",
+    "name": "Embodied Cognition / Sensorimotor Contingencies",
+    "domain": "Cognitive Science",
+    "equation": "action(t+1) = π(perception(t));  perception(t+1) = env(action(t+1));  knowledge = invariant structure of sensorimotor loop",
+    "update_form": "sensorimotor_coupling",
+    "optimization": "maximize_adaptive_fitness",
+    "fixed_points": "stable_sensorimotor_pattern",
+    "operators": [
+      "feedback_loop",
+      "fixed_point",
+      "state_transition"
+    ],
+    "patterns": [
+      "coupled_oscillation",
+      "feedback_loop",
+      "fixed_point_iteration",
+      "self_organization",
+      "sensorimotor_loop",
+      "structural_coupling"
+    ],
+    "variables": {
+      "state": "sensorimotor_state",
+      "score": "adaptive_success",
+      "reference": "environmental_affordance"
+    },
+    "conservation": [],
+    "structure": "dynamical_system"
+  },
+  "attention_models": {
+    "id": "attention_models",
+    "name": "Attention / Biased Competition",
+    "domain": "Cognitive Science",
+    "equation": "response(i) = Σⱼ w(i,j)·stimulus(j);  w(i,j) ∝ exp(−|i−j|²/2σ²)·top_down(j);  winner-take-all: normalize w",
+    "update_form": "biased_competition",
+    "optimization": "maximize_information_gain",
+    "fixed_points": "attentional_selection",
+    "operators": [
+      "competition",
+      "normalize",
+      "softmax",
+      "threshold"
+    ],
+    "patterns": [
+      "competition_selection",
+      "dimensionality_reduction",
+      "feedback_loop",
+      "information_gain",
+      "signal_noise_separation",
+      "winner_take_all"
+    ],
+    "variables": {
+      "state": "attention_weights",
+      "score": "information_gain",
+      "reference": "saliency_map"
+    },
+    "conservation": [
+      "total_attention"
+    ],
+    "structure": "competitive_dynamics"
+  },
+  "lyapunov_stability": {
+    "id": "lyapunov_stability",
+    "name": "Lyapunov Stability Theory",
+    "domain": "Control Theory",
+    "equation": "V(x)>0, V(0)=0, V̇(x)≤0 ⟹ stable;  V̇<0 ⟹ asymptotically stable;  V̇≤−αV ⟹ exponentially stable",
+    "update_form": "lyapunov_certificate",
+    "optimization": "verify_stability",
+    "fixed_points": "stable_equilibrium",
+    "operators": [
+      "comparison",
+      "differential",
+      "gradient"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "energy_minimization",
+      "fixed_point_stability",
+      "lyapunov_stability",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "system_state",
+      "score": "lyapunov_function",
+      "reference": "equilibrium_point"
+    },
+    "conservation": [],
+    "structure": "stability_certificate"
+  },
+  "robust_control": {
+    "id": "robust_control",
+    "name": "H∞ Robust Control",
+    "domain": "Control Theory",
+    "equation": "||T_{zw}||∞ < γ;  min_K max_w ||z||/||w|| s.t. closed-loop stability;  Riccati: AᵀX+XA+Q−X(BR⁻¹Bᵀ−γ⁻²DDᵀ)X=0",
+    "update_form": "minimax_robust_design",
+    "optimization": "minimize_worst_case_gain",
+    "fixed_points": "robust_controller",
+    "operators": [
+      "feedback_loop",
+      "matrix_multiply",
+      "maximize",
+      "minimize"
+    ],
+    "patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "game_theoretic_equilibrium",
+      "lyapunov_stability",
+      "saddle_point_approximation",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "controller_parameters",
+      "score": "h_infinity_norm",
+      "reference": "uncertainty_set"
+    },
+    "conservation": [],
+    "structure": "saddle_point_problem"
+  },
+  "model_predictive_control": {
+    "id": "model_predictive_control",
+    "name": "Model Predictive Control (MPC)",
+    "domain": "Control Theory",
+    "equation": "u*₀:ₙ = argmin Σₖ [xₖᵀQxₖ + uₖᵀRuₖ] + xₙᵀPxₙ  s.t. xₖ₊₁=Axₖ+Buₖ, constraints",
+    "update_form": "receding_horizon_optimization",
+    "optimization": "minimize_cost_over_horizon",
+    "fixed_points": "optimal_trajectory",
+    "operators": [
+      "gradient",
+      "linear_combination",
+      "matrix_multiply",
+      "projection"
+    ],
+    "patterns": [
+      "convex_optimization",
+      "dual_variables",
+      "energy_minimization",
+      "feedback_loop",
+      "receding_horizon",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "predicted_trajectory",
+      "score": "cost_over_horizon",
+      "reference": "constraints"
+    },
+    "conservation": [],
+    "structure": "constrained_optimization"
+  },
+  "pid_control": {
+    "id": "pid_control",
+    "name": "PID Control / Classical Feedback",
+    "domain": "Control Theory",
+    "equation": "u(t) = Kₚe(t) + Kᵢ∫e(τ)dτ + K_d de/dt;  transfer: C(s) = Kₚ + Kᵢ/s + K_ds",
+    "update_form": "proportional_integral_derivative",
+    "optimization": "minimize_tracking_error",
+    "fixed_points": "zero_steady_state_error",
+    "operators": [
+      "derivative",
+      "feedback_loop",
+      "integration",
+      "linear_combination"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "feedback_loop",
+      "integral_control",
+      "linear_response",
+      "lyapunov_stability"
+    ],
+    "variables": {
+      "state": "error_signal",
+      "score": "tracking_error",
+      "reference": "setpoint"
+    },
+    "conservation": [],
+    "structure": "feedback_control"
+  },
+  "observability_controllability": {
+    "id": "observability_controllability",
+    "name": "Controllability & Observability (Kalman)",
+    "domain": "Control Theory",
+    "equation": "controllable iff rank[B AB ... Aⁿ⁻¹B]=n;  observable iff rank[C; CA; ...; CAⁿ⁻¹]=n;  duality: (A,B) ctrl ⟺ (Aᵀ,Bᵀ) obs",
+    "update_form": "rank_condition",
+    "optimization": "verify_system_properties",
+    "fixed_points": "canonical_form",
+    "operators": [
+      "eigenvalue_decomposition",
+      "matrix_multiply",
+      "rank"
+    ],
+    "patterns": [
+      "dual_variables",
+      "duality",
+      "linear_response",
+      "spectral_decomposition",
+      "structural_coupling"
+    ],
+    "variables": {
+      "state": "system_matrices",
+      "score": "controllability_gramian",
+      "reference": "observability_gramian"
+    },
+    "conservation": [],
+    "structure": "linear_algebra_criterion"
+  },
+  "lambda_calculus": {
+    "id": "lambda_calculus",
+    "name": "Lambda Calculus / Computability",
+    "domain": "Computer Science",
+    "equation": "t ::= x | λx.t | t₁t₂;  (λx.M)N →β M[N/x];  Church-Rosser: if M→*N₁ and M→*N₂ then ∃P: N₁→*P, N₂→*P",
+    "update_form": "beta_reduction",
+    "optimization": "normalize_term",
+    "fixed_points": "normal_form",
+    "operators": [
+      "application",
+      "fixed_point",
+      "substitution"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "confluence",
+      "fixed_point_iteration",
+      "hierarchical_decomposition",
+      "self_reference",
+      "tree_structure"
+    ],
+    "variables": {
+      "state": "lambda_term",
+      "score": "reduction_count",
+      "reference": "normal_form"
+    },
+    "conservation": [],
+    "structure": "rewriting_system"
+  },
+  "kolmogorov_complexity": {
+    "id": "kolmogorov_complexity",
+    "name": "Kolmogorov Complexity / Algorithmic Information",
+    "domain": "Computer Science",
+    "equation": "K(x) = min{|p| : U(p)=x};  K(x|y) ≤ K(x) + O(1);  K(x,y) = K(x) + K(y|x*) + O(log n);  incompressible: K(x)≥|x|",
+    "update_form": "shortest_program",
+    "optimization": "minimize_description_length",
+    "fixed_points": "incompressible_string",
+    "operators": [
+      "comparison",
+      "minimize"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "information_gain",
+      "irreducibility",
+      "self_reference",
+      "symmetry_of_information"
+    ],
+    "variables": {
+      "state": "string",
+      "score": "kolmogorov_complexity",
+      "reference": "universal_turing_machine"
+    },
+    "conservation": [
+      "symmetry_of_information"
+    ],
+    "structure": "information_theoretic_measure"
+  },
+  "distributed_consensus": {
+    "id": "distributed_consensus",
+    "name": "Distributed Consensus / Paxos-Raft",
+    "domain": "Computer Science",
+    "equation": "safety: decided values were proposed;  agreement: no two nodes decide differently;  FLP: async consensus impossible with 1 crash;  BFT: tolerates f<n/3 byzantine",
+    "update_form": "quorum_agreement",
+    "optimization": "maximize_fault_tolerance",
+    "fixed_points": "consensus_value",
+    "operators": [
+      "comparison",
+      "threshold",
+      "voting"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "cooperation_dilemma",
+      "impossibility_theorem",
+      "majority_rule",
+      "quorum",
+      "self_organization"
+    ],
+    "variables": {
+      "state": "node_states",
+      "score": "agreement_count",
+      "reference": "quorum_threshold"
+    },
+    "conservation": [
+      "decided_value"
+    ],
+    "structure": "distributed_protocol"
+  },
+  "information_theoretic_security": {
+    "id": "information_theoretic_security",
+    "name": "Information-Theoretic Security / One-Time Pad",
+    "domain": "Computer Science",
+    "equation": "H(M|C) = H(M);  perfect secrecy iff |K|≥|M|;  Shannon: H(K)≥H(M);  quantum key: BB84 detects eavesdropping",
+    "update_form": "information_hiding",
+    "optimization": "maximize_secrecy",
+    "fixed_points": "perfect_secrecy",
+    "operators": [
+      "conditional_expectation",
+      "entropy",
+      "modular_arithmetic"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "impossibility_theorem",
+      "information_gain",
+      "irreversibility"
+    ],
+    "variables": {
+      "state": "ciphertext",
+      "score": "mutual_information_leaked",
+      "reference": "key_entropy"
+    },
+    "conservation": [
+      "perfect_secrecy"
+    ],
+    "structure": "information_theoretic_bound"
+  },
+  "renormalization_group": {
+    "id": "renormalization_group",
+    "name": "Renormalization Group",
+    "domain": "Statistical Physics",
+    "equation": "H' = R(H);  K' = f(K);  fixed point: K* = f(K*);  ξ ~ |T−Tₖ|^{−ν};  universality: critical exponents depend only on d, n",
+    "update_form": "coarse_graining_flow",
+    "optimization": "identify_fixed_points",
+    "fixed_points": "critical_fixed_point",
+    "operators": [
+      "coarse_graining",
+      "eigenvalue_decomposition",
+      "fixed_point",
+      "rescaling"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "convergence_to_equilibrium",
+      "fixed_point_iteration",
+      "hierarchical_decomposition",
+      "phase_transition",
+      "scale_invariance",
+      "universality"
+    ],
+    "variables": {
+      "state": "coupling_constants",
+      "score": "correlation_length",
+      "reference": "critical_fixed_point"
+    },
+    "conservation": [],
+    "structure": "flow_in_theory_space"
+  },
+  "fluctuation_dissipation": {
+    "id": "fluctuation_dissipation",
+    "name": "Fluctuation-Dissipation Theorem",
+    "domain": "Statistical Physics",
+    "equation": "χ(ω) = (1/kT)∫₀^∞ ⟨δA(t)δA(0)⟩ e^{−iωt}dt;  S(ω) = 2kT·Im[χ(ω)]/ω;  D = μkT (Einstein)",
+    "update_form": "response_fluctuation_link",
+    "optimization": "relate_response_to_noise",
+    "fixed_points": "thermal_equilibrium",
+    "operators": [
+      "correlation",
+      "fourier_transform",
+      "integration"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "duality",
+      "linear_response",
+      "spectral_decomposition",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "response_function",
+      "score": "spectral_density",
+      "reference": "temperature"
+    },
+    "conservation": [
+      "detailed_balance"
+    ],
+    "structure": "fluctuation_response_identity"
+  },
+  "large_deviations": {
+    "id": "large_deviations",
+    "name": "Large Deviations / Cramér's Theorem",
+    "domain": "Statistical Physics",
+    "equation": "P(S_n/n ∈ A) ≈ e^{−n·inf_{x∈A} I(x)};  I(x) = sup_λ[λx − log M(λ)];  Varadhan: lim (1/n)log E[e^{nF}] = sup[F−I]",
+    "update_form": "rate_function_optimization",
+    "optimization": "characterize_rare_events",
+    "fixed_points": "most_likely_fluctuation",
+    "operators": [
+      "exponential",
+      "legendre_transform",
+      "maximize"
+    ],
+    "patterns": [
+      "dual_variables",
+      "duality",
+      "energy_entropy_tradeoff",
+      "exponential_decay",
+      "saddle_point_approximation",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "empirical_measure",
+      "score": "rate_function",
+      "reference": "moment_generating_function"
+    },
+    "conservation": [],
+    "structure": "variational_principle"
+  },
+  "nonequilibrium_stat_mech": {
+    "id": "nonequilibrium_stat_mech",
+    "name": "Nonequilibrium Statistical Mechanics / Jarzynski",
+    "domain": "Statistical Physics",
+    "equation": "⟨e^{−βW}⟩ = e^{−βΔF};  Crooks: P_F(W)/P_R(−W) = e^{β(W−ΔF)};  σ̇ ≥ 0 (entropy production)",
+    "update_form": "work_free_energy_relation",
+    "optimization": "bound_free_energy_difference",
+    "fixed_points": "equilibrium_limit",
+    "operators": [
+      "averaging",
+      "exponential",
+      "integration"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "duality",
+      "energy_entropy_tradeoff",
+      "irreversibility",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "work_distribution",
+      "score": "free_energy_difference",
+      "reference": "equilibrium_free_energy"
+    },
+    "conservation": [
+      "first_law"
+    ],
+    "structure": "fluctuation_theorem"
+  },
+  "neural_oscillations": {
+    "id": "neural_oscillations",
+    "name": "Neural Oscillations / Brain Rhythms",
+    "domain": "Neuroscience",
+    "equation": "V̇ = I_ion + I_syn + I_ext;  oscillation: Re(λ)=0, Im(λ)≠0 at Hopf;  synchrony: Kuramoto r = |1/N Σ e^{iθⱼ}|",
+    "update_form": "coupled_oscillator_dynamics",
+    "optimization": "maximize_synchrony",
+    "fixed_points": "phase_locked_state",
+    "operators": [
+      "differential",
+      "exponential",
+      "nonlinear_reaction",
+      "summation"
+    ],
+    "patterns": [
+      "coupled_oscillation",
+      "feedback_loop",
+      "nonlinear_dynamics",
+      "phase_transition",
+      "self_organization",
+      "synchronization"
+    ],
+    "variables": {
+      "state": "oscillator_phases",
+      "score": "synchronization_index",
+      "reference": "coupling_strength"
+    },
+    "conservation": [],
+    "structure": "coupled_oscillator_system"
+  },
+  "synaptic_plasticity": {
+    "id": "synaptic_plasticity",
+    "name": "Synaptic Plasticity / STDP-BCM",
+    "domain": "Neuroscience",
+    "equation": "Δw = ∫∫ K(tpost−tpre)·pre(t')·post(t)dt'dt;  BCM: Δw = ηφ(post−θ)·pre;  θ = ⟨post²⟩",
+    "update_form": "activity_dependent_modification",
+    "optimization": "maximize_information_transmission",
+    "fixed_points": "stable_weight_distribution",
+    "operators": [
+      "convolution",
+      "correlation",
+      "threshold"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "convergence_to_equilibrium",
+      "feedback_loop",
+      "homeostasis",
+      "information_gain",
+      "multiplicative_update"
+    ],
+    "variables": {
+      "state": "synaptic_weights",
+      "score": "correlation_measure",
+      "reference": "sliding_threshold"
+    },
+    "conservation": [],
+    "structure": "learning_rule"
+  },
+  "neural_field_theory": {
+    "id": "neural_field_theory",
+    "name": "Neural Field Theory / Wilson-Cowan",
+    "domain": "Neuroscience",
+    "equation": "τ∂E/∂t = −E + S(wₑₑ*E − wₑᵢ*I + hₑ);  τ∂I/∂t = −I + S(wᵢₑ*E − wᵢᵢ*I + hᵢ)",
+    "update_form": "excitatory_inhibitory_dynamics",
+    "optimization": "analyze_spatiotemporal_patterns",
+    "fixed_points": "bump_attractor",
+    "operators": [
+      "convolution",
+      "differential",
+      "nonlinear_reaction",
+      "sigmoid"
+    ],
+    "patterns": [
+      "excitatory_inhibitory_balance",
+      "nonlinear_dynamics",
+      "pattern_formation",
+      "self_organization",
+      "turing_instability",
+      "wave_propagation"
+    ],
+    "variables": {
+      "state": "firing_rate_field",
+      "score": "pattern_stability",
+      "reference": "connectivity_kernel"
+    },
+    "conservation": [],
+    "structure": "integrodifferential_equation"
+  },
+  "neural_coding": {
+    "id": "neural_coding",
+    "name": "Neural Coding / Population Codes",
+    "domain": "Neuroscience",
+    "equation": "I(s;r) = ΣΣ P(s,r)log[P(s,r)/(P(s)P(r))];  Fisher: J(θ) = E[(∂logP(r|θ)/∂θ)²];  Var(θ̂) ≥ 1/J(θ)",
+    "update_form": "information_encoding",
+    "optimization": "maximize_mutual_information",
+    "fixed_points": "optimal_tuning_curve",
+    "operators": [
+      "conditional_expectation",
+      "entropy",
+      "mutual_information"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "dimensionality_reduction",
+      "information_gain",
+      "signal_noise_separation",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "population_response",
+      "score": "mutual_information",
+      "reference": "fisher_information"
+    },
+    "conservation": [],
+    "structure": "information_theoretic_measure"
+  },
+  "connectome_dynamics": {
+    "id": "connectome_dynamics",
+    "name": "Connectome / Structural-Functional Coupling",
+    "domain": "Neuroscience",
+    "equation": "ẋ = −Lx + f(x);  L = D−A (graph Laplacian);  FC ≈ (αL+I)⁻¹;  modules = argmin modularity Q",
+    "update_form": "graph_diffusion_dynamics",
+    "optimization": "predict_functional_from_structural",
+    "fixed_points": "resting_state_modes",
+    "operators": [
+      "eigenvalue_decomposition",
+      "graph_laplacian",
+      "matrix_multiply",
+      "nonlinear_reaction"
+    ],
+    "patterns": [
+      "community_detection",
+      "diffusion",
+      "hierarchical_decomposition",
+      "network_topology",
+      "spectral_decomposition"
+    ],
+    "variables": {
+      "state": "regional_activity",
+      "score": "functional_connectivity",
+      "reference": "structural_connectome"
+    },
+    "conservation": [],
+    "structure": "graph_dynamical_system"
+  },
+  "neuromorphic_computing": {
+    "id": "neuromorphic_computing",
+    "name": "Neuromorphic Computing / Reservoir Computing",
+    "domain": "Neuroscience",
+    "equation": "x(t+1) = (1−α)x(t) + αf(Wᵢₙu(t) + Wx(t));  y(t) = Wₒᵤₜx(t);  train only Wₒᵤₜ = argmin||Y−Wₒᵤₜ X||²",
+    "update_form": "reservoir_state_update",
+    "optimization": "minimize_readout_error",
+    "fixed_points": "echo_state",
+    "operators": [
+      "linear_combination",
+      "matrix_multiply",
+      "nonlinear_reaction",
+      "regression"
+    ],
+    "patterns": [
+      "dimensionality_reduction",
+      "echo_state_property",
+      "edge_of_chaos",
+      "feedback_loop",
+      "information_gain",
+      "temporal_processing"
+    ],
+    "variables": {
+      "state": "reservoir_state",
+      "score": "readout_error",
+      "reference": "spectral_radius"
+    },
+    "conservation": [],
+    "structure": "driven_dynamical_system"
   }
 }
