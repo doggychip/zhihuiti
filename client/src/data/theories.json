@@ -7465,5 +7465,631 @@
     },
     "conservation": [],
     "structure": "optimization_over_parameter_space"
+  },
+  "schrodinger_equation": {
+    "id": "schrodinger_equation",
+    "name": "Schrödinger Equation",
+    "domain": "Quantum Physics",
+    "equation": "iℏ ∂ψ/∂t = Ĥψ = [−ℏ²/(2m)∇² + V(x)]ψ",
+    "update_form": "unitary_evolution",
+    "optimization": "minimize_energy_eigenvalue",
+    "fixed_points": "energy_eigenstates",
+    "operators": [
+      "differential",
+      "eigenvalue_decomposition",
+      "exponential",
+      "laplacian",
+      "linear_combination"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "energy_minimization",
+      "spectral_decomposition",
+      "superposition",
+      "variational_principle",
+      "wave_equation"
+    ],
+    "variables": {
+      "state": "wave_function",
+      "score": "energy_eigenvalue",
+      "reference": "hamiltonian"
+    },
+    "conservation": [
+      "total_probability",
+      "unitarity"
+    ],
+    "structure": "linear_pde"
+  },
+  "quantum_measurement": {
+    "id": "quantum_measurement",
+    "name": "Quantum Measurement / Born Rule",
+    "domain": "Quantum Physics",
+    "equation": "P(aₙ) = |⟨φₙ|ψ⟩|²;  post-measurement: |ψ⟩ → |φₙ⟩",
+    "update_form": "projective_collapse",
+    "optimization": "maximize_measurement_information",
+    "fixed_points": "eigenstate",
+    "operators": [
+      "inner_product",
+      "normalize",
+      "projection"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "conservation_of_probability",
+      "information_gain",
+      "irreversibility",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "quantum_state",
+      "score": "measurement_probability",
+      "reference": "observable_eigenstates"
+    },
+    "conservation": [
+      "total_probability"
+    ],
+    "structure": "projection_postulate"
+  },
+  "quantum_entanglement": {
+    "id": "quantum_entanglement",
+    "name": "Quantum Entanglement / Bell Inequalities",
+    "domain": "Quantum Physics",
+    "equation": "|ψ⟩ = (|00⟩+|11⟩)/√2;  S = E(a,b)−E(a,b')+E(a',b)+E(a',b') ≤ 2 (CHSH)",
+    "update_form": "nonlocal_correlation",
+    "optimization": "maximize_bell_violation",
+    "fixed_points": "maximally_entangled_state",
+    "operators": [
+      "inner_product",
+      "linear_combination",
+      "normalize",
+      "tensor_product"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "information_gain",
+      "nonlocality",
+      "pairwise_coupling",
+      "superposition"
+    ],
+    "variables": {
+      "state": "composite_state",
+      "score": "entanglement_entropy",
+      "reference": "bell_bound"
+    },
+    "conservation": [
+      "total_probability",
+      "unitarity"
+    ],
+    "structure": "tensor_product_hilbert_space"
+  },
+  "density_matrix": {
+    "id": "density_matrix",
+    "name": "Density Matrix / Von Neumann Equation",
+    "domain": "Quantum Physics",
+    "equation": "dρ/dt = −(i/ℏ)[H,ρ];  S = −Tr(ρ log ρ);  ρ = Σᵢ pᵢ|ψᵢ⟩⟨ψᵢ|",
+    "update_form": "mixed_state_evolution",
+    "optimization": "minimize_von_neumann_entropy",
+    "fixed_points": "thermal_equilibrium",
+    "operators": [
+      "commutator",
+      "eigenvalue_decomposition",
+      "logarithm",
+      "matrix_multiply",
+      "trace"
+    ],
+    "patterns": [
+      "conservation_of_probability",
+      "energy_entropy_tradeoff",
+      "exponential_family",
+      "information_gain",
+      "spectral_decomposition"
+    ],
+    "variables": {
+      "state": "density_operator",
+      "score": "von_neumann_entropy",
+      "reference": "hamiltonian"
+    },
+    "conservation": [
+      "trace_one",
+      "unitarity"
+    ],
+    "structure": "matrix_ode"
+  },
+  "quantum_harmonic_oscillator": {
+    "id": "quantum_harmonic_oscillator",
+    "name": "Quantum Harmonic Oscillator",
+    "domain": "Quantum Physics",
+    "equation": "Eₙ = ℏω(n+½);  â|n⟩ = √n|n−1⟩;  â†|n⟩ = √(n+1)|n+1⟩",
+    "update_form": "ladder_operator_algebra",
+    "optimization": "minimize_energy",
+    "fixed_points": "fock_states",
+    "operators": [
+      "commutator",
+      "eigenvalue_decomposition",
+      "linear_combination",
+      "state_transition"
+    ],
+    "patterns": [
+      "algebraic_structure",
+      "compositional_structure",
+      "energy_minimization",
+      "spectral_decomposition",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "occupation_number",
+      "score": "energy_level",
+      "reference": "zero_point_energy"
+    },
+    "conservation": [
+      "total_energy"
+    ],
+    "structure": "operator_algebra"
+  },
+  "quantum_tunneling": {
+    "id": "quantum_tunneling",
+    "name": "Quantum Tunneling / WKB Approximation",
+    "domain": "Quantum Physics",
+    "equation": "T ≈ exp(−2∫√(2m(V−E))/ℏ dx);  ψ ∝ exp(±i∫p(x)dx/ℏ)",
+    "update_form": "semiclassical_transmission",
+    "optimization": "none_barrier_penetration",
+    "fixed_points": "transmission_coefficient",
+    "operators": [
+      "exponential",
+      "integration",
+      "saddle_point_approximation"
+    ],
+    "patterns": [
+      "energy_minimization",
+      "exponential_decay",
+      "saddle_point_approximation",
+      "threshold_behavior",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "transmission_amplitude",
+      "score": "tunneling_rate",
+      "reference": "barrier_height"
+    },
+    "conservation": [
+      "probability_current"
+    ],
+    "structure": "semiclassical_approximation"
+  },
+  "decoherence": {
+    "id": "decoherence",
+    "name": "Quantum Decoherence / Lindblad Equation",
+    "domain": "Quantum Physics",
+    "equation": "dρ/dt = −(i/ℏ)[H,ρ] + Σₖ(LₖρLₖ† − ½{Lₖ†Lₖ,ρ})",
+    "update_form": "open_quantum_dynamics",
+    "optimization": "minimize_decoherence",
+    "fixed_points": "pointer_states",
+    "operators": [
+      "commutator",
+      "dissipation",
+      "matrix_multiply",
+      "trace"
+    ],
+    "patterns": [
+      "dissipative_system",
+      "energy_entropy_tradeoff",
+      "information_gain",
+      "irreversibility",
+      "mean_field",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "density_operator",
+      "score": "coherence_length",
+      "reference": "environment_coupling"
+    },
+    "conservation": [
+      "trace_one"
+    ],
+    "structure": "open_system_ode"
+  },
+  "quantum_error_correction": {
+    "id": "quantum_error_correction",
+    "name": "Quantum Error Correction / Stabilizer Codes",
+    "domain": "Quantum Physics",
+    "equation": "[[n,k,d]]: encode k logical qubits in n physical;  syndrome S(E) = {gᵢ: [gᵢ,E]≠0}",
+    "update_form": "syndrome_correction",
+    "optimization": "maximize_code_distance",
+    "fixed_points": "code_space",
+    "operators": [
+      "group_action",
+      "projection",
+      "state_transition",
+      "tensor_product"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "dual_variables",
+      "information_gain",
+      "redundancy",
+      "robustness",
+      "spectral_decomposition"
+    ],
+    "variables": {
+      "state": "encoded_state",
+      "score": "code_distance",
+      "reference": "stabilizer_group"
+    },
+    "conservation": [
+      "logical_information"
+    ],
+    "structure": "algebraic_code"
+  },
+  "quantum_computing": {
+    "id": "quantum_computing",
+    "name": "Quantum Computing / Gate Model",
+    "domain": "Quantum Physics",
+    "equation": "|ψ_out⟩ = Uₙ···U₂U₁|ψ_in⟩;  U ∈ SU(2ⁿ);  universal: {H, T, CNOT}",
+    "update_form": "gate_sequence",
+    "optimization": "minimize_circuit_depth",
+    "fixed_points": "computational_output",
+    "operators": [
+      "composition",
+      "matrix_multiply",
+      "state_transition",
+      "tensor_product"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "information_gain",
+      "superposition",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "qubit_register",
+      "score": "circuit_depth",
+      "reference": "universal_gate_set"
+    },
+    "conservation": [
+      "unitarity"
+    ],
+    "structure": "circuit_model"
+  },
+  "quantum_field_theory": {
+    "id": "quantum_field_theory",
+    "name": "Quantum Field Theory / Second Quantization",
+    "domain": "Quantum Physics",
+    "equation": "Z = ∫Dφ exp(i∫d⁴x L[φ,∂φ]);  ⟨Ω|T{φ(x₁)···φ(xₙ)}|Ω⟩ = δⁿ ln Z / δJⁿ",
+    "update_form": "functional_integral_over_fields",
+    "optimization": "stationary_action",
+    "fixed_points": "vacuum_state",
+    "operators": [
+      "action",
+      "exponential",
+      "functional_integral",
+      "sum_over_paths"
+    ],
+    "patterns": [
+      "conservation_law",
+      "energy_entropy_tradeoff",
+      "partition_function",
+      "phase_transition",
+      "saddle_point_approximation",
+      "spontaneous_symmetry_breaking",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "field_configuration",
+      "score": "vacuum_energy",
+      "reference": "lagrangian_density"
+    },
+    "conservation": [
+      "charge_conservation",
+      "unitarity"
+    ],
+    "structure": "functional_integral"
+  },
+  "adiabatic_theorem": {
+    "id": "adiabatic_theorem",
+    "name": "Adiabatic Quantum Computing / Annealing",
+    "domain": "Quantum Physics",
+    "equation": "H(t) = (1−t/T)H₀ + (t/T)Hₚ;  gap condition: T ≫ 1/Δ²min",
+    "update_form": "slow_hamiltonian_deformation",
+    "optimization": "find_ground_state",
+    "fixed_points": "ground_state_of_Hp",
+    "operators": [
+      "eigenvalue_decomposition",
+      "interpolation",
+      "matrix_multiply"
+    ],
+    "patterns": [
+      "energy_minimization",
+      "exploration_exploitation",
+      "phase_transition",
+      "spectral_decomposition",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "instantaneous_eigenstate",
+      "score": "spectral_gap",
+      "reference": "problem_hamiltonian"
+    },
+    "conservation": [
+      "unitarity"
+    ],
+    "structure": "parametric_spectral_problem"
+  },
+  "maximum_entropy_thermo": {
+    "id": "maximum_entropy_thermo",
+    "name": "Maximum Entropy / Jaynes Formalism",
+    "domain": "Thermodynamics",
+    "equation": "max S = −Σᵢ pᵢ log pᵢ  s.t. Σᵢ pᵢ fₖ(xᵢ) = ⟨fₖ⟩;  → pᵢ = exp(−Σₖ λₖfₖ(xᵢ))/Z",
+    "update_form": "constrained_entropy_maximization",
+    "optimization": "maximize_entropy",
+    "fixed_points": "maximum_entropy_distribution",
+    "operators": [
+      "exponential",
+      "lagrange_multiplier",
+      "logarithm",
+      "normalize",
+      "partition_function"
+    ],
+    "patterns": [
+      "conservation_of_probability",
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "exponential_family",
+      "information_gain",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "probability_distribution",
+      "score": "entropy",
+      "reference": "constraint_expectations"
+    },
+    "conservation": [
+      "total_probability",
+      "constraint_satisfaction"
+    ],
+    "structure": "constrained_optimization"
+  },
+  "carnot_cycle": {
+    "id": "carnot_cycle",
+    "name": "Carnot Cycle / Second Law Bounds",
+    "domain": "Thermodynamics",
+    "equation": "η = 1 − Tc/Th;  ΔS_total ≥ 0;  W = Qh − Qc",
+    "update_form": "cyclic_heat_engine",
+    "optimization": "maximize_efficiency",
+    "fixed_points": "reversible_limit",
+    "operators": [
+      "comparison",
+      "integration",
+      "logarithm"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "irreversibility",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "thermodynamic_state",
+      "score": "efficiency",
+      "reference": "carnot_bound"
+    },
+    "conservation": [
+      "total_energy"
+    ],
+    "structure": "cyclic_process"
+  },
+  "free_energy_thermo": {
+    "id": "free_energy_thermo",
+    "name": "Free Energy / Legendre Transforms",
+    "domain": "Thermodynamics",
+    "equation": "F = U − TS;  G = H − TS;  dF = −SdT − PdV;  minimum F at equilibrium",
+    "update_form": "legendre_transform",
+    "optimization": "minimize_free_energy",
+    "fixed_points": "thermodynamic_equilibrium",
+    "operators": [
+      "differential",
+      "gradient",
+      "lagrange_multiplier",
+      "legendre_transform"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "lyapunov_stability",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "thermodynamic_potential",
+      "score": "free_energy",
+      "reference": "natural_variables"
+    },
+    "conservation": [
+      "total_energy"
+    ],
+    "structure": "convex_conjugate"
+  },
+  "fluctuation_theorem": {
+    "id": "fluctuation_theorem",
+    "name": "Fluctuation Theorems / Jarzynski Equality",
+    "domain": "Thermodynamics",
+    "equation": "⟨exp(−W/kT)⟩ = exp(−ΔF/kT);  P(σ)/P(−σ) = exp(σ)",
+    "update_form": "nonequilibrium_work_relation",
+    "optimization": "estimate_free_energy",
+    "fixed_points": "equilibrium_limit",
+    "operators": [
+      "averaging",
+      "exponential",
+      "logarithm",
+      "stochastic_integral"
+    ],
+    "patterns": [
+      "energy_entropy_tradeoff",
+      "exact_decomposition",
+      "irreversibility",
+      "stochastic_dynamics",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "nonequilibrium_trajectory",
+      "score": "dissipated_work",
+      "reference": "free_energy_difference"
+    },
+    "conservation": [],
+    "structure": "exact_identity"
+  },
+  "landauer_principle": {
+    "id": "landauer_principle",
+    "name": "Landauer's Principle / Information Thermodynamics",
+    "domain": "Thermodynamics",
+    "equation": "W ≥ kT ln 2  per bit erased;  ΔS_env ≥ kB ΔH(X)",
+    "update_form": "information_erasure_bound",
+    "optimization": "minimize_erasure_cost",
+    "fixed_points": "reversible_computation_limit",
+    "operators": [
+      "comparison",
+      "logarithm"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "information_gain",
+      "irreversibility"
+    ],
+    "variables": {
+      "state": "information_content",
+      "score": "minimum_heat_dissipation",
+      "reference": "information_erased"
+    },
+    "conservation": [
+      "total_energy"
+    ],
+    "structure": "information_theoretic_bound"
+  },
+  "onsager_reciprocal": {
+    "id": "onsager_reciprocal",
+    "name": "Onsager Reciprocal Relations / Linear Response",
+    "domain": "Thermodynamics",
+    "equation": "Jᵢ = Σⱼ Lᵢⱼ Xⱼ;  Lᵢⱼ = Lⱼᵢ;  σ = Σᵢⱼ Lᵢⱼ Xᵢ Xⱼ ≥ 0",
+    "update_form": "linear_transport",
+    "optimization": "minimize_entropy_production",
+    "fixed_points": "steady_state",
+    "operators": [
+      "linear_combination",
+      "matrix_multiply"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "linear_response",
+      "lyapunov_stability",
+      "spectral_decomposition"
+    ],
+    "variables": {
+      "state": "thermodynamic_flux",
+      "score": "entropy_production",
+      "reference": "thermodynamic_force"
+    },
+    "conservation": [
+      "total_energy"
+    ],
+    "structure": "linear_response_theory"
+  },
+  "stochastic_thermodynamics": {
+    "id": "stochastic_thermodynamics",
+    "name": "Stochastic Thermodynamics / Entropy Production",
+    "domain": "Thermodynamics",
+    "equation": "dS_tot/dt = dS_sys/dt + dS_env/dt ≥ 0;  ṡ = Σᵢⱼ (Rᵢⱼpⱼ−Rⱼᵢpᵢ)ln(Rᵢⱼpⱼ/Rⱼᵢpᵢ)/2",
+    "update_form": "trajectory_entropy_accounting",
+    "optimization": "minimize_dissipation",
+    "fixed_points": "detailed_balance",
+    "operators": [
+      "fokker_planck",
+      "logarithm",
+      "state_transition",
+      "stochastic_integral"
+    ],
+    "patterns": [
+      "continuous_time_markov",
+      "dissipative_system",
+      "energy_entropy_tradeoff",
+      "ergodic",
+      "information_gain",
+      "irreversibility",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "mesoscopic_trajectory",
+      "score": "entropy_production_rate",
+      "reference": "detailed_balance_condition"
+    },
+    "conservation": [
+      "total_probability"
+    ],
+    "structure": "continuous_time_markov_chain"
+  },
+  "thermodynamic_uncertainty": {
+    "id": "thermodynamic_uncertainty",
+    "name": "Thermodynamic Uncertainty Relations",
+    "domain": "Thermodynamics",
+    "equation": "Var(J)/⟨J⟩² ≥ 2kB/⟨σ⟩;  precision costs dissipation",
+    "update_form": "precision_dissipation_tradeoff",
+    "optimization": "optimize_current_precision",
+    "fixed_points": "optimal_tradeoff",
+    "operators": [
+      "comparison",
+      "conditional_variance",
+      "expectation"
+    ],
+    "patterns": [
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "information_gain",
+      "stochastic_dynamics",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "current_statistics",
+      "score": "signal_to_noise",
+      "reference": "entropy_production"
+    },
+    "conservation": [],
+    "structure": "information_theoretic_bound"
+  },
+  "maxwell_demon": {
+    "id": "maxwell_demon",
+    "name": "Maxwell's Demon / Szilard Engine",
+    "domain": "Thermodynamics",
+    "equation": "W_extracted ≤ kT · I(X;M);  feedback: ΔF = kT ΔI",
+    "update_form": "information_feedback_engine",
+    "optimization": "maximize_work_extraction",
+    "fixed_points": "equilibrium_with_memory",
+    "operators": [
+      "conditional_expectation",
+      "logarithm",
+      "mutual_information"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "feedback_loop",
+      "information_gain",
+      "irreversibility"
+    ],
+    "variables": {
+      "state": "system_plus_memory",
+      "score": "extracted_work",
+      "reference": "mutual_information"
+    },
+    "conservation": [
+      "total_energy"
+    ],
+    "structure": "information_engine"
   }
 }
