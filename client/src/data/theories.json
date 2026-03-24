@@ -8091,5 +8091,619 @@
       "total_energy"
     ],
     "structure": "information_engine"
+  },
+  "correlated_equilibrium": {
+    "id": "correlated_equilibrium",
+    "name": "Correlated Equilibrium (Aumann)",
+    "domain": "Game Theory",
+    "equation": "Σ_s₋ᵢ μ(s|sᵢ)[uᵢ(sᵢ,s₋ᵢ) − uᵢ(s'ᵢ,s₋ᵢ)] ≥ 0  ∀i, ∀sᵢ, ∀s'ᵢ",
+    "update_form": "signal_conditional_optimality",
+    "optimization": "maximize_social_welfare",
+    "fixed_points": "correlated_equilibrium",
+    "operators": [
+      "conditional_expectation",
+      "linear_combination",
+      "payoff_matrix"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "conservation_of_probability",
+      "dual_variables",
+      "game_theoretic_equilibrium",
+      "information_gain",
+      "linear_pricing"
+    ],
+    "variables": {
+      "state": "joint_signal_distribution",
+      "score": "expected_payoff",
+      "reference": "recommendation_device"
+    },
+    "conservation": [
+      "total_probability"
+    ],
+    "structure": "linear_program"
+  },
+  "minimax_theorem": {
+    "id": "minimax_theorem",
+    "name": "Minimax Theorem (Von Neumann)",
+    "domain": "Game Theory",
+    "equation": "max_x min_y xᵀAy = min_y max_x xᵀAy = v*",
+    "update_form": "saddle_point_equilibrium",
+    "optimization": "minimax",
+    "fixed_points": "saddle_point",
+    "operators": [
+      "linear_combination",
+      "maximize",
+      "payoff_matrix"
+    ],
+    "patterns": [
+      "convex_optimization",
+      "dual_variables",
+      "duality",
+      "energy_minimization",
+      "game_theoretic_equilibrium",
+      "saddle_point_approximation",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "mixed_strategy",
+      "score": "game_value",
+      "reference": "payoff_matrix"
+    },
+    "conservation": [],
+    "structure": "saddle_point_problem"
+  },
+  "bayesian_game": {
+    "id": "bayesian_game",
+    "name": "Bayesian Game / Incomplete Information",
+    "domain": "Game Theory",
+    "equation": "σᵢ*(θᵢ) ∈ argmax E_{θ₋ᵢ}[uᵢ(σᵢ, σ*₋ᵢ(θ₋ᵢ), θᵢ) | θᵢ]",
+    "update_form": "type_conditional_best_response",
+    "optimization": "maximize_interim_payoff",
+    "fixed_points": "bayesian_nash_equilibrium",
+    "operators": [
+      "best_response",
+      "conditional_expectation",
+      "fixed_point",
+      "payoff_matrix"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "fixed_point_iteration",
+      "game_theoretic_equilibrium",
+      "information_asymmetry",
+      "information_gain",
+      "strategic_interaction"
+    ],
+    "variables": {
+      "state": "type_contingent_strategy",
+      "score": "interim_payoff",
+      "reference": "prior_beliefs"
+    },
+    "conservation": [],
+    "structure": "bayesian_equilibrium"
+  },
+  "repeated_game": {
+    "id": "repeated_game",
+    "name": "Repeated Games / Folk Theorem",
+    "domain": "Game Theory",
+    "equation": "Vᵢ = (1−δ)Σₜ δᵗ uᵢ(aₜ);  Folk: any v ∈ F with vᵢ > vᵢ* is sustainable if δ→1",
+    "update_form": "discounted_repeated_interaction",
+    "optimization": "sustain_cooperation",
+    "fixed_points": "subgame_perfect_equilibrium",
+    "operators": [
+      "comparison",
+      "discounting",
+      "geometric_series",
+      "payoff_matrix"
+    ],
+    "patterns": [
+      "cooperation_dilemma",
+      "exponential_decay",
+      "feedback_loop",
+      "game_theoretic_equilibrium",
+      "multiplier_effect",
+      "strategic_interaction"
+    ],
+    "variables": {
+      "state": "history_dependent_strategy",
+      "score": "average_payoff",
+      "reference": "minmax_value"
+    },
+    "conservation": [],
+    "structure": "dynamic_game"
+  },
+  "evolutionary_stability": {
+    "id": "evolutionary_stability",
+    "name": "Evolutionary Stability / Hawk-Dove",
+    "domain": "Game Theory",
+    "equation": "x* stable iff: u(x*,x*) > u(y,x*) OR [= AND u(x*,y) > u(y,y)];  Hawk-Dove: x* = V/C",
+    "update_form": "invasion_barrier",
+    "optimization": "maximize_invasion_fitness",
+    "fixed_points": "evolutionarily_stable_strategy",
+    "operators": [
+      "best_response",
+      "comparison",
+      "fixed_point",
+      "payoff_matrix",
+      "selection"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "fixed_point_stability",
+      "game_theoretic_equilibrium",
+      "invasion_analysis",
+      "pairwise_coupling",
+      "selection"
+    ],
+    "variables": {
+      "state": "population_strategy_mix",
+      "score": "invasion_fitness",
+      "reference": "resident_strategy"
+    },
+    "conservation": [
+      "total_probability"
+    ],
+    "structure": "equilibrium_concept"
+  },
+  "congestion_game": {
+    "id": "congestion_game",
+    "name": "Congestion / Potential Games",
+    "domain": "Game Theory",
+    "equation": "Φ(s) = Σᵣ Σₖ₌₁^{nᵣ(s)} cᵣ(k);  s* = argmin Φ(s);  Nash iff local min of Φ",
+    "update_form": "potential_minimization",
+    "optimization": "minimize_potential",
+    "fixed_points": "nash_of_potential_game",
+    "operators": [
+      "gradient",
+      "gradient_descent",
+      "summation"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "energy_minimization",
+      "game_theoretic_equilibrium",
+      "gradient_flow",
+      "lyapunov_stability",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "resource_allocation",
+      "score": "potential_function",
+      "reference": "congestion_cost"
+    },
+    "conservation": [],
+    "structure": "gradient_dynamics"
+  },
+  "auction_theory": {
+    "id": "auction_theory",
+    "name": "Auction Theory / Revenue Equivalence",
+    "domain": "Game Theory",
+    "equation": "b*(v) = v − ∫₀ᵛ F(t)ⁿ⁻¹dt / F(v)ⁿ⁻¹;  E[Rev] = E[2nd highest value] (IPV)",
+    "update_form": "bayesian_bidding_equilibrium",
+    "optimization": "maximize_revenue",
+    "fixed_points": "symmetric_bidding_equilibrium",
+    "operators": [
+      "conditional_expectation",
+      "integration",
+      "maximize"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "dual_variables",
+      "game_theoretic_equilibrium",
+      "information_asymmetry",
+      "irrelevance_theorem",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "bid_function",
+      "score": "expected_revenue",
+      "reference": "value_distribution"
+    },
+    "conservation": [
+      "budget_balance"
+    ],
+    "structure": "bayesian_equilibrium"
+  },
+  "no_regret_learning": {
+    "id": "no_regret_learning",
+    "name": "No-Regret Learning / Multiplicative Weights",
+    "domain": "Game Theory",
+    "equation": "wᵢ(t+1) = wᵢ(t)·exp(−η·ℓᵢ(t));  pᵢ(t) = wᵢ(t)/Σⱼwⱼ(t);  regret ≤ √(T ln N)",
+    "update_form": "multiplicative_weight_update",
+    "optimization": "minimize_regret",
+    "fixed_points": "coarse_correlated_equilibrium",
+    "operators": [
+      "exponential",
+      "gradient",
+      "normalize",
+      "softmax"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "exploration_exploitation",
+      "game_theoretic_equilibrium",
+      "information_gain",
+      "multiplicative_update"
+    ],
+    "variables": {
+      "state": "weight_vector",
+      "score": "cumulative_regret",
+      "reference": "best_fixed_action"
+    },
+    "conservation": [
+      "total_probability"
+    ],
+    "structure": "online_optimization"
+  },
+  "mechanism_design_vcg": {
+    "id": "mechanism_design_vcg",
+    "name": "VCG Mechanism / Incentive Compatibility",
+    "domain": "Game Theory",
+    "equation": "tᵢ(θ̂) = Σⱼ≠ᵢ vⱼ(f(θ̂),θⱼ) − hᵢ(θ̂₋ᵢ);  truth-telling: θ̂ᵢ = θᵢ is dominant",
+    "update_form": "externality_payment",
+    "optimization": "maximize_social_welfare",
+    "fixed_points": "truthful_equilibrium",
+    "operators": [
+      "maximize",
+      "payoff_matrix",
+      "summation"
+    ],
+    "patterns": [
+      "dual_variables",
+      "game_theoretic_equilibrium",
+      "information_asymmetry",
+      "information_gain",
+      "linear_pricing",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "allocation_and_payments",
+      "score": "social_welfare",
+      "reference": "reported_types"
+    },
+    "conservation": [
+      "budget_balance"
+    ],
+    "structure": "mechanism"
+  },
+  "extensive_form_game": {
+    "id": "extensive_form_game",
+    "name": "Extensive Form / Sequential Games",
+    "domain": "Game Theory",
+    "equation": "σᵢ*(h) ∈ argmax E[uᵢ | h, σ*₋ᵢ]  ∀h ∈ Hᵢ;  backward induction on game tree",
+    "update_form": "backward_induction",
+    "optimization": "subgame_perfect_equilibrium",
+    "fixed_points": "sequential_equilibrium",
+    "operators": [
+      "backward_recursion",
+      "best_response",
+      "conditional_expectation",
+      "state_transition"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "compositional_structure",
+      "fixed_point_iteration",
+      "game_theoretic_equilibrium",
+      "strategic_interaction",
+      "tree_structure"
+    ],
+    "variables": {
+      "state": "behavioral_strategy",
+      "score": "continuation_payoff",
+      "reference": "information_set"
+    },
+    "conservation": [],
+    "structure": "bellman_recursion"
+  },
+  "compressed_sensing": {
+    "id": "compressed_sensing",
+    "name": "Compressed Sensing / Sparse Recovery",
+    "domain": "Signal Processing",
+    "equation": "min ||x||₁ s.t. y = Ax;  RIP: (1−δ)||x||² ≤ ||Ax||² ≤ (1+δ)||x||²",
+    "update_form": "basis_pursuit",
+    "optimization": "minimize_l1_norm",
+    "fixed_points": "sparse_solution",
+    "operators": [
+      "linear_combination",
+      "matrix_multiply",
+      "projection",
+      "threshold"
+    ],
+    "patterns": [
+      "convex_optimization",
+      "dimensionality_reduction",
+      "dual_variables",
+      "energy_minimization",
+      "signal_noise_separation",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "sparse_signal",
+      "score": "sparsity_level",
+      "reference": "measurement_matrix"
+    },
+    "conservation": [
+      "measurement_consistency"
+    ],
+    "structure": "convex_program"
+  },
+  "kalman_filter": {
+    "id": "kalman_filter",
+    "name": "Kalman Filter / State Estimation",
+    "domain": "Signal Processing",
+    "equation": "x̂ₖ|ₖ = x̂ₖ|ₖ₋₁ + Kₖ(yₖ − Hx̂ₖ|ₖ₋₁);  Kₖ = Pₖ|ₖ₋₁Hᵀ(HPₖ|ₖ₋₁Hᵀ+R)⁻¹",
+    "update_form": "bayesian_state_update",
+    "optimization": "minimize_estimation_error",
+    "fixed_points": "steady_state_kalman_gain",
+    "operators": [
+      "conditional_expectation",
+      "covariance",
+      "linear_combination",
+      "matrix_multiply",
+      "projection"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "dual_variables",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "information_gain",
+      "lyapunov_stability",
+      "signal_noise_separation"
+    ],
+    "variables": {
+      "state": "state_estimate",
+      "score": "estimation_error_covariance",
+      "reference": "kalman_gain"
+    },
+    "conservation": [],
+    "structure": "recursive_bayesian_estimation"
+  },
+  "fourier_analysis": {
+    "id": "fourier_analysis",
+    "name": "Fourier Transform / Spectral Analysis",
+    "domain": "Signal Processing",
+    "equation": "F(ω) = ∫f(t)e^{−iωt}dt;  f(t) = (1/2π)∫F(ω)e^{iωt}dω;  ||f||² = ||F||²",
+    "update_form": "frequency_decomposition",
+    "optimization": "spectral_analysis",
+    "fixed_points": "spectral_components",
+    "operators": [
+      "convolution",
+      "eigenvalue_decomposition",
+      "exponential",
+      "fourier_transform",
+      "integration"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "dual_variables",
+      "energy_minimization",
+      "spectral_decomposition",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "signal",
+      "score": "power_spectrum",
+      "reference": "frequency_basis"
+    },
+    "conservation": [
+      "parseval_energy"
+    ],
+    "structure": "spectral_problem"
+  },
+  "wiener_filter": {
+    "id": "wiener_filter",
+    "name": "Wiener Filter / Optimal Linear Filter",
+    "domain": "Signal Processing",
+    "equation": "H(ω) = Sₓᵧ(ω)/Sᵧᵧ(ω);  minimize E[|x(t)−x̂(t)|²]",
+    "update_form": "spectral_domain_optimization",
+    "optimization": "minimize_mse",
+    "fixed_points": "optimal_filter",
+    "operators": [
+      "convolution",
+      "covariance",
+      "fourier_transform",
+      "regression"
+    ],
+    "patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "linear_response",
+      "signal_noise_separation",
+      "spectral_decomposition",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "filter_transfer_function",
+      "score": "mean_square_error",
+      "reference": "signal_noise_spectra"
+    },
+    "conservation": [],
+    "structure": "optimization_over_parameter_space"
+  },
+  "sampling_theorem": {
+    "id": "sampling_theorem",
+    "name": "Nyquist-Shannon Sampling Theorem",
+    "domain": "Signal Processing",
+    "equation": "f(t) = Σₙ f(nT)sinc((t−nT)/T);  fₛ ≥ 2B;  aliasing if fₛ < 2B",
+    "update_form": "interpolation_from_samples",
+    "optimization": "perfect_reconstruction",
+    "fixed_points": "bandlimited_signal",
+    "operators": [
+      "convolution",
+      "fourier_transform",
+      "interpolation",
+      "projection"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "conservation_law",
+      "dimensionality_reduction",
+      "dual_variables",
+      "information_gain",
+      "spectral_decomposition"
+    ],
+    "variables": {
+      "state": "sampled_signal",
+      "score": "sampling_rate",
+      "reference": "bandwidth"
+    },
+    "conservation": [
+      "signal_information"
+    ],
+    "structure": "information_theoretic_bound"
+  },
+  "matched_filter": {
+    "id": "matched_filter",
+    "name": "Matched Filter / Optimal Detection",
+    "domain": "Signal Processing",
+    "equation": "h(t) = s*(T−t);  SNR_out = 2E/N₀;  maximizes output SNR",
+    "update_form": "correlation_detection",
+    "optimization": "maximize_snr",
+    "fixed_points": "optimal_detector",
+    "operators": [
+      "convolution",
+      "inner_product",
+      "maximize"
+    ],
+    "patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "information_gain",
+      "signal_noise_separation",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "filter_impulse_response",
+      "score": "output_snr",
+      "reference": "noise_spectral_density"
+    },
+    "conservation": [],
+    "structure": "optimization_over_parameter_space"
+  },
+  "adaptive_filtering": {
+    "id": "adaptive_filtering",
+    "name": "Adaptive Filtering / LMS-NLMS",
+    "domain": "Signal Processing",
+    "equation": "wₙ₊₁ = wₙ + μeₙxₙ/(xₙᵀxₙ+ε);  eₙ = dₙ − wₙᵀxₙ",
+    "update_form": "stochastic_gradient_adaptation",
+    "optimization": "minimize_mse_online",
+    "fixed_points": "wiener_solution",
+    "operators": [
+      "gradient",
+      "gradient_descent",
+      "inner_product",
+      "normalize"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "energy_minimization",
+      "exploration_exploitation",
+      "gradient_flow",
+      "signal_noise_separation",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "filter_weights",
+      "score": "mean_square_error",
+      "reference": "step_size"
+    },
+    "conservation": [],
+    "structure": "online_optimization"
+  },
+  "sparse_coding": {
+    "id": "sparse_coding",
+    "name": "Sparse Coding / Dictionary Learning",
+    "domain": "Signal Processing",
+    "equation": "min ||X−DA||²F + λΣᵢ||aᵢ||₁;  alternating: fix D optimize A, fix A optimize D",
+    "update_form": "alternating_minimization",
+    "optimization": "minimize_reconstruction_plus_sparsity",
+    "fixed_points": "learned_dictionary",
+    "operators": [
+      "gradient",
+      "matrix_multiply",
+      "projection",
+      "threshold"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "convex_optimization",
+      "dimensionality_reduction",
+      "energy_minimization",
+      "information_gain",
+      "signal_noise_separation"
+    ],
+    "variables": {
+      "state": "dictionary_and_codes",
+      "score": "reconstruction_error",
+      "reference": "sparsity_penalty"
+    },
+    "conservation": [],
+    "structure": "alternating_optimization"
+  },
+  "pll_synchronization": {
+    "id": "pll_synchronization",
+    "name": "Phase-Locked Loop / Synchronization",
+    "domain": "Signal Processing",
+    "equation": "dφ/dt = ωfree + Kd·sin(θin−φ);  lock range: |Δω| < KdKvco",
+    "update_form": "phase_tracking_feedback",
+    "optimization": "minimize_phase_error",
+    "fixed_points": "phase_lock",
+    "operators": [
+      "differential",
+      "feedback_loop",
+      "nonlinear_reaction"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "coupled_oscillation",
+      "feedback_loop",
+      "lyapunov_stability",
+      "nonlinear_dynamics",
+      "self_organization"
+    ],
+    "variables": {
+      "state": "output_phase",
+      "score": "phase_error",
+      "reference": "input_frequency"
+    },
+    "conservation": [],
+    "structure": "nonlinear_feedback_ode"
+  },
+  "source_separation": {
+    "id": "source_separation",
+    "name": "Independent Component Analysis / Blind Source Separation",
+    "domain": "Signal Processing",
+    "equation": "x = As;  maximize non-Gaussianity: max |E[G(wᵀx)]−E[G(ν)]|;  W = A⁻¹",
+    "update_form": "independence_maximization",
+    "optimization": "maximize_non_gaussianity",
+    "fixed_points": "unmixed_sources",
+    "operators": [
+      "eigenvalue_decomposition",
+      "fixed_point",
+      "matrix_multiply",
+      "normalize"
+    ],
+    "patterns": [
+      "dimensionality_reduction",
+      "energy_entropy_tradeoff",
+      "fixed_point_iteration",
+      "information_gain",
+      "signal_noise_separation",
+      "spectral_decomposition"
+    ],
+    "variables": {
+      "state": "unmixing_matrix",
+      "score": "statistical_independence",
+      "reference": "mixing_matrix"
+    },
+    "conservation": [],
+    "structure": "optimization_over_parameter_space"
   }
 }
