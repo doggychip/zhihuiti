@@ -78,7 +78,7 @@ def repl(db: str, model: str | None, workers: int, premium_model: str | None, re
         os.environ["LLM_PREMIUM_MODEL"] = premium_model
 
     console.print(BANNER, style="bold cyan")
-    console.print("[dim]Commands: stats, genes, economy, auctions, pool, bloodline, ancestry <id>, purge <id>,\n  realms, realm <name>, inspection, fuse, laws, behavior, relations, loans,\n  market, futures, arbitration, factory, quit[/dim]\n")
+    console.print("[dim]Commands: stats, genes, economy, auctions, pool, bloodline, ancestry <id>, purge <id>,\n  realms, realm <name>, inspection, fuse, laws, behavior, relations, loans,\n  market, futures, arbitration, factory, brain, metacognition, consolidate,\n  predictions, causal, quit[/dim]\n")
 
     try:
         orch = Orchestrator(db_path=db, model=model)
@@ -169,6 +169,23 @@ def repl(db: str, model: str | None, workers: int, premium_model: str | None, re
                 orch.factory.print_report()
                 orch.factory.print_orders()
                 continue
+            if goal.lower() in ("brain", "metacognition"):
+                orch.metacognition.print_report()
+                continue
+            if goal.lower() == "consolidate":
+                result = orch.consolidation.consolidate(purge=True)
+                console.print(f"  Processed: {result.entries_processed}, Principles: {result.principles_created} new, {result.principles_updated} updated")
+                orch.consolidation.print_knowledge()
+                continue
+            if goal.lower() == "predictions":
+                orch.prediction.print_report()
+                stats = orch.memory.get_prediction_stats()
+                for k, v in stats.items():
+                    console.print(f"  {k}: {v}")
+                continue
+            if goal.lower() == "causal":
+                orch.causal_graph.print_graph()
+                continue
             if goal.lower() == "realms":
                 orch.realm_manager.print_report(orch.agent_manager.agents)
                 continue
@@ -204,6 +221,43 @@ def stats(db: str):
         "\n".join(f"  {k}: {v}" for k, v in s.items()),
         title="zhihuiti Stats",
     ))
+    mem.close()
+
+
+@main.command()
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+def brain(db: str):
+    """Show brain intelligence status — metacognition, consolidation, predictions, causal."""
+    from zhihuiti.memory import Memory
+    from zhihuiti.metacognition import MetacognitionEngine
+    from zhihuiti.consolidation import ConsolidationEngine
+    from zhihuiti.causal import CausalGraph
+
+    mem = Memory(db_path=db)
+    console.print(Panel("[bold]Brain Intelligence Status[/bold]", border_style="magenta"))
+
+    # Metacognition
+    meta = MetacognitionEngine(mem)
+    meta.print_report()
+
+    # Consolidated knowledge
+    consol = ConsolidationEngine(mem)
+    consol.print_knowledge()
+
+    # Prediction stats
+    pred_stats = mem.get_prediction_stats()
+    if pred_stats["total_predictions"] > 0:
+        console.print(Panel(
+            "\n".join(f"  {k}: {v}" for k, v in pred_stats.items()),
+            title="预测误差 Prediction Stats",
+        ))
+
+    # Causal knowledge
+    graph = CausalGraph()
+    n = graph.load_from_db(mem, min_confidence=0.3)
+    if n > 0:
+        graph.print_graph()
+
     mem.close()
 
 

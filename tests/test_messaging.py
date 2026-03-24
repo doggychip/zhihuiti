@@ -171,6 +171,14 @@ class TestCrossGoalMemory:
             orch.factory = Factory(llm=stub, memory=mem)
             orch.bidding = BiddingHouse(stub, mem, orch.economy)
             orch.messages = MessageBoard(mem)
+            from zhihuiti.metacognition import MetacognitionEngine
+            from zhihuiti.consolidation import ConsolidationEngine
+            from zhihuiti.prediction import PredictionEngine
+            from zhihuiti.causal import CausalGraph
+            orch.causal_graph = CausalGraph()
+            orch.metacognition = MetacognitionEngine(mem)
+            orch.consolidation = ConsolidationEngine(mem)
+            orch.prediction = PredictionEngine(mem, causal_graph=orch.causal_graph)
             orch.tasks = {}
             orch.max_workers = 4
             orch.max_retries = 0
@@ -250,6 +258,14 @@ class TestMessagingIntegration:
         orch.factory = Factory(llm=stub, memory=mem)
         orch.bidding = BiddingHouse(stub, mem, orch.economy)
         orch.messages = MessageBoard(mem)
+        from zhihuiti.metacognition import MetacognitionEngine
+        from zhihuiti.consolidation import ConsolidationEngine
+        from zhihuiti.prediction import PredictionEngine
+        from zhihuiti.causal import CausalGraph
+        orch.causal_graph = CausalGraph()
+        orch.metacognition = MetacognitionEngine(mem)
+        orch.consolidation = ConsolidationEngine(mem)
+        orch.prediction = PredictionEngine(mem, causal_graph=orch.causal_graph)
         orch.tasks = {}
         orch.max_workers = 4
         orch.max_retries = 0
