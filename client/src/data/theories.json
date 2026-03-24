@@ -8705,5 +8705,808 @@
     },
     "conservation": [],
     "structure": "optimization_over_parameter_space"
+  },
+  "predictive_coding": {
+    "id": "predictive_coding",
+    "name": "Predictive Coding / Hierarchical Inference",
+    "domain": "Cognitive Science",
+    "equation": "εₗ = xₗ − g(μₗ₊₁);  μ̇ₗ = εₗ − ∂g/∂μ·Πₗ₊₁·εₗ₊₁;  F = Σₗ εₗᵀΠₗεₗ",
+    "update_form": "hierarchical_prediction_error",
+    "optimization": "minimize_prediction_error",
+    "fixed_points": "hierarchical_equilibrium",
+    "operators": [
+      "conditional_expectation",
+      "differential",
+      "gradient",
+      "subtraction"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "compositional_structure",
+      "energy_minimization",
+      "feedback_loop",
+      "hierarchical_decomposition",
+      "information_gain",
+      "signal_noise_separation"
+    ],
+    "variables": {
+      "state": "prediction_and_error",
+      "score": "variational_free_energy",
+      "reference": "generative_model"
+    },
+    "conservation": [],
+    "structure": "hierarchical_bayesian"
+  },
+  "global_workspace": {
+    "id": "global_workspace",
+    "name": "Global Workspace Theory (Baars)",
+    "domain": "Cognitive Science",
+    "equation": "broadcast(x) iff salience(x) > θ AND competition(x) = max;  access = ∫ attention·activation dx > θ_conscious",
+    "update_form": "competitive_broadcast",
+    "optimization": "maximize_global_coherence",
+    "fixed_points": "conscious_broadcast_state",
+    "operators": [
+      "comparison",
+      "competition",
+      "threshold"
+    ],
+    "patterns": [
+      "competition_selection",
+      "feedback_loop",
+      "information_gain",
+      "phase_transition",
+      "self_organization",
+      "winner_take_all"
+    ],
+    "variables": {
+      "state": "workspace_content",
+      "score": "global_coherence",
+      "reference": "attention_threshold"
+    },
+    "conservation": [
+      "processing_capacity"
+    ],
+    "structure": "broadcasting_architecture"
+  },
+  "integrated_information": {
+    "id": "integrated_information",
+    "name": "Integrated Information Theory (Tononi)",
+    "domain": "Cognitive Science",
+    "equation": "Φ = min_partition [I(past;future) − Σᵢ I(pastᵢ;futureᵢ)];  consciousness iff Φ > 0",
+    "update_form": "information_integration",
+    "optimization": "maximize_integrated_information",
+    "fixed_points": "irreducible_cause_effect_structure",
+    "operators": [
+      "conditional_expectation",
+      "mutual_information",
+      "partition",
+      "subtraction"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "emergence",
+      "information_gain",
+      "irreducibility",
+      "phase_transition",
+      "spectral_decomposition"
+    ],
+    "variables": {
+      "state": "system_state",
+      "score": "phi",
+      "reference": "minimum_information_partition"
+    },
+    "conservation": [],
+    "structure": "information_theoretic_measure"
+  },
+  "decision_field_theory": {
+    "id": "decision_field_theory",
+    "name": "Decision Field Theory / Drift-Diffusion",
+    "domain": "Cognitive Science",
+    "equation": "dx = (μA−μB)dt + σdW;  decide A if x≥a, B if x≤−a;  RT = a/(μA−μB)·tanh(a(μA−μB)/σ²)",
+    "update_form": "evidence_accumulation",
+    "optimization": "speed_accuracy_tradeoff",
+    "fixed_points": "decision_boundary",
+    "operators": [
+      "comparison",
+      "differential",
+      "threshold"
+    ],
+    "patterns": [
+      "brownian_motion",
+      "exploration_exploitation",
+      "first_passage",
+      "signal_noise_separation",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "accumulated_evidence",
+      "score": "decision_threshold",
+      "reference": "drift_rate"
+    },
+    "conservation": [],
+    "structure": "stochastic_ode"
+  },
+  "cognitive_load": {
+    "id": "cognitive_load",
+    "name": "Working Memory / Cognitive Load Theory",
+    "domain": "Cognitive Science",
+    "equation": "capacity ≈ 4±1 chunks;  interference: P(recall) = e^{−θ·n_similar};  load = intrinsic + extraneous + germane ≤ WM_max",
+    "update_form": "resource_allocation",
+    "optimization": "maximize_learning_efficiency",
+    "fixed_points": "optimal_chunk_size",
+    "operators": [
+      "comparison",
+      "exponential",
+      "summation"
+    ],
+    "patterns": [
+      "capacity_constraint",
+      "compositional_structure",
+      "exponential_decay",
+      "hierarchical_decomposition",
+      "information_gain"
+    ],
+    "variables": {
+      "state": "working_memory_contents",
+      "score": "cognitive_load",
+      "reference": "capacity_limit"
+    },
+    "conservation": [
+      "processing_capacity"
+    ],
+    "structure": "resource_model"
+  },
+  "reinforcement_learning_brain": {
+    "id": "reinforcement_learning_brain",
+    "name": "Reward Prediction Error / Dopamine RL",
+    "domain": "Cognitive Science",
+    "equation": "δₜ = rₜ + γV(sₜ₊₁) − V(sₜ);  ΔV(sₜ) = αδₜ;  dopamine ∝ δₜ",
+    "update_form": "temporal_difference_learning",
+    "optimization": "maximize_expected_reward",
+    "fixed_points": "optimal_value_function",
+    "operators": [
+      "discounting",
+      "gradient",
+      "subtraction"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "convergence_to_equilibrium",
+      "exploration_exploitation",
+      "feedback_loop",
+      "information_gain",
+      "temporal_difference"
+    ],
+    "variables": {
+      "state": "value_estimate",
+      "score": "prediction_error",
+      "reference": "reward_signal"
+    },
+    "conservation": [],
+    "structure": "bellman_recursion"
+  },
+  "embodied_cognition": {
+    "id": "embodied_cognition",
+    "name": "Embodied Cognition / Sensorimotor Contingencies",
+    "domain": "Cognitive Science",
+    "equation": "action(t+1) = π(perception(t));  perception(t+1) = env(action(t+1));  knowledge = invariant structure of sensorimotor loop",
+    "update_form": "sensorimotor_coupling",
+    "optimization": "maximize_adaptive_fitness",
+    "fixed_points": "stable_sensorimotor_pattern",
+    "operators": [
+      "feedback_loop",
+      "fixed_point",
+      "state_transition"
+    ],
+    "patterns": [
+      "coupled_oscillation",
+      "feedback_loop",
+      "fixed_point_iteration",
+      "self_organization",
+      "sensorimotor_loop",
+      "structural_coupling"
+    ],
+    "variables": {
+      "state": "sensorimotor_state",
+      "score": "adaptive_success",
+      "reference": "environmental_affordance"
+    },
+    "conservation": [],
+    "structure": "dynamical_system"
+  },
+  "attention_models": {
+    "id": "attention_models",
+    "name": "Attention / Biased Competition",
+    "domain": "Cognitive Science",
+    "equation": "response(i) = Σⱼ w(i,j)·stimulus(j);  w(i,j) ∝ exp(−|i−j|²/2σ²)·top_down(j);  winner-take-all: normalize w",
+    "update_form": "biased_competition",
+    "optimization": "maximize_information_gain",
+    "fixed_points": "attentional_selection",
+    "operators": [
+      "competition",
+      "normalize",
+      "softmax",
+      "threshold"
+    ],
+    "patterns": [
+      "competition_selection",
+      "dimensionality_reduction",
+      "feedback_loop",
+      "information_gain",
+      "signal_noise_separation",
+      "winner_take_all"
+    ],
+    "variables": {
+      "state": "attention_weights",
+      "score": "information_gain",
+      "reference": "saliency_map"
+    },
+    "conservation": [
+      "total_attention"
+    ],
+    "structure": "competitive_dynamics"
+  },
+  "lyapunov_stability": {
+    "id": "lyapunov_stability",
+    "name": "Lyapunov Stability Theory",
+    "domain": "Control Theory",
+    "equation": "V(x)>0, V(0)=0, V̇(x)≤0 ⟹ stable;  V̇<0 ⟹ asymptotically stable;  V̇≤−αV ⟹ exponentially stable",
+    "update_form": "lyapunov_certificate",
+    "optimization": "verify_stability",
+    "fixed_points": "stable_equilibrium",
+    "operators": [
+      "comparison",
+      "differential",
+      "gradient"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "energy_minimization",
+      "fixed_point_stability",
+      "lyapunov_stability",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "system_state",
+      "score": "lyapunov_function",
+      "reference": "equilibrium_point"
+    },
+    "conservation": [],
+    "structure": "stability_certificate"
+  },
+  "robust_control": {
+    "id": "robust_control",
+    "name": "H∞ Robust Control",
+    "domain": "Control Theory",
+    "equation": "||T_{zw}||∞ < γ;  min_K max_w ||z||/||w|| s.t. closed-loop stability;  Riccati: AᵀX+XA+Q−X(BR⁻¹Bᵀ−γ⁻²DDᵀ)X=0",
+    "update_form": "minimax_robust_design",
+    "optimization": "minimize_worst_case_gain",
+    "fixed_points": "robust_controller",
+    "operators": [
+      "feedback_loop",
+      "matrix_multiply",
+      "maximize",
+      "minimize"
+    ],
+    "patterns": [
+      "dual_variables",
+      "energy_minimization",
+      "game_theoretic_equilibrium",
+      "lyapunov_stability",
+      "saddle_point_approximation",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "controller_parameters",
+      "score": "h_infinity_norm",
+      "reference": "uncertainty_set"
+    },
+    "conservation": [],
+    "structure": "saddle_point_problem"
+  },
+  "model_predictive_control": {
+    "id": "model_predictive_control",
+    "name": "Model Predictive Control (MPC)",
+    "domain": "Control Theory",
+    "equation": "u*₀:ₙ = argmin Σₖ [xₖᵀQxₖ + uₖᵀRuₖ] + xₙᵀPxₙ  s.t. xₖ₊₁=Axₖ+Buₖ, constraints",
+    "update_form": "receding_horizon_optimization",
+    "optimization": "minimize_cost_over_horizon",
+    "fixed_points": "optimal_trajectory",
+    "operators": [
+      "gradient",
+      "linear_combination",
+      "matrix_multiply",
+      "projection"
+    ],
+    "patterns": [
+      "convex_optimization",
+      "dual_variables",
+      "energy_minimization",
+      "feedback_loop",
+      "receding_horizon",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "predicted_trajectory",
+      "score": "cost_over_horizon",
+      "reference": "constraints"
+    },
+    "conservation": [],
+    "structure": "constrained_optimization"
+  },
+  "pid_control": {
+    "id": "pid_control",
+    "name": "PID Control / Classical Feedback",
+    "domain": "Control Theory",
+    "equation": "u(t) = Kₚe(t) + Kᵢ∫e(τ)dτ + K_d de/dt;  transfer: C(s) = Kₚ + Kᵢ/s + K_ds",
+    "update_form": "proportional_integral_derivative",
+    "optimization": "minimize_tracking_error",
+    "fixed_points": "zero_steady_state_error",
+    "operators": [
+      "derivative",
+      "feedback_loop",
+      "integration",
+      "linear_combination"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "feedback_loop",
+      "integral_control",
+      "linear_response",
+      "lyapunov_stability"
+    ],
+    "variables": {
+      "state": "error_signal",
+      "score": "tracking_error",
+      "reference": "setpoint"
+    },
+    "conservation": [],
+    "structure": "feedback_control"
+  },
+  "observability_controllability": {
+    "id": "observability_controllability",
+    "name": "Controllability & Observability (Kalman)",
+    "domain": "Control Theory",
+    "equation": "controllable iff rank[B AB ... Aⁿ⁻¹B]=n;  observable iff rank[C; CA; ...; CAⁿ⁻¹]=n;  duality: (A,B) ctrl ⟺ (Aᵀ,Bᵀ) obs",
+    "update_form": "rank_condition",
+    "optimization": "verify_system_properties",
+    "fixed_points": "canonical_form",
+    "operators": [
+      "eigenvalue_decomposition",
+      "matrix_multiply",
+      "rank"
+    ],
+    "patterns": [
+      "dual_variables",
+      "duality",
+      "linear_response",
+      "spectral_decomposition",
+      "structural_coupling"
+    ],
+    "variables": {
+      "state": "system_matrices",
+      "score": "controllability_gramian",
+      "reference": "observability_gramian"
+    },
+    "conservation": [],
+    "structure": "linear_algebra_criterion"
+  },
+  "lambda_calculus": {
+    "id": "lambda_calculus",
+    "name": "Lambda Calculus / Computability",
+    "domain": "Computer Science",
+    "equation": "t ::= x | λx.t | t₁t₂;  (λx.M)N →β M[N/x];  Church-Rosser: if M→*N₁ and M→*N₂ then ∃P: N₁→*P, N₂→*P",
+    "update_form": "beta_reduction",
+    "optimization": "normalize_term",
+    "fixed_points": "normal_form",
+    "operators": [
+      "application",
+      "fixed_point",
+      "substitution"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "confluence",
+      "fixed_point_iteration",
+      "hierarchical_decomposition",
+      "self_reference",
+      "tree_structure"
+    ],
+    "variables": {
+      "state": "lambda_term",
+      "score": "reduction_count",
+      "reference": "normal_form"
+    },
+    "conservation": [],
+    "structure": "rewriting_system"
+  },
+  "kolmogorov_complexity": {
+    "id": "kolmogorov_complexity",
+    "name": "Kolmogorov Complexity / Algorithmic Information",
+    "domain": "Computer Science",
+    "equation": "K(x) = min{|p| : U(p)=x};  K(x|y) ≤ K(x) + O(1);  K(x,y) = K(x) + K(y|x*) + O(log n);  incompressible: K(x)≥|x|",
+    "update_form": "shortest_program",
+    "optimization": "minimize_description_length",
+    "fixed_points": "incompressible_string",
+    "operators": [
+      "comparison",
+      "minimize"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "information_gain",
+      "irreducibility",
+      "self_reference",
+      "symmetry_of_information"
+    ],
+    "variables": {
+      "state": "string",
+      "score": "kolmogorov_complexity",
+      "reference": "universal_turing_machine"
+    },
+    "conservation": [
+      "symmetry_of_information"
+    ],
+    "structure": "information_theoretic_measure"
+  },
+  "distributed_consensus": {
+    "id": "distributed_consensus",
+    "name": "Distributed Consensus / Paxos-Raft",
+    "domain": "Computer Science",
+    "equation": "safety: decided values were proposed;  agreement: no two nodes decide differently;  FLP: async consensus impossible with 1 crash;  BFT: tolerates f<n/3 byzantine",
+    "update_form": "quorum_agreement",
+    "optimization": "maximize_fault_tolerance",
+    "fixed_points": "consensus_value",
+    "operators": [
+      "comparison",
+      "threshold",
+      "voting"
+    ],
+    "patterns": [
+      "convergence_to_equilibrium",
+      "cooperation_dilemma",
+      "impossibility_theorem",
+      "majority_rule",
+      "quorum",
+      "self_organization"
+    ],
+    "variables": {
+      "state": "node_states",
+      "score": "agreement_count",
+      "reference": "quorum_threshold"
+    },
+    "conservation": [
+      "decided_value"
+    ],
+    "structure": "distributed_protocol"
+  },
+  "information_theoretic_security": {
+    "id": "information_theoretic_security",
+    "name": "Information-Theoretic Security / One-Time Pad",
+    "domain": "Computer Science",
+    "equation": "H(M|C) = H(M);  perfect secrecy iff |K|≥|M|;  Shannon: H(K)≥H(M);  quantum key: BB84 detects eavesdropping",
+    "update_form": "information_hiding",
+    "optimization": "maximize_secrecy",
+    "fixed_points": "perfect_secrecy",
+    "operators": [
+      "conditional_expectation",
+      "entropy",
+      "modular_arithmetic"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "impossibility_theorem",
+      "information_gain",
+      "irreversibility"
+    ],
+    "variables": {
+      "state": "ciphertext",
+      "score": "mutual_information_leaked",
+      "reference": "key_entropy"
+    },
+    "conservation": [
+      "perfect_secrecy"
+    ],
+    "structure": "information_theoretic_bound"
+  },
+  "renormalization_group": {
+    "id": "renormalization_group",
+    "name": "Renormalization Group",
+    "domain": "Statistical Physics",
+    "equation": "H' = R(H);  K' = f(K);  fixed point: K* = f(K*);  ξ ~ |T−Tₖ|^{−ν};  universality: critical exponents depend only on d, n",
+    "update_form": "coarse_graining_flow",
+    "optimization": "identify_fixed_points",
+    "fixed_points": "critical_fixed_point",
+    "operators": [
+      "coarse_graining",
+      "eigenvalue_decomposition",
+      "fixed_point",
+      "rescaling"
+    ],
+    "patterns": [
+      "compositional_structure",
+      "convergence_to_equilibrium",
+      "fixed_point_iteration",
+      "hierarchical_decomposition",
+      "phase_transition",
+      "scale_invariance",
+      "universality"
+    ],
+    "variables": {
+      "state": "coupling_constants",
+      "score": "correlation_length",
+      "reference": "critical_fixed_point"
+    },
+    "conservation": [],
+    "structure": "flow_in_theory_space"
+  },
+  "fluctuation_dissipation": {
+    "id": "fluctuation_dissipation",
+    "name": "Fluctuation-Dissipation Theorem",
+    "domain": "Statistical Physics",
+    "equation": "χ(ω) = (1/kT)∫₀^∞ ⟨δA(t)δA(0)⟩ e^{−iωt}dt;  S(ω) = 2kT·Im[χ(ω)]/ω;  D = μkT (Einstein)",
+    "update_form": "response_fluctuation_link",
+    "optimization": "relate_response_to_noise",
+    "fixed_points": "thermal_equilibrium",
+    "operators": [
+      "correlation",
+      "fourier_transform",
+      "integration"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "duality",
+      "linear_response",
+      "spectral_decomposition",
+      "stochastic_dynamics"
+    ],
+    "variables": {
+      "state": "response_function",
+      "score": "spectral_density",
+      "reference": "temperature"
+    },
+    "conservation": [
+      "detailed_balance"
+    ],
+    "structure": "fluctuation_response_identity"
+  },
+  "large_deviations": {
+    "id": "large_deviations",
+    "name": "Large Deviations / Cramér's Theorem",
+    "domain": "Statistical Physics",
+    "equation": "P(S_n/n ∈ A) ≈ e^{−n·inf_{x∈A} I(x)};  I(x) = sup_λ[λx − log M(λ)];  Varadhan: lim (1/n)log E[e^{nF}] = sup[F−I]",
+    "update_form": "rate_function_optimization",
+    "optimization": "characterize_rare_events",
+    "fixed_points": "most_likely_fluctuation",
+    "operators": [
+      "exponential",
+      "legendre_transform",
+      "maximize"
+    ],
+    "patterns": [
+      "dual_variables",
+      "duality",
+      "energy_entropy_tradeoff",
+      "exponential_decay",
+      "saddle_point_approximation",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "empirical_measure",
+      "score": "rate_function",
+      "reference": "moment_generating_function"
+    },
+    "conservation": [],
+    "structure": "variational_principle"
+  },
+  "nonequilibrium_stat_mech": {
+    "id": "nonequilibrium_stat_mech",
+    "name": "Nonequilibrium Statistical Mechanics / Jarzynski",
+    "domain": "Statistical Physics",
+    "equation": "⟨e^{−βW}⟩ = e^{−βΔF};  Crooks: P_F(W)/P_R(−W) = e^{β(W−ΔF)};  σ̇ ≥ 0 (entropy production)",
+    "update_form": "work_free_energy_relation",
+    "optimization": "bound_free_energy_difference",
+    "fixed_points": "equilibrium_limit",
+    "operators": [
+      "averaging",
+      "exponential",
+      "integration"
+    ],
+    "patterns": [
+      "conservation_law",
+      "dual_variables",
+      "duality",
+      "energy_entropy_tradeoff",
+      "irreversibility",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "work_distribution",
+      "score": "free_energy_difference",
+      "reference": "equilibrium_free_energy"
+    },
+    "conservation": [
+      "first_law"
+    ],
+    "structure": "fluctuation_theorem"
+  },
+  "neural_oscillations": {
+    "id": "neural_oscillations",
+    "name": "Neural Oscillations / Brain Rhythms",
+    "domain": "Neuroscience",
+    "equation": "V̇ = I_ion + I_syn + I_ext;  oscillation: Re(λ)=0, Im(λ)≠0 at Hopf;  synchrony: Kuramoto r = |1/N Σ e^{iθⱼ}|",
+    "update_form": "coupled_oscillator_dynamics",
+    "optimization": "maximize_synchrony",
+    "fixed_points": "phase_locked_state",
+    "operators": [
+      "differential",
+      "exponential",
+      "nonlinear_reaction",
+      "summation"
+    ],
+    "patterns": [
+      "coupled_oscillation",
+      "feedback_loop",
+      "nonlinear_dynamics",
+      "phase_transition",
+      "self_organization",
+      "synchronization"
+    ],
+    "variables": {
+      "state": "oscillator_phases",
+      "score": "synchronization_index",
+      "reference": "coupling_strength"
+    },
+    "conservation": [],
+    "structure": "coupled_oscillator_system"
+  },
+  "synaptic_plasticity": {
+    "id": "synaptic_plasticity",
+    "name": "Synaptic Plasticity / STDP-BCM",
+    "domain": "Neuroscience",
+    "equation": "Δw = ∫∫ K(tpost−tpre)·pre(t')·post(t)dt'dt;  BCM: Δw = ηφ(post−θ)·pre;  θ = ⟨post²⟩",
+    "update_form": "activity_dependent_modification",
+    "optimization": "maximize_information_transmission",
+    "fixed_points": "stable_weight_distribution",
+    "operators": [
+      "convolution",
+      "correlation",
+      "threshold"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "convergence_to_equilibrium",
+      "feedback_loop",
+      "homeostasis",
+      "information_gain",
+      "multiplicative_update"
+    ],
+    "variables": {
+      "state": "synaptic_weights",
+      "score": "correlation_measure",
+      "reference": "sliding_threshold"
+    },
+    "conservation": [],
+    "structure": "learning_rule"
+  },
+  "neural_field_theory": {
+    "id": "neural_field_theory",
+    "name": "Neural Field Theory / Wilson-Cowan",
+    "domain": "Neuroscience",
+    "equation": "τ∂E/∂t = −E + S(wₑₑ*E − wₑᵢ*I + hₑ);  τ∂I/∂t = −I + S(wᵢₑ*E − wᵢᵢ*I + hᵢ)",
+    "update_form": "excitatory_inhibitory_dynamics",
+    "optimization": "analyze_spatiotemporal_patterns",
+    "fixed_points": "bump_attractor",
+    "operators": [
+      "convolution",
+      "differential",
+      "nonlinear_reaction",
+      "sigmoid"
+    ],
+    "patterns": [
+      "excitatory_inhibitory_balance",
+      "nonlinear_dynamics",
+      "pattern_formation",
+      "self_organization",
+      "turing_instability",
+      "wave_propagation"
+    ],
+    "variables": {
+      "state": "firing_rate_field",
+      "score": "pattern_stability",
+      "reference": "connectivity_kernel"
+    },
+    "conservation": [],
+    "structure": "integrodifferential_equation"
+  },
+  "neural_coding": {
+    "id": "neural_coding",
+    "name": "Neural Coding / Population Codes",
+    "domain": "Neuroscience",
+    "equation": "I(s;r) = ΣΣ P(s,r)log[P(s,r)/(P(s)P(r))];  Fisher: J(θ) = E[(∂logP(r|θ)/∂θ)²];  Var(θ̂) ≥ 1/J(θ)",
+    "update_form": "information_encoding",
+    "optimization": "maximize_mutual_information",
+    "fixed_points": "optimal_tuning_curve",
+    "operators": [
+      "conditional_expectation",
+      "entropy",
+      "mutual_information"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "dimensionality_reduction",
+      "information_gain",
+      "signal_noise_separation",
+      "variational_principle"
+    ],
+    "variables": {
+      "state": "population_response",
+      "score": "mutual_information",
+      "reference": "fisher_information"
+    },
+    "conservation": [],
+    "structure": "information_theoretic_measure"
+  },
+  "connectome_dynamics": {
+    "id": "connectome_dynamics",
+    "name": "Connectome / Structural-Functional Coupling",
+    "domain": "Neuroscience",
+    "equation": "ẋ = −Lx + f(x);  L = D−A (graph Laplacian);  FC ≈ (αL+I)⁻¹;  modules = argmin modularity Q",
+    "update_form": "graph_diffusion_dynamics",
+    "optimization": "predict_functional_from_structural",
+    "fixed_points": "resting_state_modes",
+    "operators": [
+      "eigenvalue_decomposition",
+      "graph_laplacian",
+      "matrix_multiply",
+      "nonlinear_reaction"
+    ],
+    "patterns": [
+      "community_detection",
+      "diffusion",
+      "hierarchical_decomposition",
+      "network_topology",
+      "spectral_decomposition"
+    ],
+    "variables": {
+      "state": "regional_activity",
+      "score": "functional_connectivity",
+      "reference": "structural_connectome"
+    },
+    "conservation": [],
+    "structure": "graph_dynamical_system"
+  },
+  "neuromorphic_computing": {
+    "id": "neuromorphic_computing",
+    "name": "Neuromorphic Computing / Reservoir Computing",
+    "domain": "Neuroscience",
+    "equation": "x(t+1) = (1−α)x(t) + αf(Wᵢₙu(t) + Wx(t));  y(t) = Wₒᵤₜx(t);  train only Wₒᵤₜ = argmin||Y−Wₒᵤₜ X||²",
+    "update_form": "reservoir_state_update",
+    "optimization": "minimize_readout_error",
+    "fixed_points": "echo_state",
+    "operators": [
+      "linear_combination",
+      "matrix_multiply",
+      "nonlinear_reaction",
+      "regression"
+    ],
+    "patterns": [
+      "dimensionality_reduction",
+      "echo_state_property",
+      "edge_of_chaos",
+      "feedback_loop",
+      "information_gain",
+      "temporal_processing"
+    ],
+    "variables": {
+      "state": "reservoir_state",
+      "score": "readout_error",
+      "reference": "spectral_radius"
+    },
+    "conservation": [],
+    "structure": "driven_dynamical_system"
   }
 }
