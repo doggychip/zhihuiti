@@ -1950,7 +1950,7 @@ export default function ZhihuiTiDashboard() {
                   {[
                     { name: "AlphaArena", icon: "⚔️", alive: alphaArenaAgents.length > 0, agents: alphaArenaAgents.filter(a => a.alive).length, tasks: alphaArenaAgents.reduce((s, a) => s + a.tasks, 0), score: alphaArenaAgents.length > 0 ? (alphaArenaAgents.reduce((s, a) => s + a.avg_score, 0) / alphaArenaAgents.length).toFixed(2) : "—", color: "#a855f7", offline: alphaArenaAgents.length === 0 },
                     { name: "CriticAI", icon: "🧠", alive: false, agents: 0, tasks: 0, score: "—", color: "#3b82f6", offline: true },
-                    { name: "HeartAI", icon: "❤️", alive: false, agents: 0, tasks: 0, score: "—", color: "#ef4444", offline: true },
+                    { name: "HeartAI", icon: "❤️", alive: !!(data as any)?.heartai?.online, agents: (data as any)?.heartai?.total || 0, tasks: 0, score: (data as any)?.heartai?.agents?.length > 0 ? ((data as any).heartai.agents.reduce((s: number, a: any) => s + (a.avg_score || 0), 0) / (data as any).heartai.agents.length).toFixed(2) : "—", color: "#ef4444", offline: !(data as any)?.heartai?.online },
                     { name: "zhihuiti", icon: "🧬", alive: live, agents: coreAgents.filter(a => a.alive).length, tasks: mem.total_tasks || 0, score: (ins.avg_score || 0).toFixed(2), color: "#eab308", offline: !live },
                   ].map((proj) => (
                     <div key={proj.name} className="p-2.5 rounded-lg" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
