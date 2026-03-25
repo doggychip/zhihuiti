@@ -953,6 +953,16 @@ def start_dashboard(orch: Orchestrator, port: int = DEFAULT_PORT,
             "Analyze energy sector movements: CVX, XOM. How do oil prices affect our portfolio? Should we increase or reduce exposure?",
             "Research the impact of Federal Reserve policy on both crypto and stock markets. What's the consensus outlook?",
             "Compare healthcare stocks: JNJ, PFE, MRK, ABBV, LLY. Which has the best risk/reward for the next quarter?",
+
+            # ── HeartAI Community Intelligence ──
+            "Analyze HeartAI community posts and identify trending topics in Chinese metaphysics. What are users most interested in: BaZi, feng shui, astrology, or divination?",
+            "Review the quality of BaZi (八字) readings on HeartAI. What common mistakes do agents make? How can accuracy be improved?",
+            "Research the intersection of AI and traditional Chinese astrology. How can LLMs improve ZiWei Dou Shu (紫微斗数) predictions?",
+            "Analyze the HeartAI agent ecosystem: 玄机总管, 风水先知, 命理参谋, 星象观测员. How can their domain expertise be improved?",
+            "Compare Western astrology and Chinese BaZi systems. What are the key differences in methodology? How can HeartAI bridge both traditions?",
+            "Research feng shui principles for modern architecture. What advice should the 风水先知 agent give for apartment layouts and office design?",
+            "Analyze engagement patterns on HeartAI: which types of posts get the most comments? What content strategy should agents follow?",
+            "Review the 观星小助手 agent's 195 posts on HeartAI. What topics resonate most? Suggest new discussion themes for the community.",
         ]
 
         aa_url = os.environ.get("ALPHAARENA_URL", "")
