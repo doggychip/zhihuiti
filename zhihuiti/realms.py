@@ -136,13 +136,57 @@ class RealmManager:
             "score_count": rs.score_count,
         })
 
+    def reconcile_counts(self, agents: dict) -> None:
+        """Recompute agent counts from live agent objects.
+
+        This fixes drift between RealmState counters and reality,
+        which happens when agents are removed without going through
+        the full freeze/bankrupt/cull lifecycle methods.
+
+        Args:
+            agents: dict of agent_id -> AgentState from agent_manager.
+        """
+        for realm in Realm:
+            rs = self.realms[realm]
+            realm_agents = [a for a in agents.values() if a.realm == realm]
+            rs.agents_active = len([
+                a for a in realm_agents
+                if a.life_state == AgentLifeState.ACTIVE
+            ])
+            rs.agents_frozen = len([
+                a for a in realm_agents
+                if a.life_state == AgentLifeState.FROZEN
+            ])
+            rs.agents_bankrupt = len([
+                a for a in realm_agents
+                if a.life_state == AgentLifeState.BANKRUPT
+            ])
+            self._save_state(realm)
+
     # ------------------------------------------------------------------
     # Budget allocation
     # ------------------------------------------------------------------
 
-    def allocate_budgets(self, total_budget: float) -> None:
-        """Distribute budget across realms according to ratios."""
-        for realm, ratio in REALM_BUDGET_RATIO.items():
+    def allocate_budgets(self, total_budget: float,
+                         attention: dict[str, float] | None = None) -> None:
+        """Distribute budget across realms according to ratios.
+
+        Args:
+            total_budget: Total budget to distribute.
+            attention: Optional override ratios from theory config.
+                       Dict with keys 'research', 'execution', 'central'.
+                       If None, uses default REALM_BUDGET_RATIO.
+        """
+        if attention:
+            ratios = {
+                Realm.RESEARCH: attention.get("research", 0.50),
+                Realm.EXECUTION: attention.get("execution", 0.35),
+                Realm.CENTRAL: attention.get("central", 0.15),
+            }
+        else:
+            ratios = REALM_BUDGET_RATIO
+
+        for realm, ratio in ratios.items():
             allocation = total_budget * ratio
             self.realms[realm].budget_allocated += allocation
             self._save_state(realm)

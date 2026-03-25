@@ -68,7 +68,8 @@ def _gather_data(orch) -> dict:
     # Memory stats
     data["memory"] = orch.memory.get_stats()
 
-    # Realms
+    # Realms — reconcile counters from live agents before reading
+    orch.realm_manager.reconcile_counts(orch.agent_manager.agents)
     realm_data = {}
     for realm, rs in orch.realm_manager.realms.items():
         realm_data[realm.value] = {

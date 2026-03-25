@@ -312,6 +312,110 @@ class CausalGraph:
 
         console.print(tree)
 
+    # ------------------------------------------------------------------
+    # Persistent causal knowledge accumulation
+    # ------------------------------------------------------------------
+
+    def save_to_db(self, memory: "Memory") -> int:
+        """Persist all causal edges to the database for cross-run accumulation.
+
+        Merges with existing edges: if an edge already exists, increments
+        observation count and updates confidence via Bayesian-style update.
+
+        Returns number of edges saved/updated.
+        """
+        count = 0
+        for edge in self.edges:
+            existing = memory.find_causal_edge(
+                edge.source, edge.target, edge.domain,
+            )
+            if existing:
+                # Bayesian confidence update:
+                # new_conf = 1 - (1 - old_conf) * (1 - edge_conf)
+                old_conf = existing["confidence"]
+                new_conf = 1.0 - (1.0 - old_conf) * (1.0 - edge.confidence * 0.3)
+                new_conf = min(0.99, new_conf)
+
+                # Upgrade strength if warranted
+                obs = existing["observation_count"] + 1
+                if obs >= 5:
+                    strength = EvidenceStrength.STRONG.value
+                elif obs >= 3:
+                    strength = EvidenceStrength.MODERATE.value
+                else:
+                    strength = existing["strength"]
+
+                memory.save_causal_knowledge(
+                    edge_id=existing["id"],
+                    source=existing["source"],
+                    target=existing["target"],
+                    edge_type=existing["edge_type"],
+                    strength=strength,
+                    confidence=round(new_conf, 4),
+                    evidence=edge.evidence,
+                    domain=existing["domain"],
+                    observation_count=obs,
+                )
+            else:
+                memory.save_causal_knowledge(
+                    edge_id=edge.id,
+                    source=edge.source,
+                    target=edge.target,
+                    edge_type=edge.edge_type.value,
+                    strength=edge.strength.value,
+                    confidence=edge.confidence,
+                    evidence=edge.evidence,
+                    domain=edge.domain,
+                    observation_count=1,
+                )
+            count += 1
+        return count
+
+    def load_from_db(self, memory: "Memory",
+                     min_confidence: float = 0.0) -> int:
+        """Load accumulated causal knowledge from database into the graph.
+
+        This gives new agents the benefit of all prior causal discoveries.
+        Returns number of edges loaded.
+        """
+        rows = memory.get_causal_knowledge(min_confidence=min_confidence)
+        count = 0
+        for row in rows:
+            try:
+                edge_type = EdgeType(row["edge_type"])
+            except (ValueError, KeyError):
+                edge_type = EdgeType.CAUSES
+            try:
+                strength = EvidenceStrength(row["strength"])
+            except (ValueError, KeyError):
+                strength = EvidenceStrength.WEAK
+
+            evidence = row.get("evidence", {})
+            if isinstance(evidence, str):
+                import json
+                try:
+                    evidence = json.loads(evidence)
+                except (json.JSONDecodeError, TypeError):
+                    evidence = {}
+
+            self.add_edge(
+                source=row["source"],
+                target=row["target"],
+                edge_type=edge_type,
+                strength=strength,
+                confidence=row["confidence"],
+                evidence=evidence,
+                domain=row.get("domain", ""),
+            )
+            count += 1
+
+        if count > 0:
+            console.print(
+                f"  [dim]因果图: Loaded {count} accumulated causal edges "
+                f"from prior runs[/dim]"
+            )
+        return count
+
 
 # ============================================================
 # LOAD PREDICTION-ARB CAUSAL DATA
