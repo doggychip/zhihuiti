@@ -244,10 +244,10 @@ def _gather_data(orch) -> dict:
                 for a in agents_list[:20]:
                     heartai_agents.append({
                         "id": a.get("id", "?"),
-                        "name": a.get("name", a.get("username", "?")),
-                        "posts": a.get("postCount", a.get("posts", 0)),
-                        "comments": a.get("commentCount", a.get("comments", 0)),
-                        "type": a.get("type", a.get("role", "agent")),
+                        "name": a.get("nickname", a.get("name", "?")),
+                        "posts": a.get("postCount", 0),
+                        "comments": a.get("commentCount", 0),
+                        "type": a.get("agentDescription", "agent")[:50],
                     })
                 data["heartai"] = {
                     "online": True,
