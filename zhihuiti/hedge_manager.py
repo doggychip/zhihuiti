@@ -4,6 +4,10 @@ Observes leaderboard → evaluates performance → evolves strategies.
 Bottom performers get their strategy swapped or parameters mutated.
 Top performers' parameters get bred together.
 
+Theory-guided evolution: the Crypto Oracle diagnoses current market regime
+and detected patterns, then the manager steers strategy selection accordingly
+instead of choosing randomly.
+
 This is the bridge that makes AlphaArena agents part of zhihuiti's
 evolutionary system.
 """
@@ -66,6 +70,42 @@ PARAM_RANGES: dict[str, dict[str, tuple[float, float]]] = {
     "indicator_ichimoku": {
         "quantity": (0.01, 0.3),
     },
+}
+
+# ── Theory-guided regime → strategy mapping ────────────────────────────────
+# Maps oracle-detected regimes to preferred strategies (ordered by fitness).
+# The first strategy is strongest for the regime; the rest are fallbacks.
+REGIME_STRATEGIES: dict[str, list[str]] = {
+    "trending_up": ["momentum_strong", "momentum", "momentum_multi"],
+    "trending_down": ["momentum_strong", "momentum", "indicator_macd"],
+    "mean_reverting": ["mean_reversion", "indicator_ichimoku", "hybrid_adaptive"],
+    "volatile": ["hybrid_adaptive", "mean_reversion", "indicator_ichimoku"],
+    "quiet": ["indicator_ichimoku", "indicator_macd", "mean_reversion"],
+}
+
+# Maps detected pattern names to parameter tweaks (applied on top of base params).
+# Each entry is (strategy_type, param_key, adjustment_fn).
+PATTERN_PARAM_HINTS: dict[str, list[tuple[str, str, str]]] = {
+    "momentum": [
+        ("momentum", "shortPeriod", "decrease"),
+        ("momentum_strong", "threshold", "decrease"),
+    ],
+    "mean_reversion": [
+        ("mean_reversion", "threshold", "decrease"),
+        ("mean_reversion", "period", "increase"),
+    ],
+    "volatility_clustering": [
+        ("hybrid_adaptive", "targetVol", "increase"),
+        ("momentum_strong", "volThreshold", "increase"),
+    ],
+    "orderbook_imbalance": [
+        ("momentum", "quantity", "increase"),
+        ("momentum_strong", "quantity", "increase"),
+    ],
+    "fat_tails": [
+        ("hybrid_adaptive", "baseQuantity", "decrease"),
+        ("mean_reversion", "quantity", "decrease"),
+    ],
 }
 
 # Tradable pairs
@@ -173,6 +213,49 @@ class HedgeFundManager:
 
         return {"top": top, "mid": mid, "bottom": bottom, "all": lb}
 
+    # ── Oracle ──────────────────────────────────────────────────
+
+    def diagnose(self, candles: list[dict], book: dict | None = None) -> "MarketDiagnosis | None":
+        """Run the crypto oracle on candle data. Returns None if oracle unavailable."""
+        try:
+            from zhihuiti.crypto_oracle import diagnose_market
+            return diagnose_market(candles, book=book)
+        except Exception:
+            return None
+
+    def pick_strategy_for_regime(self, regime: str, current_type: str) -> str:
+        """Pick the best strategy for a regime, avoiding the current (failing) one."""
+        candidates = REGIME_STRATEGIES.get(regime, STRATEGY_TYPES)
+        # Prefer regime-matched strategies, but skip the one that's already failing
+        for candidate in candidates:
+            if candidate != current_type:
+                return candidate
+        # All candidates are the same as current — fall back to random
+        return random.choice([t for t in STRATEGY_TYPES if t != current_type])
+
+    def apply_pattern_hints(self, strategy_type: str, params: dict, patterns: list) -> dict:
+        """Adjust parameters based on detected patterns from the oracle."""
+        new_params = dict(params)
+        ranges = PARAM_RANGES.get(strategy_type, {})
+
+        for pattern in patterns:
+            hints = PATTERN_PARAM_HINTS.get(pattern.name, [])
+            for hint_strat, hint_key, direction in hints:
+                if hint_strat != strategy_type:
+                    continue
+                if hint_key not in new_params or hint_key not in ranges:
+                    continue
+                lo, hi = ranges[hint_key]
+                current = float(new_params[hint_key])
+                # Nudge by pattern strength * 15% of range
+                nudge = (hi - lo) * 0.15 * pattern.strength
+                if direction == "increase":
+                    new_params[hint_key] = round(min(hi, current + nudge), 4)
+                elif direction == "decrease":
+                    new_params[hint_key] = round(max(lo, current - nudge), 4)
+
+        return new_params
+
     # ── Evolve ──────────────────────────────────────────────────
 
     def mutate_params(self, strategy_type: str, params: dict) -> dict:
@@ -221,13 +304,36 @@ class HedgeFundManager:
 
         return child
 
-    def evolve_bottom(self, bottom_agents: list[dict], top_agents: list[dict]) -> list[dict]:
-        """Evolve underperforming agents using top performers' DNA."""
+    def evolve_bottom(
+        self,
+        bottom_agents: list[dict],
+        top_agents: list[dict],
+        diagnosis: Any = None,
+    ) -> list[dict]:
+        """Evolve underperforming agents using top performers' DNA.
+
+        If a MarketDiagnosis is provided, strategy selection is guided by the
+        detected regime and patterns instead of being random.
+        """
         results = []
+        regime = getattr(diagnosis, "regime", None)
+        patterns = getattr(diagnosis, "patterns", [])
 
         for agent_data in bottom_agents:
             agent_id = agent_data["agentId"]
-            action = random.choice(["swap_strategy", "mutate_params", "breed"])
+
+            # Theory-guided action selection based on regime
+            if regime:
+                # In volatile/mean-reverting regimes, prefer swapping to regime-fit strategy.
+                # In trending regimes with top performers, prefer breeding.
+                if regime in ("volatile", "mean_reverting"):
+                    action = "swap_strategy"
+                elif regime in ("trending_up", "trending_down") and top_agents:
+                    action = random.choice(["breed", "swap_strategy"])
+                else:
+                    action = random.choice(["swap_strategy", "mutate_params", "breed"])
+            else:
+                action = random.choice(["swap_strategy", "mutate_params", "breed"])
 
             try:
                 agent = self.get_agent(agent_id)
@@ -236,16 +342,26 @@ class HedgeFundManager:
                 current_type = current_strategy.get("type", "momentum")
 
                 if action == "swap_strategy":
-                    # Switch to a different strategy type
-                    new_type = random.choice([t for t in STRATEGY_TYPES if t != current_type])
+                    # Theory-guided: pick strategy matching detected regime
+                    if regime:
+                        new_type = self.pick_strategy_for_regime(regime, current_type)
+                    else:
+                        new_type = random.choice([t for t in STRATEGY_TYPES if t != current_type])
+
                     new_params = self.mutate_params(new_type, {})
                     new_params["pair"] = current_config.get("pair", random.choice(PAIRS))
+
+                    # Apply pattern-based parameter hints
+                    if patterns:
+                        new_params = self.apply_pattern_hints(new_type, new_params, patterns)
+
+                    reason = f"regime={regime}" if regime else "random"
 
                     # Create new strategy and assign
                     try:
                         strat = self._post("/api/strategies", {
                             "name": f"evolved-{agent_id[-6:]}-{new_type}",
-                            "description": f"Auto-evolved by zhihuiti from {current_type}",
+                            "description": f"Auto-evolved by zhihuiti ({reason}) from {current_type}",
                             "type": new_type,
                             "parameters": json.dumps(new_params),
                         })
@@ -255,8 +371,9 @@ class HedgeFundManager:
                         })
                         results.append({
                             "agent": agent_id,
-                            "action": f"swap: {current_type} → {new_type}",
+                            "action": f"swap: {current_type} -> {new_type} ({reason})",
                             "params": new_params,
+                            "regime": regime,
                         })
                     except Exception as e:
                         # If can't create strategy, just update config
@@ -265,20 +382,24 @@ class HedgeFundManager:
                         })
                         results.append({
                             "agent": agent_id,
-                            "action": f"config update (strategy swap failed: {e})",
+                            "action": f"config update ({reason}, strategy swap failed: {e})",
                             "params": new_params,
+                            "regime": regime,
                         })
 
                 elif action == "mutate_params":
-                    # Keep same strategy, mutate parameters
+                    # Keep same strategy, mutate parameters + apply pattern hints
                     new_params = self.mutate_params(current_type, current_config)
+                    if patterns:
+                        new_params = self.apply_pattern_hints(current_type, new_params, patterns)
                     self._put(f"/api/agents/{agent_id}", {
                         "config": json.dumps(new_params),
                     })
                     results.append({
                         "agent": agent_id,
-                        "action": f"mutate params ({current_type})",
+                        "action": f"mutate params ({current_type})" + (f" + {len(patterns)} pattern hints" if patterns else ""),
                         "params": new_params,
+                        "regime": regime,
                     })
 
                 elif action == "breed" and top_agents:
@@ -289,14 +410,17 @@ class HedgeFundManager:
 
                     child_params = self.crossover_params(current_config, parent_config)
                     child_params = self.mutate_params(current_type, child_params)
+                    if patterns:
+                        child_params = self.apply_pattern_hints(current_type, child_params, patterns)
 
                     self._put(f"/api/agents/{agent_id}", {
                         "config": json.dumps(child_params),
                     })
                     results.append({
                         "agent": agent_id,
-                        "action": f"breed with {parent['agentId'][:10]}",
+                        "action": f"breed with {parent['agentId'][:10]}" + (f" + {len(patterns)} pattern hints" if patterns else ""),
                         "params": child_params,
+                        "regime": regime,
                     })
 
             except Exception as e:
@@ -304,20 +428,35 @@ class HedgeFundManager:
                     "agent": agent_id,
                     "action": f"failed: {e}",
                     "params": {},
+                    "regime": regime,
                 })
 
         return results
 
     # ── Full Evolution Cycle ────────────────────────────────────
 
-    def run_evolution_cycle(self) -> dict:
-        """Run one full evolution cycle:
-        1. Observe leaderboard
-        2. Evaluate agents into tiers
-        3. Evolve bottom performers using top performers' DNA
-        4. Report results
+    def run_evolution_cycle(self, candles: list[dict] | None = None, book: dict | None = None) -> dict:
+        """Run one full theory-guided evolution cycle:
+        1. Run Crypto Oracle on market data (if candles provided)
+        2. Observe leaderboard
+        3. Evaluate agents into tiers
+        4. Evolve bottom performers guided by oracle diagnosis
+        5. Report results
         """
-        console.print("\n[bold cyan]🧬 Hedge Fund Evolution Cycle[/bold cyan]")
+        console.print("\n[bold cyan]Hedge Fund Evolution Cycle[/bold cyan]")
+
+        # Oracle diagnosis
+        diagnosis = None
+        if candles:
+            diagnosis = self.diagnose(candles, book=book)
+            if diagnosis:
+                console.print(f"  Oracle: regime=[bold]{diagnosis.regime}[/bold], "
+                              f"patterns={len(diagnosis.patterns)}, "
+                              f"dominant={diagnosis.dominant_theory}")
+            else:
+                console.print("  Oracle: unavailable, falling back to random evolution")
+        else:
+            console.print("  Oracle: no candle data, using random evolution")
 
         # Evaluate
         tiers = self.evaluate_agents()
@@ -325,13 +464,13 @@ class HedgeFundManager:
 
         if not tiers["bottom"]:
             console.print("  [green]All agents performing well — no evolution needed[/green]")
-            return {"evolved": 0, "results": [], "tiers": tiers}
+            return {"evolved": 0, "results": [], "tiers": tiers, "diagnosis": diagnosis.to_dict() if diagnosis else None}
 
-        # Evolve
-        results = self.evolve_bottom(tiers["bottom"], tiers["top"])
+        # Evolve — theory-guided if diagnosis available
+        results = self.evolve_bottom(tiers["bottom"], tiers["top"], diagnosis=diagnosis)
 
         # Report
-        table = Table(title="Evolution Results")
+        table = Table(title="Evolution Results" + (f" (regime: {diagnosis.regime})" if diagnosis else ""))
         table.add_column("Agent")
         table.add_column("Action")
         for r in results:
@@ -346,6 +485,7 @@ class HedgeFundManager:
                 "mid": len(tiers["mid"]),
                 "bottom": len(tiers["bottom"]),
             },
+            "diagnosis": diagnosis.to_dict() if diagnosis else None,
         }
 
     def print_status(self) -> None:
