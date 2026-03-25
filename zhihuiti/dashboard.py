@@ -230,6 +230,38 @@ def _gather_data(orch) -> dict:
     else:
         data["alphaarena"] = {"agents": [], "total": 0, "url": ""}
 
+    # HeartAI cross-project integration
+    heartai_url = os.environ.get("HEARTAI_URL", "")
+    if heartai_url:
+        try:
+            import httpx as _hx_heartai
+            # Fetch agent data from HeartAI
+            resp = _hx_heartai.get(f"{heartai_url}/api/agents", timeout=5)
+            if resp.status_code == 200:
+                heartai_data = resp.json()
+                agents_list = heartai_data if isinstance(heartai_data, list) else heartai_data.get("agents", [])
+                heartai_agents = []
+                for a in agents_list[:20]:
+                    heartai_agents.append({
+                        "id": a.get("id", "?"),
+                        "name": a.get("nickname", a.get("name", "?")),
+                        "posts": a.get("postCount", 0),
+                        "comments": a.get("commentCount", 0),
+                        "type": a.get("agentDescription", "agent")[:50],
+                    })
+                data["heartai"] = {
+                    "online": True,
+                    "agents": heartai_agents,
+                    "total": len(heartai_agents),
+                    "url": heartai_url,
+                }
+            else:
+                data["heartai"] = {"online": False, "agents": [], "total": 0, "url": heartai_url}
+        except Exception:
+            data["heartai"] = {"online": False, "agents": [], "total": 0, "url": heartai_url}
+    else:
+        data["heartai"] = {"online": False, "agents": [], "total": 0, "url": ""}
+
     return data
 
 
@@ -466,6 +498,21 @@ if (DATA.alphaarena && DATA.alphaarena.agents && DATA.alphaarena.agents.length) 
   html += renderCard('📈', `AlphaArena (${DATA.alphaarena.total} agents)`,
     `<table><tr><th>#</th><th>Agent</th><th>Return</th><th>Sharpe</th><th>Win</th><th>Score</th></tr>${aaRows}</table>`
   );
+}
+
+// HeartAI Cross-Project
+if (DATA.heartai) {
+  let ha = DATA.heartai;
+  let statusColor = ha.online ? 'green' : 'red';
+  let statusText = ha.online ? 'ONLINE' : 'OFFLINE';
+  let content = [m('Status', statusText, statusColor), m('Agents', ha.total || 0)].join('');
+  if (ha.online && ha.agents && ha.agents.length) {
+    let haRows = ha.agents.slice(0, 10).map(a =>
+      `<tr><td>${(a.name||a.id).slice(0,20)}</td><td>${a.posts||0}</td><td>${a.comments||0}</td></tr>`
+    ).join('');
+    content += `<table><tr><th>Agent</th><th>Posts</th><th>Comments</th></tr>${haRows}</table>`;
+  }
+  html += renderCard('❤️', `HeartAI (${statusText})`, content);
 }
 
 // Goal History
