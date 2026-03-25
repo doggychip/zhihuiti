@@ -1241,7 +1241,7 @@ export default function ZhihuiTiDashboard() {
   const [live, setLive] = useState(true);
   const [showCollision, setShowCollision] = useState(false);
   const [graphFullscreen, setGraphFullscreen] = useState(false);
-  const [lodCount, setLodCount] = useState(30);
+  const [lodCount, setLodCount] = useState(20);
   const [booted, setBooted] = useState(false);
   const handleBootComplete = useCallback(() => setBooted(true), []);
   const [showZhihuiti, setShowZhihuiti] = useState(true);
@@ -1832,7 +1832,7 @@ export default function ZhihuiTiDashboard() {
                   </button>
                   <div className="flex items-center gap-1 ml-2" style={{ borderLeft: "1px solid rgba(255,255,255,0.08)", paddingLeft: 8 }}>
                     <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>Show:</span>
-                    {[{ label: "Top 30", value: 30 }, { label: "Top 50", value: 50 }, { label: "All", value: -1 }].map(opt => (
+                    {[{ label: "Top 20", value: 20 }, { label: "Top 50", value: 50 }, { label: "All", value: -1 }].map(opt => (
                       <button
                         key={opt.value}
                         onClick={() => setLodCount(opt.value)}
