@@ -68,15 +68,18 @@ def _gather_data(orch) -> dict:
     # Memory stats
     data["memory"] = orch.memory.get_stats()
 
-    # Realms
+    # Realms — count from live agent objects to avoid stale counters
+    from zhihuiti.realms import AgentLifeState
     realm_data = {}
+    live_agents = orch.agent_manager.agents
     for realm, rs in orch.realm_manager.realms.items():
+        realm_agents = [a for a in live_agents.values() if a.realm == realm]
         realm_data[realm.value] = {
             "budget_allocated": round(rs.budget_allocated, 1),
             "budget_remaining": round(rs.budget_remaining, 1),
-            "agents_active": rs.agents_active,
-            "agents_frozen": rs.agents_frozen,
-            "agents_bankrupt": rs.agents_bankrupt,
+            "agents_active": len([a for a in realm_agents if a.life_state == AgentLifeState.ACTIVE]),
+            "agents_frozen": len([a for a in realm_agents if a.life_state == AgentLifeState.FROZEN]),
+            "agents_bankrupt": len([a for a in realm_agents if a.life_state == AgentLifeState.BANKRUPT]),
             "tasks_completed": rs.tasks_completed,
             "tasks_failed": rs.tasks_failed,
             "avg_score": round(rs.avg_score, 3),
