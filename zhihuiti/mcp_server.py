@@ -108,6 +108,118 @@ TOOLS = [
             "properties": {},
         },
     },
+    # ── Theory Intelligence tools ───────────────────────────────
+    {
+        "name": "zhihuiti_find_analogies",
+        "description": (
+            "Find cross-domain structural analogies for a theory. "
+            "Given a theory ID (e.g., 'replicator_dynamics', 'bellman_equation', 'sir_model'), "
+            "returns ranked analogous theories from other domains with collision scores, "
+            "shared patterns, bridging operators, and interpretations. "
+            "Use this to discover unexpected connections between fields."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "theory_id": {
+                    "type": "string",
+                    "description": "Theory ID (e.g., 'bellman_equation', 'free_energy_principle', 'nash_equilibrium_econ')",
+                },
+                "min_score": {
+                    "type": "number",
+                    "description": "Minimum collision score filter (0.0-1.0, default 0.0)",
+                    "default": 0.0,
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Max results (default 10)",
+                    "default": 10,
+                },
+            },
+            "required": ["theory_id"],
+        },
+    },
+    {
+        "name": "zhihuiti_get_bridges",
+        "description": (
+            "Get the detailed structural bridge between two specific theories. "
+            "Returns shared patterns, operators, role-mappings, and a one-sentence "
+            "interpretation of their deep connection. Returns null if no collision exists."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "theory_a": {
+                    "type": "string",
+                    "description": "First theory ID",
+                },
+                "theory_b": {
+                    "type": "string",
+                    "description": "Second theory ID",
+                },
+            },
+            "required": ["theory_a", "theory_b"],
+        },
+    },
+    {
+        "name": "zhihuiti_suggest_patterns",
+        "description": (
+            "Given a problem description in natural language, suggest relevant "
+            "structural patterns and cross-domain theories that may apply. "
+            "Example: 'optimizing a multi-agent auction with budget constraints' → "
+            "returns mechanism design, game theory, optimal transport analogies. "
+            "Use this to get fresh perspectives on any problem."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "description": "Natural language description of the problem or concept",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Max results (default 5)",
+                    "default": 5,
+                },
+            },
+            "required": ["description"],
+        },
+    },
+    {
+        "name": "zhihuiti_search_theories",
+        "description": (
+            "Search the theory knowledge graph by keyword. Matches against theory names, "
+            "domains, equations, and patterns. Returns theory IDs you can use with "
+            "find_analogies and get_bridges."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Search query (e.g., 'reinforcement learning', 'entropy', 'bifurcation')",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Max results (default 10)",
+                    "default": 10,
+                },
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "zhihuiti_graph_stats",
+        "description": (
+            "Get summary statistics about the theory knowledge graph: "
+            "theory count, collision count, domains, strength distribution."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {},
+        },
+    },
 ]
 
 
@@ -178,6 +290,56 @@ def _handle_tool_call(name: str, arguments: dict) -> dict:
         return {
             "content": [{"type": "text", "text": json.dumps(status, indent=2)}],
         }
+
+    # ── Theory Intelligence tools ───────────────────────────────
+    elif name == "zhihuiti_find_analogies":
+        from zhihuiti.theory_intelligence import get_graph
+        graph = get_graph()
+        theory_id = arguments["theory_id"]
+        if theory_id not in graph.theories:
+            return {"content": [{"type": "text", "text": f"Unknown theory: {theory_id}. Use zhihuiti_search_theories to find valid IDs."}], "isError": True}
+        analogies = graph.find_analogies(
+            theory_id,
+            min_score=arguments.get("min_score", 0.0),
+            limit=arguments.get("limit", 10),
+        )
+        t = graph.theories[theory_id]
+        header = f"Analogies for {t.get('name', theory_id)} ({t.get('domain', '')}):\n\n"
+        return {"content": [{"type": "text", "text": header + json.dumps(analogies, indent=2, ensure_ascii=False)}]}
+
+    elif name == "zhihuiti_get_bridges":
+        from zhihuiti.theory_intelligence import get_graph
+        graph = get_graph()
+        bridge = graph.get_bridges(arguments["theory_a"], arguments["theory_b"])
+        if bridge is None:
+            return {"content": [{"type": "text", "text": f"No collision found between {arguments['theory_a']} and {arguments['theory_b']}."}]}
+        return {"content": [{"type": "text", "text": json.dumps(bridge, indent=2, ensure_ascii=False)}]}
+
+    elif name == "zhihuiti_suggest_patterns":
+        from zhihuiti.theory_intelligence import get_graph
+        graph = get_graph()
+        results = graph.suggest_patterns(
+            arguments["description"],
+            limit=arguments.get("limit", 5),
+        )
+        return {"content": [{"type": "text", "text": json.dumps(results, indent=2, ensure_ascii=False)}]}
+
+    elif name == "zhihuiti_search_theories":
+        from zhihuiti.theory_intelligence import get_graph
+        graph = get_graph()
+        results = graph.search_theories(
+            arguments["query"],
+            limit=arguments.get("limit", 10),
+        )
+        # Compact output: id, name, domain
+        compact = [{"id": r["id"], "name": r.get("name", ""), "domain": r.get("domain", "")} for r in results]
+        return {"content": [{"type": "text", "text": json.dumps(compact, indent=2, ensure_ascii=False)}]}
+
+    elif name == "zhihuiti_graph_stats":
+        from zhihuiti.theory_intelligence import get_graph
+        graph = get_graph()
+        stats = graph.get_stats()
+        return {"content": [{"type": "text", "text": json.dumps(stats, indent=2, ensure_ascii=False)}]}
 
     else:
         return {
