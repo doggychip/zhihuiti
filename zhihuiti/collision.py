@@ -273,6 +273,14 @@ class CollisionEngine:
             self.dynamics[key] = TemporalDynamics(theory_a=key[0], theory_b=key[1])
         return self.dynamics[key]
 
+    def print_dynamics(self) -> None:
+        """Print temporal dynamics for all tracked theory pairs."""
+        if not self.dynamics:
+            console.print("  [dim]No temporal dynamics yet.[/dim]")
+            return
+        for dyn in self.dynamics.values():
+            dyn.print_summary()
+
     def print_history(self) -> None:
         if not self.history:
             console.print("  [dim]No collisions yet.[/dim]")
@@ -299,14 +307,6 @@ class CollisionEngine:
                 winner_label,
             )
         console.print(table)
-
-    def print_dynamics(self) -> None:
-        """Print temporal dynamics for all tracked theory pairs."""
-        if not self.dynamics:
-            console.print("  [dim]No temporal dynamics yet.[/dim]")
-            return
-        for dyn in self.dynamics.values():
-            dyn.print_summary()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
