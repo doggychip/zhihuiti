@@ -220,7 +220,92 @@ TOOLS = [
             "properties": {},
         },
     },
+    # ── Crypto Oracle tools ────────────────────────────────────────
+    {
+        "name": "zhihuiti_crypto_diagnose",
+        "description": (
+            "Diagnose the current market state of a crypto instrument using structural "
+            "pattern detection mapped to theories. Pulls live OHLCV candles, detects "
+            "patterns (momentum, mean reversion, volatility clustering, fat tails, "
+            "support/resistance, orderbook imbalance), classifies the market regime, "
+            "and maps each finding to the most relevant theory from the 378-theory "
+            "knowledge graph with cross-domain analogies. "
+            "Returns: regime, detected patterns with strength scores, and theory details."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "instrument": {
+                    "type": "string",
+                    "description": "Instrument name (e.g., 'BTC_USDT', 'ETH_USDT')",
+                    "default": "BTC_USDT",
+                },
+                "timeframe": {
+                    "type": "string",
+                    "description": "Candle timeframe (e.g., '4h', '1h', '1D')",
+                    "default": "4h",
+                },
+                "include_book": {
+                    "type": "boolean",
+                    "description": "Also analyze order book for microstructure patterns",
+                    "default": False,
+                },
+            },
+        },
+    },
 ]
+
+
+def _fetch_candles(instrument: str, timeframe: str) -> list[dict]:
+    """Fetch OHLCV candles from Crypto.com public API."""
+    try:
+        import httpx
+        # Crypto.com public API v2
+        resp = httpx.get(
+            "https://api.crypto.com/exchange/v1/public/get-candlestick",
+            params={"instrument_name": instrument, "timeframe": timeframe},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        raw = data.get("result", {}).get("data", data.get("data", []))
+        if not raw:
+            return []
+        # Normalize keys
+        candles = []
+        for c in raw:
+            candles.append({
+                "open": c.get("o", c.get("open", 0)),
+                "high": c.get("h", c.get("high", 0)),
+                "low": c.get("l", c.get("low", 0)),
+                "close": c.get("c", c.get("close", 0)),
+                "volume": c.get("v", c.get("volume", 0)),
+            })
+        return candles
+    except Exception:
+        return []
+
+
+def _fetch_book(instrument: str) -> dict | None:
+    """Fetch order book from Crypto.com public API."""
+    try:
+        import httpx
+        resp = httpx.get(
+            "https://api.crypto.com/exchange/v1/public/get-book",
+            params={"instrument_name": instrument, "depth": 20},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        result = data.get("result", {}).get("data", [data.get("result", {})])
+        if isinstance(result, list) and result:
+            result = result[0]
+        return {
+            "bids": result.get("bids", []),
+            "asks": result.get("asks", []),
+        }
+    except Exception:
+        return None
 
 
 def _handle_tool_call(name: str, arguments: dict) -> dict:
@@ -340,6 +425,25 @@ def _handle_tool_call(name: str, arguments: dict) -> dict:
         graph = get_graph()
         stats = graph.get_stats()
         return {"content": [{"type": "text", "text": json.dumps(stats, indent=2, ensure_ascii=False)}]}
+
+    # ── Crypto Oracle tool ─────────────────────────────────────────
+    elif name == "zhihuiti_crypto_diagnose":
+        from zhihuiti.crypto_oracle import diagnose_market
+        instrument = arguments.get("instrument", "BTC_USDT")
+        timeframe = arguments.get("timeframe", "4h")
+        include_book = arguments.get("include_book", False)
+
+        # Fetch candle data via internal HTTP call to Crypto.com API
+        candles = _fetch_candles(instrument, timeframe)
+        if not candles:
+            return {"content": [{"type": "text", "text": f"No candle data for {instrument} ({timeframe})"}], "isError": True}
+
+        book = None
+        if include_book:
+            book = _fetch_book(instrument)
+
+        diagnosis = diagnose_market(candles, instrument=instrument, book=book)
+        return {"content": [{"type": "text", "text": json.dumps(diagnosis.to_dict(), indent=2, ensure_ascii=False)}]}
 
     else:
         return {

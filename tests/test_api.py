@@ -242,7 +242,7 @@ class TestMCPServer:
             "method": "tools/list",
             "params": {},
         })
-        assert len(resp["result"]["tools"]) == 4
+        assert len(resp["result"]["tools"]) == 10
 
     def test_handle_ping(self):
         from zhihuiti.mcp_server import _handle_request
