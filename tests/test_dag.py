@@ -134,7 +134,15 @@ def _make_orchestrator(llm=None):
     orch.factory = Factory(llm=stub, memory=mem)
     orch.bidding = BiddingHouse(stub, mem, orch.economy)
     from zhihuiti.messaging import MessageBoard
+    from zhihuiti.metacognition import MetacognitionEngine
+    from zhihuiti.consolidation import ConsolidationEngine
+    from zhihuiti.prediction import PredictionEngine
+    from zhihuiti.causal import CausalGraph
     orch.messages = MessageBoard(mem)
+    orch.causal_graph = CausalGraph()
+    orch.metacognition = MetacognitionEngine(mem)
+    orch.consolidation = ConsolidationEngine(mem)
+    orch.prediction = PredictionEngine(mem, causal_graph=orch.causal_graph)
     orch.tasks = {}
     orch.max_workers = 4
     orch.max_retries = 0

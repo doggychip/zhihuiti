@@ -38,6 +38,9 @@ THEORIES = {
         "promote_threshold": 0.8,
         "messaging": False,
         "lending": False,
+        # Attention allocation: budget ratios for the three realms
+        # (research, execution, central) — must sum to 1.0
+        "attention": {"research": 0.40, "execution": 0.50, "central": 0.10},
     },
     "mutualist": {
         "label": "🤝 Symbiotic Mutualism",
@@ -46,6 +49,7 @@ THEORIES = {
         "promote_threshold": 0.7,  # easier to promote
         "messaging": True,
         "lending": True,
+        "attention": {"research": 0.55, "execution": 0.30, "central": 0.15},
     },
     "hybrid": {
         "label": "⚡ Hybrid Equilibrium",
@@ -54,6 +58,7 @@ THEORIES = {
         "promote_threshold": 0.8,
         "messaging": True,
         "lending": True,
+        "attention": {"research": 0.50, "execution": 0.35, "central": 0.15},
     },
     "elitist": {
         "label": "👑 Elite Meritocracy",
@@ -62,6 +67,7 @@ THEORIES = {
         "promote_threshold": 0.9,
         "messaging": False,
         "lending": False,
+        "attention": {"research": 0.35, "execution": 0.55, "central": 0.10},
     },
     "ecosystem": {
         "label": "🌿 Ecosystem Dynamics",
@@ -70,6 +76,7 @@ THEORIES = {
         "promote_threshold": 0.75,
         "messaging": True,
         "lending": True,
+        "attention": {"research": 0.45, "execution": 0.40, "central": 0.15},
     },
     "social_contract": {
         "label": "📜 Social Contract",
@@ -78,6 +85,7 @@ THEORIES = {
         "promote_threshold": 0.85,
         "messaging": True,
         "lending": False,
+        "attention": {"research": 0.40, "execution": 0.40, "central": 0.20},
     },
 }
 
@@ -135,8 +143,9 @@ class CollisionResult:
 class CollisionEngine:
     """Runs the same goal under two competing theories and compares results."""
 
-    def __init__(self):
+    def __init__(self, metacognition=None):
         self.history: list[CollisionResult] = []
+        self.metacognition = metacognition  # MetacognitionEngine for auto-learning
         self.dynamics: dict[tuple[str, str], TemporalDynamics] = {}
 
     def collide(
@@ -191,6 +200,19 @@ class CollisionEngine:
             result_b=result_b,
         )
         self.history.append(collision)
+
+        # Brain Intelligence: record collision for metacognition auto-learning
+        if self.metacognition:
+            self.metacognition.record_collision(
+                goal=goal,
+                theory_a=theory_a,
+                theory_b=theory_b,
+                score_a=collision.score_a,
+                score_b=collision.score_b,
+                winner=collision.winner,
+                tasks_a=len(collision.result_a.get("tasks", [])),
+                tasks_b=len(collision.result_b.get("tasks", [])),
+            )
 
         # Track temporal dynamics for this theory pair
         key = _pair_key(theory_a, theory_b)
@@ -251,6 +273,14 @@ class CollisionEngine:
             self.dynamics[key] = TemporalDynamics(theory_a=key[0], theory_b=key[1])
         return self.dynamics[key]
 
+    def print_dynamics(self) -> None:
+        """Print temporal dynamics for all tracked theory pairs."""
+        if not self.dynamics:
+            console.print("  [dim]No temporal dynamics yet.[/dim]")
+            return
+        for dyn in self.dynamics.values():
+            dyn.print_summary()
+
     def print_history(self) -> None:
         if not self.history:
             console.print("  [dim]No collisions yet.[/dim]")
@@ -277,14 +307,6 @@ class CollisionEngine:
                 winner_label,
             )
         console.print(table)
-
-    def print_dynamics(self) -> None:
-        """Print temporal dynamics for all tracked theory pairs."""
-        if not self.dynamics:
-            console.print("  [dim]No temporal dynamics yet.[/dim]")
-            return
-        for dyn in self.dynamics.values():
-            dyn.print_summary()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
