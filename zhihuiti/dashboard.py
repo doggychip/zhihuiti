@@ -871,6 +871,24 @@ def start_dashboard(orch: Orchestrator, port: int = DEFAULT_PORT,
 
         # Add diverse goal pool — each cycle picks one randomly
         GOAL_POOL = [
+            # ── Trading Intelligence ──
+            "Analyze the current crypto market. Which coins have strongest momentum? Compare BTC, ETH, SOL, AVAX, LINK. Identify the best entry points.",
+            "Review our AlphaArena portfolio positions. Which are winning and which are losing? Recommend which to close and which to hold.",
+            "Research macro economic indicators affecting crypto markets this week. How should our trading strategies adapt?",
+            "Compare momentum vs mean reversion strategies in the current market regime. Which is performing better and why?",
+            "Analyze correlation between our stock positions (NVDA, TSM, TSLA) and crypto positions. Are we overexposed to any sector?",
+            "Research the top 5 highest-volume trading pairs in the last 24 hours. What's driving the volume? Should we trade them?",
+            "Evaluate risk-adjusted returns of our 5 trading strategies: momentum, mean_reversion, accumulate, scalp, diversify. Rank them by Sharpe ratio.",
+
+            # ── System Optimization ──
+            "Analyze agent performance scores across all roles. Which roles consistently score above 0.8? Which need improvement? Recommend breeding priorities.",
+            "Review the causal graph for patterns: what agent behaviors cause the highest task scores? What causes failures?",
+            "Compare the three realms (Research, Execution, Central) by productivity. Which realm has the best score-per-token efficiency?",
+            "Analyze the gene pool. How many generations deep are we? Are newer generations outperforming older ones? Is evolution working?",
+            "Review the auction system efficiency. What's the average savings per auction? Are agents bidding competitively?",
+            "Evaluate the lending system. How many loans are active? What's the default rate? Should we adjust interest rates?",
+
+            # ── Research & Knowledge ──
             "Research the latest developments in AI agent frameworks. Compare at least 3 approaches and their trade-offs.",
             "Analyze current trends in DeFi and decentralized finance. Identify the top protocols and emerging risks.",
             "Compare different approaches to multi-agent coordination: auction-based, hierarchical, and evolutionary.",
@@ -881,6 +899,13 @@ def start_dashboard(orch: Orchestrator, port: int = DEFAULT_PORT,
             "Analyze the economics of AI inference: cloud vs local, cost per token trends, and optimization strategies.",
             "Research autonomous agent architectures used in production systems. What patterns work at scale?",
             "Compare approaches to AI safety and alignment. How do different frameworks handle agent autonomy?",
+
+            # ── Market Analysis ──
+            "Analyze the S&P 500 tech sector: AAPL, MSFT, GOOGL, META, AMZN. Which has the strongest fundamentals right now?",
+            "Research emerging trends in semiconductor stocks. Compare NVDA, AMD, TSM, INTC. Who will lead the next cycle?",
+            "Analyze energy sector movements: CVX, XOM. How do oil prices affect our portfolio? Should we increase or reduce exposure?",
+            "Research the impact of Federal Reserve policy on both crypto and stock markets. What's the consensus outlook?",
+            "Compare healthcare stocks: JNJ, PFE, MRK, ABBV, LLY. Which has the best risk/reward for the next quarter?",
         ]
 
         aa_url = os.environ.get("ALPHAARENA_URL", "")
