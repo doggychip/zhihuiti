@@ -136,6 +136,33 @@ class RealmManager:
             "score_count": rs.score_count,
         })
 
+    def reconcile_counts(self, agents: dict) -> None:
+        """Recompute agent counts from live agent objects.
+
+        This fixes drift between RealmState counters and reality,
+        which happens when agents are removed without going through
+        the full freeze/bankrupt/cull lifecycle methods.
+
+        Args:
+            agents: dict of agent_id -> AgentState from agent_manager.
+        """
+        for realm in Realm:
+            rs = self.realms[realm]
+            realm_agents = [a for a in agents.values() if a.realm == realm]
+            rs.agents_active = len([
+                a for a in realm_agents
+                if a.life_state == AgentLifeState.ACTIVE
+            ])
+            rs.agents_frozen = len([
+                a for a in realm_agents
+                if a.life_state == AgentLifeState.FROZEN
+            ])
+            rs.agents_bankrupt = len([
+                a for a in realm_agents
+                if a.life_state == AgentLifeState.BANKRUPT
+            ])
+            self._save_state(realm)
+
     # ------------------------------------------------------------------
     # Budget allocation
     # ------------------------------------------------------------------

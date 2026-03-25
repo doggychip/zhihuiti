@@ -581,6 +581,9 @@ class Orchestrator:
             summary=summary[:500],
         )
 
+        # Reconcile realm counters with live agent state
+        self.realm_manager.reconcile_counts(self.agent_manager.agents)
+
         return {
             "goal": goal,
             "tasks": results,
