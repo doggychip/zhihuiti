@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 from rich.console import Console
 from rich.table import Table
 
-from zhihuiti.models import AgentConfig, AgentRole, AgentState
+from zhihuiti.models import AgentConfig, AgentRole, AgentState, Realm, ROLE_TO_REALM
 
 if TYPE_CHECKING:
     from zhihuiti.economy import Economy
@@ -133,6 +133,8 @@ class BiddingHouse:
                 budget=row["budget"],
                 depth=row["depth"],
             )
+            # Assign realm based on role (not persisted in DB)
+            agent.realm = ROLE_TO_REALM.get(role, Realm.EXECUTION)
             # Reconstruct avg_score from stored value
             if row["avg_score"] and row["avg_score"] != 0.5:
                 agent.scores = [row["avg_score"]]
