@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import sqlite3
 import threading
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -187,6 +189,19 @@ class Memory:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 due_at TIMESTAMP
             );
+
+            CREATE TABLE IF NOT EXISTS snapshots (
+                id TEXT PRIMARY KEY,
+                goal_id TEXT,
+                phase TEXT NOT NULL DEFAULT '',
+                tags TEXT NOT NULL DEFAULT '[]',
+                data TEXT NOT NULL DEFAULT '{}',
+                parent_snapshot_id TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_snapshots_goal ON snapshots(goal_id);
+            CREATE INDEX IF NOT EXISTS idx_snapshots_phase ON snapshots(phase);
         """)
         self.conn.commit()
 
@@ -661,6 +676,159 @@ class Memory:
             "gene_pool_size": genes,
             "avg_task_score": round(avg or 0.0, 3),
         }
+
+    # ------------------------------------------------------------------
+    # Versioned state: checkpoint / rollback / recall / search
+    # ------------------------------------------------------------------
+
+    def checkpoint(
+        self,
+        phase: str,
+        goal_id: str | None = None,
+        tags: list[str] | None = None,
+        include: list[str] | None = None,
+    ) -> str:
+        """Snapshot current state and return the snapshot ID.
+
+        ``include`` controls which tables are captured.  Defaults to the
+        core state tables: agents, economy_state, tasks, gene_pool.
+        Append-only audit tables (transactions, task_history, auctions)
+        are excluded by default since they don't need rollback.
+
+        Each snapshot records its predecessor (``parent_snapshot_id``) so
+        you can walk the checkpoint chain for a goal.
+        """
+        tables = include or ["agents", "economy_state", "tasks", "gene_pool"]
+        data: dict[str, list[dict]] = {}
+        for table in tables:
+            rows = self._query(f"SELECT * FROM {table}")  # noqa: S608
+            data[table] = [dict(r) for r in rows]
+
+        snapshot_id = uuid.uuid4().hex[:12]
+
+        # Find the most recent snapshot for this goal to set parent
+        parent_id = None
+        if goal_id:
+            parent = self._query_one(
+                "SELECT id FROM snapshots WHERE goal_id = ? ORDER BY rowid DESC LIMIT 1",
+                (goal_id,),
+            )
+            if parent:
+                parent_id = parent["id"]
+
+        with self._lock:
+            self.conn.execute(
+                """INSERT INTO snapshots
+                   (id, goal_id, phase, tags, data, parent_snapshot_id)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (
+                    snapshot_id,
+                    goal_id,
+                    phase,
+                    json.dumps(tags or []),
+                    json.dumps(data),
+                    parent_id,
+                ),
+            )
+            self.conn.commit()
+
+        return snapshot_id
+
+    def rollback(self, snapshot_id: str) -> dict:
+        """Restore state from a snapshot.
+
+        Replaces all rows in the captured tables with the snapshot data.
+        Returns the restored data dict so callers can inspect what changed.
+        """
+        row = self._query_one(
+            "SELECT data FROM snapshots WHERE id = ?", (snapshot_id,)
+        )
+        if not row:
+            raise ValueError(f"Snapshot {snapshot_id} not found")
+
+        data: dict[str, list[dict]] = json.loads(row["data"])
+
+        with self._lock:
+            for table, rows in data.items():
+                if not rows:
+                    self.conn.execute(f"DELETE FROM {table}")  # noqa: S608
+                    continue
+                self.conn.execute(f"DELETE FROM {table}")  # noqa: S608
+                cols = list(rows[0].keys())
+                placeholders = ",".join("?" for _ in cols)
+                col_names = ",".join(cols)
+                for r in rows:
+                    self.conn.execute(
+                        f"INSERT INTO {table} ({col_names}) VALUES ({placeholders})",  # noqa: S608
+                        tuple(r[c] for c in cols),
+                    )
+            self.conn.commit()
+
+        return data
+
+    def recall(
+        self,
+        goal_id: str | None = None,
+        phase: str | None = None,
+        limit: int = 5,
+    ) -> list[dict]:
+        """Retrieve recent snapshots, optionally filtered by goal or phase."""
+        conditions: list[str] = []
+        params: list = []
+        if goal_id:
+            conditions.append("goal_id = ?")
+            params.append(goal_id)
+        if phase:
+            conditions.append("phase = ?")
+            params.append(phase)
+
+        where = (" WHERE " + " AND ".join(conditions)) if conditions else ""
+        params.append(limit)
+        rows = self._query(
+            f"SELECT id, goal_id, phase, tags, parent_snapshot_id, created_at "
+            f"FROM snapshots{where} ORDER BY created_at DESC LIMIT ?",
+            params,
+        )
+        return [dict(r) for r in rows]
+
+    def search_snapshots(self, tags: list[str], limit: int = 10) -> list[dict]:
+        """Find snapshots that match ANY of the given tags."""
+        conditions = " OR ".join("tags LIKE ?" for _ in tags)
+        params = [f"%{t}%" for t in tags]
+        params.append(limit)  # type: ignore[arg-type]
+        rows = self._query(
+            f"SELECT id, goal_id, phase, tags, parent_snapshot_id, created_at "
+            f"FROM snapshots WHERE ({conditions}) ORDER BY created_at DESC LIMIT ?",
+            params,
+        )
+        return [dict(r) for r in rows]
+
+    def get_snapshot_data(self, snapshot_id: str) -> dict | None:
+        """Return the full data payload of a snapshot."""
+        row = self._query_one(
+            "SELECT data FROM snapshots WHERE id = ?", (snapshot_id,)
+        )
+        if row:
+            return json.loads(row["data"])
+        return None
+
+    def get_snapshot_chain(self, snapshot_id: str, max_depth: int = 10) -> list[dict]:
+        """Walk the parent chain from a snapshot back to the root."""
+        chain: list[dict] = []
+        current_id: str | None = snapshot_id
+        depth = 0
+        while current_id and depth < max_depth:
+            row = self._query_one(
+                "SELECT id, goal_id, phase, tags, parent_snapshot_id, created_at "
+                "FROM snapshots WHERE id = ?",
+                (current_id,),
+            )
+            if not row:
+                break
+            chain.append(dict(row))
+            current_id = row["parent_snapshot_id"]
+            depth += 1
+        return chain
 
     def close(self) -> None:
         self.conn.close()
