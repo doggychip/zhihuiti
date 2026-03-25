@@ -412,6 +412,13 @@ class Orchestrator:
             task.description = original_desc
             return result
 
+        # Checkpoint before execution begins
+        last_good_snapshot = self.memory.checkpoint(
+            phase="pre_execution",
+            goal_id=goal_id,
+            tags=["goal_start", goal[:40]],
+        )
+
         # Execute wave-by-wave; tasks within a wave run in parallel
         max_w = self.max_workers
         for wave_idx, wave_ids in enumerate(waves):
@@ -438,6 +445,35 @@ class Orchestrator:
                         wave_results.append(future.result())
             else:
                 wave_results.extend(_run_with_retry(t) for t in wave_tasks)
+
+            # Check if entire wave failed — rollback to last good state
+            wave_scores = [r["score"] for r in wave_results if r.get("score") is not None]
+            all_failed = all(
+                r["status"] in ("fuse_tripped", "failed") for r in wave_results
+            )
+            if all_failed and last_good_snapshot:
+                console.print(
+                    f"\n  [bold red]⟲ Wave {wave_idx} failed entirely — "
+                    f"rolling back to snapshot {last_good_snapshot}[/bold red]"
+                )
+                self.memory.rollback(last_good_snapshot)
+                # Re-sync in-memory agent state from restored DB
+                for agent in self.agent_manager.agents.values():
+                    row = self.memory._query_one(
+                        "SELECT budget, avg_score, alive FROM agents WHERE id = ?",
+                        (agent.id,),
+                    )
+                    if row:
+                        agent.budget = row["budget"]
+                        agent.avg_score = row["avg_score"]
+                        agent.alive = bool(row["alive"])
+            else:
+                # Wave succeeded (at least partially) — checkpoint as new known-good
+                last_good_snapshot = self.memory.checkpoint(
+                    phase=f"wave_{wave_idx}_complete",
+                    goal_id=goal_id,
+                    tags=[f"wave_{wave_idx}", "post_wave", goal[:40]],
+                )
 
             results.extend(wave_results)
 
