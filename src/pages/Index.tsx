@@ -181,6 +181,7 @@ const REALM_SPHERE_COLORS: Record<string, string> = { research: "#3b82f6", execu
 
 function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhihuiti = true, showHedgeFund = true, lodCount = 30
 }: {agents: Agent[];connections: Connection[];onSelect: (id: string) => void;selectedId: string | null;events: TaskEvent[];showZhihuiti?: boolean;showHedgeFund?: boolean;lodCount?: number;}) {
+  const [webglError, setWebglError] = useState(false);
   const mountRef = useRef<HTMLDivElement>(null);
   const nodesRef = useRef<Record<string, {mesh: THREE.Mesh; label?: THREE.Sprite; basePos: THREE.Vector3; vel: THREE.Vector3; size: number;}>>({});
   const linesRef = useRef<{ line: THREE.Line; from: string; to: string; baseColor: string }[]>([]);
@@ -205,9 +206,16 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
     const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 500);
     camera.position.z = 28;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, powerPreference: "low-power", failIfMajorPerformanceCaveat: false });
+    } catch (e) {
+      console.warn("WebGL context creation failed, showing fallback", e);
+      setWebglError(true);
+      return;
+    }
     renderer.setSize(w, h);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
 
