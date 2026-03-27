@@ -509,6 +509,18 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
     };
   }, [agents, connections, selectedId, onSelect, showZhihuiti, showHedgeFund, lodCount]);
 
+  if (webglError) {
+    return (
+      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.3)", borderRadius: 12, padding: 24 }}>
+        <div style={{ textAlign: "center", color: "rgba(255,255,255,0.6)" }}>
+          <div style={{ fontSize: 32, marginBottom: 8 }}>⚠️</div>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>3D Graph Unavailable</div>
+          <div style={{ fontSize: 11, opacity: 0.6 }}>WebGL not supported in this environment. Agent data is still available in the sidebar.</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: "100%", height: "100%", position: "relative" }}>
       <div ref={mountRef} style={{ width: "100%", height: "100%" }} />
