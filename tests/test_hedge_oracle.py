@@ -12,10 +12,12 @@ from zhihuiti.hedge_manager import (
     HedgeFundManager,
     REGIME_STRATEGIES,
     PATTERN_PARAM_HINTS,
+    COLLISION_OVERRIDES,
     PARAM_RANGES,
     STRATEGY_TYPES,
 )
 from zhihuiti.crypto_oracle import (
+    CollisionInsight,
     DetectedPattern,
     MarketDiagnosis,
     diagnose_market,
@@ -355,3 +357,136 @@ class TestEvolutionCycleWithOracle:
         result = mgr.run_evolution_cycle(candles=candles)
         assert "diagnosis" in result
         assert result["evolved"] >= 1
+
+
+# ── Collision override tests ───────────────────────────────────────────────
+
+def _fake_collision_insight(pa: str, pb: str, score: float = 0.7) -> CollisionInsight:
+    return CollisionInsight(
+        pattern_a=pa, pattern_b=pb,
+        theory_a="t_a", theory_b="t_b",
+        bridge_theory="bridge", bridge_domain="domain",
+        collision_score=score,
+        interpretation="test",
+        shared_patterns=[],
+        trading_rule="test rule",
+    )
+
+
+class TestCollisionOverrides:
+    def test_overrides_map_covers_key_combos(self):
+        expected = [
+            frozenset({"momentum", "volatility_clustering"}),
+            frozenset({"momentum", "mean_reversion"}),
+            frozenset({"momentum", "orderbook_imbalance"}),
+            frozenset({"volatility_clustering", "fat_tails"}),
+        ]
+        for combo in expected:
+            assert combo in COLLISION_OVERRIDES, f"Missing override for {combo}"
+
+    def test_get_collision_override_returns_override(self):
+        mgr = _mock_manager()
+        diag = _fake_diagnosis("volatile", [
+            _momentum_pattern(),
+            _vol_clustering_pattern(),
+        ])
+        # Add collision insights
+        diag.collision_insights = [
+            _fake_collision_insight("momentum", "volatility_clustering", 0.7)
+        ]
+        result = mgr.get_collision_override(diag)
+        assert result is not None
+        strategy, scale = result
+        assert strategy == "hybrid_adaptive"
+        assert scale == 0.5
+
+    def test_get_collision_override_returns_none_without_insights(self):
+        mgr = _mock_manager()
+        diag = _fake_diagnosis("volatile")
+        diag.collision_insights = []
+        assert mgr.get_collision_override(diag) is None
+
+    def test_get_collision_override_returns_none_for_unknown_pair(self):
+        mgr = _mock_manager()
+        diag = _fake_diagnosis("quiet")
+        # A pair not in COLLISION_OVERRIDES
+        diag.collision_insights = [
+            _fake_collision_insight("unknown_a", "unknown_b", 0.9)
+        ]
+        assert mgr.get_collision_override(diag) is None
+
+    def test_collision_override_takes_priority_over_regime(self):
+        mgr = _mock_manager()
+
+        # Setup mock agent
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {
+            "id": "agent1",
+            "config": json.dumps({"quantity": 0.1, "pair": "BTC/USD"}),
+            "strategy": {"type": "momentum"},
+        }
+        mock_resp.raise_for_status.return_value = None
+
+        put_resp = MagicMock()
+        put_resp.json.return_value = {"ok": True}
+        put_resp.raise_for_status.return_value = None
+
+        post_resp = MagicMock()
+        post_resp.json.return_value = {"id": "strat1"}
+        post_resp.raise_for_status.return_value = None
+
+        mgr.client.get.return_value = mock_resp
+        mgr.client.put.return_value = put_resp
+        mgr.client.post.return_value = post_resp
+
+        # Diagnosis: trending_up regime, but collision says momentum+vol_clustering
+        diag = _fake_diagnosis("trending_up", [
+            _momentum_pattern(),
+            _vol_clustering_pattern(),
+        ])
+        diag.collision_insights = [
+            _fake_collision_insight("momentum", "volatility_clustering", 0.71)
+        ]
+
+        results = mgr.evolve_bottom([{"agentId": "agent1"}], [], diagnosis=diag)
+        assert len(results) == 1
+        # Should use collision override (hybrid_adaptive) not regime (momentum_strong)
+        assert "collision" in results[0]["action"]
+
+    def test_collision_override_scales_quantity(self):
+        mgr = _mock_manager()
+
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {
+            "id": "agent1",
+            "config": json.dumps({"quantity": 0.2, "pair": "BTC/USD"}),
+            "strategy": {"type": "momentum"},
+        }
+        mock_resp.raise_for_status.return_value = None
+        put_resp = MagicMock()
+        put_resp.json.return_value = {"ok": True}
+        put_resp.raise_for_status.return_value = None
+        post_resp = MagicMock()
+        post_resp.json.return_value = {"id": "strat1"}
+        post_resp.raise_for_status.return_value = None
+
+        mgr.client.get.return_value = mock_resp
+        mgr.client.put.return_value = put_resp
+        mgr.client.post.return_value = post_resp
+
+        # vol+fat_tails combo = scale 0.3 (dangerous regime)
+        diag = _fake_diagnosis("volatile", [
+            _vol_clustering_pattern(),
+            DetectedPattern("fat_tails", 0.5, "", {}, ["heston_stochastic_volatility"]),
+        ])
+        diag.collision_insights = [
+            _fake_collision_insight("volatility_clustering", "fat_tails", 0.6)
+        ]
+
+        results = mgr.evolve_bottom([{"agentId": "agent1"}], [], diagnosis=diag)
+        assert len(results) == 1
+        # The quantity in params should be scaled down
+        params = results[0]["params"]
+        # hybrid_adaptive uses baseQuantity, and it should be < unscaled
+        if "baseQuantity" in params:
+            assert params["baseQuantity"] <= 0.2 * 0.3 + 0.01  # Scaled + mutation tolerance

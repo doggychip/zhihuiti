@@ -108,6 +108,33 @@ PATTERN_PARAM_HINTS: dict[str, list[tuple[str, str, str]]] = {
     ],
 }
 
+# ── Collision-derived strategy overrides ───────────────────────────────────
+# When collision insights reveal specific pattern combinations, these overrides
+# take priority over the default regime → strategy mapping.
+# Key: frozenset of two pattern names → (preferred_strategy, quantity_scale)
+COLLISION_OVERRIDES: dict[frozenset[str], tuple[str, float]] = {
+    frozenset({"momentum", "volatility_clustering"}):
+        ("hybrid_adaptive", 0.5),     # vol masks momentum → adaptive with small size
+    frozenset({"momentum", "mean_reversion"}):
+        ("mean_reversion", 0.7),      # conflicting signals → favor reversion, cautious size
+    frozenset({"momentum", "orderbook_imbalance"}):
+        ("momentum_strong", 1.3),     # flow confirms trend → strong momentum, bigger size
+    frozenset({"mean_reversion", "volatility_clustering"}):
+        ("hybrid_adaptive", 0.6),     # unstable vol → adaptive approach
+    frozenset({"volatility_clustering", "fat_tails"}):
+        ("hybrid_adaptive", 0.3),     # dangerous regime → minimal exposure
+    frozenset({"mean_reversion", "support_resistance"}):
+        ("mean_reversion", 1.2),      # structural level confirms reversion → high confidence
+    frozenset({"momentum", "support_resistance"}):
+        ("momentum", 0.7),            # trend approaching level → take partial profit
+    frozenset({"volatility_clustering", "support_resistance"}):
+        ("momentum_strong", 1.0),     # breakout setup → prepare for trend
+    frozenset({"orderbook_imbalance", "support_resistance"}):
+        ("momentum_strong", 1.2),     # flow at level → strong confirmation
+    frozenset({"fat_tails", "orderbook_imbalance"}):
+        ("momentum", 0.4),            # informed flow in tail regime → follow flow, tiny size
+}
+
 # Tradable pairs
 PAIRS = [
     "BTC/USD", "ETH/USD", "BNB/USD", "SOL/USD", "XRP/USD",
@@ -233,6 +260,34 @@ class HedgeFundManager:
         # All candidates are the same as current — fall back to random
         return random.choice([t for t in STRATEGY_TYPES if t != current_type])
 
+    def get_collision_override(self, diagnosis: Any) -> tuple[str, float] | None:
+        """Check if collision insights suggest a specific strategy + sizing override.
+
+        When two patterns fire simultaneously and their collision produces a known
+        trading rule, the override takes priority over regime-based selection.
+        Returns (strategy_type, quantity_scale) or None.
+        """
+        collision_insights = getattr(diagnosis, "collision_insights", [])
+        if not collision_insights:
+            return None
+
+        # Use the highest-scoring collision insight
+        patterns = getattr(diagnosis, "patterns", [])
+        pattern_names = {p.name for p in patterns}
+
+        # Check all known collision overrides against detected pattern pairs
+        best_override = None
+        best_score = 0.0
+
+        for ci in collision_insights:
+            pair = frozenset({ci.pattern_a, ci.pattern_b})
+            if pair in COLLISION_OVERRIDES:
+                if ci.collision_score > best_score:
+                    best_override = COLLISION_OVERRIDES[pair]
+                    best_score = ci.collision_score
+
+        return best_override
+
     def apply_pattern_hints(self, strategy_type: str, params: dict, patterns: list) -> dict:
         """Adjust parameters based on detected patterns from the oracle."""
         new_params = dict(params)
@@ -313,17 +368,23 @@ class HedgeFundManager:
         """Evolve underperforming agents using top performers' DNA.
 
         If a MarketDiagnosis is provided, strategy selection is guided by the
-        detected regime and patterns instead of being random.
+        detected regime, patterns, and collision insights instead of being random.
         """
         results = []
         regime = getattr(diagnosis, "regime", None)
         patterns = getattr(diagnosis, "patterns", [])
 
+        # Check for collision-derived strategy override
+        collision_override = self.get_collision_override(diagnosis) if diagnosis else None
+
         for agent_data in bottom_agents:
             agent_id = agent_data["agentId"]
 
             # Theory-guided action selection based on regime
-            if regime:
+            if collision_override:
+                # Collision insights take priority — always swap to collision-recommended strategy
+                action = "swap_strategy"
+            elif regime:
                 # In volatile/mean-reverting regimes, prefer swapping to regime-fit strategy.
                 # In trending regimes with top performers, prefer breeding.
                 if regime in ("volatile", "mean_reverting"):
@@ -342,20 +403,33 @@ class HedgeFundManager:
                 current_type = current_strategy.get("type", "momentum")
 
                 if action == "swap_strategy":
-                    # Theory-guided: pick strategy matching detected regime
-                    if regime:
+                    # Priority: collision override > regime > random
+                    if collision_override:
+                        new_type, qty_scale = collision_override
+                        if new_type == current_type:
+                            new_type = self.pick_strategy_for_regime(regime or "quiet", current_type)
+                        reason = f"collision({new_type}, scale={qty_scale})"
+                    elif regime:
                         new_type = self.pick_strategy_for_regime(regime, current_type)
+                        qty_scale = 1.0
+                        reason = f"regime={regime}"
                     else:
                         new_type = random.choice([t for t in STRATEGY_TYPES if t != current_type])
+                        qty_scale = 1.0
+                        reason = "random"
 
                     new_params = self.mutate_params(new_type, {})
                     new_params["pair"] = current_config.get("pair", random.choice(PAIRS))
 
+                    # Apply collision quantity scaling
+                    if collision_override:
+                        for qkey in ("quantity", "baseQuantity"):
+                            if qkey in new_params:
+                                new_params[qkey] = round(new_params[qkey] * qty_scale, 4)
+
                     # Apply pattern-based parameter hints
                     if patterns:
                         new_params = self.apply_pattern_hints(new_type, new_params, patterns)
-
-                    reason = f"regime={regime}" if regime else "random"
 
                     # Create new strategy and assign
                     try:
@@ -450,9 +524,16 @@ class HedgeFundManager:
         if candles:
             diagnosis = self.diagnose(candles, book=book)
             if diagnosis:
+                n_collisions = len(getattr(diagnosis, "collision_insights", []))
                 console.print(f"  Oracle: regime=[bold]{diagnosis.regime}[/bold], "
                               f"patterns={len(diagnosis.patterns)}, "
+                              f"collisions={n_collisions}, "
                               f"dominant={diagnosis.dominant_theory}")
+                if n_collisions:
+                    ci = diagnosis.collision_insights[0]
+                    console.print(f"  Top collision: {ci.pattern_a} x {ci.pattern_b} "
+                                  f"(score={ci.collision_score:.2f})")
+                    console.print(f"  Rule: {ci.trading_rule[:100]}")
             else:
                 console.print("  Oracle: unavailable, falling back to random evolution")
         else:

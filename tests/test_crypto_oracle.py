@@ -1,4 +1,4 @@
-"""Tests for the Crypto Oracle — structural pattern detection + theory mapping."""
+"""Tests for the Crypto Oracle — structural pattern detection + theory mapping + collision synthesis."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import math
 import pytest
 
 from zhihuiti.crypto_oracle import (
+    CollisionInsight,
     DetectedPattern,
     MarketDiagnosis,
     classify_regime,
@@ -17,6 +18,7 @@ from zhihuiti.crypto_oracle import (
     detect_support_resistance,
     detect_volatility_clustering,
     diagnose_market,
+    synthesize_collisions,
 )
 
 
@@ -269,3 +271,112 @@ class TestDiagnoseMarket:
         if len(diag.patterns) > 1:
             for i in range(len(diag.patterns) - 1):
                 assert diag.patterns[i].strength >= diag.patterns[i + 1].strength
+
+    def test_to_dict_includes_collision_insights(self):
+        candles = _make_candles(_trending_up_closes())
+        diag = diagnose_market(candles)
+        d = diag.to_dict()
+        assert "collision_insights" in d
+        assert isinstance(d["collision_insights"], list)
+
+
+# ── Collision Synthesis ────────────────────────────────────────────────────
+
+def _pat(name: str, theory_ids: list[str], strength: float = 0.6) -> DetectedPattern:
+    return DetectedPattern(name=name, strength=strength, description="", metrics={}, theory_ids=theory_ids)
+
+
+class TestSynthesizeCollisions:
+    def test_returns_empty_for_single_pattern(self):
+        assert synthesize_collisions([_pat("momentum", ["efficient_market_hypothesis"])]) == []
+
+    def test_returns_empty_for_no_patterns(self):
+        assert synthesize_collisions([]) == []
+
+    def test_finds_bridge_for_momentum_vol_clustering(self):
+        patterns = [
+            _pat("momentum", ["efficient_market_hypothesis", "capm"]),
+            _pat("volatility_clustering", ["heston_stochastic_volatility", "boltzmann_distribution"]),
+        ]
+        insights = synthesize_collisions(patterns)
+        assert len(insights) >= 1
+        ci = insights[0]
+        assert ci.pattern_a in ("momentum", "volatility_clustering")
+        assert ci.pattern_b in ("momentum", "volatility_clustering")
+        assert ci.trading_rule != ""
+        assert ci.collision_score > 0
+
+    def test_finds_bridge_for_mean_reversion_support(self):
+        patterns = [
+            _pat("mean_reversion", ["mean_reversion", "arbitrage_pricing_theory"]),
+            _pat("support_resistance", ["mean_reversion", "black_scholes"]),
+        ]
+        insights = synthesize_collisions(patterns)
+        assert len(insights) >= 1
+        # This pair has a real collision bridge (via yield_curve_vasicek)
+        ci = insights[0]
+        assert ci.bridge_theory != "(rule-template)"
+        assert ci.collision_score > 0.5
+
+    def test_rule_template_fallback(self):
+        patterns = [
+            _pat("fat_tails", ["heston_stochastic_volatility"]),
+            _pat("orderbook_imbalance", ["market_microstructure"]),
+        ]
+        insights = synthesize_collisions(patterns)
+        assert len(insights) >= 1
+        ci = insights[0]
+        # Should get rule template since no direct collision exists
+        assert "flow" in ci.trading_rule.lower() or "tail" in ci.trading_rule.lower()
+
+    def test_three_patterns_produce_multiple_insights(self):
+        patterns = [
+            _pat("momentum", ["efficient_market_hypothesis", "capm"], 0.7),
+            _pat("volatility_clustering", ["heston_stochastic_volatility", "boltzmann_distribution"], 0.5),
+            _pat("support_resistance", ["mean_reversion", "black_scholes"], 0.8),
+        ]
+        insights = synthesize_collisions(patterns)
+        # Should have insights for up to 3 pairs
+        assert len(insights) >= 2
+        # Each insight covers a different pair
+        pairs = {frozenset({ci.pattern_a, ci.pattern_b}) for ci in insights}
+        assert len(pairs) == len(insights)
+
+    def test_insights_sorted_by_score(self):
+        patterns = [
+            _pat("momentum", ["efficient_market_hypothesis", "capm"]),
+            _pat("volatility_clustering", ["heston_stochastic_volatility", "boltzmann_distribution"]),
+            _pat("mean_reversion", ["mean_reversion"]),
+        ]
+        insights = synthesize_collisions(patterns)
+        for i in range(len(insights) - 1):
+            assert insights[i].collision_score >= insights[i + 1].collision_score
+
+    def test_collision_insight_to_dict(self):
+        ci = CollisionInsight(
+            pattern_a="momentum",
+            pattern_b="vol_clustering",
+            theory_a="emh",
+            theory_b="heston",
+            bridge_theory="maxent",
+            bridge_domain="Information Theory",
+            collision_score=0.71,
+            interpretation="test interpretation",
+            shared_patterns=["energy_based"],
+            trading_rule="reduce size",
+        )
+        d = ci.to_dict()
+        assert d["pattern_a"] == "momentum"
+        assert d["bridge_theory"] == "maxent"
+        assert d["collision_score"] == 0.71
+        assert d["trading_rule"] == "reduce size"
+
+    def test_deduplicates_per_pair(self):
+        # Two patterns with overlapping theory IDs should only produce one insight per pair
+        patterns = [
+            _pat("momentum", ["efficient_market_hypothesis", "capm"]),
+            _pat("volatility_clustering", ["heston_stochastic_volatility", "boltzmann_distribution"]),
+        ]
+        insights = synthesize_collisions(patterns)
+        pairs = [frozenset({ci.pattern_a, ci.pattern_b}) for ci in insights]
+        assert len(pairs) == len(set(pairs))  # No duplicate pairs
