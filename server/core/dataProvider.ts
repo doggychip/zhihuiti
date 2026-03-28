@@ -17,6 +17,23 @@ const COINGECKO_ID_MAP: Record<string, string> = {
 const COINGECKO_IDS = Object.keys(COINGECKO_ID_MAP).join(",");
 const COINGECKO_URL = `https://api.coingecko.com/api/v3/simple/price?ids=${COINGECKO_IDS}&vs_currencies=usd&include_24hr_change=true`;
 
+// CoinCap ID to pair mapping (backup source)
+const COINCAP_ID_MAP: Record<string, string> = {
+  bitcoin: "BTC/USD",
+  ethereum: "ETH/USD",
+  "binance-coin": "BNB/USD",
+  solana: "SOL/USD",
+  ripple: "XRP/USD",
+  cardano: "ADA/USD",
+  dogecoin: "DOGE/USD",
+  "avalanche-2": "AVAX/USD",
+  polkadot: "DOT/USD",
+  chainlink: "LINK/USD",
+};
+
+const COINCAP_IDS = Object.keys(COINCAP_ID_MAP).join(",");
+const COINCAP_URL = `https://api.coincap.io/v2/assets?ids=${COINCAP_IDS}`;
+
 // Fallback simulated prices
 const basePrices: Record<string, number> = {
   "BTC/USD": 87420,
@@ -114,15 +131,61 @@ async function fetchCoinGeckoPrices(): Promise<PriceData[] | null> {
   }
 }
 
+async function fetchCoinCapPrices(): Promise<PriceData[] | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    const res = await fetch(COINCAP_URL, { signal: controller.signal });
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      log(`CoinCap API returned ${res.status}`, "data-provider");
+      return null;
+    }
+
+    const data = await res.json();
+    const assets: any[] = data?.data;
+    if (!Array.isArray(assets) || assets.length === 0) return null;
+
+    const prices: PriceData[] = [];
+
+    for (const asset of assets) {
+      const pair = COINCAP_ID_MAP[asset.id];
+      if (pair && asset.priceUsd != null) {
+        prices.push({
+          pair,
+          price: parseFloat(asset.priceUsd),
+          change24h: Math.round(parseFloat(asset.changePercent24Hr ?? "0") * 100) / 100,
+        });
+      }
+    }
+
+    if (prices.length === 0) return null;
+    return prices;
+  } catch (err: any) {
+    if (err.name !== "AbortError") {
+      log(`CoinCap fetch error: ${err.message}`, "data-provider");
+    }
+    return null;
+  }
+}
+
 async function refreshPrices() {
-  const livePrices = await fetchCoinGeckoPrices();
+  let livePrices = await fetchCoinGeckoPrices();
+  let source = "CoinGecko";
+  if (!livePrices) {
+    log("CoinGecko failed, trying CoinCap...", "prices");
+    livePrices = await fetchCoinCapPrices();
+    source = "CoinCap";
+  }
   if (livePrices) {
     cache = {
       prices: livePrices,
       timestamp: Date.now(),
       isLive: true,
     };
-    log(`Fetched live prices for ${livePrices.length} pairs`, "data-provider");
+    log(`Fetched live prices for ${livePrices.length} pairs from ${source}`, "data-provider");
   } else {
     cache = {
       prices: getSimulatedPrices(),
