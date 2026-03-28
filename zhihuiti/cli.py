@@ -414,6 +414,49 @@ def purge(gene_id: str, db: str):
     mem.close()
 
 
+@main.group()
+def trading():
+    """Trading signal discovery and backtest review (梅教授 workflow)."""
+
+
+@trading.command("search")
+@click.argument("query")
+@click.option("--model", default=None, help="Model name")
+@click.option("--workers", default=4, type=int, help="Max parallel researcher agents")
+def trading_search(query: str, model: str | None, workers: int):
+    """Search for trading signals using the multi-agent pipeline."""
+    from zhihuiti.workflows.trading import TradingWorkflow
+
+    console.print(BANNER, style="bold cyan")
+    wf = TradingWorkflow(model=model, max_workers=workers)
+    wf.search_signals(query)
+
+
+@trading.command("review")
+@click.argument("results_file", required=False)
+@click.option("--model", default=None, help="Model name")
+def trading_review(results_file: str | None, model: str | None):
+    """Analyze TradingView backtest results (paste or provide file)."""
+    from zhihuiti.workflows.trading import TradingWorkflow
+
+    console.print(BANNER, style="bold cyan")
+
+    if results_file:
+        import pathlib
+        pasted = pathlib.Path(results_file).read_text()
+    else:
+        console.print("[dim]Paste your TradingView backtest results below (end with Ctrl-D):[/dim]")
+        import sys as _sys
+        pasted = _sys.stdin.read()
+
+    if not pasted.strip():
+        console.print("[red]No results provided.[/red]")
+        return
+
+    wf = TradingWorkflow(model=model)
+    wf.backtest_review(pasted)
+
+
 def _show_pool(orch) -> None:
     """Show the agent pool status."""
     from rich.table import Table
@@ -1007,6 +1050,138 @@ def knowledge_stats(db: str):
     kb = KnowledgeBase(mem)
     kb.print_report()
     mem.close()
+
+
+@main.group()
+def daemon():
+    """Daemon — run the orchestrator in a long-running loop with checkpointing."""
+
+
+@daemon.command("start")
+@click.argument("goal")
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+@click.option("--model", default=None, help="Model name")
+@click.option("--tools", is_flag=True, help="Enable tool execution")
+@click.option("--max-rounds", default=10, type=int, help="Maximum orchestrator rounds")
+@click.option("--max-tokens", default=0, type=int, help="Token budget (0=unlimited)")
+@click.option("--checkpoint-interval", default=1, type=int, help="Checkpoint every N rounds")
+@click.option("--report-interval", default=3, type=int, help="Write report every N rounds")
+@click.option("--report-dir", default="./reports", help="Directory for progress reports")
+def daemon_start(
+    goal: str, db: str, model: str | None, tools: bool,
+    max_rounds: int, max_tokens: int, checkpoint_interval: int,
+    report_interval: int, report_dir: str,
+):
+    """Start the daemon loop for a goal."""
+    from zhihuiti.daemon import Daemon
+
+    console.print(BANNER, style="bold cyan")
+    d = Daemon(
+        goal=goal, db_path=db, model=model, tools_enabled=tools,
+        max_rounds=max_rounds, max_tokens=max_tokens,
+        checkpoint_interval=checkpoint_interval,
+        report_interval=report_interval, report_dir=report_dir,
+    )
+    d.start()
+
+
+@daemon.command("stop")
+def daemon_stop():
+    """Signal the daemon to stop (writes stop flag to state file)."""
+    import json
+    from pathlib import Path
+
+    state_file = Path(".zhihuiti_daemon.json")
+    if not state_file.exists():
+        console.print("[red]No daemon state found.[/red]")
+        return
+
+    try:
+        with open(state_file) as f:
+            state = json.load(f)
+        state["stop_requested"] = True
+        with open(state_file, "w") as f:
+            json.dump(state, f, indent=2)
+        console.print("[green]Stop signal written.[/green] The daemon will finish its current round and exit.")
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
+
+
+@daemon.command("status")
+def daemon_status():
+    """Show current daemon status from saved state."""
+    from zhihuiti.daemon import Daemon
+
+    state = Daemon.get_status()
+    if not state:
+        console.print("[dim]No daemon state found.[/dim]")
+        return
+
+    console.print(Panel(
+        f"[bold]Daemon ID:[/bold] {state.get('daemon_id', '?')}\n"
+        f"[bold]Goal:[/bold] {state.get('goal', '?')[:80]}\n"
+        f"[bold]Round:[/bold] {state.get('current_round', 0)}/{state.get('max_rounds', '?')}\n"
+        f"[bold]Tokens used:[/bold] {state.get('total_tokens_used', 0)}"
+        + (f" / {state['max_tokens']}" if state.get('max_tokens') else "") + "\n"
+        f"[bold]Started:[/bold] {state.get('started_at', 'N/A')}\n"
+        f"[bold]Saved:[/bold] {state.get('saved_at', 'N/A')}\n"
+        f"[bold]Last checkpoint:[/bold] {state.get('last_checkpoint_id', 'none')}",
+        title="Daemon Status",
+        border_style="cyan",
+    ))
+
+
+@daemon.command("report")
+@click.option("--report-dir", default="./reports", help="Directory for progress reports")
+def daemon_report(report_dir: str):
+    """Generate a progress report from saved daemon state."""
+    from zhihuiti.daemon import Daemon
+
+    state = Daemon.get_status()
+    if not state:
+        console.print("[red]No daemon state found.[/red]")
+        return
+
+    d = Daemon(
+        goal=state.get("goal", ""),
+        db_path=state.get("db_path", "zhihuiti.db"),
+        report_dir=report_dir,
+    )
+    d.daemon_id = state.get("daemon_id", d.daemon_id)
+    d.current_round = state.get("current_round", 0)
+    d.total_tokens_used = state.get("total_tokens_used", 0)
+    d.round_results = state.get("round_results", [])
+    d._started_at = state.get("started_at")
+    d._last_checkpoint_id = state.get("last_checkpoint_id")
+    d.max_rounds = state.get("max_rounds", 10)
+    d.max_tokens = state.get("max_tokens", 0)
+
+    path = d.report()
+    console.print(f"[green]Report written to {path}[/green]")
+
+
+@daemon.command("resume")
+@click.option("--db", default=None, help="Override SQLite database path")
+@click.option("--model", default=None, help="Override model name")
+@click.option("--tools", is_flag=True, default=False, help="Enable tool execution")
+def daemon_resume(db: str | None, model: str | None, tools: bool):
+    """Resume the daemon from the last checkpoint."""
+    from zhihuiti.daemon import Daemon
+
+    console.print(BANNER, style="bold cyan")
+
+    state = Daemon.get_status()
+    if not state:
+        console.print("[red]No daemon state found to resume.[/red]")
+        return
+
+    d = Daemon(
+        goal=state.get("goal", ""),
+        db_path=db or state.get("db_path", "zhihuiti.db"),
+        model=model or state.get("model"),
+        tools_enabled=tools or state.get("tools_enabled", False),
+    )
+    d.resume()
 
 
 @main.group()
