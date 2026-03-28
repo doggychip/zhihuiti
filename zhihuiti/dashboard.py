@@ -778,11 +778,15 @@ class AutoScheduler:
         import time
         import random
         while self.running:
-            # Pick a random goal from the pool each cycle
-            goal = random.choice(self.goals) if self.goals else None
-            if goal and not self.running:
-                break
-            if goal:
+            # Run multiple goals per cycle
+            goals_per_cycle = int(os.environ.get("GOALS_PER_CYCLE", "5"))
+            if not self.goals:
+                time.sleep(self.interval)
+                continue
+            selected = random.sample(self.goals, min(goals_per_cycle, len(self.goals)))
+            for goal in selected:
+                if not self.running:
+                    break
                 try:
                     console.print(f"  [cyan]Auto-run:[/cyan] {goal[:60]}...")
                     self.orch.execute_goal(goal)
