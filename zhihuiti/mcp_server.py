@@ -253,6 +253,40 @@ TOOLS = [
             },
         },
     },
+    {
+        "name": "zhihuiti_universal_diagnose",
+        "description": (
+            "Diagnose any time series using structural pattern detection mapped to "
+            "domain-specific theories from the 378-theory knowledge graph. "
+            "Detects momentum, mean reversion, volatility clustering, and fat tails "
+            "in any numeric data. Domains: crypto, system_perf (server latency, error "
+            "rates), social (cascades, virality), business (revenue, churn), scientific "
+            "(sensor data, experiments). Returns regime classification, detected patterns, "
+            "collision insights with cross-domain analogies, and actionable interpretations."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "values": {
+                    "type": "array",
+                    "items": {"type": "number"},
+                    "description": "Ordered numeric values (oldest first). Minimum 20 data points recommended.",
+                },
+                "domain": {
+                    "type": "string",
+                    "description": "Domain for theory mapping: 'crypto', 'system_perf', 'social', 'business', 'scientific'",
+                    "default": "scientific",
+                    "enum": ["crypto", "system_perf", "social", "business", "scientific"],
+                },
+                "label": {
+                    "type": "string",
+                    "description": "Human-readable label (e.g., 'API latency (ms)', 'DAU count', 'temperature (K)')",
+                    "default": "time series",
+                },
+            },
+            "required": ["values"],
+        },
+    },
 ]
 
 
@@ -444,6 +478,19 @@ def _handle_tool_call(name: str, arguments: dict) -> dict:
 
         diagnosis = diagnose_market(candles, instrument=instrument, book=book)
         return {"content": [{"type": "text", "text": json.dumps(diagnosis.to_dict(), indent=2, ensure_ascii=False)}]}
+
+    # ── Universal Oracle tool ──────────────────────────────────────
+    elif name == "zhihuiti_universal_diagnose":
+        from zhihuiti.universal_oracle import diagnose
+        values = arguments.get("values", [])
+        domain = arguments.get("domain", "scientific")
+        label = arguments.get("label", "time series")
+
+        if not values or len(values) < 5:
+            return {"content": [{"type": "text", "text": "Need at least 5 data points."}], "isError": True}
+
+        result = diagnose(values, domain=domain, label=label)
+        return {"content": [{"type": "text", "text": json.dumps(result.to_dict(), indent=2, ensure_ascii=False)}]}
 
     else:
         return {
