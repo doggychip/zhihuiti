@@ -843,14 +843,15 @@ function ResultsPanel({ jobId, result, loading, onClose
 }
 
 // ── Realm Health Bars ───────────────────────────────────────────
-function RealmHealthBars({ realms }: {realms: typeof DEMO_DATA["realms"];}) {
+function RealmHealthBars({ realms, agents }: {realms: typeof DEMO_DATA["realms"]; agents: Agent[];}) {
   const realmEntries = Object.entries(realms) as [string, typeof realms["research"]][];
   return (
     <div className="flex gap-4 px-6 py-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.01)" }}>
       {realmEntries.map(([key, r]) => {
         const color = REALM_COLORS[key] || "#888";
         const energy = r.budget_allocated > 0 ? r.budget_remaining / r.budget_allocated : 0;
-        const agentHealth = r.agents_active / Math.max(r.agents_active + r.agents_frozen + r.agents_bankrupt, 1);
+        const activeCount = agents.filter(a => a.realm === key && a.life_state === 'active').length;
+        const agentHealth = activeCount / Math.max(activeCount + r.agents_frozen + r.agents_bankrupt, 1);
         const combined = energy * 0.6 + agentHealth * 0.2 + r.avg_score * 0.2;
         return (
           <div key={key} className="flex-1">
@@ -874,7 +875,7 @@ function RealmHealthBars({ realms }: {realms: typeof DEMO_DATA["realms"];}) {
                 ⚡ {r.budget_remaining.toLocaleString()}/{r.budget_allocated.toLocaleString()} ◆
               </span>
               <span className="text-[9px]" style={{ color: "rgba(255,255,255,0.25)" }}>
-                {r.agents_active} active · {r.tasks_completed} tasks
+                {agents.filter(a => a.realm === key && a.life_state === 'active').length} active · {r.tasks_completed} tasks
               </span>
             </div>
           </div>);
@@ -1620,7 +1621,7 @@ export default function ZhihuiTiDashboard() {
       </div>
 
       {/* Realm Health Bars */}
-      <RealmHealthBars realms={data.realms} />
+      <RealmHealthBars realms={data.realms} agents={data.agents} />
 
       <div className="flex" style={{ height: "calc(100vh - 97px)" }}>
         {/* Left sidebar */}
