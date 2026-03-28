@@ -1132,6 +1132,127 @@ function CollisionEngine({ show, onClose }: {show: boolean;onClose: () => void;}
 
 }
 
+// ── Research Outputs Panel ──────────────────────────────────────
+function ResearchOutputsPanel() {
+  const [reports, setReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [knowledgeQuery, setKnowledgeQuery] = useState("");
+  const [knowledgeResults, setKnowledgeResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    fetch("https://zhihuiti.zeabur.app/api/reports")
+      .then(r => r.json())
+      .then(data => {
+        const items = Array.isArray(data) ? data : data?.reports || data?.results || [];
+        setReports(items.sort((a: any, b: any) => (b.score ?? b.avg_score ?? 0) - (a.score ?? a.avg_score ?? 0)).slice(0, 12));
+      })
+      .catch(() => setReports([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const searchKnowledge = useCallback(async () => {
+    if (!knowledgeQuery.trim()) return;
+    setSearching(true);
+    try {
+      const res = await fetch(`https://zhihuiti.zeabur.app/api/knowledge?q=${encodeURIComponent(knowledgeQuery.trim())}`);
+      const data = await res.json();
+      setKnowledgeResults(Array.isArray(data) ? data : data?.results || data?.items || []);
+    } catch {
+      setKnowledgeResults([]);
+    } finally {
+      setSearching(false);
+    }
+  }, [knowledgeQuery]);
+
+  return (
+    <div className="px-4 py-3" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+      <div className="text-xs uppercase tracking-widest mb-3" style={{ color: "rgba(255,255,255,0.3)" }}>📄 Research Outputs</div>
+
+      {/* Knowledge Search */}
+      <div className="flex gap-2 mb-3">
+        <input
+          value={knowledgeQuery}
+          onChange={e => setKnowledgeQuery(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && searchKnowledge()}
+          placeholder="Search knowledge base..."
+          className="flex-1 text-xs px-3 py-1.5 rounded-lg outline-none"
+          style={{
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            color: "#fff"
+          }}
+        />
+        <button
+          onClick={searchKnowledge}
+          disabled={searching || !knowledgeQuery.trim()}
+          className="text-xs px-3 py-1.5 rounded-lg font-medium cursor-pointer transition-all"
+          style={{
+            background: "rgba(99,102,241,0.15)",
+            border: "1px solid rgba(99,102,241,0.3)",
+            color: "#818cf8"
+          }}
+        >
+          {searching ? "..." : "🔍 Search"}
+        </button>
+      </div>
+
+      {/* Knowledge Results */}
+      {knowledgeResults.length > 0 && (
+        <div className="mb-3 space-y-1.5 max-h-32 overflow-y-auto rounded-lg p-2" style={{ background: "rgba(99,102,241,0.05)", border: "1px solid rgba(99,102,241,0.1)" }}>
+          <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "#818cf8" }}>Knowledge Results</div>
+          {knowledgeResults.slice(0, 6).map((item: any, i: number) => (
+            <div key={i} className="text-[11px] py-1 px-1.5 rounded" style={{ background: "rgba(255,255,255,0.02)" }}>
+              <span style={{ color: "rgba(255,255,255,0.8)" }}>
+                {(item.content || item.text || item.title || JSON.stringify(item)).slice(0, 120)}
+                {(item.content || item.text || item.title || "").length > 120 ? "…" : ""}
+              </span>
+              {item.score != null && (
+                <span className="ml-2 font-mono text-[10px]" style={{ color: "#818cf8" }}>{Number(item.score).toFixed(2)}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Reports */}
+      {loading ? (
+        <div className="text-xs py-4 text-center" style={{ color: "rgba(255,255,255,0.2)" }}>Loading reports...</div>
+      ) : reports.length === 0 ? (
+        <div className="text-xs py-4 text-center" style={{ color: "rgba(255,255,255,0.2)" }}>No reports available</div>
+      ) : (
+        <div className="space-y-1.5 max-h-48 overflow-y-auto">
+          {reports.map((r: any, i: number) => {
+            const score = r.score ?? r.avg_score ?? 0;
+            const role = r.role || r.agent_role || r.agent || "—";
+            const content = r.content || r.result || r.output || r.summary || "";
+            return (
+              <div key={i} className="flex items-start gap-2 p-2 rounded-lg" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <div className="flex-shrink-0 w-10 text-center">
+                  <div className="text-xs font-mono font-bold" style={{ color: score >= 0.8 ? "#22c55e" : score >= 0.5 ? "#eab308" : "#ef4444" }}>
+                    {(score * 100).toFixed(0)}
+                  </div>
+                  <div className="text-[8px]" style={{ color: "rgba(255,255,255,0.2)" }}>score</div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: "rgba(167,139,250,0.1)", color: "#a78bfa" }}>
+                      {ROLE_ICONS[role] || "🤖"} {role}
+                    </span>
+                    {r.realm && <span className="text-[9px]" style={{ color: REALM_COLORS[r.realm] || "rgba(255,255,255,0.3)" }}>{r.realm}</span>}
+                  </div>
+                  <div className="text-[11px] leading-relaxed" style={{ color: "rgba(255,255,255,0.6)" }}>
+                    {content.slice(0, 150)}{content.length > 150 ? "…" : ""}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function AgentDetail({ agent, connections, agents, onClose, onSelect
 
