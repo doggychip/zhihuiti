@@ -491,11 +491,39 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
       camera.position.z = Math.max(8, Math.min(80, camera.position.z + e.deltaY * 0.03));
     };
 
+    // Pinch-to-zoom for touch devices
+    let lastPinchDist = 0;
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        lastPinchDist = Math.sqrt(dx * dx + dy * dy);
+      }
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (lastPinchDist > 0) {
+          const delta = lastPinchDist - dist;
+          camera.position.z = Math.max(8, Math.min(80, camera.position.z + delta * 0.08));
+        }
+        lastPinchDist = dist;
+      }
+    };
+    const onTouchEnd = () => { lastPinchDist = 0; };
+
     container.addEventListener("mousedown", onDown);
     container.addEventListener("mousemove", onMove);
     container.addEventListener("mouseup", onUp);
     container.addEventListener("click", onClick);
     container.addEventListener("wheel", onWheel, { passive: false });
+    container.addEventListener("touchstart", onTouchStart, { passive: false });
+    container.addEventListener("touchmove", onTouchMove, { passive: false });
+    container.addEventListener("touchend", onTouchEnd);
 
     const onResize = () => {
       const nw = container.clientWidth, nh = container.clientHeight;
@@ -510,6 +538,9 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
       container.removeEventListener("mouseup", onUp);
       container.removeEventListener("click", onClick);
       container.removeEventListener("wheel", onWheel);
+      container.removeEventListener("touchstart", onTouchStart);
+      container.removeEventListener("touchmove", onTouchMove);
+      container.removeEventListener("touchend", onTouchEnd);
       window.removeEventListener("resize", onResize);
       if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
       renderer.dispose();
