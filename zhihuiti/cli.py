@@ -938,5 +938,136 @@ def criticai_analyze(url: str, db: str, model: str | None):
     orch.execute_goal(goal)
 
 
+@main.group()
+def knowledge():
+    """Knowledge base — ingest, query, and manage knowledge chunks."""
+
+
+@knowledge.command("ingest")
+@click.argument("file_path")
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+@click.option("--tags", default="", help="Comma-separated tags")
+@click.option("--confidence", default=0.5, type=float, help="Default confidence (0-1)")
+def knowledge_ingest(file_path: str, db: str, tags: str, confidence: float):
+    """Ingest a markdown or text file into the knowledge base."""
+    from zhihuiti.knowledge import KnowledgeBase
+    from zhihuiti.memory import Memory
+
+    mem = Memory(db_path=db)
+    kb = KnowledgeBase(mem)
+    tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
+    try:
+        ids = kb.ingest_file(file_path, tags=tag_list, confidence=confidence)
+        console.print(f"  [green]Ingested {len(ids)} chunks[/green] from {file_path}")
+        for chunk_id in ids:
+            console.print(f"    - {chunk_id}")
+    except FileNotFoundError as e:
+        console.print(f"  [red]Error:[/red] {e}")
+    mem.close()
+
+
+@knowledge.command("query")
+@click.argument("text")
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+@click.option("--top-k", default=5, type=int, help="Max results")
+@click.option("--min-confidence", default=0.0, type=float, help="Minimum confidence filter")
+def knowledge_query(text: str, db: str, top_k: int, min_confidence: float):
+    """Search knowledge chunks by keyword relevance."""
+    from zhihuiti.knowledge import KnowledgeBase
+    from zhihuiti.memory import Memory
+
+    mem = Memory(db_path=db)
+    kb = KnowledgeBase(mem)
+    results = kb.query(text, top_k=top_k, min_confidence=min_confidence)
+
+    if not results:
+        console.print("  [dim]No matching chunks found.[/dim]")
+    else:
+        from rich.table import Table
+        table = Table(title=f"Knowledge Query: '{text}'")
+        table.add_column("ID", style="dim")
+        table.add_column("Title")
+        table.add_column("Confidence", justify="right")
+        table.add_column("Preview", max_width=60)
+        for chunk in results:
+            preview = chunk.content[:80].replace("\n", " ")
+            table.add_row(chunk.id, chunk.title, f"{chunk.confidence:.2f}", preview)
+        console.print(table)
+    mem.close()
+
+
+@knowledge.command("stats")
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+def knowledge_stats(db: str):
+    """Show knowledge base statistics."""
+    from zhihuiti.knowledge import KnowledgeBase
+    from zhihuiti.memory import Memory
+
+    mem = Memory(db_path=db)
+    kb = KnowledgeBase(mem)
+    kb.print_report()
+    mem.close()
+
+
+@main.group()
+def experiment():
+    """Experiment Runner — explore variant approaches for a goal."""
+
+
+@experiment.command("run")
+@click.argument("goal")
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+@click.option("--model", default=None, help="Model name")
+@click.option("--variants", default=3, type=int, help="Number of variant approaches to generate")
+@click.option("--tools", is_flag=True, help="Enable tool execution for agents")
+def experiment_run(goal: str, db: str, model: str | None, variants: int, tools: bool):
+    """Generate N variant approaches for a goal, run each, score and rank."""
+    from zhihuiti.experiment import ExperimentRunner
+
+    console.print(BANNER, style="bold cyan")
+
+    runner = ExperimentRunner(db_path=db, model=model, tools_enabled=tools)
+    try:
+        runner.run_experiment(goal, n_variants=variants)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Interrupted.[/yellow]")
+    finally:
+        runner.close()
+
+
+@experiment.command("iterate")
+@click.argument("goal")
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+@click.option("--model", default=None, help="Model name")
+@click.option("--variants", default=3, type=int, help="Initial variants for first run")
+@click.option("--top-k", default=2, type=int, help="Top K approaches to keep as seeds")
+@click.option("--mutations", default=2, type=int, help="Mutations per seed approach")
+@click.option("--iterations", default=1, type=int, help="Number of iteration rounds")
+@click.option("--tools", is_flag=True, help="Enable tool execution for agents")
+def experiment_iterate(
+    goal: str, db: str, model: str | None, variants: int,
+    top_k: int, mutations: int, iterations: int, tools: bool,
+):
+    """Run an initial experiment then iterate — mutate top approaches and re-run."""
+    from zhihuiti.experiment import ExperimentRunner
+
+    console.print(BANNER, style="bold cyan")
+
+    runner = ExperimentRunner(db_path=db, model=model, tools_enabled=tools)
+    try:
+        report = runner.run_experiment(goal, n_variants=variants)
+        for i in range(iterations):
+            console.print(
+                f"\n[bold magenta]--- Iteration {i + 1}/{iterations} ---[/bold magenta]\n"
+            )
+            report = runner.iterate(
+                report, top_k=top_k, mutations_per=mutations,
+            )
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Interrupted.[/yellow]")
+    finally:
+        runner.close()
+
+
 if __name__ == "__main__":
     main()

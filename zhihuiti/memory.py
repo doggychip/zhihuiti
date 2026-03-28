@@ -273,6 +273,22 @@ class Memory:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 resolved_at TIMESTAMP
             );
+
+            -- Knowledge Base: ingested knowledge chunks
+            CREATE TABLE IF NOT EXISTS knowledge_chunks (
+                id TEXT PRIMARY KEY,
+                source TEXT NOT NULL DEFAULT '',
+                title TEXT NOT NULL DEFAULT '',
+                content TEXT NOT NULL,
+                chunk_type TEXT NOT NULL DEFAULT 'text',
+                tags TEXT DEFAULT '[]',
+                confidence REAL DEFAULT 0.5,
+                metadata TEXT DEFAULT '{}',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_source ON knowledge_chunks(source);
+            CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_type ON knowledge_chunks(chunk_type);
         """)
         self.conn.commit()
 
