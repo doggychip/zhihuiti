@@ -16,6 +16,7 @@ from zhihuiti.bloodline import Bloodline
 from zhihuiti.causal import CausalGraph, CausalReasoner, CausalValidator, load_arb_causal_data
 from zhihuiti.circuit_breaker import CircuitBreaker
 from zhihuiti.consolidation import ConsolidationEngine
+from zhihuiti.context_engine import ContextEngine
 from zhihuiti.economy import Economy
 from zhihuiti.judge import Judge
 from zhihuiti.llm import LLM
@@ -91,6 +92,9 @@ class Orchestrator:
             n_accumulated = self.causal_graph.load_from_db(self.memory)
         except Exception:
             pass  # Non-critical
+
+        # Context engine for rich task context and learning extraction
+        self.context_engine = ContextEngine(self.memory)
 
         # Brain Intelligence engines
         self.metacognition = MetacognitionEngine(self.memory, self.llm)
@@ -274,6 +278,15 @@ class Orchestrator:
             if consol_context:
                 task.description = f"{task.description}\n\n{consol_context}"
 
+            # Context engine: assemble rich context from multiple sources
+            with completed_lock:
+                sibling_snap = dict(completed_outputs)
+            ctx_text = self.context_engine.build_context(
+                agent, task, sibling_outputs=sibling_snap, goal_id=goal_id,
+            )
+            if ctx_text:
+                task.description = f"{task.description}\n\n{ctx_text}"
+
             # Brain Intelligence: predict outcome before execution
             prediction = self.prediction.predict(agent, task, goal_id)
 
@@ -328,6 +341,10 @@ class Orchestrator:
 
             # Brain Intelligence: resolve prediction and learn from surprise
             self.prediction.resolve(prediction, actual_score=score, actual_outcome=output[:200])
+
+            # Context engine: extract learnings from high-scoring tasks
+            if score >= 0.7:
+                self.context_engine.extract_learnings(task, agent, score)
 
             # ── Phase 5 (locked): penalties, realm, reward, checkpoint ──
             with _lock:
