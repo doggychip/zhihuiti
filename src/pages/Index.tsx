@@ -2167,6 +2167,9 @@ export default function ZhihuiTiDashboard() {
               </div>
               }
 
+              {/* Research Outputs — hidden in fullscreen */}
+              {!graphFullscreen && <ResearchOutputsPanel />}
+
               {/* AlphaArena Leaderboard — hidden in fullscreen */}
               {!graphFullscreen && agents.length > 0 &&
             <ResizableWidget defaultHeight={220} minHeight={80} maxHeight={600}>
