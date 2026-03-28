@@ -152,3 +152,40 @@ class AgentState:
             self.budget -= amount
             return True
         return False
+
+
+@dataclass
+class KnowledgeChunk:
+    """A chunk of ingested knowledge stored in the knowledge base."""
+
+    id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
+    source: str = ""
+    title: str = ""
+    content: str = ""
+    chunk_type: str = "text"  # text, markdown, code
+    tags: list[str] = field(default_factory=list)
+    confidence: float = 0.5
+    created_at: str = ""
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ExperimentReport:
+    """Results from a single experiment run or iteration."""
+
+    experiment_id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
+    goal: str = ""
+    variants: list[dict[str, Any]] = field(default_factory=list)
+    rankings: list[dict[str, Any]] = field(default_factory=list)
+    best_score: float = 0.0
+    best_approach: str = ""
+    iteration: int = 0
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def summary(self) -> str:
+        n = len(self.variants)
+        return (
+            f"Experiment {self.experiment_id} (iter {self.iteration}): "
+            f"{n} variants, best={self.best_score:.2f} [{self.best_approach[:60]}]"
+        )
