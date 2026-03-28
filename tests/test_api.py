@@ -209,6 +209,118 @@ class TestAPIServer:
 
 
 # ---------------------------------------------------------------------------
+# Oracle API tests
+# ---------------------------------------------------------------------------
+
+class TestOracleAPI:
+    """Integration tests for oracle API endpoints."""
+
+    @pytest.fixture(autouse=True)
+    def setup_server(self):
+        import socket
+        with socket.socket() as s:
+            s.bind(("", 0))
+            self.port = s.getsockname()[1]
+        self.server, self.orch = _start_server(self.port)
+        yield
+        self.server.shutdown()
+
+    def _get(self, path: str) -> tuple[int, dict]:
+        conn = HTTPConnection("127.0.0.1", self.port)
+        conn.request("GET", path)
+        resp = conn.getresponse()
+        data = json.loads(resp.read())
+        conn.close()
+        return resp.status, data
+
+    def _post(self, path: str, body: dict) -> tuple[int, dict]:
+        conn = HTTPConnection("127.0.0.1", self.port)
+        payload = json.dumps(body)
+        conn.request("POST", path, body=payload, headers={"Content-Type": "application/json"})
+        resp = conn.getresponse()
+        data = json.loads(resp.read())
+        conn.close()
+        return resp.status, data
+
+    def test_oracle_domains(self):
+        status, data = self._get("/api/oracle/domains")
+        assert status == 200
+        assert "domains" in data
+        assert "crypto" in data["domains"]
+        assert "system_perf" in data["domains"]
+        assert "social" in data["domains"]
+        assert "business" in data["domains"]
+        assert "scientific" in data["domains"]
+
+    def test_oracle_theory_stats(self):
+        status, data = self._get("/api/oracle/theories/stats")
+        assert status == 200
+        assert "theories" in data
+        assert data["theories"] > 200
+        assert "collisions" in data
+        assert "domains" in data
+
+    def test_oracle_theory_search(self):
+        status, data = self._get("/api/oracle/theories/search?q=boltzmann&limit=5")
+        assert status == 200
+        assert "results" in data
+        assert len(data["results"]) > 0
+        assert "id" in data["results"][0]
+
+    def test_oracle_theory_search_empty_query(self):
+        status, data = self._get("/api/oracle/theories/search")
+        assert status == 400
+
+    def test_oracle_diagnose_system_perf(self):
+        # Simulate increasing latency
+        values = [50 + i * 2 for i in range(30)]
+        status, data = self._post("/api/oracle/diagnose", {
+            "values": values,
+            "domain": "system_perf",
+            "label": "API latency (ms)",
+        })
+        assert status == 200
+        assert data["domain"] == "system_perf"
+        assert data["regime"] in ("trending_up", "trending_down", "mean_reverting", "volatile", "quiet")
+        assert "patterns" in data
+        assert "collision_insights" in data
+        assert "regime_interpretation" in data
+
+    def test_oracle_diagnose_social(self):
+        values = [100 * (1.05 ** i) for i in range(30)]
+        status, data = self._post("/api/oracle/diagnose", {
+            "values": values,
+            "domain": "social",
+            "label": "daily shares",
+        })
+        assert status == 200
+        assert data["domain"] == "social"
+
+    def test_oracle_diagnose_too_few_values(self):
+        status, data = self._post("/api/oracle/diagnose", {
+            "values": [1, 2, 3],
+            "domain": "scientific",
+        })
+        assert status == 400
+
+    def test_oracle_diagnose_unknown_domain(self):
+        status, data = self._post("/api/oracle/diagnose", {
+            "values": [1.0] * 20,
+            "domain": "nonexistent",
+        })
+        assert status == 400
+        assert "available" in data
+
+    def test_oracle_diagnose_default_domain(self):
+        values = [100 + i for i in range(30)]
+        status, data = self._post("/api/oracle/diagnose", {
+            "values": values,
+        })
+        assert status == 200
+        assert data["domain"] == "scientific"
+
+
+# ---------------------------------------------------------------------------
 # MCP server tests
 # ---------------------------------------------------------------------------
 
