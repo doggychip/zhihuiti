@@ -357,7 +357,7 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
       const lineMat = new THREE.LineBasicMaterial({
         color: lineColor,
         transparent: true,
-        opacity: 0.12,
+        opacity: 0.2,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
       });
@@ -369,11 +369,11 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
 
     // Token particles flowing along connections
     const tokenEntries: typeof tokensRef.current = [];
-    const maxTokens = Math.min(visibleConns.length * 2, 120);
+    const maxTokens = Math.min(visibleConns.length * 2, 300);
     for (let i = 0; i < maxTokens; i++) {
       const conn = visibleConns[i % visibleConns.length];
       const color = CONN_COLORS[conn.type] || "#aaa";
-      const geo = new THREE.SphereGeometry(0.06, 6, 6);
+      const geo = new THREE.SphereGeometry(0.08, 6, 6);
       const mat = new THREE.MeshBasicMaterial({
         color, transparent: true, opacity: 0.8,
         blending: THREE.AdditiveBlending, depthWrite: false,
@@ -384,7 +384,7 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
       tokenEntries.push({
         mesh, from: conn.from, to: conn.to,
         progress: Math.random(),
-        speed: 0.003 + Math.random() * 0.006,
+        speed: 0.005 + Math.random() * 0.008,
         color,
       });
     }
@@ -437,7 +437,7 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
           mat.opacity = connected ? 0.7 + Math.sin(t * 4) * 0.15 : 0.03;
           mat.linewidth = connected ? 2 : 1;
         } else {
-          mat.opacity = 0.12;
+          mat.opacity = 0.2;
         }
       });
 
@@ -456,7 +456,7 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
             mat.opacity = isConnected ? 0.9 : 0.05;
             tok.mesh.scale.setScalar(isConnected ? 1.8 : 0.6);
           } else {
-            mat.opacity = 0.55 + Math.sin(tok.progress * Math.PI) * 0.3;
+            mat.opacity = 0.8 + Math.sin(tok.progress * Math.PI) * 0.2;
             tok.mesh.scale.setScalar(1);
           }
         }
