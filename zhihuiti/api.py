@@ -1,14 +1,21 @@
 """HTTP API server — exposes zhihuiti orchestrator as a backend service.
 
-Designed for integration with K-Dense BYOK and other agent frameworks.
+Designed for integration with K-Dense BYOK, Big Brain, and other agent frameworks.
 Runs on port 8377 (慧体) by default.
 
 Endpoints:
-  POST /api/goals          — submit a goal for multi-agent execution
-  GET  /api/goals/:id      — poll goal status and results
-  GET  /api/agents         — list all agents with scores/budgets
-  GET  /api/status         — system health and economy snapshot
-  POST /api/tasks          — submit a single task (no decomposition)
+  POST /api/goals                   — submit a goal for multi-agent execution
+  GET  /api/goals/:id               — poll goal status and results
+  GET  /api/agents                  — list all agents with scores/budgets
+  GET  /api/status                  — system health and economy snapshot
+  POST /api/tasks                   — submit a single task (no decomposition)
+
+  Oracle endpoints:
+  POST /api/oracle/diagnose         — universal time series diagnosis
+  GET  /api/oracle/crypto/:instrument — live crypto diagnosis (fetches data)
+  GET  /api/oracle/domains          — list available domain profiles
+  GET  /api/oracle/theories/stats   — knowledge graph statistics
+  GET  /api/oracle/theories/search  — search theories by keyword
 """
 
 from __future__ import annotations
@@ -47,6 +54,51 @@ def _read_body(handler: BaseHTTPRequestHandler) -> dict:
     return json.loads(raw)
 
 
+def _fetch_crypto_candles(instrument: str, timeframe: str) -> list[dict]:
+    """Fetch OHLCV candles from Crypto.com public API."""
+    try:
+        import httpx
+        resp = httpx.get(
+            "https://api.crypto.com/exchange/v1/public/get-candlestick",
+            params={"instrument_name": instrument, "timeframe": timeframe},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        raw = data.get("result", {}).get("data", data.get("data", []))
+        return [
+            {
+                "open": c.get("o", c.get("open", 0)),
+                "high": c.get("h", c.get("high", 0)),
+                "low": c.get("l", c.get("low", 0)),
+                "close": c.get("c", c.get("close", 0)),
+                "volume": c.get("v", c.get("volume", 0)),
+            }
+            for c in raw
+        ]
+    except Exception:
+        return []
+
+
+def _fetch_crypto_book(instrument: str) -> dict | None:
+    """Fetch order book from Crypto.com public API."""
+    try:
+        import httpx
+        resp = httpx.get(
+            "https://api.crypto.com/exchange/v1/public/get-book",
+            params={"instrument_name": instrument, "depth": 20},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        result = data.get("result", {}).get("data", [data.get("result", {})])
+        if isinstance(result, list) and result:
+            result = result[0]
+        return {"bids": result.get("bids", []), "asks": result.get("asks", [])}
+    except Exception:
+        return None
+
+
 def create_api_handler(orch):
     """Create a request handler class bound to the given Orchestrator instance."""
 
@@ -60,6 +112,7 @@ def create_api_handler(orch):
         def do_GET(self):
             parsed = urlparse(self.path)
             path = parsed.path.rstrip("/")
+            qs = parse_qs(parsed.query)
 
             if path == "/api/status":
                 self._handle_status()
@@ -68,6 +121,19 @@ def create_api_handler(orch):
             elif path.startswith("/api/goals/"):
                 goal_id = path.split("/")[-1]
                 self._handle_get_goal(goal_id)
+            elif path.startswith("/api/oracle/crypto/"):
+                instrument = path.split("/")[-1]
+                timeframe = qs.get("timeframe", ["4h"])[0]
+                include_book = qs.get("book", ["0"])[0] in ("1", "true")
+                self._handle_oracle_crypto(instrument, timeframe, include_book)
+            elif path == "/api/oracle/domains":
+                self._handle_oracle_domains()
+            elif path == "/api/oracle/theories/stats":
+                self._handle_oracle_theory_stats()
+            elif path == "/api/oracle/theories/search":
+                query = qs.get("q", [""])[0]
+                limit = int(qs.get("limit", ["10"])[0])
+                self._handle_oracle_theory_search(query, limit)
             elif path == "/health":
                 _json_response(self, {"status": "ok", "service": "zhihuiti"})
             else:
@@ -81,6 +147,8 @@ def create_api_handler(orch):
                 self._handle_create_goal()
             elif path == "/api/tasks":
                 self._handle_single_task()
+            elif path == "/api/oracle/diagnose":
+                self._handle_oracle_diagnose()
             else:
                 _json_response(self, {"error": "not found"}, 404)
 
@@ -209,6 +277,90 @@ def create_api_handler(orch):
             except Exception as e:
                 _json_response(self, {"error": str(e)}, 500)
 
+        # ── Oracle endpoints ──────────────────────────────────────
+
+        def _handle_oracle_diagnose(self):
+            """POST /api/oracle/diagnose — universal time series diagnosis.
+
+            Body: {"values": [1.0, 2.0, ...], "domain": "system_perf", "label": "latency"}
+            """
+            try:
+                body = _read_body(self)
+                values = body.get("values", [])
+                if not values or len(values) < 5:
+                    _json_response(self, {"error": "need at least 5 data points in 'values'"}, 400)
+                    return
+                domain = body.get("domain", "scientific")
+                label = body.get("label", "time series")
+
+                from zhihuiti.universal_oracle import diagnose, DOMAINS
+                if domain not in DOMAINS:
+                    _json_response(self, {"error": f"unknown domain: {domain}", "available": list(DOMAINS.keys())}, 400)
+                    return
+
+                result = diagnose(values, domain=domain, label=label)
+                _json_response(self, result.to_dict())
+            except Exception as e:
+                _json_response(self, {"error": str(e)}, 500)
+
+        def _handle_oracle_crypto(self, instrument: str, timeframe: str, include_book: bool):
+            """GET /api/oracle/crypto/:instrument — live crypto diagnosis."""
+            try:
+                from zhihuiti.crypto_oracle import diagnose_market
+
+                candles = _fetch_crypto_candles(instrument, timeframe)
+                if not candles:
+                    _json_response(self, {"error": f"no candle data for {instrument} ({timeframe})"}, 404)
+                    return
+
+                book = None
+                if include_book:
+                    book = _fetch_crypto_book(instrument)
+
+                diagnosis = diagnose_market(candles, instrument=instrument, book=book)
+                _json_response(self, diagnosis.to_dict())
+            except Exception as e:
+                _json_response(self, {"error": str(e)}, 500)
+
+        def _handle_oracle_domains(self):
+            """GET /api/oracle/domains — list available domain profiles."""
+            try:
+                from zhihuiti.universal_oracle import DOMAINS
+                domains = {}
+                for key, profile in DOMAINS.items():
+                    domains[key] = {
+                        "name": profile.name,
+                        "description": profile.description,
+                        "pattern_count": len(profile.pattern_theories),
+                        "regime_count": len(profile.regime_theories),
+                    }
+                _json_response(self, {"domains": domains})
+            except Exception as e:
+                _json_response(self, {"error": str(e)}, 500)
+
+        def _handle_oracle_theory_stats(self):
+            """GET /api/oracle/theories/stats — knowledge graph statistics."""
+            try:
+                from zhihuiti.theory_intelligence import get_graph
+                graph = get_graph()
+                _json_response(self, graph.get_stats())
+            except Exception as e:
+                _json_response(self, {"error": str(e)}, 500)
+
+        def _handle_oracle_theory_search(self, query: str, limit: int):
+            """GET /api/oracle/theories/search?q=keyword — search theories."""
+            try:
+                if not query:
+                    _json_response(self, {"error": "query parameter 'q' is required"}, 400)
+                    return
+                from zhihuiti.theory_intelligence import get_graph
+                graph = get_graph()
+                results = graph.search_theories(query, limit=min(limit, 50))
+                compact = [{"id": r["id"], "name": r.get("name", ""), "domain": r.get("domain", "")} for r in results]
+                _json_response(self, {"results": compact, "count": len(compact)})
+            except Exception as e:
+                _json_response(self, {"error": str(e)}, 500)
+
     return ZhihuiTiAPIHandler
 
 
@@ -223,11 +375,16 @@ def serve(port: int = 8377, db_path: str = "zhihuiti.db", model: str | None = No
     handler = create_api_handler(orch)
     server = HTTPServer(("0.0.0.0", port), handler)
 
-    console.print(f"[green]✓[/green] Listening on http://0.0.0.0:{port}")
-    console.print(f"  POST /api/goals   — submit goal for multi-agent execution")
-    console.print(f"  POST /api/tasks   — execute single task")
-    console.print(f"  GET  /api/agents  — list agents")
-    console.print(f"  GET  /api/status  — system health")
+    console.print(f"[green]Listening on http://0.0.0.0:{port}[/green]")
+    console.print(f"  POST /api/goals                    — submit goal")
+    console.print(f"  POST /api/tasks                    — execute single task")
+    console.print(f"  GET  /api/agents                   — list agents")
+    console.print(f"  GET  /api/status                   — system health")
+    console.print(f"  POST /api/oracle/diagnose           — universal time series diagnosis")
+    console.print(f"  GET  /api/oracle/crypto/:instrument — live crypto diagnosis")
+    console.print(f"  GET  /api/oracle/domains            — list domain profiles")
+    console.print(f"  GET  /api/oracle/theories/stats     — knowledge graph stats")
+    console.print(f"  GET  /api/oracle/theories/search    — search theories")
     console.print()
 
     try:
