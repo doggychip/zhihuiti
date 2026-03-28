@@ -68,14 +68,15 @@ def _term_freq(tokens: list[str]) -> dict[str, float]:
 
 
 def _idf(term: str, doc_token_sets: list[set[str]]) -> float:
-    """Compute inverse document frequency for a term across documents."""
+    """Compute smoothed inverse document frequency for a term across documents."""
     n = len(doc_token_sets)
     if n == 0:
         return 0.0
     df = sum(1 for doc in doc_token_sets if term in doc)
     if df == 0:
         return 0.0
-    return math.log(n / df)
+    # Smoothed IDF: always positive even with single document
+    return math.log(1 + n / df)
 
 
 def _tfidf_score(query_tokens: list[str], doc_tokens: list[str],
