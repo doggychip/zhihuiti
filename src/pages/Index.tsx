@@ -1014,15 +1014,24 @@ function CollisionEngine({ show, onClose }: {show: boolean;onClose: () => void;}
   const [result, setResult] = useState<CollisionResult | null>(null);
   const [animating, setAnimating] = useState(false);
 
-  const runCollision = () => {
+  const runCollision = async () => {
     const a = THEORIES.find((t) => t.id === theoryA)!;
     const b = THEORIES.find((t) => t.id === theoryB)!;
     setAnimating(true);
     setResult(null);
-    setTimeout(() => {
+    try {
+      const res = await fetch("https://zhihuiti.zeabur.app/api/collide", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goal: "collide", theory_a: a.id, theory_b: b.id }),
+      });
+      const data = await res.json();
+      setResult(data);
+    } catch {
       setResult(collideTheories(a, b));
+    } finally {
       setAnimating(false);
-    }, 800);
+    }
   };
 
   if (!show) return null;
