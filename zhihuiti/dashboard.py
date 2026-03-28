@@ -789,9 +789,24 @@ class AutoScheduler:
                     break
                 try:
                     console.print(f"  [cyan]Auto-run:[/cyan] {goal[:60]}...")
-                    self.orch.execute_goal(goal)
+                    result = self.orch.execute_goal(goal)
                     self.run_count += 1
                     self.last_run = time.time()
+
+                    # Extract learnings from completed goal results
+                    if hasattr(self.orch, 'context_engine'):
+                        for task_result in result.get("tasks", []):
+                            score = task_result.get("score", 0)
+                            if score >= 0.7:
+                                task_id = task_result.get("task", "")
+                                agent_id = task_result.get("agent_id", "")
+                                # Retrieve task and agent objects if available
+                                task_obj = self.orch.tasks.get(task_id)
+                                agent_obj = self.orch.agent_manager.agents.get(agent_id)
+                                if task_obj and agent_obj:
+                                    self.orch.context_engine.extract_learnings(
+                                        task_obj, agent_obj, score,
+                                    )
                 except Exception as e:
                     console.print(f"  [red]Auto-run failed:[/red] {e}")
 
