@@ -486,10 +486,16 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
       if (hits.length) onSelect(hits[0].object.userData.agentId);
     };
 
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      camera.position.z = Math.max(8, Math.min(80, camera.position.z + e.deltaY * 0.03));
+    };
+
     container.addEventListener("mousedown", onDown);
     container.addEventListener("mousemove", onMove);
     container.addEventListener("mouseup", onUp);
     container.addEventListener("click", onClick);
+    container.addEventListener("wheel", onWheel, { passive: false });
 
     const onResize = () => {
       const nw = container.clientWidth, nh = container.clientHeight;
@@ -503,6 +509,7 @@ function ThreeGraph({ agents, connections, onSelect, selectedId, events, showZhi
       container.removeEventListener("mousemove", onMove);
       container.removeEventListener("mouseup", onUp);
       container.removeEventListener("click", onClick);
+      container.removeEventListener("wheel", onWheel);
       window.removeEventListener("resize", onResize);
       if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
       renderer.dispose();
