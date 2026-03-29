@@ -1751,7 +1751,7 @@ export default function ZhihuiTiDashboard() {
       </div>
 
       {/* Realm Health Bars */}
-      <RealmHealthBars realms={data.realms} agents={data.agents} />
+      <RealmHealthBars realms={data.realms || {} as any} agents={data.agents || []} />
 
       <div className="flex" style={{ height: "calc(100vh - 97px)" }}>
         {/* Left sidebar */}
