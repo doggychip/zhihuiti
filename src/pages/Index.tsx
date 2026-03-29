@@ -1594,16 +1594,16 @@ export default function ZhihuiTiDashboard() {
   const mem = data.memory || {} as any;
   const ins = data.inspection || {} as any;
   const cb = data.circuit_breaker || {} as any;
-  const bh = data.behavior;
-  const au = data.auctions;
-  const ln = data.loans;
-  const mk = data.market;
-  const ft = data.futures;
-  const ar = data.arbitration;
-  const fa = data.factory;
-  const msg = data.messaging;
+  const bh = data.behavior || {} as any;
+  const au = data.auctions || {} as any;
+  const ln = data.loans || {} as any;
+  const mk = data.market || {} as any;
+  const ft = data.futures || {} as any;
+  const ar = data.arbitration || {} as any;
+  const fa = data.factory || {} as any;
+  const msg = data.messaging || {} as any;
   const goals = data.goal_history || [];
-  const bl = data.bloodline;
+  const bl = data.bloodline || {} as any;
   const risk = data.risk || {} as any;
 
   const econHistory = Array.from({ length: 20 }, (_, i) => ({
