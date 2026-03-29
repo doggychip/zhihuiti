@@ -1969,9 +1969,9 @@ export default function ZhihuiTiDashboard() {
         {/* Center — 3D Graph */}
         {(() => {
           const graphContent =
-          <div className={`flex-1 flex flex-col relative ${graphFullscreen ? "" : ""}`}
+          <div className={`flex-1 flex flex-col relative`}
           style={graphFullscreen ? { position: "fixed", inset: 0, zIndex: 9999, background: "#08080f" } : { overflowY: "auto" }}>
-              <ResizableWidget defaultHeight={400} minHeight={150} maxHeight={800} className="relative" style={{ flexShrink: 0 }}>
+              <ResizableWidget defaultHeight={graphFullscreen ? undefined : 400} minHeight={150} maxHeight={graphFullscreen ? 99999 : 800} className="relative" style={graphFullscreen ? { flex: 1, height: "100%" } : { flexShrink: 0 }}>
                 <ThreeGraph agents={agents} connections={connections} onSelect={handleSelect} selectedId={selected} events={events} showZhihuiti={showZhihuiti} showHedgeFund={showHedgeFund} lodCount={lodCount} />
                 {/* Fullscreen toggle */}
                 <button
