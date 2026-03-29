@@ -9,6 +9,10 @@ import {
   BarChart3, ArrowUpDown, RefreshCw, Search,
 } from "lucide-react";
 
+// ── Oracle API base URL ───────────────────────────────────────────────────
+const ORACLE_API = "https://zhihuiti-oracle.zeabur.app";
+function oracleUrl(path: string) { return `${ORACLE_API}${path}`; }
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 interface ScanResult {
@@ -211,7 +215,7 @@ function CollisionCard({ ci }: { ci: CollisionInsight }) {
 
 function DetailPanel({ instrument }: { instrument: string }) {
   const { data, isLoading } = useQuery<CryptoDiagnosis>({
-    queryKey: [`/api/oracle/crypto/${instrument}`],
+    queryKey: [oracleUrl(`/api/oracle/crypto/${instrument}`)],
     enabled: !!instrument,
   });
 
@@ -286,12 +290,12 @@ export default function OraclePage() {
     transitions: Transition[];
     count: number;
   }>({
-    queryKey: ["/api/oracle/scan"],
+    queryKey: [oracleUrl("/api/oracle/scan")],
     refetchInterval: 60000, // auto-refresh every 60s
   });
 
   const { data: statsData } = useQuery<any>({
-    queryKey: ["/api/oracle/theories/stats"],
+    queryKey: [oracleUrl("/api/oracle/theories/stats")],
   });
 
   const results = scanData?.results ?? [];
