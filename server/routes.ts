@@ -25,6 +25,34 @@ import { getAllProducts, getProduct, createProduct } from "./products/registry";
 import { getCurrentPrices } from "./core/dataProvider";
 import { getPriceHistory } from "./core/priceHistory";
 
+/**
+ * Proxy a request to the zhihuiti Python API server.
+ *
+ * Set ZHIHUITI_API_URL env var to the base URL of the zhihuiti API server.
+ * Example: ZHIHUITI_API_URL=https://your-zhihuiti.fly.dev
+ *
+ * Falls back to http://localhost:8377 for local development.
+ */
+const ZHIHUITI_API = (process.env.ZHIHUITI_API_URL || "http://localhost:8377").replace(/\/$/, "");
+
+async function oracleProxy(path: string, options?: { method?: string; body?: any }): Promise<any> {
+  const url = `${ZHIHUITI_API}${path}`;
+  const method = options?.method || "GET";
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+
+  const fetchOptions: RequestInit = { method, headers };
+  if (options?.body) {
+    fetchOptions.body = JSON.stringify(options.body);
+  }
+
+  const resp = await fetch(url, fetchOptions);
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`zhihuiti API ${resp.status}: ${text.slice(0, 200)}`);
+  }
+  return resp.json();
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
@@ -315,6 +343,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
+    }
+  });
+
+  // === ORACLE ===
+  // Proxied to zhihuiti Python API server (ZHIHUITI_API_URL env var)
+
+  app.get("/api/oracle/scan", async (req, res) => {
+    try {
+      const qs = new URLSearchParams();
+      if (req.query.timeframe) qs.set("timeframe", req.query.timeframe as string);
+      if (req.query.pairs) qs.set("pairs", req.query.pairs as string);
+      const result = await oracleProxy(`/api/oracle/scan?${qs}`);
+      res.json(result);
+    } catch (err: any) {
+      res.status(502).json({ error: `Oracle unavailable: ${err.message}` });
+    }
+  });
+
+  app.get("/api/oracle/crypto/:instrument", async (req, res) => {
+    try {
+      const qs = new URLSearchParams();
+      if (req.query.timeframe) qs.set("timeframe", req.query.timeframe as string);
+      if (req.query.book) qs.set("book", req.query.book as string);
+      const result = await oracleProxy(`/api/oracle/crypto/${req.params.instrument}?${qs}`);
+      res.json(result);
+    } catch (err: any) {
+      res.status(502).json({ error: `Oracle unavailable: ${err.message}` });
+    }
+  });
+
+  app.get("/api/oracle/domains", async (_req, res) => {
+    try {
+      res.json(await oracleProxy("/api/oracle/domains"));
+    } catch (err: any) {
+      res.status(502).json({ error: `Oracle unavailable: ${err.message}` });
+    }
+  });
+
+  app.get("/api/oracle/theories/stats", async (_req, res) => {
+    try {
+      res.json(await oracleProxy("/api/oracle/theories/stats"));
+    } catch (err: any) {
+      res.status(502).json({ error: `Oracle unavailable: ${err.message}` });
+    }
+  });
+
+  app.get("/api/oracle/theories/search", async (req, res) => {
+    try {
+      const q = req.query.q as string;
+      if (!q) return res.status(400).json({ error: "query parameter 'q' is required" });
+      const limit = req.query.limit || "10";
+      res.json(await oracleProxy(`/api/oracle/theories/search?q=${encodeURIComponent(q)}&limit=${limit}`));
+    } catch (err: any) {
+      res.status(502).json({ error: `Oracle unavailable: ${err.message}` });
+    }
+  });
+
+  app.post("/api/oracle/diagnose", async (req, res) => {
+    try {
+      const { values, domain, label } = req.body;
+      if (!values || !Array.isArray(values) || values.length < 5) {
+        return res.status(400).json({ error: "need at least 5 data points in 'values'" });
+      }
+      const result = await oracleProxy("/api/oracle/diagnose", {
+        method: "POST",
+        body: { values, domain: domain || "scientific", label: label || "time series" },
+      });
+      res.json(result);
+    } catch (err: any) {
+      res.status(502).json({ error: `Oracle unavailable: ${err.message}` });
+    }
+  });
+
+  app.get("/api/oracle/summary", async (_req, res) => {
+    try {
+      res.json(await oracleProxy("/api/oracle/summary"));
+    } catch (err: any) {
+      res.status(502).json({ error: `Oracle unavailable: ${err.message}` });
+    }
+  });
+
+  app.get("/api/oracle/transitions", async (req, res) => {
+    try {
+      const qs = new URLSearchParams();
+      if (req.query.instrument) qs.set("instrument", req.query.instrument as string);
+      if (req.query.limit) qs.set("limit", req.query.limit as string);
+      res.json(await oracleProxy(`/api/oracle/transitions?${qs}`));
+    } catch (err: any) {
+      res.status(502).json({ error: `Oracle unavailable: ${err.message}` });
+    }
+  });
+
+  app.get("/api/oracle/history/:instrument", async (req, res) => {
+    try {
+      const limit = req.query.limit || "50";
+      res.json(await oracleProxy(`/api/oracle/history/${req.params.instrument}?limit=${limit}`));
+    } catch (err: any) {
+      res.status(502).json({ error: `Oracle unavailable: ${err.message}` });
     }
   });
 
