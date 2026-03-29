@@ -1736,7 +1736,7 @@ export default function ZhihuiTiDashboard() {
           <div>
             <div className="text-sm font-bold tracking-wide">智慧体 ZHIHUITI</div>
             <div className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
-              Autonomous Multi-Agent Ecosystem · {agents.length} agents
+              Autonomous Multi-Agent Ecosystem · {coreAgents.filter(a => a.alive).length} core + {alphaArenaAgents.length} AlphaArena agents
               {!live && <span className="ml-2" style={{ color: "#eab308" }}>(demo mode)</span>}
             </div>
           </div>
