@@ -1590,7 +1590,7 @@ export default function ZhihuiTiDashboard() {
   const selectedAgent = agents.find((a) => a.id === selected);
   const selectedConns = connections.filter((c) => c.from === selected || c.to === selected);
 
-  const econ = data.economy;
+  const econ = data.economy || {} as any;
   const mem = data.memory;
   const ins = data.inspection;
   const cb = data.circuit_breaker;
