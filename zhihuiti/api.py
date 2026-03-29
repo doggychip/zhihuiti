@@ -16,6 +16,10 @@ Endpoints:
   GET  /api/oracle/domains          — list available domain profiles
   GET  /api/oracle/theories/stats   — knowledge graph statistics
   GET  /api/oracle/theories/search  — search theories by keyword
+  GET  /api/oracle/scan             — multi-pair market scan
+  GET  /api/oracle/history/:instrument — regime history for an instrument
+  GET  /api/oracle/transitions      — recent regime transitions
+  GET  /api/oracle/summary          — current regime across all instruments
 """
 
 from __future__ import annotations
@@ -34,6 +38,20 @@ console = Console()
 # In-memory store for async goal execution
 _goals: dict[str, dict] = {}
 _goals_lock = threading.Lock()
+
+# Lazy-initialized regime history tracker
+_history = None
+_history_lock = threading.Lock()
+
+
+def _get_history():
+    global _history
+    if _history is None:
+        with _history_lock:
+            if _history is None:
+                from zhihuiti.scanner import RegimeHistory
+                _history = RegimeHistory()
+    return _history
 
 
 def _json_response(handler: BaseHTTPRequestHandler, data: Any, status: int = 200):
@@ -134,6 +152,20 @@ def create_api_handler(orch):
                 query = qs.get("q", [""])[0]
                 limit = int(qs.get("limit", ["10"])[0])
                 self._handle_oracle_theory_search(query, limit)
+            elif path == "/api/oracle/scan":
+                timeframe = qs.get("timeframe", ["4h"])[0]
+                pairs = qs.get("pairs", [None])[0]
+                self._handle_oracle_scan(timeframe, pairs)
+            elif path.startswith("/api/oracle/history/"):
+                instrument = path.split("/")[-1]
+                limit = int(qs.get("limit", ["50"])[0])
+                self._handle_oracle_history(instrument, limit)
+            elif path == "/api/oracle/transitions":
+                instrument = qs.get("instrument", [None])[0]
+                limit = int(qs.get("limit", ["20"])[0])
+                self._handle_oracle_transitions(instrument, limit)
+            elif path == "/api/oracle/summary":
+                self._handle_oracle_summary()
             elif path == "/health":
                 _json_response(self, {"status": "ok", "service": "zhihuiti"})
             else:
@@ -344,6 +376,53 @@ def create_api_handler(orch):
                 from zhihuiti.theory_intelligence import get_graph
                 graph = get_graph()
                 _json_response(self, graph.get_stats())
+            except Exception as e:
+                _json_response(self, {"error": str(e)}, 500)
+
+        def _handle_oracle_scan(self, timeframe: str, pairs: str | None):
+            """GET /api/oracle/scan — scan multiple pairs, rank by signal."""
+            try:
+                from zhihuiti.scanner import scan_instruments, DEFAULT_PAIRS
+
+                instruments = pairs.split(",") if pairs else DEFAULT_PAIRS
+                results = scan_instruments(instruments=instruments, timeframe=timeframe)
+
+                # Record to history and detect transitions
+                history = _get_history()
+                transitions = history.record_scan(results)
+
+                _json_response(self, {
+                    "results": [r.to_dict() for r in results],
+                    "count": len(results),
+                    "transitions": [t.to_dict() for t in transitions],
+                })
+            except Exception as e:
+                _json_response(self, {"error": str(e)}, 500)
+
+        def _handle_oracle_history(self, instrument: str, limit: int):
+            """GET /api/oracle/history/:instrument — regime history."""
+            try:
+                history = _get_history()
+                snapshots = history.get_history(instrument, limit=limit)
+                _json_response(self, {"instrument": instrument, "snapshots": snapshots, "count": len(snapshots)})
+            except Exception as e:
+                _json_response(self, {"error": str(e)}, 500)
+
+        def _handle_oracle_transitions(self, instrument: str | None, limit: int):
+            """GET /api/oracle/transitions — recent regime transitions."""
+            try:
+                history = _get_history()
+                transitions = history.get_transitions(instrument=instrument, limit=limit)
+                _json_response(self, {"transitions": transitions, "count": len(transitions)})
+            except Exception as e:
+                _json_response(self, {"error": str(e)}, 500)
+
+        def _handle_oracle_summary(self):
+            """GET /api/oracle/summary — current regime per instrument."""
+            try:
+                history = _get_history()
+                summary = history.get_summary()
+                _json_response(self, {"instruments": summary, "count": len(summary)})
             except Exception as e:
                 _json_response(self, {"error": str(e)}, 500)
 
