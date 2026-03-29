@@ -6,3 +6,8 @@ dist/
 *.db-shm
 *.db-wal
 .anvil/
+__pycache__/
+*.egg-info/
+*.pyc
+*.html
+*.png
