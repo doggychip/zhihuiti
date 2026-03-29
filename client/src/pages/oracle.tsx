@@ -278,9 +278,12 @@ function CollisionCard({ ci }: { ci: CollisionInsight }) {
   );
 }
 
-function DetailPanel({ instrument }: { instrument: string }) {
+function DetailPanel({ instrument, domain }: { instrument: string; domain: DomainTab }) {
+  const endpoint = domain === "crypto"
+    ? `/api/oracle/crypto/${instrument}`
+    : `/api/oracle/instrument/${instrument}`;
   const { data, isLoading } = useQuery<CryptoDiagnosis>({
-    queryKey: [oracleUrl(`/api/oracle/crypto/${instrument}`)],
+    queryKey: [oracleUrl(endpoint)],
     enabled: !!instrument,
   });
 
@@ -747,7 +750,7 @@ export default function OraclePage() {
                   {selected ? `${selected.replace("_USDT", "").replace("=X", "")} Analysis` : "Instrument Detail"}
                 </h2>
                 {selected ? (
-                  <DetailPanel instrument={selected} />
+                  <DetailPanel instrument={selected} domain={activeTab} />
                 ) : (
                   <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                     <Search className="w-8 h-8 mb-2 opacity-40" />
