@@ -50,6 +50,12 @@ def _read_body(handler: BaseHTTPRequestHandler) -> dict:
 _history = None
 _history_lock = threading.Lock()
 
+# In-memory alert + snapshot stores
+_alerts: list[dict] = []
+_alerts_lock = threading.Lock()
+_prev_snapshots: list = []
+_prev_lock = threading.Lock()
+
 
 def _get_history():
     global _history
@@ -142,6 +148,19 @@ class OracleHandler(BaseHTTPRequestHandler):
             self._handle_transitions(instrument, limit)
         elif path == "/api/oracle/summary":
             self._handle_summary()
+        # ── New: equities, forex, indices ──
+        elif path == "/api/oracle/scan/equities":
+            self._handle_scan_equities(qs)
+        elif path == "/api/oracle/scan/forex":
+            self._handle_scan_forex(qs)
+        elif path == "/api/oracle/scan/indices":
+            self._handle_scan_indices(qs)
+        # ── New: alerts ──
+        elif path == "/api/oracle/alerts":
+            self._handle_alerts(qs)
+        # ── New: cross-domain ──
+        elif path == "/api/oracle/cross-domain":
+            self._handle_cross_domain(qs)
         else:
             _json_response(self, {"error": "not found"}, 404)
 
@@ -151,6 +170,10 @@ class OracleHandler(BaseHTTPRequestHandler):
 
         if path == "/api/oracle/diagnose":
             self._handle_diagnose()
+        elif path == "/api/oracle/csv":
+            self._handle_csv_upload()
+        elif path == "/api/oracle/scan/all":
+            self._handle_scan_all()
         else:
             _json_response(self, {"error": "not found"}, 404)
 
@@ -276,6 +299,245 @@ class OracleHandler(BaseHTTPRequestHandler):
             _json_response(self, {"error": str(e)}, 500)
 
 
+    # ── New handlers ───────────────────────────────────────────
+
+    def _handle_scan_equities(self, qs):
+        try:
+            from zhihuiti.market_fetcher import scan_equities, DEFAULT_EQUITIES
+            symbols = qs.get("symbols", [None])[0]
+            symbols = symbols.split(",") if symbols else None
+            timeframe = qs.get("timeframe", ["1d"])[0]
+            results = scan_equities(symbols=symbols, timeframe=timeframe)
+
+            history = _get_history()
+            transitions = history.record_scan(results)
+
+            _json_response(self, {
+                "domain": "equities",
+                "results": [r.to_dict() for r in results],
+                "count": len(results),
+                "transitions": [t.to_dict() for t in transitions],
+            })
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_scan_forex(self, qs):
+        try:
+            from zhihuiti.market_fetcher import scan_forex, DEFAULT_FOREX
+            symbols = qs.get("symbols", [None])[0]
+            symbols = symbols.split(",") if symbols else None
+            timeframe = qs.get("timeframe", ["1d"])[0]
+            results = scan_forex(symbols=symbols, timeframe=timeframe)
+
+            history = _get_history()
+            transitions = history.record_scan(results)
+
+            _json_response(self, {
+                "domain": "forex",
+                "results": [r.to_dict() for r in results],
+                "count": len(results),
+                "transitions": [t.to_dict() for t in transitions],
+            })
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_scan_indices(self, qs):
+        try:
+            from zhihuiti.market_fetcher import scan_indices, DEFAULT_INDICES
+            symbols = qs.get("symbols", [None])[0]
+            symbols = symbols.split(",") if symbols else None
+            timeframe = qs.get("timeframe", ["1d"])[0]
+            results = scan_indices(symbols=symbols, timeframe=timeframe)
+
+            history = _get_history()
+            transitions = history.record_scan(results)
+
+            _json_response(self, {
+                "domain": "indices",
+                "results": [r.to_dict() for r in results],
+                "count": len(results),
+                "transitions": [t.to_dict() for t in transitions],
+            })
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_csv_upload(self):
+        """POST /api/oracle/csv — upload CSV or JSON array for universal diagnosis.
+
+        Body: {"values": [1.2, 3.4, ...], "domain": "scientific", "label": "my data"}
+          or: {"csv": "timestamp,value\\n...", "column": "value", "domain": "business"}
+        """
+        try:
+            body = _read_body(self)
+
+            # Parse values from JSON array or CSV string
+            values = body.get("values", [])
+            if not values and "csv" in body:
+                values = _parse_csv_values(body["csv"], body.get("column", "value"))
+
+            if not values or len(values) < 5:
+                _json_response(self, {"error": "need at least 5 data points"}, 400)
+                return
+
+            domain = body.get("domain", "scientific")
+            label = body.get("label", "uploaded data")
+
+            from zhihuiti.universal_oracle import diagnose, DOMAINS
+            if domain not in DOMAINS:
+                _json_response(self, {"error": f"unknown domain: {domain}", "available": list(DOMAINS.keys())}, 400)
+                return
+
+            result = diagnose(values, domain=domain, label=label)
+            _json_response(self, result.to_dict())
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_alerts(self, qs):
+        """GET /api/oracle/alerts — get recent alerts."""
+        try:
+            limit = int(qs.get("limit", ["50"])[0])
+            domain = qs.get("domain", [None])[0]
+
+            with _alerts_lock:
+                filtered = _alerts if not domain else [a for a in _alerts if a["domain"] == domain]
+                result = filtered[-limit:]
+
+            _json_response(self, {"alerts": list(reversed(result)), "count": len(result)})
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_cross_domain(self, qs):
+        """GET /api/oracle/cross-domain — run cross-domain correlation on latest scans."""
+        try:
+            from zhihuiti.cross_domain import find_cross_domain_correlations, DomainSnapshot, generate_alerts
+
+            # Collect latest snapshots from regime history
+            history = _get_history()
+            summary = history.get_summary()
+
+            snapshots = []
+            for inst, info in summary.items():
+                # Guess domain from instrument name
+                domain = _guess_domain(inst)
+                snapshots.append(DomainSnapshot(
+                    domain=domain,
+                    label=inst,
+                    regime=info["regime"],
+                    top_pattern="support_resistance",  # default
+                    top_pattern_strength=info["signal_score"],
+                    pattern_count=1,
+                    signal_score=info["signal_score"],
+                ))
+
+            correlations = find_cross_domain_correlations(snapshots)
+
+            # Generate alerts
+            global _prev_snapshots
+            with _prev_lock:
+                alerts = generate_alerts(snapshots, _prev_snapshots, correlations)
+                _prev_snapshots = snapshots
+
+            # Store alerts
+            with _alerts_lock:
+                _alerts.extend([a.to_dict() for a in alerts])
+                # Keep last 200
+                if len(_alerts) > 200:
+                    _alerts[:] = _alerts[-200:]
+
+            _json_response(self, {
+                "correlations": [c.to_dict() for c in correlations],
+                "alerts": [a.to_dict() for a in alerts],
+                "snapshot_count": len(snapshots),
+            })
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_scan_all(self):
+        """POST /api/oracle/scan/all — scan all domains at once."""
+        try:
+            body = _read_body(self)
+            domains = body.get("domains", ["crypto", "equities", "forex", "indices"])
+
+            all_results = {}
+            all_transitions = []
+
+            if "crypto" in domains:
+                from zhihuiti.scanner import scan_instruments
+                crypto_results = scan_instruments(fetch_fn=_fetch_crypto_candles)
+                history = _get_history()
+                transitions = history.record_scan(crypto_results)
+                all_results["crypto"] = [r.to_dict() for r in crypto_results]
+                all_transitions.extend([t.to_dict() for t in transitions])
+
+            if "equities" in domains:
+                from zhihuiti.market_fetcher import scan_equities
+                eq_results = scan_equities()
+                history = _get_history()
+                transitions = history.record_scan(eq_results)
+                all_results["equities"] = [r.to_dict() for r in eq_results]
+                all_transitions.extend([t.to_dict() for t in transitions])
+
+            if "forex" in domains:
+                from zhihuiti.market_fetcher import scan_forex
+                fx_results = scan_forex()
+                history = _get_history()
+                transitions = history.record_scan(fx_results)
+                all_results["forex"] = [r.to_dict() for r in fx_results]
+                all_transitions.extend([t.to_dict() for t in transitions])
+
+            if "indices" in domains:
+                from zhihuiti.market_fetcher import scan_indices
+                idx_results = scan_indices()
+                history = _get_history()
+                transitions = history.record_scan(idx_results)
+                all_results["indices"] = [r.to_dict() for r in idx_results]
+                all_transitions.extend([t.to_dict() for t in transitions])
+
+            _json_response(self, {
+                "domains": all_results,
+                "transitions": all_transitions,
+                "total_instruments": sum(len(v) for v in all_results.values()),
+            })
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+
+def _parse_csv_values(csv_text: str, column: str = "value") -> list[float]:
+    """Parse a CSV string and extract a numeric column."""
+    lines = csv_text.strip().split("\n")
+    if not lines:
+        return []
+
+    header = lines[0].split(",")
+    try:
+        col_idx = header.index(column)
+    except ValueError:
+        # Try last column as fallback
+        col_idx = len(header) - 1
+
+    values = []
+    for line in lines[1:]:
+        parts = line.split(",")
+        if col_idx < len(parts):
+            try:
+                values.append(float(parts[col_idx].strip()))
+            except ValueError:
+                continue
+    return values
+
+
+def _guess_domain(instrument: str) -> str:
+    """Guess the domain from an instrument name."""
+    inst = instrument.upper()
+    if "_USDT" in inst or "_USD" in inst or inst in ("BTC", "ETH", "SOL"):
+        return "crypto"
+    if "=X" in inst:
+        return "forex"
+    if inst.startswith("^"):
+        return "indices"
+    return "equities"
+
+
 def serve(port: int | None = None):
     """Start the standalone Oracle API server."""
     port = port or int(os.environ.get("PORT", 8377))
@@ -291,6 +553,13 @@ def serve(port: int | None = None):
     console.print(f"  GET  /api/oracle/summary")
     console.print(f"  GET  /api/oracle/transitions")
     console.print(f"  GET  /api/oracle/history/:instrument")
+    console.print(f"  GET  /api/oracle/scan/equities")
+    console.print(f"  GET  /api/oracle/scan/forex")
+    console.print(f"  GET  /api/oracle/scan/indices")
+    console.print(f"  POST /api/oracle/scan/all")
+    console.print(f"  POST /api/oracle/csv")
+    console.print(f"  GET  /api/oracle/alerts")
+    console.print(f"  GET  /api/oracle/cross-domain")
     console.print(f"  GET  /health")
     console.print()
 
