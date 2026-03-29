@@ -287,8 +287,9 @@ class Daemon:
             ],
         }
         try:
-            with open(_STATE_FILE, "w") as f:
-                json.dump(state, f, indent=2, default=str)
+            state_path = Path(_STATE_FILE)
+            state_path.parent.mkdir(parents=True, exist_ok=True)
+            state_path.write_text(json.dumps(state, indent=2, default=str))
         except Exception as exc:
             console.print(f"  [yellow]State save failed:[/yellow] {exc}")
 

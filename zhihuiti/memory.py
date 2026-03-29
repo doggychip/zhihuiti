@@ -15,6 +15,7 @@ class Memory:
 
     def __init__(self, db_path: str = "zhihuiti.db"):
         self.db_path = Path(db_path)
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
         # check_same_thread=False allows the connection to be shared across
         # threads; _write_lock serializes all writes for correctness.
         self.conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
