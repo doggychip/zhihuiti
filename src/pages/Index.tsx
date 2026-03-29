@@ -1591,9 +1591,9 @@ export default function ZhihuiTiDashboard() {
   const selectedConns = connections.filter((c) => c.from === selected || c.to === selected);
 
   const econ = data.economy || {} as any;
-  const mem = data.memory;
-  const ins = data.inspection;
-  const cb = data.circuit_breaker;
+  const mem = data.memory || {} as any;
+  const ins = data.inspection || {} as any;
+  const cb = data.circuit_breaker || {} as any;
   const bh = data.behavior;
   const au = data.auctions;
   const ln = data.loans;
