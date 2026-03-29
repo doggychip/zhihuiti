@@ -176,11 +176,11 @@ def _find_bridges(pattern_a: str, pattern_b: str, graph) -> list[str]:
 
     bridges = set()
     for ta in theories_a:
-        collisions_a = set(graph.get_collisions(ta))
+        analogies_a = {a["theory_id"] for a in graph.find_analogies(ta, limit=20)}
         for tb in theories_b:
-            collisions_b = set(graph.get_collisions(tb))
+            analogies_b = {a["theory_id"] for a in graph.find_analogies(tb, limit=20)}
             # Shared collision partners = bridge theories
-            shared = collisions_a & collisions_b
+            shared = analogies_a & analogies_b
             bridges.update(shared)
 
     return list(bridges)[:5]  # Top 5 bridges
