@@ -430,24 +430,47 @@ class OracleHandler(BaseHTTPRequestHandler):
         """GET /api/oracle/cross-domain — run cross-domain correlation on latest scans."""
         try:
             from zhihuiti.cross_domain import find_cross_domain_correlations, DomainSnapshot, generate_alerts
-
-            # Collect latest snapshots from regime history
-            history = _get_history()
-            summary = history.get_summary()
+            from zhihuiti.scanner import scan_instruments, _compute_signal_score
+            from zhihuiti.market_fetcher import scan_equities
 
             snapshots = []
-            for inst, info in summary.items():
-                # Guess domain from instrument name
-                domain = _guess_domain(inst)
-                snapshots.append(DomainSnapshot(
-                    domain=domain,
-                    label=inst,
-                    regime=info["regime"],
-                    top_pattern="support_resistance",  # default
-                    top_pattern_strength=info["signal_score"],
-                    pattern_count=1,
-                    signal_score=info["signal_score"],
-                ))
+
+            # Scan crypto live
+            try:
+                crypto_results = scan_instruments(fetch_fn=_fetch_crypto_candles)
+                for r in crypto_results[:5]:  # Top 5
+                    snapshots.append(DomainSnapshot(
+                        domain="crypto",
+                        label=r.instrument,
+                        regime=r.regime,
+                        top_pattern=r.top_pattern or "support_resistance",
+                        top_pattern_strength=r.top_pattern_strength,
+                        pattern_count=r.pattern_count,
+                        signal_score=r.signal_score,
+                    ))
+            except Exception:
+                pass
+
+            # Scan equities live
+            try:
+                eq_results = scan_equities()
+                for r in eq_results[:5]:  # Top 5
+                    snapshots.append(DomainSnapshot(
+                        domain="equities",
+                        label=r.instrument,
+                        regime=r.regime,
+                        top_pattern=r.top_pattern or "support_resistance",
+                        top_pattern_strength=r.top_pattern_strength,
+                        pattern_count=r.pattern_count,
+                        signal_score=r.signal_score,
+                    ))
+            except Exception:
+                pass
+
+            if len(snapshots) < 2:
+                _json_response(self, {"correlations": [], "alerts": [], "snapshot_count": len(snapshots),
+                                       "message": "Need data from at least 2 domains"})
+                return
 
             correlations = find_cross_domain_correlations(snapshots)
 
@@ -460,7 +483,6 @@ class OracleHandler(BaseHTTPRequestHandler):
             # Store alerts
             with _alerts_lock:
                 _alerts.extend([a.to_dict() for a in alerts])
-                # Keep last 200
                 if len(_alerts) > 200:
                     _alerts[:] = _alerts[-200:]
 
