@@ -12,6 +12,8 @@ COPY zhihuiti/crypto_oracle.py zhihuiti/
 COPY zhihuiti/universal_oracle.py zhihuiti/
 COPY zhihuiti/theory_intelligence.py zhihuiti/
 COPY zhihuiti/scanner.py zhihuiti/
+COPY zhihuiti/market_fetcher.py zhihuiti/
+COPY zhihuiti/cross_domain.py zhihuiti/
 COPY zhihuiti/api.py zhihuiti/
 COPY client/src/data/ client/src/data/
 
