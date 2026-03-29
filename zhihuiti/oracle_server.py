@@ -130,6 +130,9 @@ class OracleHandler(BaseHTTPRequestHandler):
         elif path.startswith("/api/oracle/crypto/"):
             instrument = path.split("/")[-1]
             self._handle_crypto(instrument, qs)
+        elif path.startswith("/api/oracle/instrument/"):
+            symbol = path.split("/")[-1]
+            self._handle_instrument(symbol, qs)
         elif path == "/api/oracle/domains":
             self._handle_domains()
         elif path == "/api/oracle/theories/stats":
@@ -216,6 +219,23 @@ class OracleHandler(BaseHTTPRequestHandler):
 
             book = _fetch_crypto_book(instrument) if include_book else None
             diagnosis = diagnose_market(candles, instrument=instrument, book=book)
+            _json_response(self, diagnosis.to_dict())
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_instrument(self, symbol, qs):
+        """Generic instrument detail — works for equities, forex, indices."""
+        try:
+            from zhihuiti.market_fetcher import fetch_yahoo_candles
+            from zhihuiti.crypto_oracle import diagnose_market
+            timeframe = qs.get("timeframe", ["1d"])[0]
+
+            candles = fetch_yahoo_candles(symbol, timeframe)
+            if not candles or len(candles) < 10:
+                _json_response(self, {"error": f"no data for {symbol}"}, 404)
+                return
+
+            diagnosis = diagnose_market(candles, instrument=symbol)
             _json_response(self, diagnosis.to_dict())
         except Exception as e:
             _json_response(self, {"error": str(e)}, 500)
@@ -553,6 +573,7 @@ def serve(port: int | None = None):
     console.print(f"  GET  /api/oracle/summary")
     console.print(f"  GET  /api/oracle/transitions")
     console.print(f"  GET  /api/oracle/history/:instrument")
+    console.print(f"  GET  /api/oracle/instrument/:symbol")
     console.print(f"  GET  /api/oracle/scan/equities")
     console.print(f"  GET  /api/oracle/scan/forex")
     console.print(f"  GET  /api/oracle/scan/indices")
