@@ -1,0 +1,16 @@
+{
+  "$schema": "https://schema.zeabur.app/template.json",
+  "name": "zhihuiti",
+  "description": "zhihuiti — Multi-Product AI Agent Platform",
+  "port": 8080,
+  "build": {
+    "type": "dockerfile",
+    "dockerfile": "Dockerfile"
+  },
+  "env": {
+    "DATABASE_URL": {
+      "description": "PostgreSQL connection string",
+      "required": true
+    }
+  }
+}

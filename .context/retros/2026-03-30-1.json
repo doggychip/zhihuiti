@@ -1,0 +1,35 @@
+{
+  "date": "2026-03-30",
+  "window": "7d",
+  "metrics": {
+    "commits": 77,
+    "contributors": 2,
+    "prs_merged": 25,
+    "insertions": 53423,
+    "deletions": 11184,
+    "net_loc": 42239,
+    "test_loc": 5159,
+    "test_ratio": 0.097,
+    "active_days": 9,
+    "sessions": 22,
+    "deep_sessions": 8,
+    "avg_session_minutes": 42,
+    "loc_per_session_hour": 3450,
+    "feat_pct": 0.56,
+    "fix_pct": 0.03,
+    "peak_hour": 17,
+    "ai_assisted_commits": 74
+  },
+  "authors": {
+    "Ryan Cheung": { "commits": 3, "insertions": 4148, "deletions": 8106, "test_ratio": 0.0, "top_area": "zhihuiti/" },
+    "Claude": { "commits": 74, "insertions": 49275, "deletions": 3078, "test_ratio": 0.10, "top_area": "zhihuiti/" }
+  },
+  "streak_days": 10,
+  "tweetable": "Week of Mar 23: 77 commits, 53.4k LOC, 25 PRs, 96% AI-assisted, 9.7% tests | Theory Collider + Oracle + Brain Intelligence | Streak: 10d",
+  "test_health": {
+    "total_test_files": 122,
+    "tests_added_this_period": 26,
+    "regression_test_commits": 0,
+    "test_files_changed": 26
+  }
+}

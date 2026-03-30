@@ -1,0 +1,3 @@
+[console_scripts]
+silicon-realms = silicon_realms.cli:main
+zhihuiti = zhihuiti.cli:main

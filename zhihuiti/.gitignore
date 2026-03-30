@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+.env.save
+*.db
+*.db-shm
+*.db-wal
+.anvil/
+__pycache__/
+*.egg-info/
+*.pyc
+*.html
+*.png
+collision_map.json
