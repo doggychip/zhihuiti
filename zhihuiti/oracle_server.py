@@ -164,6 +164,18 @@ class OracleHandler(BaseHTTPRequestHandler):
         # ── New: cross-domain ──
         elif path == "/api/oracle/cross-domain":
             self._handle_cross_domain(qs)
+        # ── Intelligence features ──
+        elif path.startswith("/api/oracle/predict/"):
+            instrument = path.split("/")[-1]
+            self._handle_predict(instrument, qs)
+        elif path == "/api/oracle/portfolio-risk":
+            self._handle_portfolio_risk(qs)
+        elif path == "/api/oracle/theory-confidence":
+            self._handle_theory_confidence(qs)
+        elif path == "/api/oracle/compare":
+            self._handle_compare(qs)
+        elif path == "/api/oracle/watchlist":
+            self._handle_watchlist_get()
         else:
             _json_response(self, {"error": "not found"}, 404)
 
@@ -175,6 +187,8 @@ class OracleHandler(BaseHTTPRequestHandler):
             self._handle_diagnose()
         elif path == "/api/oracle/csv":
             self._handle_csv_upload()
+        elif path == "/api/oracle/watchlist":
+            self._handle_watchlist_post()
         elif path == "/api/oracle/scan/all":
             self._handle_scan_all()
         else:
@@ -494,6 +508,156 @@ class OracleHandler(BaseHTTPRequestHandler):
         except Exception as e:
             _json_response(self, {"error": str(e)}, 500)
 
+    # ── Intelligence handlers ─────────────────────────────────
+
+    def _handle_predict(self, instrument, qs):
+        """GET /api/oracle/predict/:instrument — predict next regime."""
+        try:
+            from zhihuiti.oracle_intelligence import predict_regime
+
+            history = _get_history()
+            hist = history.get_history(instrument, limit=100)
+
+            # Get current diagnosis for pattern info
+            patterns = []
+            current_regime = "quiet"
+            if hist:
+                current_regime = hist[-1].get("regime", "quiet")
+
+            # Try to get live patterns
+            try:
+                domain = _guess_domain(instrument)
+                if domain == "crypto":
+                    candles = _fetch_crypto_candles(instrument, "4h")
+                else:
+                    from zhihuiti.market_fetcher import fetch_yahoo_candles
+                    candles = fetch_yahoo_candles(instrument, "1d")
+
+                if candles and len(candles) >= 10:
+                    from zhihuiti.crypto_oracle import diagnose_market
+                    diag = diagnose_market(candles, instrument=instrument)
+                    current_regime = diag.regime
+                    patterns = [{"name": p.name, "strength": p.strength} for p in diag.patterns]
+            except Exception:
+                pass
+
+            prediction = predict_regime(instrument, hist, current_regime, patterns)
+            _json_response(self, prediction.to_dict())
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_portfolio_risk(self, qs):
+        """GET /api/oracle/portfolio-risk — analyze portfolio risk from latest scans."""
+        try:
+            from zhihuiti.oracle_intelligence import analyze_portfolio_risk
+            from zhihuiti.scanner import scan_instruments
+            from zhihuiti.market_fetcher import scan_equities
+
+            all_results = []
+
+            # Scan crypto
+            try:
+                crypto = scan_instruments(fetch_fn=_fetch_crypto_candles)
+                all_results.extend([r.to_dict() for r in crypto])
+            except Exception:
+                pass
+
+            # Scan equities
+            try:
+                eq = scan_equities()
+                all_results.extend([r.to_dict() for r in eq])
+            except Exception:
+                pass
+
+            risk = analyze_portfolio_risk(all_results)
+            _json_response(self, risk.to_dict())
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_theory_confidence(self, qs):
+        """GET /api/oracle/theory-confidence — rank theories by current market fit."""
+        try:
+            from zhihuiti.oracle_intelligence import score_theory_confidence
+            from zhihuiti.scanner import scan_instruments
+
+            results = scan_instruments(fetch_fn=_fetch_crypto_candles)
+            scan_dicts = [r.to_dict() for r in results]
+
+            scores = score_theory_confidence(scan_dicts)
+            _json_response(self, {
+                "theories": [s.to_dict() for s in scores],
+                "count": len(scores),
+            })
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_compare(self, qs):
+        """GET /api/oracle/compare?instruments=BTC_USDT,ETH_USDT — compare regime histories."""
+        try:
+            from zhihuiti.oracle_intelligence import compare_regime_histories
+
+            instruments_str = qs.get("instruments", [""])[0]
+            if not instruments_str:
+                _json_response(self, {"error": "instruments query param required (comma-separated)"}, 400)
+                return
+
+            instruments = instruments_str.split(",")
+            history = _get_history()
+
+            histories = {}
+            for inst in instruments:
+                histories[inst] = history.get_history(inst.strip(), limit=100)
+
+            comparison = compare_regime_histories(histories)
+            _json_response(self, comparison.to_dict())
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    _watchlist = None
+
+    def _get_watchlist(self):
+        if OracleHandler._watchlist is None:
+            from zhihuiti.oracle_intelligence import Watchlist
+            OracleHandler._watchlist = Watchlist()
+        return OracleHandler._watchlist
+
+    def _handle_watchlist_get(self):
+        """GET /api/oracle/watchlist — list watchlist items."""
+        try:
+            wl = self._get_watchlist()
+            _json_response(self, {"items": wl.list_all(), "count": len(wl.list_all())})
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_watchlist_post(self):
+        """POST /api/oracle/watchlist — add/remove watchlist item."""
+        try:
+            body = _read_body(self)
+            action = body.get("action", "add")
+            instrument = body.get("instrument", "")
+
+            if not instrument:
+                _json_response(self, {"error": "instrument required"}, 400)
+                return
+
+            wl = self._get_watchlist()
+            if action == "add":
+                item = wl.add(
+                    instrument=instrument,
+                    domain=body.get("domain", "crypto"),
+                    alert_on_regime_change=body.get("alert_on_regime_change", True),
+                    alert_on_signal_above=body.get("alert_on_signal_above", 0.8),
+                    alert_on_pattern=body.get("alert_on_pattern", ""),
+                )
+                _json_response(self, {"status": "added", "item": item.to_dict()})
+            elif action == "remove":
+                removed = wl.remove(instrument)
+                _json_response(self, {"status": "removed" if removed else "not_found"})
+            else:
+                _json_response(self, {"error": f"unknown action: {action}"}, 400)
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
     def _handle_scan_all(self):
         """POST /api/oracle/scan/all — scan all domains at once."""
         try:
@@ -603,6 +767,12 @@ def serve(port: int | None = None):
     console.print(f"  POST /api/oracle/csv")
     console.print(f"  GET  /api/oracle/alerts")
     console.print(f"  GET  /api/oracle/cross-domain")
+    console.print(f"  GET  /api/oracle/predict/:instrument")
+    console.print(f"  GET  /api/oracle/portfolio-risk")
+    console.print(f"  GET  /api/oracle/theory-confidence")
+    console.print(f"  GET  /api/oracle/compare?instruments=...")
+    console.print(f"  GET  /api/oracle/watchlist")
+    console.print(f"  POST /api/oracle/watchlist")
     console.print(f"  GET  /health")
     console.print()
 

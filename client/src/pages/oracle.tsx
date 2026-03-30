@@ -94,13 +94,16 @@ interface CrossDomainCorrelation {
 
 // ── Domain tabs ───────────────────────────────────────────────────────────
 
-type DomainTab = "crypto" | "equities" | "forex" | "indices" | "alerts" | "cross-domain" | "csv";
+type DomainTab = "crypto" | "equities" | "forex" | "indices" | "alerts" | "cross-domain" | "csv" | "predict" | "risk" | "theories";
 
 const DOMAIN_TABS: { key: DomainTab; label: string; icon: typeof Coins; endpoint: string }[] = [
   { key: "crypto", label: "Crypto", icon: Coins, endpoint: "/api/oracle/scan" },
   { key: "equities", label: "Equities", icon: BarChart3, endpoint: "/api/oracle/scan/equities" },
   { key: "forex", label: "Forex", icon: DollarSign, endpoint: "/api/oracle/scan/forex" },
   { key: "indices", label: "Indices", icon: LineChart, endpoint: "/api/oracle/scan/indices" },
+  { key: "predict", label: "Predict", icon: TrendingUp, endpoint: "" },
+  { key: "risk", label: "Risk", icon: AlertTriangle, endpoint: "/api/oracle/portfolio-risk" },
+  { key: "theories", label: "Theory Fit", icon: Brain, endpoint: "/api/oracle/theory-confidence" },
   { key: "alerts", label: "Alerts", icon: Bell, endpoint: "/api/oracle/alerts" },
   { key: "cross-domain", label: "Cross-Domain", icon: Link2, endpoint: "/api/oracle/cross-domain" },
   { key: "csv", label: "Upload", icon: Upload, endpoint: "" },
@@ -470,6 +473,227 @@ function CrossDomainPanel() {
   );
 }
 
+// ── Prediction Panel ─────────────────────────────────────────────────────
+
+function PredictPanel() {
+  const [instrument, setInstrument] = useState("BTC_USDT");
+  const { data, isLoading, refetch } = useQuery<any>({
+    queryKey: [oracleUrl(`/api/oracle/predict/${instrument}`)],
+    enabled: false,
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2 items-end">
+        <div className="flex-1">
+          <label className="text-xs text-muted-foreground mb-1 block">Instrument</label>
+          <input
+            value={instrument}
+            onChange={(e) => setInstrument(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg bg-muted/30 border border-border text-sm"
+            placeholder="BTC_USDT, AAPL, EURUSD=X..."
+          />
+        </div>
+        <button
+          onClick={() => refetch()}
+          className="px-4 py-2 rounded-lg bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 text-sm"
+        >
+          {isLoading ? "Predicting..." : "Predict"}
+        </button>
+      </div>
+
+      {data && !data.error && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className={`px-3 py-1.5 rounded-full border ${regimeBg[data.current_regime] || ""}`}>
+              <span className={`text-sm ${regimeColor[data.current_regime]}`}>
+                Now: {regimeLabel[data.current_regime] || data.current_regime}
+              </span>
+            </div>
+            <span className="text-muted-foreground">→</span>
+            <div className={`px-3 py-1.5 rounded-full border ${regimeBg[data.predicted_regime] || ""}`}>
+              <span className={`text-sm font-medium ${regimeColor[data.predicted_regime]}`}>
+                Next: {regimeLabel[data.predicted_regime] || data.predicted_regime}
+              </span>
+            </div>
+            <Badge variant="outline" className="text-cyan-400">{(data.confidence * 100).toFixed(0)}%</Badge>
+          </div>
+
+          <p className="text-sm text-foreground/80">{data.reasoning}</p>
+
+          {data.theory_support?.length > 0 && (
+            <div className="flex gap-1 flex-wrap">
+              {data.theory_support.map((t: string, i: number) => (
+                <Badge key={i} variant="outline" className="text-[10px] text-purple-400 border-purple-400/30">{t}</Badge>
+              ))}
+            </div>
+          )}
+
+          <div className="space-y-1">
+            <h4 className="text-xs text-muted-foreground">Transition Probabilities</h4>
+            {Object.entries(data.probabilities || {}).sort((a: any, b: any) => b[1] - a[1]).map(([regime, prob]: [string, any]) => (
+              <div key={regime} className="flex items-center gap-2">
+                <span className={`text-xs w-28 ${regimeColor[regime]}`}>{regimeLabel[regime] || regime}</span>
+                <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${regime === data.predicted_regime ? "bg-cyan-400" : "bg-zinc-600"}`}
+                    style={{ width: `${(prob as number) * 100}%` }}
+                  />
+                </div>
+                <span className="text-xs text-muted-foreground w-10 text-right">{((prob as number) * 100).toFixed(0)}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {data?.error && <p className="text-red-400 text-sm">{data.error}</p>}
+
+      {!data && !isLoading && (
+        <div className="flex flex-col items-center py-8 text-muted-foreground">
+          <TrendingUp className="w-8 h-8 mb-2 opacity-40" />
+          <p className="text-sm">Enter an instrument and click Predict to forecast the next regime.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Portfolio Risk Panel ─────────────────────────────────────────────────
+
+function PortfolioRiskPanel() {
+  const { data, isLoading, refetch } = useQuery<any>({
+    queryKey: [oracleUrl("/api/oracle/portfolio-risk")],
+    enabled: false,
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">Analyze risk across crypto + equities portfolio.</p>
+        <button
+          onClick={() => refetch()}
+          className="px-4 py-2 rounded-lg bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 text-sm"
+        >
+          {isLoading ? "Analyzing..." : "Analyze Risk"}
+        </button>
+      </div>
+
+      {data && !data.error && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+              <p className="text-xs text-muted-foreground">Risk Score</p>
+              <p className={`text-xl font-bold ${data.risk_score > 0.7 ? "text-red-400" : data.risk_score > 0.4 ? "text-amber-400" : "text-emerald-400"}`}>
+                {(data.risk_score * 100).toFixed(0)}%
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+              <p className="text-xs text-muted-foreground">Diversification</p>
+              <p className="text-xl font-bold text-blue-400">{(data.diversification_score * 100).toFixed(0)}%</p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+              <p className="text-xs text-muted-foreground">Dominant Regime</p>
+              <p className={`text-lg font-bold ${regimeColor[data.dominant_regime]}`}>
+                {regimeLabel[data.dominant_regime] || data.dominant_regime}
+              </p>
+            </div>
+          </div>
+
+          <p className="text-sm font-medium">{data.interpretation}</p>
+
+          {Object.keys(data.regime_distribution || {}).length > 0 && (
+            <div className="space-y-1">
+              <h4 className="text-xs text-muted-foreground">Regime Distribution</h4>
+              {Object.entries(data.regime_distribution).map(([regime, count]: [string, any]) => (
+                <div key={regime} className="flex items-center gap-2">
+                  <span className={`text-xs w-28 ${regimeColor[regime]}`}>{regimeLabel[regime] || regime}</span>
+                  <Badge variant="outline" className="text-[10px]">{count} instruments</Badge>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {data.hedging_opportunities?.length > 0 && (
+            <div className="space-y-1">
+              <h4 className="text-xs text-muted-foreground">Hedging Suggestions</h4>
+              {data.hedging_opportunities.map((h: string, i: number) => (
+                <p key={i} className="text-xs text-foreground/80 flex items-start gap-1.5">
+                  <span className="text-amber-400 mt-0.5">→</span> {h}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {data?.error && <p className="text-red-400 text-sm">{data.error}</p>}
+
+      {!data && !isLoading && (
+        <div className="flex flex-col items-center py-8 text-muted-foreground">
+          <AlertTriangle className="w-8 h-8 mb-2 opacity-40" />
+          <p className="text-sm">Click Analyze Risk to scan all markets and compute portfolio risk.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Theory Confidence Panel ──────────────────────────────────────────────
+
+function TheoryConfidencePanel() {
+  const { data, isLoading, refetch } = useQuery<any>({
+    queryKey: [oracleUrl("/api/oracle/theory-confidence")],
+    enabled: false,
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">Which theories best explain the current market?</p>
+        <button
+          onClick={() => refetch()}
+          className="px-4 py-2 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 text-sm"
+        >
+          {isLoading ? "Scoring..." : "Score Theories"}
+        </button>
+      </div>
+
+      {data?.theories?.length > 0 && (
+        <div className="space-y-2">
+          {data.theories.map((t: any, i: number) => (
+            <div key={i} className="p-3 rounded-lg bg-muted/30 border border-border/50 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Brain className="w-3.5 h-3.5 text-purple-400" />
+                  <span className="font-medium text-sm">{t.theory_name}</span>
+                </div>
+                {strengthBar(t.confidence)}
+              </div>
+              <p className="text-xs text-muted-foreground">{t.explanation}</p>
+              <div className="flex gap-1 flex-wrap">
+                {t.supporting_patterns?.map((p: string, j: number) => (
+                  <Badge key={j} variant="outline" className="text-[10px]">{p.replace(/_/g, " ")}</Badge>
+                ))}
+                {t.supporting_instruments?.slice(0, 3).map((inst: string, j: number) => (
+                  <Badge key={`i${j}`} variant="outline" className="text-[10px] text-cyan-400 border-cyan-400/30">{inst}</Badge>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!data && !isLoading && (
+        <div className="flex flex-col items-center py-8 text-muted-foreground">
+          <Brain className="w-8 h-8 mb-2 opacity-40" />
+          <p className="text-sm">Click Score Theories to find which theories explain the current market.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── CSV Upload Panel ──────────────────────────────────────────────────────
 
 function CsvUploadPanel() {
@@ -785,6 +1009,33 @@ export default function OraclePage() {
             <CardContent className="p-4">
               <h2 className="text-sm font-medium text-muted-foreground mb-3">Upload & Analyze</h2>
               <CsvUploadPanel />
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === "predict" && (
+          <Card className="bg-card/50 border-border/50">
+            <CardContent className="p-4">
+              <h2 className="text-sm font-medium text-muted-foreground mb-3">Regime Prediction</h2>
+              <PredictPanel />
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === "risk" && (
+          <Card className="bg-card/50 border-border/50">
+            <CardContent className="p-4">
+              <h2 className="text-sm font-medium text-muted-foreground mb-3">Portfolio Risk Analysis</h2>
+              <PortfolioRiskPanel />
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === "theories" && (
+          <Card className="bg-card/50 border-border/50">
+            <CardContent className="p-4">
+              <h2 className="text-sm font-medium text-muted-foreground mb-3">Theory Confidence Ranking</h2>
+              <TheoryConfidencePanel />
             </CardContent>
           </Card>
         )}
