@@ -1,0 +1,112 @@
+[
+  {
+    "id": 1,
+    "name": "Exponential Family / Energy-Based Distribution",
+    "form": "P(x) = exp(-E(x) / T) / Z",
+    "description": "Probability proportional to exp(-energy/temperature). Temperature controls exploration/exploitation, randomness/determinism.",
+    "domains": [
+      "Statistical Mechanics",
+      "Evolutionary Game Theory",
+      "Information Theory",
+      "Machine Learning",
+      "Neuroscience",
+      "Control Theory",
+      "Quantum Physics"
+    ],
+    "color": "#ef4444"
+  },
+  {
+    "id": 2,
+    "name": "Replicator / Selection Dynamics",
+    "form": "dxi/dt = xi(fi - f_bar)",
+    "description": "Above-average things grow, below-average things shrink. The universal law of selection - in genes, beliefs, policies, and markets.",
+    "domains": [
+      "Evolutionary Game Theory",
+      "Information Theory",
+      "Statistical Mechanics",
+      "Control Theory",
+      "Cognitive Science",
+      "Meta-Frameworks",
+      "Neuroscience"
+    ],
+    "color": "#22c55e"
+  },
+  {
+    "id": 3,
+    "name": "Gradient Flow / Energy Minimization",
+    "form": "dx/dt = -grad(V(x))",
+    "description": "Systems flow downhill. The landscape varies (energy, cost, free energy, belief surprise), but the mathematics is identical.",
+    "domains": [
+      "Statistical Mechanics",
+      "Control Theory",
+      "Cognitive Science",
+      "Information Theory",
+      "Neuroscience",
+      "Dynamic Systems",
+      "Topology"
+    ],
+    "color": "#3b82f6"
+  },
+  {
+    "id": 4,
+    "name": "Feedback / Self-Reference",
+    "form": "dx/dt = f(x, control(x))",
+    "description": "The system measures its own state, compares to target, and adjusts. Temperature, noise level, precision weighting all modulate the feedback gain.",
+    "domains": [
+      "Control Theory",
+      "Cybernetics",
+      "Cognitive Science",
+      "Neuroscience",
+      "Dynamic Systems",
+      "Statistical Mechanics",
+      "Evolutionary Game Theory"
+    ],
+    "color": "#a855f7"
+  },
+  {
+    "id": 5,
+    "name": "Hierarchical Decomposition / Scale Separation",
+    "form": "Fast variables -> slaved to slow variables (order parameters)",
+    "description": "Complex systems separate into levels. The top level (slow, coarse) controls the bottom level (fast, fine).",
+    "domains": [
+      "Statistical Mechanics",
+      "Dynamic Systems",
+      "Meta-Frameworks",
+      "Cognitive Science",
+      "Topology",
+      "Neuroscience",
+      "Control Theory"
+    ],
+    "color": "#eab308"
+  },
+  {
+    "id": 6,
+    "name": "Conservation + Symmetry",
+    "form": "dQ/dt = 0  <->  symmetry of Lagrangian (Noether)",
+    "description": "Symmetry generates conservation. Break the symmetry to create a phase transition, a new conserved charge, or a new order parameter.",
+    "domains": [
+      "Physics",
+      "Statistical Mechanics",
+      "Information Theory",
+      "Evolutionary Game Theory",
+      "Quantum Physics"
+    ],
+    "color": "#f97316"
+  },
+  {
+    "id": 7,
+    "name": "Fixed Points / Critical Phenomena",
+    "form": "System has qualitatively distinct phases separated by critical points",
+    "description": "Near critical points, systems become scale-free, maximally responsive, and display universal behavior independent of microscopic details.",
+    "domains": [
+      "Statistical Mechanics",
+      "Dynamic Systems",
+      "Evolutionary Game Theory",
+      "Control Theory",
+      "Cognitive Science",
+      "Meta-Frameworks",
+      "Neuroscience"
+    ],
+    "color": "#ec4899"
+  }
+]
