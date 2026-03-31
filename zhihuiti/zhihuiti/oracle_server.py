@@ -934,16 +934,21 @@ class OracleHandler(BaseHTTPRequestHandler):
             orch = _get_orchestrator()
             agents = []
             for agent in orch.agent_manager.agents.values():
+                role = getattr(agent.config, 'role', None) if hasattr(agent, 'config') else None
+                role_str = role.value if hasattr(role, 'value') else str(role or 'unknown')
+                realm = getattr(agent, 'realm', None)
+                realm_str = realm.value if hasattr(realm, 'value') else str(realm or 'execution')
+                gen = getattr(agent.config, 'generation', 0) if hasattr(agent, 'config') else 0
                 agents.append({
                     "id": agent.id,
                     "name": getattr(agent, "name", agent.id[:8]),
-                    "role": agent.role.value if hasattr(agent.role, 'value') else str(agent.role),
+                    "role": role_str,
                     "alive": agent.alive,
                     "budget": round(agent.budget, 2),
-                    "avg_score": round(sum(agent.scores) / len(agent.scores), 3) if agent.scores else 0,
+                    "avg_score": round(agent.avg_score, 3) if hasattr(agent, 'avg_score') else 0,
                     "task_count": len(agent.task_ids) if hasattr(agent, 'task_ids') else 0,
-                    "generation": getattr(agent, "generation", 0),
-                    "realm": getattr(agent, "realm", "execution"),
+                    "generation": gen,
+                    "realm": realm_str,
                     "depth": getattr(agent, "depth", 0),
                 })
             _json_response(self, {"agents": agents, "count": len(agents), "mode": "full"})
