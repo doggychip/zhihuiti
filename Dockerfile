@@ -4,7 +4,6 @@ WORKDIR /app
 
 RUN pip install --no-cache-dir httpx rich
 
-# Copy all Python modules and data
 COPY zhihuiti/ zhihuiti/
 COPY client/src/data/ client/src/data/
 
