@@ -14,6 +14,8 @@ COPY zhihuiti/theory_intelligence.py zhihuiti/
 COPY zhihuiti/scanner.py zhihuiti/
 COPY zhihuiti/market_fetcher.py zhihuiti/
 COPY zhihuiti/cross_domain.py zhihuiti/
+COPY zhihuiti/oracle_intelligence.py zhihuiti/
+COPY zhihuiti/oracle_agents.py zhihuiti/
 COPY zhihuiti/api.py zhihuiti/
 COPY client/src/data/ client/src/data/
 

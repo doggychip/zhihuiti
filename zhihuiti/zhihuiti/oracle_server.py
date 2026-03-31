@@ -176,6 +176,14 @@ class OracleHandler(BaseHTTPRequestHandler):
             self._handle_compare(qs)
         elif path == "/api/oracle/watchlist":
             self._handle_watchlist_get()
+        # ── Agent endpoints ──
+        elif path == "/api/oracle/agents":
+            self._handle_agents_list()
+        elif path.startswith("/api/oracle/agents/") and path.count("/") == 4:
+            agent_id = path.split("/")[-1]
+            self._handle_agent_get(agent_id)
+        elif path == "/api/oracle/agents/roles":
+            self._handle_agent_roles()
         else:
             _json_response(self, {"error": "not found"}, 404)
 
@@ -191,6 +199,21 @@ class OracleHandler(BaseHTTPRequestHandler):
             self._handle_watchlist_post()
         elif path == "/api/oracle/scan/all":
             self._handle_scan_all()
+        # ── Agent POST endpoints ──
+        elif path == "/api/oracle/agents":
+            self._handle_agent_create()
+        elif path.startswith("/api/oracle/agents/") and path.endswith("/run"):
+            agent_id = path.split("/")[-2]
+            self._handle_agent_run(agent_id)
+        elif path.startswith("/api/oracle/agents/") and path.endswith("/delete"):
+            agent_id = path.split("/")[-2]
+            self._handle_agent_delete(agent_id)
+        elif path.startswith("/api/oracle/agents/") and path.endswith("/pause"):
+            agent_id = path.split("/")[-2]
+            self._handle_agent_status(agent_id, "paused")
+        elif path.startswith("/api/oracle/agents/") and path.endswith("/resume"):
+            agent_id = path.split("/")[-2]
+            self._handle_agent_status(agent_id, "active")
         else:
             _json_response(self, {"error": "not found"}, 404)
 
@@ -658,6 +681,132 @@ class OracleHandler(BaseHTTPRequestHandler):
         except Exception as e:
             _json_response(self, {"error": str(e)}, 500)
 
+    # ── Agent handlers ─────────────────────────────────────────
+
+    _agent_manager = None
+
+    def _get_agent_manager(self):
+        if OracleHandler._agent_manager is None:
+            from zhihuiti.oracle_agents import AgentManager
+            OracleHandler._agent_manager = AgentManager()
+        return OracleHandler._agent_manager
+
+    def _handle_agents_list(self):
+        try:
+            mgr = self._get_agent_manager()
+            _json_response(self, {"agents": mgr.list_all(), "count": len(mgr.list_all())})
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_agent_get(self, agent_id):
+        try:
+            mgr = self._get_agent_manager()
+            agent = mgr.get(agent_id)
+            if not agent:
+                _json_response(self, {"error": "agent not found"}, 404)
+                return
+            _json_response(self, agent.to_dict())
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_agent_roles(self):
+        try:
+            from zhihuiti.oracle_agents import AGENT_ROLES
+            _json_response(self, {"roles": AGENT_ROLES})
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_agent_create(self):
+        try:
+            body = _read_body(self)
+            name = body.get("name", "")
+            role = body.get("role", "scanner")
+            instruments = body.get("instruments", [])
+            domains = body.get("domains", ["crypto"])
+            rules = body.get("rules")
+
+            if not name:
+                _json_response(self, {"error": "name required"}, 400)
+                return
+
+            mgr = self._get_agent_manager()
+            agent = mgr.create(name=name, role=role, instruments=instruments,
+                               domains=domains, rules=rules)
+            _json_response(self, {"status": "created", "agent": agent.to_dict()})
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_agent_delete(self, agent_id):
+        try:
+            mgr = self._get_agent_manager()
+            removed = mgr.delete(agent_id)
+            _json_response(self, {"status": "deleted" if removed else "not_found"})
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_agent_status(self, agent_id, status):
+        try:
+            mgr = self._get_agent_manager()
+            updated = mgr.update_status(agent_id, status)
+            _json_response(self, {"status": "updated" if updated else "not_found", "new_status": status})
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_agent_run(self, agent_id):
+        """POST /api/oracle/agents/:id/run — execute agent against live market data."""
+        try:
+            mgr = self._get_agent_manager()
+            agent = mgr.get(agent_id)
+            if not agent:
+                _json_response(self, {"error": "agent not found"}, 404)
+                return
+
+            # Gather scan results from agent's domains
+            all_results = []
+            if "crypto" in agent.domains:
+                from zhihuiti.scanner import scan_instruments
+                crypto = scan_instruments(fetch_fn=_fetch_crypto_candles)
+                all_results.extend([r.to_dict() for r in crypto])
+
+            if "equities" in agent.domains:
+                from zhihuiti.market_fetcher import scan_equities
+                eq = scan_equities()
+                all_results.extend([r.to_dict() for r in eq])
+
+            if "forex" in agent.domains:
+                from zhihuiti.market_fetcher import scan_forex
+                fx = scan_forex()
+                all_results.extend([r.to_dict() for r in fx])
+
+            if "indices" in agent.domains:
+                from zhihuiti.market_fetcher import scan_indices
+                idx = scan_indices()
+                all_results.extend([r.to_dict() for r in idx])
+
+            # Get previous regimes from history
+            history = _get_history()
+            summary = history.get_summary()
+            prev_regimes = {inst: info["regime"] for inst, info in summary.items()}
+
+            # Record scan results to history
+            from zhihuiti.scanner import ScanResult
+            scan_objs = []
+            for r in all_results:
+                scan_objs.append(ScanResult(**{k: r[k] for k in ScanResult.__dataclass_fields__}))
+            history.record_scan(scan_objs)
+
+            # Run agent rules
+            actions = mgr.run_agent(agent_id, all_results, prev_regimes)
+
+            _json_response(self, {
+                "agent_id": agent_id,
+                "instruments_scanned": len(all_results),
+                "actions": [a.to_dict() for a in actions],
+                "action_count": len(actions),
+            })
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
     def _handle_scan_all(self):
         """POST /api/oracle/scan/all — scan all domains at once."""
         try:
@@ -773,6 +922,14 @@ def serve(port: int | None = None):
     console.print(f"  GET  /api/oracle/compare?instruments=...")
     console.print(f"  GET  /api/oracle/watchlist")
     console.print(f"  POST /api/oracle/watchlist")
+    console.print(f"  GET  /api/oracle/agents")
+    console.print(f"  POST /api/oracle/agents")
+    console.print(f"  GET  /api/oracle/agents/:id")
+    console.print(f"  GET  /api/oracle/agents/roles")
+    console.print(f"  POST /api/oracle/agents/:id/run")
+    console.print(f"  POST /api/oracle/agents/:id/delete")
+    console.print(f"  POST /api/oracle/agents/:id/pause")
+    console.print(f"  POST /api/oracle/agents/:id/resume")
     console.print(f"  GET  /health")
     console.print()
 
