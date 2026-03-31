@@ -689,6 +689,7 @@ class OracleHandler(BaseHTTPRequestHandler):
         if OracleHandler._agent_manager is None:
             from zhihuiti.oracle_agents import AgentManager
             OracleHandler._agent_manager = AgentManager()
+            OracleHandler._agent_manager.genesis()  # Auto-seed default agents
         return OracleHandler._agent_manager
 
     def _handle_agents_list(self):
