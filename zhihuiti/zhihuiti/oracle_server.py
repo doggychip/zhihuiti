@@ -1,15 +1,22 @@
-"""Standalone Oracle API server — serves oracle endpoints without requiring an LLM.
+"""Combined Oracle + Agent API server.
 
-This is a lightweight HTTP server that only exposes the oracle, scanner, and
-theory intelligence endpoints. No orchestrator, no agents, no LLM needed.
+When an LLM key is set (OPENROUTER_API_KEY, DEEPSEEK_API_KEY, etc.), this server
+boots the FULL zhihuiti orchestrator — real LLM-powered agents with token economy,
+competitive bidding, bloodline inheritance, 3-layer inspection, and evolution.
+
+Without an LLM key it falls back to oracle-only mode (market scanning, no agents).
 
 Usage:
   python -m zhihuiti.oracle_server              # port 8377
   python -m zhihuiti.oracle_server --port 9000  # custom port
 
 Environment:
-  PORT=8377          — port to listen on (overridden by --port)
-  CORS_ORIGIN=*      — CORS origin header
+  PORT=8377              — port to listen on (overridden by --port)
+  CORS_ORIGIN=*          — CORS origin header
+  OPENROUTER_API_KEY     — enables full agent system via OpenRouter
+  DEEPSEEK_API_KEY       — enables full agent system via DeepSeek
+  ZHIHUITI_DB            — SQLite database path (default: /app/data/zhihuiti.db)
+  ZHIHUITI_AUTO_EVOLVE=1 — enable background goal execution & evolution
 """
 
 from __future__ import annotations
@@ -25,6 +32,39 @@ from urllib.parse import urlparse, parse_qs
 from rich.console import Console
 
 console = Console()
+
+# ── Real Agent System (lazy-initialized when LLM key is present) ─────────
+_orchestrator = None
+_orch_lock = threading.Lock()
+_orch_goals: dict[str, dict] = {}
+_orch_goals_lock = threading.Lock()
+
+
+def _has_llm_key() -> bool:
+    """Check if any LLM API key is configured."""
+    return bool(
+        os.environ.get("OPENROUTER_API_KEY")
+        or os.environ.get("DEEPSEEK_API_KEY")
+        or os.environ.get("OPENAI_API_KEY")
+        or os.environ.get("LLM_API_KEY")
+    )
+
+
+def _get_orchestrator():
+    """Lazy-initialize the full zhihuiti Orchestrator (LLM-powered agents)."""
+    global _orchestrator
+    if _orchestrator is None:
+        with _orch_lock:
+            if _orchestrator is None:
+                db_path = os.environ.get("ZHIHUITI_DB", "/app/data/zhihuiti.db")
+                try:
+                    from zhihuiti.orchestrator import Orchestrator
+                    _orchestrator = Orchestrator(db_path=db_path, tools_enabled=False)
+                    console.print("[bold green]Real agent system initialized[/bold green]")
+                except Exception as e:
+                    console.print(f"[bold red]Failed to init orchestrator:[/bold red] {e}")
+                    raise
+    return _orchestrator
 
 
 def _json_response(handler: BaseHTTPRequestHandler, data: Any, status: int = 200):
@@ -123,7 +163,13 @@ class OracleHandler(BaseHTTPRequestHandler):
         qs = parse_qs(parsed.query)
 
         if path == "/health":
-            _json_response(self, {"status": "ok", "service": "zhihuiti-oracle"})
+            mode = "full" if _has_llm_key() else "oracle-only"
+            _json_response(self, {
+                "status": "ok",
+                "service": "zhihuiti",
+                "mode": mode,
+                "agents_enabled": _has_llm_key(),
+            })
 
         elif path == "/api/oracle/scan":
             self._handle_scan(qs)
@@ -184,6 +230,16 @@ class OracleHandler(BaseHTTPRequestHandler):
             self._handle_agent_get(agent_id)
         elif path == "/api/oracle/agents/roles":
             self._handle_agent_roles()
+        # ── Real Agent System endpoints (requires LLM key) ──
+        elif path == "/api/agents":
+            self._handle_real_agents_list()
+        elif path == "/api/status":
+            self._handle_real_status()
+        elif path.startswith("/api/goals/"):
+            goal_id = path.split("/")[-1]
+            self._handle_real_goal_get(goal_id)
+        elif path == "/api/data":
+            self._handle_real_dashboard_data()
         else:
             _json_response(self, {"error": "not found"}, 404)
 
@@ -214,6 +270,11 @@ class OracleHandler(BaseHTTPRequestHandler):
         elif path.startswith("/api/oracle/agents/") and path.endswith("/resume"):
             agent_id = path.split("/")[-2]
             self._handle_agent_status(agent_id, "active")
+        # ── Real Agent System POST endpoints ──
+        elif path == "/api/goals":
+            self._handle_real_goal_create()
+        elif path == "/api/tasks":
+            self._handle_real_single_task()
         else:
             _json_response(self, {"error": "not found"}, 404)
 
@@ -858,6 +919,170 @@ class OracleHandler(BaseHTTPRequestHandler):
             _json_response(self, {"error": str(e)}, 500)
 
 
+    # ── Real Agent System handlers ───────────────────────────────
+
+    def _handle_real_agents_list(self):
+        """GET /api/agents — list REAL zhihuiti agents (LLM-powered)."""
+        if not _has_llm_key():
+            _json_response(self, {
+                "agents": [], "count": 0,
+                "mode": "oracle-only",
+                "message": "No LLM key configured. Set OPENROUTER_API_KEY to enable real agents.",
+            })
+            return
+        try:
+            orch = _get_orchestrator()
+            agents = []
+            for agent in orch.agent_manager.agents.values():
+                agents.append({
+                    "id": agent.id,
+                    "name": getattr(agent, "name", agent.id[:8]),
+                    "role": agent.role.value if hasattr(agent.role, 'value') else str(agent.role),
+                    "alive": agent.alive,
+                    "budget": round(agent.budget, 2),
+                    "avg_score": round(sum(agent.scores) / len(agent.scores), 3) if agent.scores else 0,
+                    "task_count": len(agent.task_ids) if hasattr(agent, 'task_ids') else 0,
+                    "generation": getattr(agent, "generation", 0),
+                    "realm": getattr(agent, "realm", "execution"),
+                    "depth": getattr(agent, "depth", 0),
+                })
+            _json_response(self, {"agents": agents, "count": len(agents), "mode": "full"})
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_real_status(self):
+        """GET /api/status — full system health with economy snapshot."""
+        if not _has_llm_key():
+            _json_response(self, {
+                "status": "ok",
+                "mode": "oracle-only",
+                "message": "Oracle-only mode. Set OPENROUTER_API_KEY for full agent system.",
+            })
+            return
+        try:
+            orch = _get_orchestrator()
+            from zhihuiti.dashboard import _gather_data
+            data = _gather_data(orch)
+            _json_response(self, {
+                "status": "ok",
+                "mode": "full",
+                "backend": orch.llm._backend if hasattr(orch.llm, '_backend') else "unknown",
+                "model": orch.llm.model if hasattr(orch.llm, 'model') else "unknown",
+                "economy": data.get("economy", {}),
+                "agent_count": len(data.get("agents", [])),
+                "realms": data.get("realms", {}),
+                "bloodline": data.get("bloodline", {}),
+                "inspection": data.get("inspection", {}),
+                "memory": data.get("memory", {}),
+            })
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_real_dashboard_data(self):
+        """GET /api/data — full dashboard data (economy, agents, bloodline, etc.)."""
+        if not _has_llm_key():
+            _json_response(self, {"error": "No LLM key. Set OPENROUTER_API_KEY."}, 503)
+            return
+        try:
+            orch = _get_orchestrator()
+            from zhihuiti.dashboard import _gather_data
+            data = _gather_data(orch)
+            _json_response(self, data)
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_real_goal_create(self):
+        """POST /api/goals — submit a goal for real multi-agent execution."""
+        if not _has_llm_key():
+            _json_response(self, {"error": "No LLM key. Set OPENROUTER_API_KEY."}, 503)
+            return
+        try:
+            import uuid
+            body = _read_body(self)
+            goal_text = body.get("goal", "").strip()
+            if not goal_text:
+                _json_response(self, {"error": "goal is required"}, 400)
+                return
+
+            goal_id = uuid.uuid4().hex[:12]
+            orch = _get_orchestrator()
+
+            with _orch_goals_lock:
+                _orch_goals[goal_id] = {
+                    "id": goal_id,
+                    "goal": goal_text,
+                    "status": "running",
+                    "result": None,
+                    "error": None,
+                }
+
+            def _execute():
+                try:
+                    result = orch.execute_goal(goal_text)
+                    with _orch_goals_lock:
+                        _orch_goals[goal_id]["status"] = "completed"
+                        _orch_goals[goal_id]["result"] = result
+                except Exception as e:
+                    with _orch_goals_lock:
+                        _orch_goals[goal_id]["status"] = "failed"
+                        _orch_goals[goal_id]["error"] = str(e)
+
+            thread = threading.Thread(target=_execute, daemon=True)
+            thread.start()
+
+            _json_response(self, {
+                "id": goal_id,
+                "status": "running",
+                "message": f"Goal submitted for multi-agent execution: {goal_text[:80]}",
+            }, 202)
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_real_goal_get(self, goal_id: str):
+        """GET /api/goals/:id — poll goal execution status."""
+        with _orch_goals_lock:
+            goal = _orch_goals.get(goal_id)
+        if not goal:
+            _json_response(self, {"error": "goal not found"}, 404)
+            return
+        _json_response(self, goal)
+
+    def _handle_real_single_task(self):
+        """POST /api/tasks — execute a single task with a real agent."""
+        if not _has_llm_key():
+            _json_response(self, {"error": "No LLM key. Set OPENROUTER_API_KEY."}, 503)
+            return
+        try:
+            body = _read_body(self)
+            task_text = body.get("task", "").strip()
+            if not task_text:
+                _json_response(self, {"error": "task is required"}, 400)
+                return
+
+            orch = _get_orchestrator()
+            role_name = body.get("role", "custom")
+            from zhihuiti.agents import ROLE_MAP
+            from zhihuiti.models import AgentRole, Task
+            role = ROLE_MAP.get(role_name, AgentRole.CUSTOM)
+
+            config = orch.agent_manager.get_best_config(role)
+            agent = orch.agent_manager.spawn(role=role, depth=0, config=config, budget=100.0)
+            task = Task(description=task_text, metadata={"requested_role": role_name})
+
+            output = orch.agent_manager.execute_task(agent, task)
+            score = orch.judge.score_task(task, agent)
+
+            _json_response(self, {
+                "output": output,
+                "score": score,
+                "agent_id": agent.id,
+                "role": role.value,
+                "status": task.status.value,
+            })
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+
 def _parse_csv_values(csv_text: str, column: str = "value") -> list[float]:
     """Parse a CSV string and extract a numeric column."""
     lines = csv_text.strip().split("\n")
@@ -895,43 +1120,67 @@ def _guess_domain(instrument: str) -> str:
 
 
 def serve(port: int | None = None):
-    """Start the standalone Oracle API server."""
+    """Start the combined Oracle + Agent API server."""
     port = port or int(os.environ.get("PORT", 8377))
+    has_llm = _has_llm_key()
 
-    console.print(f"\n[bold]Oracle API Server[/bold]")
+    console.print(f"\n[bold]智慧体 zhihuiti Server[/bold]")
+    mode = "[bold green]FULL (LLM + Agents + Oracle)[/bold green]" if has_llm else "[yellow]Oracle-only (no LLM key)[/yellow]"
+    console.print(f"  Mode: {mode}")
     console.print(f"  Listening on http://0.0.0.0:{port}")
+
+    # Oracle endpoints (always available)
+    console.print(f"\n  [dim]── Oracle endpoints ──[/dim]")
     console.print(f"  GET  /api/oracle/scan")
     console.print(f"  GET  /api/oracle/crypto/:instrument")
-    console.print(f"  POST /api/oracle/diagnose")
-    console.print(f"  GET  /api/oracle/domains")
-    console.print(f"  GET  /api/oracle/theories/stats")
-    console.print(f"  GET  /api/oracle/theories/search?q=...")
-    console.print(f"  GET  /api/oracle/summary")
-    console.print(f"  GET  /api/oracle/transitions")
-    console.print(f"  GET  /api/oracle/history/:instrument")
-    console.print(f"  GET  /api/oracle/instrument/:symbol")
     console.print(f"  GET  /api/oracle/scan/equities")
     console.print(f"  GET  /api/oracle/scan/forex")
     console.print(f"  GET  /api/oracle/scan/indices")
-    console.print(f"  POST /api/oracle/scan/all")
-    console.print(f"  POST /api/oracle/csv")
-    console.print(f"  GET  /api/oracle/alerts")
     console.print(f"  GET  /api/oracle/cross-domain")
     console.print(f"  GET  /api/oracle/predict/:instrument")
     console.print(f"  GET  /api/oracle/portfolio-risk")
     console.print(f"  GET  /api/oracle/theory-confidence")
-    console.print(f"  GET  /api/oracle/compare?instruments=...")
-    console.print(f"  GET  /api/oracle/watchlist")
-    console.print(f"  POST /api/oracle/watchlist")
-    console.print(f"  GET  /api/oracle/agents")
-    console.print(f"  POST /api/oracle/agents")
-    console.print(f"  GET  /api/oracle/agents/:id")
-    console.print(f"  GET  /api/oracle/agents/roles")
-    console.print(f"  POST /api/oracle/agents/:id/run")
-    console.print(f"  POST /api/oracle/agents/:id/delete")
-    console.print(f"  POST /api/oracle/agents/:id/pause")
-    console.print(f"  POST /api/oracle/agents/:id/resume")
-    console.print(f"  GET  /health")
+
+    if has_llm:
+        # Real agent endpoints
+        console.print(f"\n  [dim]── Real Agent endpoints (LLM-powered) ──[/dim]")
+        console.print(f"  GET  /api/agents                   — list real agents")
+        console.print(f"  GET  /api/status                   — economy + system health")
+        console.print(f"  GET  /api/data                     — full dashboard data")
+        console.print(f"  POST /api/goals                    — submit goal for multi-agent execution")
+        console.print(f"  GET  /api/goals/:id                — poll goal status")
+        console.print(f"  POST /api/tasks                    — execute single task")
+
+        # Pre-initialize orchestrator on startup so agents are ready
+        try:
+            console.print(f"\n  [dim]Initializing orchestrator...[/dim]")
+            _get_orchestrator()
+        except Exception as e:
+            console.print(f"  [red]Warning: orchestrator init failed: {e}[/red]")
+            console.print(f"  [red]Real agent endpoints will retry on first request[/red]")
+
+        # Optional: start background evolution
+        if os.environ.get("ZHIHUITI_AUTO_EVOLVE"):
+            try:
+                orch = _get_orchestrator()
+                from zhihuiti.dashboard import AutoScheduler
+                interval = int(os.environ.get("ZHIHUITI_EVOLVE_INTERVAL", "7200"))
+                scheduler = AutoScheduler(orch, interval_seconds=interval)
+                GOAL_POOL = [
+                    "Analyze the current crypto market. Which coins have strongest momentum?",
+                    "Review agent performance scores. Which roles consistently score above 0.8?",
+                    "Compare the three realms by productivity. Which has the best score-per-token efficiency?",
+                    "Analyze the gene pool. Are newer generations outperforming older ones?",
+                    "Review the auction system efficiency. Are agents bidding competitively?",
+                ]
+                for goal in GOAL_POOL:
+                    scheduler.add_goal(goal)
+                scheduler.start()
+                console.print(f"  [green]Auto-evolve: {len(GOAL_POOL)} goals every {interval}s[/green]")
+            except Exception as e:
+                console.print(f"  [red]Auto-evolve failed: {e}[/red]")
+
+    console.print(f"\n  GET  /health")
     console.print()
 
     server = HTTPServer(("0.0.0.0", port), OracleHandler)
