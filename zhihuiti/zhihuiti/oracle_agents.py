@@ -223,6 +223,54 @@ class AgentManager:
         except Exception:
             pass
 
+    def genesis(self):
+        """Seed the default agent team if no agents exist."""
+        if self._agents:
+            return  # Already have agents
+
+        DEFAULT_TEAM = [
+            {
+                "name": "Alpha Scanner",
+                "role": "scanner",
+                "instruments": ["BTC_USDT", "ETH_USDT", "SOL_USDT", "XRP_USDT", "DOGE_USDT"],
+                "domains": ["crypto"],
+            },
+            {
+                "name": "Equity Watch",
+                "role": "scanner",
+                "instruments": ["AAPL", "MSFT", "NVDA", "TSLA", "GOOGL"],
+                "domains": ["equities"],
+            },
+            {
+                "name": "Momentum Trader",
+                "role": "trader",
+                "instruments": ["BTC_USDT", "ETH_USDT", "SOL_USDT"],
+                "domains": ["crypto"],
+            },
+            {
+                "name": "Risk Sentinel",
+                "role": "sentinel",
+                "instruments": [],  # Watches everything
+                "domains": ["crypto", "equities"],
+            },
+            {
+                "name": "Theory Researcher",
+                "role": "researcher",
+                "instruments": ["BTC_USDT", "ETH_USDT", "AAPL", "NVDA"],
+                "domains": ["crypto", "equities"],
+            },
+        ]
+
+        for spec in DEFAULT_TEAM:
+            self.create(
+                name=spec["name"],
+                role=spec["role"],
+                instruments=spec["instruments"],
+                domains=spec["domains"],
+            )
+
+        return len(DEFAULT_TEAM)
+
     def create(self, name: str, role: str, instruments: list[str] | None = None,
                domains: list[str] | None = None, rules: list[dict] | None = None) -> OracleAgent:
         """Create a new oracle agent."""
