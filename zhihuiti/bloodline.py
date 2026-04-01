@@ -172,6 +172,21 @@ class Bloodline:
         # --- Generation: max of parents + 1 ---
         child_generation = max(parent_a.generation, parent_b.generation) + 1
 
+        # --- StrategyGenome crossover ---
+        child_genome = None
+        if parent_a.genome is not None and parent_b.genome is not None:
+            from zhihuiti.genome import crossover as genome_crossover
+            from zhihuiti.genome import mutate as genome_mutate
+            child_genome = genome_crossover(
+                dominant.genome, recessive.genome, bias=weight,
+            )
+            child_genome = genome_mutate(child_genome, rate=effective_mutation_rate)
+            mutations.append("genome_crossover+mutate")
+        elif parent_a.genome is not None:
+            child_genome = parent_a.genome
+        elif parent_b.genome is not None:
+            child_genome = parent_b.genome
+
         # --- Build child config ---
         child_gene_id = uuid.uuid4().hex[:12]
         child_config = AgentConfig(
@@ -187,6 +202,7 @@ class Bloodline:
             parent_a_gene=parent_a.gene_id,
             parent_b_gene=parent_b.gene_id,
             generation=child_generation,
+            genome=child_genome,
         )
 
         result = BreedResult(

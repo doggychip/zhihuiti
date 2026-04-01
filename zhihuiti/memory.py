@@ -289,6 +289,42 @@ class Memory:
 
             CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_source ON knowledge_chunks(source);
             CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_type ON knowledge_chunks(chunk_type);
+
+            CREATE TABLE IF NOT EXISTS epoch_stats (
+                epoch INTEGER PRIMARY KEY,
+                population INTEGER,
+                avg_fitness REAL,
+                money_supply REAL,
+                gini REAL,
+                archetype_counts TEXT DEFAULT '{}',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS agent_decisions (
+                id TEXT PRIMARY KEY,
+                epoch INTEGER,
+                agent_id TEXT,
+                action TEXT,
+                params TEXT DEFAULT '{}',
+                reasoning TEXT DEFAULT '',
+                model_used TEXT DEFAULT 'haiku',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE INDEX IF NOT EXISTS idx_agent_decisions_epoch ON agent_decisions(epoch);
+            CREATE INDEX IF NOT EXISTS idx_agent_decisions_agent ON agent_decisions(epoch, agent_id);
+
+            CREATE TABLE IF NOT EXISTS genome_snapshots (
+                id TEXT PRIMARY KEY,
+                epoch INTEGER,
+                agent_id TEXT,
+                gene_id TEXT,
+                genome TEXT DEFAULT '{}',
+                archetype TEXT DEFAULT '',
+                fitness REAL DEFAULT 0.0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE INDEX IF NOT EXISTS idx_genome_snapshots_epoch ON genome_snapshots(epoch);
+            CREATE INDEX IF NOT EXISTS idx_genome_snapshots_agent ON genome_snapshots(epoch, agent_id);
         """)
         self.conn.commit()
 
@@ -619,6 +655,64 @@ class Memory:
         """Aggregate transaction stats."""
         rows = self._query("SELECT tx_type, COUNT(*) as count, SUM(amount) as total FROM transactions GROUP BY tx_type")
         return {r["tx_type"]: {"count": r["count"], "total": round(r["total"], 2)} for r in rows}
+
+    # --- Evolution simulation methods ---
+
+    def save_epoch_stats(self, epoch: int, population: int, avg_fitness: float,
+                         money_supply: float, gini: float,
+                         archetype_counts: dict) -> None:
+        with self._lock:
+            self.conn.execute(
+                """INSERT OR REPLACE INTO epoch_stats
+                   (epoch, population, avg_fitness, money_supply, gini, archetype_counts)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (epoch, population, avg_fitness, money_supply, gini,
+                 json.dumps(archetype_counts)),
+            )
+            self.conn.commit()
+
+    def save_agent_decision(self, decision_id: str, epoch: int, agent_id: str,
+                            action: str, params: dict, reasoning: str,
+                            model_used: str = "haiku") -> None:
+        with self._lock:
+            self.conn.execute(
+                """INSERT OR REPLACE INTO agent_decisions
+                   (id, epoch, agent_id, action, params, reasoning, model_used)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (decision_id, epoch, agent_id, action, json.dumps(params),
+                 reasoning, model_used),
+            )
+            self.conn.commit()
+
+    def save_genome_snapshot(self, snapshot_id: str, epoch: int, agent_id: str,
+                             gene_id: str, genome: dict, archetype: str,
+                             fitness: float) -> None:
+        with self._lock:
+            self.conn.execute(
+                """INSERT OR REPLACE INTO genome_snapshots
+                   (id, epoch, agent_id, gene_id, genome, archetype, fitness)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (snapshot_id, epoch, agent_id, gene_id, json.dumps(genome),
+                 archetype, fitness),
+            )
+            self.conn.commit()
+
+    def get_epoch_stats(self, limit: int = 100) -> list[dict]:
+        rows = self._query(
+            "SELECT * FROM epoch_stats ORDER BY epoch DESC LIMIT ?", (limit,))
+        return [dict(r) for r in rows]
+
+    def get_agent_decisions_for_epoch(self, epoch: int) -> list[dict]:
+        rows = self._query(
+            "SELECT * FROM agent_decisions WHERE epoch = ? ORDER BY agent_id",
+            (epoch,))
+        return [dict(r) for r in rows]
+
+    def get_genome_snapshots_for_epoch(self, epoch: int) -> list[dict]:
+        rows = self._query(
+            "SELECT * FROM genome_snapshots WHERE epoch = ? ORDER BY agent_id",
+            (epoch,))
+        return [dict(r) for r in rows]
 
     # --- Auction methods ---
 
