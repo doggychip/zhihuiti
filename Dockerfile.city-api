@@ -1,0 +1,19 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY pyproject.toml ./
+COPY zhihuiti/ zhihuiti/
+COPY scripts/city_api.py scripts/
+
+RUN pip install --no-cache-dir -e . gunicorn
+
+# Zeabur injects PORT; default to 8080
+ENV PORT=8080
+ENV ZHIHUITI_DB=/app/data/zhihuiti.db
+
+EXPOSE 8080
+
+VOLUME /app/data
+
+CMD gunicorn --bind 0.0.0.0:${PORT} --workers 2 --chdir /app/scripts city_api:app

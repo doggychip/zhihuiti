@@ -9,6 +9,11 @@ dependencies = [
     "click>=8.1",
     "pyyaml>=6.0",
     "matplotlib>=3.7",
+    "discord.py>=2.3",
+    "APScheduler>=3.10",
+    "python-dotenv>=1.0",
+    "flask>=3.1",
+    "flask-cors>=6.0",
 ]
 
 [build-system]
