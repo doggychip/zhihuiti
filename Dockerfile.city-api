@@ -1,19 +1,17 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY pyproject.toml ./
-COPY zhihuiti/ zhihuiti/
-COPY scripts/city_api.py scripts/
+RUN pip install --no-cache-dir flask flask-cors gunicorn
 
-RUN pip install --no-cache-dir -e . gunicorn
+COPY scripts/city_api.py city_api.py
+COPY zhihuiti-snapshot.db /app/data/zhihuiti.db
 
-# Zeabur injects PORT; default to 8080
-ENV PORT=8080
 ENV ZHIHUITI_DB=/app/data/zhihuiti.db
-
 EXPOSE 8080
 
-VOLUME /app/data
-
-CMD gunicorn --bind 0.0.0.0:${PORT} --workers 2 --chdir /app/scripts city_api:app
+CMD gunicorn city_api:app \
+    -b 0.0.0.0:8080 \
+    -w 1 \
+    --timeout 300 \
+    --access-logfile -
