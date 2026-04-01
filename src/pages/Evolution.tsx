@@ -5,6 +5,7 @@ import {
 } from "recharts";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const API = "https://zhihuiti.zeabur.app/api/evolution";
 
