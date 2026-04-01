@@ -240,6 +240,8 @@ class OracleHandler(BaseHTTPRequestHandler):
             self._handle_real_goal_get(goal_id)
         elif path == "/api/data":
             self._handle_real_dashboard_data()
+        elif path == "/api/evolution":
+            self._handle_evolution_status()
         else:
             _json_response(self, {"error": "not found"}, 404)
 
@@ -983,6 +985,20 @@ class OracleHandler(BaseHTTPRequestHandler):
         except Exception as e:
             _json_response(self, {"error": str(e)}, 500)
 
+    def _handle_evolution_status(self):
+        """GET /api/evolution — self-directed evolution loop status and goal log."""
+        with _self_loop_lock:
+            log_copy = list(_self_loop_log)
+        completed = sum(1 for g in log_copy if g.get("status") == "completed")
+        failed = sum(1 for g in log_copy if g.get("status") == "failed")
+        _json_response(self, {
+            "running": _self_loop_running,
+            "total_goals_run": len(log_copy),
+            "completed": completed,
+            "failed": failed,
+            "recent_goals": list(reversed(log_copy[-20:])),
+        })
+
     def _handle_real_dashboard_data(self):
         """GET /api/data — full dashboard data (economy, agents, bloodline, etc.)."""
         if not _has_llm_key():
@@ -1124,6 +1140,149 @@ def _guess_domain(instrument: str) -> str:
     return "equities"
 
 
+# ── Self-Directed Evolution Loop ─────────────────────────────────────────
+
+_self_loop_running = False
+_self_loop_log: list[dict] = []
+_self_loop_lock = threading.Lock()
+
+SEED_GOALS = [
+    "Analyze the current crypto market. Which coins have strongest momentum? Compare BTC, ETH, SOL.",
+    "Review agent performance scores across all roles. Which roles consistently score above 0.8?",
+    "Compare the three realms (Research, Execution, Central) by productivity and score-per-token.",
+    "Analyze the gene pool. Are newer generations outperforming older ones? Is evolution working?",
+    "Research macro economic indicators affecting crypto markets. How should trading strategies adapt?",
+    "Evaluate risk-adjusted returns across different market conditions. Which strategies work best?",
+    "Analyze cross-domain correlations between crypto and equities. Are there exploitable patterns?",
+    "Review the auction system efficiency. Are agents bidding competitively? What's the average savings?",
+    "Research the latest developments in AI agent frameworks. Compare approaches and trade-offs.",
+    "Analyze S&P 500 tech sector: AAPL, MSFT, GOOGL, NVDA. Which has strongest fundamentals?",
+]
+
+
+def _start_self_directed_loop(orch, interval: int):
+    """Start the self-directed evolution loop.
+
+    Each cycle:
+    1. Run seed goals (first cycle only)
+    2. Ask the LLM to generate NEW goals based on current system state
+    3. Execute those goals → agents compete, evolve, breed
+    4. Repeat
+
+    This is the real zhihuiti: agents that design their own training.
+    """
+    global _self_loop_running
+    _self_loop_running = True
+
+    def _generate_new_goals(orch, count: int = 5) -> list[str]:
+        """Ask the LLM to generate new goals based on current system state."""
+        try:
+            from zhihuiti.dashboard import _gather_data
+            data = _gather_data(orch)
+
+            # Build a context summary for goal generation
+            economy = data.get("economy", {})
+            agents_data = data.get("agents", [])
+            bloodline = data.get("bloodline", {})
+            inspection = data.get("inspection", {})
+            realms = data.get("realms", {})
+
+            alive_agents = [a for a in agents_data if a.get("alive")]
+            top_roles = {}
+            for a in alive_agents:
+                role = a.get("role", "unknown")
+                score = a.get("avg_score", 0)
+                if role not in top_roles or score > top_roles[role]:
+                    top_roles[role] = score
+
+            context = f"""Current system state:
+- Agents: {len(alive_agents)} alive, {len(agents_data) - len(alive_agents)} dead
+- Max generation: {bloodline.get('max_generation', 0)}
+- Avg bloodline score: {bloodline.get('avg_score', 0)}
+- Economy: {economy.get('money_supply', 0)} supply, {economy.get('treasury_balance', 0)} treasury
+- Inspection acceptance rate: {inspection.get('acceptance_rate', 0):.1%}
+- Top roles by score: {', '.join(f'{r}={s:.2f}' for r, s in sorted(top_roles.items(), key=lambda x: -x[1])[:5])}
+- Realms: Research({realms.get('research', {}).get('tasks_completed', 0)} tasks), Execution({realms.get('execution', {}).get('tasks_completed', 0)} tasks), Central({realms.get('central', {}).get('tasks_completed', 0)} tasks)
+
+Previous goal log (last 10):
+{chr(10).join(f'- {g.get("goal", "?")[:60]} → {g.get("status", "?")}' for g in _self_loop_log[-10:])}
+"""
+
+            result = orch.llm.chat_json(
+                system="""You are the zhihuiti meta-orchestrator. Your job is to generate training goals
+that will push the agent swarm to evolve and improve. Goals should:
+1. Test different agent roles (researcher, analyst, strategist, auditor, coder)
+2. Cover diverse domains (crypto, equities, macro, AI research, system analysis)
+3. Increase in difficulty as agents improve
+4. Include self-reflection goals (analyze own performance, find weaknesses)
+5. Include creative goals that force agents to think beyond patterns
+6. NOT repeat recent goals
+
+Return a JSON array of goal strings. Each goal should be 1-2 sentences.""",
+                user=f"Generate {count} new training goals for the agent swarm.\n\n{context}",
+                temperature=0.8,
+            )
+
+            if isinstance(result, list):
+                return [str(g) for g in result[:count]]
+            return []
+        except Exception as e:
+            console.print(f"  [red]Goal generation failed:[/red] {e}")
+            return []
+
+    def _loop():
+        import time
+        import random
+
+        cycle = 0
+        while _self_loop_running:
+            cycle += 1
+            console.print(f"\n  [bold cyan]═══ Self-Directed Cycle {cycle} ═══[/bold cyan]")
+
+            # Pick goals: seed goals for first 2 cycles, then self-generated
+            if cycle <= 2:
+                goals = random.sample(SEED_GOALS, min(5, len(SEED_GOALS)))
+                console.print(f"  [dim]Using {len(goals)} seed goals[/dim]")
+            else:
+                goals = _generate_new_goals(orch, count=5)
+                if not goals:
+                    goals = random.sample(SEED_GOALS, min(3, len(SEED_GOALS)))
+                    console.print(f"  [yellow]Fallback to seed goals[/yellow]")
+                else:
+                    console.print(f"  [green]Generated {len(goals)} self-directed goals[/green]")
+
+            for goal in goals:
+                if not _self_loop_running:
+                    break
+                try:
+                    console.print(f"  [cyan]Running:[/cyan] {goal[:80]}...")
+                    result = orch.execute_goal(goal)
+                    entry = {"goal": goal, "status": "completed", "cycle": cycle}
+                    with _self_loop_lock:
+                        _self_loop_log.append(entry)
+                        if len(_self_loop_log) > 100:
+                            _self_loop_log[:] = _self_loop_log[-100:]
+                    console.print(f"  [green]Done:[/green] {goal[:60]}")
+                except Exception as e:
+                    entry = {"goal": goal, "status": "failed", "error": str(e), "cycle": cycle}
+                    with _self_loop_lock:
+                        _self_loop_log.append(entry)
+                    console.print(f"  [red]Failed:[/red] {e}")
+
+            # Sleep until next cycle
+            console.print(f"  [dim]Next cycle in {interval}s...[/dim]")
+            for _ in range(interval):
+                if not _self_loop_running:
+                    break
+                time.sleep(1)
+
+    thread = threading.Thread(target=_loop, daemon=True)
+    thread.start()
+    console.print(f"  [bold green]Self-directed evolution started[/bold green]")
+    console.print(f"  Cycle 1-2: seed goals | Cycle 3+: agents design their own goals")
+    console.print(f"  Interval: {interval}s between cycles")
+
+
 def serve(port: int | None = None):
     """Start the combined Oracle + Agent API server."""
     port = port or int(os.environ.get("PORT", 8377))
@@ -1164,24 +1323,12 @@ def serve(port: int | None = None):
             console.print(f"  [red]Warning: orchestrator init failed: {e}[/red]")
             console.print(f"  [red]Real agent endpoints will retry on first request[/red]")
 
-        # Optional: start background evolution
+        # Optional: start background evolution with self-directed goals
         if os.environ.get("ZHIHUITI_AUTO_EVOLVE"):
             try:
                 orch = _get_orchestrator()
-                from zhihuiti.dashboard import AutoScheduler
                 interval = int(os.environ.get("ZHIHUITI_EVOLVE_INTERVAL", "7200"))
-                scheduler = AutoScheduler(orch, interval_seconds=interval)
-                GOAL_POOL = [
-                    "Analyze the current crypto market. Which coins have strongest momentum?",
-                    "Review agent performance scores. Which roles consistently score above 0.8?",
-                    "Compare the three realms by productivity. Which has the best score-per-token efficiency?",
-                    "Analyze the gene pool. Are newer generations outperforming older ones?",
-                    "Review the auction system efficiency. Are agents bidding competitively?",
-                ]
-                for goal in GOAL_POOL:
-                    scheduler.add_goal(goal)
-                scheduler.start()
-                console.print(f"  [green]Auto-evolve: {len(GOAL_POOL)} goals every {interval}s[/green]")
+                _start_self_directed_loop(orch, interval)
             except Exception as e:
                 console.print(f"  [red]Auto-evolve failed: {e}[/red]")
 
