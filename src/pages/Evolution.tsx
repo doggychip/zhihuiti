@@ -202,16 +202,23 @@ export default function EvolutionDashboard() {
   return (
     <div className="min-h-screen" style={{ background: "#0a0a1a", color: "#e0e7ff" }}>
       {/* Header */}
-      <div className="px-6 pt-5 pb-3 flex items-center gap-3">
-        <span className="text-2xl">🧬</span>
-        <div>
-          <h1 className="text-lg font-bold tracking-tight" style={{ color: "#e0e7ff" }}>
-            Evolution Dashboard
-          </h1>
-          <div className="text-[10px] uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.25)" }}>
-            Darwinian Agent Simulation · Phase 2 Economy Layer
+      <div className="px-6 pt-5 pb-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">🧬</span>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight" style={{ color: "#e0e7ff" }}>
+              Evolution Dashboard
+            </h1>
+            <div className="text-[10px] uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.25)" }}>
+              Darwinian Agent Simulation · Phase 2 Economy Layer
+            </div>
           </div>
         </div>
+        <Link to="/"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+          style={{ background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.08)" }}>
+          ← Back to HUD
+        </Link>
       </div>
 
       {/* Stats Bar */}
