@@ -44,7 +44,7 @@ OLLAMA_DEFAULT_MODEL = "llama3"
 OLLAMA_PREMIUM_MODEL = "llama3.1"
 
 # Retry configuration
-MAX_RETRIES = 3
+MAX_RETRIES = 5
 RETRY_BACKOFF_BASE = 2.0
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
@@ -67,8 +67,10 @@ class LLM:
     def __init__(self, model: str | None = None):
         self._deepseek_key = os.environ.get("DEEPSEEK_API_KEY", "")
         self._openrouter_key = os.environ.get("OPENROUTER_API_KEY", "")
+        self._generic_key = os.environ.get("LLM_API_KEY", "")
+        self._generic_url = os.environ.get("LLM_BASE_URL", "")
 
-        # Backend selection: DeepSeek > OpenRouter > Ollama
+        # Backend selection: DeepSeek > OpenRouter > Generic OpenAI-compat > Ollama
         if self._deepseek_key:
             self._backend = "deepseek"
             self._api_key = self._deepseek_key
@@ -81,6 +83,16 @@ class LLM:
             self._api_url = OPENROUTER_URL
             default_model = OPENROUTER_DEFAULT_MODEL
             default_premium = OPENROUTER_PREMIUM_MODEL
+        elif self._generic_key and self._generic_url:
+            self._backend = "generic"
+            self._api_key = self._generic_key
+            # Normalize: append /chat/completions if base URL doesn't already have a path
+            base = self._generic_url.rstrip("/")
+            if not base.endswith("/chat/completions"):
+                base = base + "/chat/completions"
+            self._api_url = base
+            default_model = "deepseek-chat"
+            default_premium = "deepseek-chat"
         else:
             self._backend = "ollama"
             self._api_key = ""
@@ -100,6 +112,8 @@ class LLM:
             backend = f"Ollama ({self._ollama_host}, {self.model})"
         elif self._backend == "deepseek":
             backend = f"DeepSeek ({self.model})"
+        elif self._backend == "generic":
+            backend = f"Generic ({self._generic_url}, {self.model})"
         else:
             backend = f"OpenRouter ({self.model})"
         # Lazy import to avoid circular
@@ -160,7 +174,7 @@ class LLM:
 
     def estimate_cost(self, input_tokens: int, output_tokens: int) -> float:
         """Budget units consumed (1 unit ≈ $0.001 for cloud; 0 for local)."""
-        if self._use_ollama:
+        if self._backend == "ollama":
             return 0.0
         return (input_tokens + output_tokens) / 1000
 
@@ -290,8 +304,8 @@ class LLM:
                 self.total_failures += 1
                 raise LLMError(f"{self._backend} error {resp.status_code}: {resp.text[:500]}")
 
-            except httpx.TimeoutException:
-                last_error = "Request timed out"
+            except (httpx.TimeoutException, httpx.RemoteProtocolError) as exc:
+                last_error = str(exc)
                 if attempt < MAX_RETRIES:
                     self.total_retries += 1
                     time.sleep(RETRY_BACKOFF_BASE ** (attempt + 1))

@@ -102,6 +102,20 @@ class Daemon:
             border_style="cyan",
         ))
 
+        # Start Discord oracle bot if configured
+        discord_oracle = None
+        try:
+            from zhihuiti.discord_oracle import get_discord_oracle
+
+            discord_oracle = get_discord_oracle()
+            if discord_oracle.available:
+                discord_oracle.start()
+            else:
+                discord_oracle = None
+        except Exception as exc:
+            console.print(f"  [dim]Discord oracle unavailable: {exc}[/dim]")
+            discord_oracle = None
+
         try:
             self._orch = Orchestrator(
                 db_path=self.db_path, model=self.model,
@@ -173,6 +187,10 @@ class Daemon:
             self._save_state()
             if self._orch:
                 self._orch.close()
+
+            # Disconnect Discord oracle
+            if discord_oracle:
+                discord_oracle.stop()
 
             # Restore original signal handlers
             signal.signal(signal.SIGINT, prev_sigint)
