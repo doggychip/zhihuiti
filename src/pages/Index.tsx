@@ -1742,7 +1742,12 @@ export default function ZhihuiTiDashboard() {
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <Link to="/evolution"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+            style={{ background: "rgba(99,102,241,0.1)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.2)" }}>
+            🧬 Evolution
+          </Link>
           {Object.entries(REALM_COLORS).map(([r, c]) =>
           <span key={r} className="px-2 py-1 rounded text-xs" style={{ background: `${c}15`, color: c, border: `1px solid ${c}30` }}>
               {REALM_LABELS[r]?.split(" ")[0]} · {agents.filter((a) => a.realm === r).length}
