@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { ResizableWidget } from "@/components/ResizableWidget";
 import { createPortal } from "react-dom";
