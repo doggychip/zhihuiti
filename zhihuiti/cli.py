@@ -2,11 +2,28 @@
 
 from __future__ import annotations
 
+import os
 import sys
+from pathlib import Path
 
 import click
 from rich.console import Console
 from rich.panel import Panel
+
+
+def _load_dotenv() -> None:
+    """Load .env file into os.environ (key=value lines, no overwrite)."""
+    env_path = Path(".env")
+    if not env_path.exists():
+        return
+    for line in env_path.read_text().splitlines():
+        line = line.strip()
+        if line and "=" in line and not line.startswith("#"):
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip())
+
+
+_load_dotenv()
 
 console = Console()
 
