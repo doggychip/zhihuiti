@@ -5,7 +5,10 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from zhihuiti.genome import StrategyGenome
 
 
 class AgentRole(str, Enum):
@@ -83,12 +86,20 @@ class AgentConfig:
     model: str | None = None
     # Tool access — agents with tools can execute whitelisted shell commands
     tools_enabled: bool = False
+    # Strategy genome — evolvable behavioral parameters (Phase 2 economy)
+    genome: StrategyGenome | None = None
 
     def mutate(self, mutation_notes: str = "") -> AgentConfig:
         """Create a slightly mutated copy of this config."""
         import random
 
         new_temp = max(0.1, min(1.0, self.temperature + random.uniform(-0.1, 0.1)))
+        # Mutate genome if present
+        child_genome = None
+        if self.genome is not None:
+            from zhihuiti.genome import mutate as mutate_genome
+            child_genome = mutate_genome(self.genome)
+
         return AgentConfig(
             role=self.role,
             system_prompt=self.system_prompt,
@@ -104,6 +115,7 @@ class AgentConfig:
             generation=self.generation,
             model=self.model,  # inherit model tier on mutation
             tools_enabled=self.tools_enabled,
+            genome=child_genome,
         )
 
 
@@ -140,6 +152,7 @@ class AgentState:
     alive: bool = True
     realm: Realm = Realm.EXECUTION
     life_state: AgentLifeState = AgentLifeState.ACTIVE
+    fitness: float = 0.5  # Evolutionary fitness (EMA of blended score)
 
     @property
     def avg_score(self) -> float:

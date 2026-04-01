@@ -18,7 +18,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from rich.console import Console
 from rich.panel import Panel
@@ -95,6 +95,18 @@ class TradingMarket:
         self.trade_history: list[TradeRecord] = []
         # service_role -> list of trade prices (most recent last)
         self.price_history: dict[str, list[float]] = defaultdict(list)
+        # Optional callback invoked after each trade settlement
+        self.on_trade_settled: Callable[[TradeRecord], None] | None = None
+
+    @staticmethod
+    def is_breeding_right(service_role: str) -> bool:
+        """Check if a service_role represents a breeding right trade."""
+        return service_role.startswith("breeding_right:")
+
+    @staticmethod
+    def get_gene_id_from_role(service_role: str) -> str:
+        """Extract gene_id from a breeding_right service_role."""
+        return service_role.split(":", 1)[1] if ":" in service_role else ""
 
     # ------------------------------------------------------------------
     # Order management
@@ -332,6 +344,10 @@ class TradingMarket:
             f"{trade_qty}x {sell_order.service_role} @ {trade_price:.1f} "
             f"(total {total:.1f} tokens)"
         )
+
+        # Invoke settlement callback (e.g. for breeding rights)
+        if self.on_trade_settled is not None:
+            self.on_trade_settled(trade)
 
         return trade
 

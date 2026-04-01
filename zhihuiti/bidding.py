@@ -251,29 +251,41 @@ class BiddingHouse:
     def _generate_bid(self, agent: AgentState, auction: Auction) -> float:
         """Calculate an agent's bid for a task.
 
-        Bidding strategy:
+        If agent has a StrategyGenome, bid is genome-driven:
+        - bid_aggression controls base range (aggressive = bids lower)
+        - Budget pressure unchanged
+
+        Without genome (legacy path):
         - Base: proportional to price ceiling
-        - Discount for higher confidence (better agents bid lower, they know they'll earn rewards)
-        - Premium for lower budget (desperate agents bid higher to survive)
-        - Slight randomness to prevent ties
+        - Discount for higher confidence
+        - Premium for lower budget
         """
         import random
 
+        genome = agent.config.genome
+
+        if genome is not None:
+            # Genome-driven bidding:
+            # Aggressive agents bid lower (closer to MIN_BID)
+            # Conservative agents bid higher (closer to ceiling)
+            low = 0.3 + (1.0 - genome.bid_aggression) * 0.2   # 0.3-0.5
+            high = 0.6 + (1.0 - genome.bid_aggression) * 0.3  # 0.6-0.9
+            base = auction.price_ceiling * random.uniform(low, high)
+
+            # Budget pressure: low budget agents bid higher
+            budget_ratio = min(agent.budget / 100.0, 1.0)
+            budget_factor = 1.0 + (1.0 - budget_ratio) * 0.2
+
+            bid = base * budget_factor
+            return max(MIN_BID, min(bid, auction.price_ceiling))
+
+        # Legacy path: original behavior
         confidence = agent.avg_score if agent.scores else 0.5
-
-        # Base bid: 50-80% of ceiling
         base = auction.price_ceiling * random.uniform(0.5, 0.8)
-
-        # Confidence discount: better agents bid lower (they'll earn it back in rewards)
-        confidence_factor = 1.0 - (confidence * 0.3)  # Up to 30% discount
-
-        # Budget pressure: low budget agents bid higher
+        confidence_factor = 1.0 - (confidence * 0.3)
         budget_ratio = min(agent.budget / 100.0, 1.0)
-        budget_factor = 1.0 + (1.0 - budget_ratio) * 0.2  # Up to 20% premium
-
+        budget_factor = 1.0 + (1.0 - budget_ratio) * 0.2
         bid = base * confidence_factor * budget_factor
-
-        # Clamp to valid range
         return max(MIN_BID, min(bid, auction.price_ceiling))
 
     def award(self, auction: Auction) -> tuple[AgentState | None, Bid | None]:
