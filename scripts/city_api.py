@@ -117,5 +117,50 @@ def transactions():
         db.close()
 
 
+@app.route("/api/think", methods=["POST"])
+def think():
+    """Generate an AI thought for an agent. Uses Claude API if ANTHROPIC_API_KEY is set."""
+    import random
+
+    data = request.get_json(silent=True) or {}
+    role = data.get("role", "coder")
+    agent_id = data.get("agent_id", "unknown")
+    score = data.get("score", 0.5)
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return jsonify({"thought": None})  # client falls back to local thoughts
+
+    try:
+        import urllib.request
+
+        prompt = (
+            f"You are a {role} AI agent (id: {agent_id[:6]}, score: {score:.2f}) "
+            f"in a competitive multi-agent economy. In ONE short sentence (under 20 words), "
+            f"say what you're thinking about doing right now. Be specific to your role. "
+            f"Be creative and varied. No quotes."
+        )
+        body = json.dumps({
+            "model": "claude-haiku-4-5-20251001",
+            "max_tokens": 60,
+            "messages": [{"role": "user", "content": prompt}],
+        }).encode()
+        req = urllib.request.Request(
+            "https://api.anthropic.com/v1/messages",
+            data=body,
+            headers={
+                "Content-Type": "application/json",
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            result = json.loads(resp.read())
+            text = result["content"][0]["text"].strip()
+            return jsonify({"thought": text})
+    except Exception:
+        return jsonify({"thought": None})
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
