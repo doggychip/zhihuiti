@@ -16,6 +16,26 @@ CORS(app)
 
 DB_PATH = os.environ.get("ZHIHUITI_DB", "/app/zhihuiti.db")
 
+# On startup, force the DB out of WAL mode to avoid disk I/O errors
+# in container overlay filesystems after restarts.
+def _init_db():
+    if not os.path.exists(DB_PATH):
+        return
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        conn.execute("PRAGMA journal_mode=DELETE")
+        conn.close()
+        # Remove leftover WAL/SHM files
+        for suffix in ("-wal", "-shm"):
+            path = DB_PATH + suffix
+            if os.path.exists(path):
+                os.remove(path)
+    except Exception as e:
+        print(f"[init_db] Warning: {e}")
+
+_init_db()
+
 
 def get_db():
     if not os.path.exists(DB_PATH):
@@ -27,7 +47,38 @@ def get_db():
 
 @app.route("/health")
 def health():
-    return jsonify({"status": "ok", "service": "zhihuiti-city"})
+    """Health check with DB diagnostics."""
+    import traceback
+    diag = {
+        "status": "ok",
+        "service": "zhihuiti-city",
+        "db_path": DB_PATH,
+        "db_exists": os.path.exists(DB_PATH),
+    }
+    if os.path.exists(DB_PATH):
+        diag["db_size_mb"] = round(os.path.getsize(DB_PATH) / 1048576, 2)
+    # Try opening DB
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        tables = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        diag["tables"] = tables
+        count = conn.execute("SELECT COUNT(*) FROM agents").fetchone()[0]
+        diag["agent_count"] = count
+        conn.close()
+    except Exception as e:
+        diag["status"] = "error"
+        diag["db_error"] = str(e)
+        diag["db_traceback"] = traceback.format_exc()
+    # Check /app/data too
+    diag["app_data_exists"] = os.path.isdir("/app/data")
+    if os.path.isdir("/app/data"):
+        try:
+            diag["app_data_contents"] = os.listdir("/app/data")
+        except Exception:
+            pass
+    diag["app_contents"] = os.listdir("/app")
+    return jsonify(diag)
 
 
 @app.route("/api/stats")
