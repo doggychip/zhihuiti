@@ -14,10 +14,12 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-DB_PATH = os.environ.get("ZHIHUITI_DB", "/app/data/zhihuiti.db")
+DB_PATH = os.environ.get("ZHIHUITI_DB", "/app/zhihuiti.db")
 
 
 def get_db():
+    if not os.path.exists(DB_PATH):
+        raise FileNotFoundError(f"Database not found at {DB_PATH}")
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
