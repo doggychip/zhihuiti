@@ -5,13 +5,13 @@ WORKDIR /app
 RUN pip install --no-cache-dir flask flask-cors gunicorn
 
 COPY scripts/city_api.py city_api.py
-COPY zhihuiti-snapshot.db /app/data/zhihuiti.db
+COPY zhihuiti-snapshot.db /app/zhihuiti.db
 
-ENV ZHIHUITI_DB=/app/data/zhihuiti.db
+ENV ZHIHUITI_DB=/app/zhihuiti.db
 EXPOSE 8080
 
-CMD gunicorn city_api:app \
-    -b 0.0.0.0:8080 \
-    -w 1 \
-    --timeout 300 \
-    --access-logfile -
+CMD ["gunicorn", "city_api:app", \
+     "-b", "0.0.0.0:8080", \
+     "-w", "1", \
+     "--timeout", "300", \
+     "--access-logfile", "-"]
