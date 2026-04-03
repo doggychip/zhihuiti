@@ -1451,11 +1451,26 @@ export default function ZhihuiTiDashboard() {
 
   const handleSelect = useCallback((id: string) => setSelected((prev) => prev === id ? null : id), []);
 
+  const [allAgentsRaw, setAllAgentsRaw] = useState<any[]>([]);
+
   const fetchData = useCallback(() => {
-    fetch("https://zhihuiti.zeabur.app/api/data").
-    then((r) => r.json()).
-    then((d) => {setData(d);setLive(true);}).
-    catch(() => {setData(DEMO_DATA);setLive(false);});
+    // Fetch dashboard metadata
+    fetch("https://zhihuiti.zeabur.app/api/data")
+      .then((r) => r.json())
+      .then((d) => { setData(d); setLive(true); })
+      .catch(() => { setData(DEMO_DATA); setLive(false); });
+
+    // Fetch agents from agentscity API
+    fetch("https://agentscity.zeabur.app/api/all-agents")
+      .then((r) => r.json())
+      .then((agents) => { if (Array.isArray(agents)) setAllAgentsRaw(agents); })
+      .catch(() => {
+        // Local dev fallback
+        fetch("http://localhost:5050/api/all-agents")
+          .then((r) => r.json())
+          .then((agents) => { if (Array.isArray(agents)) setAllAgentsRaw(agents); })
+          .catch(() => {});
+      });
   }, []);
 
   // Poll jobs every 5s
@@ -1536,28 +1551,25 @@ export default function ZhihuiTiDashboard() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  const coreAgents: Agent[] = data?.agents || [];
-
-  // Parse alphaarena agents from API and merge
-  const alphaArenaAgents: Agent[] = useMemo(() => {
-    const raw = (data as any)?.alphaarena?.agents;
-    if (!Array.isArray(raw)) return [];
-    return raw.map((a: any) => ({
-      id: a.id,
-      role: a.name || a.id,
-      name: a.name,
-      budget: (a.compositeScore || 0.5) * 200,
-      avg_score: a.winRate || 0.5,
-      alive: true,
-      realm: a.type === "algo_bot" ? "central" : "research",
-      life_state: "active",
-      generation: 0,
-      tasks: 0,
-      group: (a.type === "algo_bot" ? "zhihuiti" : "hedge_fund") as "zhihuiti" | "hedge_fund",
-    }));
-  }, [data]);
-
-  const agents: Agent[] = useMemo(() => [...coreAgents, ...alphaArenaAgents], [coreAgents, alphaArenaAgents]);
+  // Map agents from agentscity API to dashboard Agent interface
+  const agents: Agent[] = useMemo(() => {
+    if (allAgentsRaw.length > 0) {
+      return allAgentsRaw.map((a: any) => ({
+        id: a.id || "",
+        role: a.role || "unknown",
+        budget: a.budget ?? 100,
+        avg_score: a.avg_score ?? 0.5,
+        alive: a.alive === 1 || a.alive === true,
+        realm: a.role === "trader" ? "execution" : a.role === "strategist" ? "central" : "research",
+        life_state: (a.alive === 1 || a.alive === true) ? "active" : "dead",
+        generation: a.depth ?? 0,
+        tasks: 0,
+        group: (a.source === "evolution" ? "hedge_fund" : "zhihuiti") as "zhihuiti" | "hedge_fund",
+      }));
+    }
+    // Fallback to old data.agents if new API not available
+    return data?.agents || [];
+  }, [allAgentsRaw, data]);
   const events = useSimulatedFeed(agents);
 
   // Build sparse economy graph: each agent connects to 2-3 peers (same realm, nearest by score)
@@ -1737,7 +1749,7 @@ export default function ZhihuiTiDashboard() {
           <div>
             <div className="text-sm font-bold tracking-wide">智慧体 ZHIHUITI</div>
             <div className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
-              Autonomous Multi-Agent Ecosystem · {coreAgents.filter(a => a.alive).length} core + {alphaArenaAgents.length} AlphaArena + {(data as any)?.heartai?.total || 0} HeartAI agents
+              Autonomous Multi-Agent Ecosystem · {agents.filter(a => a.alive && a.group === "zhihuiti").length} core + {agents.filter(a => a.alive && a.group === "hedge_fund").length} evolved + {(data as any)?.heartai?.total || 0} HeartAI agents
               {!live && <span className="ml-2" style={{ color: "#eab308" }}>(demo mode)</span>}
             </div>
           </div>
@@ -2007,7 +2019,7 @@ export default function ZhihuiTiDashboard() {
                       color: showZhihuiti ? "#eab308" : "rgba(255,255,255,0.3)",
                       border: `1px solid ${showZhihuiti ? "rgba(234,179,8,0.3)" : "rgba(255,255,255,0.08)"}`
                     }}>
-                    🟡 ZhihuiTi ({alphaArenaAgents.filter(a => a.group === "zhihuiti").length})
+                    🟡 ZhihuiTi ({agents.filter(a => a.group === "zhihuiti").length})
                   </button>
                   <button
                     onClick={() => setShowHedgeFund(s => !s)}
@@ -2017,7 +2029,7 @@ export default function ZhihuiTiDashboard() {
                       color: showHedgeFund ? "#3b82f6" : "rgba(255,255,255,0.3)",
                       border: `1px solid ${showHedgeFund ? "rgba(59,130,246,0.3)" : "rgba(255,255,255,0.08)"}`
                     }}>
-                    🔵 Hedge Fund ({alphaArenaAgents.filter(a => a.group === "hedge_fund").length})
+                    🔵 Hedge Fund ({agents.filter(a => a.group === "hedge_fund").length})
                   </button>
                   <button
                   onClick={() => setShowCollision((s) => !s)}
@@ -2147,10 +2159,10 @@ export default function ZhihuiTiDashboard() {
                 <div className="text-xs uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>🌐 Cross-Project</div>
                 <div className="grid grid-cols-4 gap-2">
                   {[
-                    { name: "AlphaArena", icon: "⚔️", alive: alphaArenaAgents.length > 0, agents: alphaArenaAgents.filter(a => a.alive).length, tasks: alphaArenaAgents.reduce((s, a) => s + a.tasks, 0), score: alphaArenaAgents.length > 0 ? (alphaArenaAgents.reduce((s, a) => s + a.avg_score, 0) / alphaArenaAgents.length).toFixed(2) : "—", color: "#a855f7", offline: alphaArenaAgents.length === 0 },
-                    { name: "CriticAI", icon: "🧠", alive: false, agents: 0, tasks: 0, score: "—", color: "#3b82f6", offline: true },
-                    { name: "HeartAI", icon: "❤️", alive: !!(data as any)?.heartai?.online, agents: (data as any)?.heartai?.total || 0, tasks: 0, score: (data as any)?.heartai?.agents?.length > 0 ? ((data as any).heartai.agents.reduce((s: number, a: any) => s + (a.avg_score || 0), 0) / (data as any).heartai.agents.length).toFixed(2) : "—", color: "#ef4444", offline: !(data as any)?.heartai?.online },
-                    { name: "zhihuiti", icon: "🧬", alive: live, agents: coreAgents.filter(a => a.alive).length, tasks: mem.total_tasks || 0, score: (ins.avg_score || 0).toFixed(2), color: "#eab308", offline: !live },
+                     { name: "AgentsCity", icon: "⚔️", alive: agents.length > 0, agents: agents.filter(a => a.alive).length, tasks: 0, score: agents.length > 0 ? (agents.reduce((s, a) => s + a.avg_score, 0) / agents.length).toFixed(2) : "—", color: "#a855f7", offline: agents.length === 0 },
+                     { name: "CriticAI", icon: "🧠", alive: false, agents: 0, tasks: 0, score: "—", color: "#3b82f6", offline: true },
+                     { name: "HeartAI", icon: "❤️", alive: !!(data as any)?.heartai?.online, agents: (data as any)?.heartai?.total || 0, tasks: 0, score: (data as any)?.heartai?.agents?.length > 0 ? ((data as any).heartai.agents.reduce((s: number, a: any) => s + (a.avg_score || 0), 0) / (data as any).heartai.agents.length).toFixed(2) : "—", color: "#ef4444", offline: !(data as any)?.heartai?.online },
+                     { name: "zhihuiti", icon: "🧬", alive: live, agents: agents.filter(a => a.alive && a.group === "zhihuiti").length, tasks: mem.total_tasks || 0, score: (ins.avg_score || 0).toFixed(2), color: "#eab308", offline: !live },
                   ].map((proj) => (
                     <div key={proj.name} className="p-2.5 rounded-lg" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
                       <div className="flex items-center gap-1.5 mb-1.5">
