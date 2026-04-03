@@ -2019,7 +2019,7 @@ export default function ZhihuiTiDashboard() {
                       color: showZhihuiti ? "#eab308" : "rgba(255,255,255,0.3)",
                       border: `1px solid ${showZhihuiti ? "rgba(234,179,8,0.3)" : "rgba(255,255,255,0.08)"}`
                     }}>
-                    🟡 ZhihuiTi ({alphaArenaAgents.filter(a => a.group === "zhihuiti").length})
+                    🟡 ZhihuiTi ({agents.filter(a => a.group === "zhihuiti").length})
                   </button>
                   <button
                     onClick={() => setShowHedgeFund(s => !s)}
