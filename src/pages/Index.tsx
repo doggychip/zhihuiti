@@ -2029,7 +2029,7 @@ export default function ZhihuiTiDashboard() {
                       color: showHedgeFund ? "#3b82f6" : "rgba(255,255,255,0.3)",
                       border: `1px solid ${showHedgeFund ? "rgba(59,130,246,0.3)" : "rgba(255,255,255,0.08)"}`
                     }}>
-                    🔵 Hedge Fund ({alphaArenaAgents.filter(a => a.group === "hedge_fund").length})
+                    🔵 Hedge Fund ({agents.filter(a => a.group === "hedge_fund").length})
                   </button>
                   <button
                   onClick={() => setShowCollision((s) => !s)}
