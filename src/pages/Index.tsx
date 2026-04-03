@@ -1551,28 +1551,25 @@ export default function ZhihuiTiDashboard() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  const coreAgents: Agent[] = data?.agents || [];
-
-  // Parse alphaarena agents from API and merge
-  const alphaArenaAgents: Agent[] = useMemo(() => {
-    const raw = (data as any)?.alphaarena?.agents;
-    if (!Array.isArray(raw)) return [];
-    return raw.map((a: any) => ({
-      id: a.id,
-      role: a.name || a.id,
-      name: a.name,
-      budget: (a.compositeScore || 0.5) * 200,
-      avg_score: a.winRate || 0.5,
-      alive: true,
-      realm: a.type === "algo_bot" ? "central" : "research",
-      life_state: "active",
-      generation: 0,
-      tasks: 0,
-      group: (a.type === "algo_bot" ? "zhihuiti" : "hedge_fund") as "zhihuiti" | "hedge_fund",
-    }));
-  }, [data]);
-
-  const agents: Agent[] = useMemo(() => [...coreAgents, ...alphaArenaAgents], [coreAgents, alphaArenaAgents]);
+  // Map agents from agentscity API to dashboard Agent interface
+  const agents: Agent[] = useMemo(() => {
+    if (allAgentsRaw.length > 0) {
+      return allAgentsRaw.map((a: any) => ({
+        id: a.id || "",
+        role: a.role || "unknown",
+        budget: a.budget ?? 100,
+        avg_score: a.avg_score ?? 0.5,
+        alive: a.alive === 1 || a.alive === true,
+        realm: a.role === "trader" ? "execution" : a.role === "strategist" ? "central" : "research",
+        life_state: (a.alive === 1 || a.alive === true) ? "active" : "dead",
+        generation: a.depth ?? 0,
+        tasks: 0,
+        group: (a.source === "evolution" ? "hedge_fund" : "zhihuiti") as "zhihuiti" | "hedge_fund",
+      }));
+    }
+    // Fallback to old data.agents if new API not available
+    return data?.agents || [];
+  }, [allAgentsRaw, data]);
   const events = useSimulatedFeed(agents);
 
   // Build sparse economy graph: each agent connects to 2-3 peers (same realm, nearest by score)
