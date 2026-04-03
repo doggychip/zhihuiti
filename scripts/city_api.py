@@ -77,7 +77,10 @@ def health():
             diag["app_data_contents"] = os.listdir("/app/data")
         except Exception:
             pass
-    diag["app_contents"] = os.listdir("/app")
+    try:
+        diag["app_contents"] = os.listdir("/app")
+    except OSError:
+        pass
     return jsonify(diag)
 
 
@@ -130,12 +133,54 @@ def stats():
 
 @app.route("/api/agents")
 def agents():
+    """Core agents (alive only)."""
     db = get_db()
     try:
         rows = db.execute(
-            "SELECT id, role, budget, depth, avg_score, alive, created_at FROM agents ORDER BY created_at DESC"
+            "SELECT id, role, budget, depth, avg_score, alive, created_at "
+            "FROM agents WHERE alive=1 ORDER BY created_at DESC"
         ).fetchall()
         return jsonify({"agents": [dict(r) for r in rows], "count": len(rows)})
+    finally:
+        db.close()
+
+
+@app.route("/api/evolution")
+def evolution():
+    """Evolution agents from gene_pool (active genes with score > 0)."""
+    db = get_db()
+    try:
+        rows = db.execute(
+            "SELECT gene_id as id, role, avg_score, temperature, "
+            "parent_gene_id, created_at FROM gene_pool "
+            "WHERE avg_score > 0 ORDER BY avg_score DESC"
+        ).fetchall()
+        return jsonify({"agents": [dict(r) for r in rows], "count": len(rows)})
+    finally:
+        db.close()
+
+
+@app.route("/api/all-agents")
+def all_agents():
+    """All alive agents. Core agents (alive=1) plus evolved agents (depth>0, alive=1).
+
+    Gene pool entries are genetic templates, not active agents, so they are excluded.
+    The 'source' field distinguishes original (depth=0) from evolved (depth>0) agents.
+    """
+    db = get_db()
+    try:
+        rows = db.execute(
+            "SELECT id, role, budget, depth, avg_score, alive, created_at "
+            "FROM agents WHERE alive=1 ORDER BY created_at DESC"
+        ).fetchall()
+
+        merged = []
+        for r in rows:
+            d = dict(r)
+            d["source"] = "evolution" if d["depth"] > 0 else "core"
+            merged.append(d)
+
+        return jsonify(merged)
     finally:
         db.close()
 
