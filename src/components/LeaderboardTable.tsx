@@ -130,6 +130,27 @@ export function LeaderboardTable({ agents, handleSelect, REALM_COLORS }: Leaderb
           🔵 Hedge Fund ({hedgeCount})
         </button>
       </div>
+      <div className="flex gap-1 pb-2 flex-wrap">
+        {allRoles.map(role => {
+          const active = !hiddenRoles.has(role);
+          const color = ROLE_COLORS[role] || "#888";
+          const count = agents.filter(a => a.alive && a.role === role).length;
+          return (
+            <button
+              key={role}
+              onClick={() => toggleRole(role)}
+              className="text-[9px] px-1.5 py-0.5 rounded-full transition-all capitalize"
+              style={{
+                background: active ? `${color}22` : "rgba(255,255,255,0.04)",
+                color: active ? color : "rgba(255,255,255,0.25)",
+                border: `1px solid ${active ? `${color}44` : "rgba(255,255,255,0.08)"}`,
+              }}
+            >
+              {role} ({count})
+            </button>
+          );
+        })}
+      </div>
       <div className="overflow-x-auto max-h-52 overflow-y-auto">
       <table className="text-xs" style={{ borderCollapse: "separate", borderSpacing: 0, tableLayout: "fixed", width: colWidths.reduce((s, w) => s + w, 0) }}>
         <thead>
