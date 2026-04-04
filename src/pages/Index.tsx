@@ -1452,6 +1452,7 @@ export default function ZhihuiTiDashboard() {
   const handleSelect = useCallback((id: string) => setSelected((prev) => prev === id ? null : id), []);
 
   const [allAgentsRaw, setAllAgentsRaw] = useState<any[]>([]);
+  const [agentSource, setAgentSource] = useState<"agentscity" | "localhost" | "fallback" | "loading">("loading");
 
   const fetchData = useCallback(() => {
     // Fetch dashboard metadata
@@ -1463,13 +1464,13 @@ export default function ZhihuiTiDashboard() {
     // Fetch agents from agentscity API
     fetch("https://agentscity.zeabur.app/api/all-agents")
       .then((r) => r.json())
-      .then((agents) => { if (Array.isArray(agents)) setAllAgentsRaw(agents); })
+      .then((agents) => { if (Array.isArray(agents)) { setAllAgentsRaw(agents); setAgentSource("agentscity"); } })
       .catch(() => {
         // Local dev fallback
         fetch("http://localhost:5050/api/all-agents")
           .then((r) => r.json())
-          .then((agents) => { if (Array.isArray(agents)) setAllAgentsRaw(agents); })
-          .catch(() => {});
+          .then((agents) => { if (Array.isArray(agents)) { setAllAgentsRaw(agents); setAgentSource("localhost"); } })
+          .catch(() => { setAgentSource("fallback"); });
       });
   }, []);
 
