@@ -1452,6 +1452,7 @@ export default function ZhihuiTiDashboard() {
   const handleSelect = useCallback((id: string) => setSelected((prev) => prev === id ? null : id), []);
 
   const [allAgentsRaw, setAllAgentsRaw] = useState<any[]>([]);
+  const [agentSource, setAgentSource] = useState<"agentscity" | "localhost" | "fallback" | "loading">("loading");
 
   const fetchData = useCallback(() => {
     // Fetch dashboard metadata
@@ -1463,13 +1464,13 @@ export default function ZhihuiTiDashboard() {
     // Fetch agents from agentscity API
     fetch("https://agentscity.zeabur.app/api/all-agents")
       .then((r) => r.json())
-      .then((agents) => { if (Array.isArray(agents)) setAllAgentsRaw(agents); })
+      .then((agents) => { if (Array.isArray(agents)) { setAllAgentsRaw(agents); setAgentSource("agentscity"); } })
       .catch(() => {
         // Local dev fallback
         fetch("http://localhost:5050/api/all-agents")
           .then((r) => r.json())
-          .then((agents) => { if (Array.isArray(agents)) setAllAgentsRaw(agents); })
-          .catch(() => {});
+          .then((agents) => { if (Array.isArray(agents)) { setAllAgentsRaw(agents); setAgentSource("localhost"); } })
+          .catch(() => { setAgentSource("fallback"); });
       });
   }, []);
 
@@ -1751,6 +1752,17 @@ export default function ZhihuiTiDashboard() {
             <div className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
               Autonomous Multi-Agent Ecosystem · {agents.filter(a => a.alive && a.group === "zhihuiti").length} core + {agents.filter(a => a.alive && a.group === "hedge_fund").length} evolved + {(data as any)?.heartai?.total || 0} HeartAI agents
               {!live && <span className="ml-2" style={{ color: "#eab308" }}>(demo mode)</span>}
+              <span
+                className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono"
+                style={{
+                  background: agentSource === "agentscity" ? "rgba(34,197,94,0.15)" : agentSource === "localhost" ? "rgba(234,179,8,0.15)" : agentSource === "fallback" ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.06)",
+                  color: agentSource === "agentscity" ? "#22c55e" : agentSource === "localhost" ? "#eab308" : agentSource === "fallback" ? "#ef4444" : "rgba(255,255,255,0.3)",
+                  border: `1px solid ${agentSource === "agentscity" ? "rgba(34,197,94,0.3)" : agentSource === "localhost" ? "rgba(234,179,8,0.3)" : agentSource === "fallback" ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.08)"}`,
+                }}
+              >
+                <span style={{ width: 5, height: 5, borderRadius: "50%", background: agentSource === "agentscity" ? "#22c55e" : agentSource === "localhost" ? "#eab308" : agentSource === "fallback" ? "#ef4444" : "#666", display: "inline-block" }} />
+                {agentSource === "agentscity" ? "agentscity API" : agentSource === "localhost" ? "localhost:5050" : agentSource === "fallback" ? "fallback data" : "connecting…"}
+              </span>
             </div>
           </div>
         </div>
