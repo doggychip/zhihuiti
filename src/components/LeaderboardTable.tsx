@@ -44,6 +44,17 @@ export function LeaderboardTable({ agents, handleSelect, REALM_COLORS }: Leaderb
   const [colWidths, setColWidths] = useState<number[]>(COLUMNS.map(c => c.defaultWidth));
   const [showZhihuiti, setShowZhihuiti] = useState(true);
   const [showHedgeFund, setShowHedgeFund] = useState(true);
+  const [hiddenRoles, setHiddenRoles] = useState<Set<string>>(new Set());
+
+  const allRoles = [...new Set(agents.filter(a => a.alive).map(a => a.role))].sort();
+
+  const toggleRole = (role: string) => {
+    setHiddenRoles(prev => {
+      const next = new Set(prev);
+      if (next.has(role)) next.delete(role); else next.add(role);
+      return next;
+    });
+  };
   const dragRef = useRef<{ colIndex: number; startX: number; startWidth: number } | null>(null);
 
   const onMouseDown = useCallback((e: React.MouseEvent, colIndex: number) => {
