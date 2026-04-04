@@ -20,6 +20,17 @@ interface LeaderboardTableProps {
 
 const INITIAL_BUDGET = 100;
 
+const ROLE_COLORS: Record<string, string> = {
+  trader: "#f97316",
+  strategist: "#a855f7",
+  analyst: "#3b82f6",
+  researcher: "#22c55e",
+  coordinator: "#eab308",
+  auditor: "#ef4444",
+  coder: "#06b6d4",
+  custom: "#ec4899",
+};
+
 const COLUMNS = [
   { key: "rank", label: "#", align: "left" as const, minWidth: 32, defaultWidth: 36 },
   { key: "agent", label: "Agent", align: "left" as const, minWidth: 80, defaultWidth: 160 },
@@ -33,6 +44,17 @@ export function LeaderboardTable({ agents, handleSelect, REALM_COLORS }: Leaderb
   const [colWidths, setColWidths] = useState<number[]>(COLUMNS.map(c => c.defaultWidth));
   const [showZhihuiti, setShowZhihuiti] = useState(true);
   const [showHedgeFund, setShowHedgeFund] = useState(true);
+  const [hiddenRoles, setHiddenRoles] = useState<Set<string>>(new Set());
+
+  const allRoles = [...new Set(agents.filter(a => a.alive).map(a => a.role))].sort();
+
+  const toggleRole = (role: string) => {
+    setHiddenRoles(prev => {
+      const next = new Set(prev);
+      if (next.has(role)) next.delete(role); else next.add(role);
+      return next;
+    });
+  };
   const dragRef = useRef<{ colIndex: number; startX: number; startWidth: number } | null>(null);
 
   const onMouseDown = useCallback((e: React.MouseEvent, colIndex: number) => {
@@ -68,6 +90,7 @@ export function LeaderboardTable({ agents, handleSelect, REALM_COLORS }: Leaderb
       if (a.group === "hedge_fund") return showHedgeFund;
       return true;
     })
+    .filter(a => !hiddenRoles.has(a.role))
     .map(a => {
       const returnPct = ((a.budget - INITIAL_BUDGET) / INITIAL_BUDGET) * 100;
       const sharpe = a.tasks > 0 ? (a.avg_score - 0.5) / Math.max(0.1, 1 - a.avg_score) : 0;
@@ -106,6 +129,27 @@ export function LeaderboardTable({ agents, handleSelect, REALM_COLORS }: Leaderb
         >
           🔵 Hedge Fund ({hedgeCount})
         </button>
+      </div>
+      <div className="flex gap-1 pb-2 flex-wrap">
+        {allRoles.map(role => {
+          const active = !hiddenRoles.has(role);
+          const color = ROLE_COLORS[role] || "#888";
+          const count = agents.filter(a => a.alive && a.role === role).length;
+          return (
+            <button
+              key={role}
+              onClick={() => toggleRole(role)}
+              className="text-[9px] px-1.5 py-0.5 rounded-full transition-all capitalize"
+              style={{
+                background: active ? `${color}22` : "rgba(255,255,255,0.04)",
+                color: active ? color : "rgba(255,255,255,0.25)",
+                border: `1px solid ${active ? `${color}44` : "rgba(255,255,255,0.08)"}`,
+              }}
+            >
+              {role} ({count})
+            </button>
+          );
+        })}
       </div>
       <div className="overflow-x-auto max-h-52 overflow-y-auto">
       <table className="text-xs" style={{ borderCollapse: "separate", borderSpacing: 0, tableLayout: "fixed", width: colWidths.reduce((s, w) => s + w, 0) }}>
