@@ -90,6 +90,7 @@ export function LeaderboardTable({ agents, handleSelect, REALM_COLORS }: Leaderb
       if (a.group === "hedge_fund") return showHedgeFund;
       return true;
     })
+    .filter(a => !hiddenRoles.has(a.role))
     .map(a => {
       const returnPct = ((a.budget - INITIAL_BUDGET) / INITIAL_BUDGET) * 100;
       const sharpe = a.tasks > 0 ? (a.avg_score - 0.5) / Math.max(0.1, 1 - a.avg_score) : 0;
