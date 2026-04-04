@@ -20,6 +20,17 @@ interface LeaderboardTableProps {
 
 const INITIAL_BUDGET = 100;
 
+const ROLE_COLORS: Record<string, string> = {
+  trader: "#f97316",
+  strategist: "#a855f7",
+  analyst: "#3b82f6",
+  researcher: "#22c55e",
+  coordinator: "#eab308",
+  auditor: "#ef4444",
+  coder: "#06b6d4",
+  custom: "#ec4899",
+};
+
 const COLUMNS = [
   { key: "rank", label: "#", align: "left" as const, minWidth: 32, defaultWidth: 36 },
   { key: "agent", label: "Agent", align: "left" as const, minWidth: 80, defaultWidth: 160 },
