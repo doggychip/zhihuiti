@@ -12,6 +12,8 @@ import StrategiesPage from "@/pages/strategies";
 import ProductsPage from "@/pages/products";
 import AnalyticsPage from "@/pages/analytics";
 import SettingsPage from "@/pages/settings";
+import GoalsPage from "@/pages/goals";
+import GoalDetailPage from "@/pages/goal-detail";
 import TheoriesPage from "@/pages/theories";
 import CollisionsPage from "@/pages/collisions";
 import CollisionEnginePage from "@/pages/collision-engine";
@@ -50,6 +52,8 @@ function AppRouter() {
         <Route path="/" component={DashboardPage} />
         <Route path="/agents" component={AgentsPage} />
         <Route path="/agents/:id" component={AgentDetailPage} />
+        <Route path="/goals" component={GoalsPage} />
+        <Route path="/goals/:id" component={GoalDetailPage} />
         <Route path="/strategies" component={StrategiesPage} />
         <Route path="/theories" component={TheoriesPage} />
         <Route path="/collisions" component={CollisionsPage} />
