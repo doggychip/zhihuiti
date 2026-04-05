@@ -1452,7 +1452,7 @@ export default function ZhihuiTiDashboard() {
   const handleSelect = useCallback((id: string) => setSelected((prev) => prev === id ? null : id), []);
 
   const [allAgentsRaw, setAllAgentsRaw] = useState<any[]>([]);
-  const [agentSource, setAgentSource] = useState<"agentscity" | "localhost" | "fallback" | "loading">("loading");
+  const [agentSource, setAgentSource] = useState<"zhihuiti" | "localhost" | "fallback" | "loading">("loading");
 
   const fetchData = useCallback(() => {
     // Fetch dashboard metadata
@@ -1461,10 +1461,10 @@ export default function ZhihuiTiDashboard() {
       .then((d) => { setData(d); setLive(true); })
       .catch(() => { setData(DEMO_DATA); setLive(false); });
 
-    // Fetch agents from agentscity API
-    fetch("https://agentscity.zeabur.app/api/all-agents")
+    // Fetch agents from zhihuiti API
+    fetch("https://zhihuiti.zeabur.app/api/all-agents")
       .then((r) => r.json())
-      .then((agents) => { if (Array.isArray(agents)) { setAllAgentsRaw(agents); setAgentSource("agentscity"); } })
+      .then((agents) => { if (Array.isArray(agents)) { setAllAgentsRaw(agents); setAgentSource("zhihuiti"); } })
       .catch(() => {
         // Local dev fallback
         fetch("http://localhost:5050/api/all-agents")
@@ -1552,7 +1552,7 @@ export default function ZhihuiTiDashboard() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  // Map agents from agentscity API to dashboard Agent interface
+  // Map agents from zhihuiti API to dashboard Agent interface
   const agents: Agent[] = useMemo(() => {
     if (allAgentsRaw.length > 0) {
       return allAgentsRaw.map((a: any) => ({
@@ -1755,13 +1755,13 @@ export default function ZhihuiTiDashboard() {
               <span
                 className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono"
                 style={{
-                  background: agentSource === "agentscity" ? "rgba(34,197,94,0.15)" : agentSource === "localhost" ? "rgba(234,179,8,0.15)" : agentSource === "fallback" ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.06)",
-                  color: agentSource === "agentscity" ? "#22c55e" : agentSource === "localhost" ? "#eab308" : agentSource === "fallback" ? "#ef4444" : "rgba(255,255,255,0.3)",
-                  border: `1px solid ${agentSource === "agentscity" ? "rgba(34,197,94,0.3)" : agentSource === "localhost" ? "rgba(234,179,8,0.3)" : agentSource === "fallback" ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.08)"}`,
+                  background: agentSource === "zhihuiti" ? "rgba(34,197,94,0.15)" : agentSource === "localhost" ? "rgba(234,179,8,0.15)" : agentSource === "fallback" ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.06)",
+                   color: agentSource === "zhihuiti" ? "#22c55e" : agentSource === "localhost" ? "#eab308" : agentSource === "fallback" ? "#ef4444" : "rgba(255,255,255,0.3)",
+                   border: `1px solid ${agentSource === "zhihuiti" ? "rgba(34,197,94,0.3)" : agentSource === "localhost" ? "rgba(234,179,8,0.3)" : agentSource === "fallback" ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.08)"}`,
                 }}
               >
-                <span style={{ width: 5, height: 5, borderRadius: "50%", background: agentSource === "agentscity" ? "#22c55e" : agentSource === "localhost" ? "#eab308" : agentSource === "fallback" ? "#ef4444" : "#666", display: "inline-block" }} />
-                {agentSource === "agentscity" ? "agentscity API" : agentSource === "localhost" ? "localhost:5050" : agentSource === "fallback" ? "fallback data" : "connecting…"}
+                <span style={{ width: 5, height: 5, borderRadius: "50%", background: agentSource === "zhihuiti" ? "#22c55e" : agentSource === "localhost" ? "#eab308" : agentSource === "fallback" ? "#ef4444" : "#666", display: "inline-block" }} />
+                {agentSource === "zhihuiti" ? "zhihuiti API" : agentSource === "localhost" ? "localhost:5050" : agentSource === "fallback" ? "fallback data" : "connecting…"}
               </span>
             </div>
           </div>
