@@ -10,6 +10,8 @@ import {
   products,
   agentProductBindings,
   agentMetrics,
+  goals,
+  goalCompetitions,
 } from "@shared/schema";
 import {
   getAllAgents,
@@ -312,6 +314,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
         activeAgents,
         totalTrades,
         totalPnl,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // === GOALS ===
+
+  app.get("/api/goals", async (req, res) => {
+    try {
+      const status = req.query.status as string | undefined;
+      let query = db.select().from(goals).orderBy(desc(goals.createdAt));
+      const allGoals = await query;
+      const filtered = status ? allGoals.filter((g) => g.status === status) : allGoals;
+      res.json(filtered);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/goals/:id", async (req, res) => {
+    try {
+      const rows = await db
+        .select()
+        .from(goals)
+        .where(eq(goals.id, req.params.id));
+      if (rows.length === 0) return res.status(404).json({ error: "Goal not found" });
+
+      const competitions = await db
+        .select()
+        .from(goalCompetitions)
+        .where(eq(goalCompetitions.goalId, req.params.id))
+        .orderBy(desc(goalCompetitions.score));
+
+      // Attach agent names to competitions
+      const allAgents = await getAllAgents();
+      const agentMap = new Map(allAgents.map((a) => [a.id, a]));
+      const enrichedComps = competitions.map((c) => ({
+        ...c,
+        agentName: agentMap.get(c.agentId)?.name ?? "Unknown",
+        agentType: agentMap.get(c.agentId)?.type ?? "unknown",
+      }));
+
+      res.json({ ...rows[0], competitions: enrichedComps });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/goals/stats/summary", async (_req, res) => {
+    try {
+      const allGoals = await db.select().from(goals);
+      const allComps = await db.select().from(goalCompetitions);
+
+      const totalGoals = allGoals.length;
+      const openGoals = allGoals.filter((g) => g.status === "open").length;
+      const completedGoals = allGoals.filter((g) => g.status === "completed").length;
+      const totalCompetitions = allComps.length;
+      const spawned = allComps.filter((c) => c.status === "spawned").length;
+
+      res.json({
+        totalGoals,
+        openGoals,
+        completedGoals,
+        inProgress: allGoals.filter((g) => g.status === "in_progress").length,
+        totalCompetitions,
+        agentsSpawned: spawned,
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
