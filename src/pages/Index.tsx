@@ -1552,7 +1552,7 @@ export default function ZhihuiTiDashboard() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  // Map agents from agentscity API to dashboard Agent interface
+  // Map agents from zhihuiti API to dashboard Agent interface
   const agents: Agent[] = useMemo(() => {
     if (allAgentsRaw.length > 0) {
       return allAgentsRaw.map((a: any) => ({
