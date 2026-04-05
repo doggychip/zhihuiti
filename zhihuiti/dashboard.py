@@ -547,6 +547,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
     orchestrator: Orchestrator | None = None
 
     def do_GET(self):
+        # Add CORS to all GET responses
         if self.path == "/api/data":
             self._serve_json()
         elif self.path == "/api/theories":
@@ -585,6 +586,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._handle_run()
         else:
             self.send_response(404)
+            self._add_cors()
             self.end_headers()
 
     def _send_json(self, data: dict, status: int = 200) -> None:
@@ -603,6 +605,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
     def _serve_html(self):
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
+        self._add_cors()
         self.end_headers()
         self.wfile.write(DASHBOARD_HTML.encode())
 
