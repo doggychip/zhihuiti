@@ -72,6 +72,10 @@ app.use((req, res, next) => {
 
   // Start background jobs when DATABASE_URL is set
   if (process.env.DATABASE_URL) {
+    // Ensure heartAI agents exist before starting jobs
+    const { ensureHeartAIAgents } = await import("./jobs/ensureHeartAI");
+    await ensureHeartAIAgents();
+
     const { startDataProvider } = await import("./core/dataProvider");
     const { startPriceHistory } = await import("./core/priceHistory");
     const { startAgentRunner } = await import("./jobs/agentRunner");
