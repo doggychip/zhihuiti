@@ -320,6 +320,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === ZHIHUITI CORE (proxy to Python dashboard) ===
+
+  app.get("/api/zhihuiti", async (_req, res) => {
+    try {
+      const dashboardUrl = process.env.ZHIHUITI_DASHBOARD_URL || "https://zhihuiti.zeabur.app";
+      const response = await fetch(`${dashboardUrl}/api/data`, {
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!response.ok) {
+        return res.status(502).json({ error: `Dashboard returned ${response.status}` });
+      }
+      const data = await response.json();
+      res.json(data);
+    } catch (err: any) {
+      // Return fallback empty structure so frontend doesn't break
+      res.json({
+        economy: { money_supply: 0, total_minted: 0, total_burned: 0, treasury_balance: 0, total_taxes_collected: 0, total_rewards_paid: 0, transactions: 0, tax_rate: "15%" },
+        realms: {},
+        agents: [],
+        bloodline: { total_genes: 0, alive_genes: 0, max_generation: 0, avg_score: 0 },
+        inspection: { total_inspections: 0, accepted: 0, rejected: 0, acceptance_rate: 0, avg_score: 0 },
+        circuit_breaker: { total_trips: 0, emergencies: 0, halts: 0, warnings: 0, overridden: 0, laws_active: 0 },
+        behavior: { total_violations: 0, agents_flagged: 0, total_penalties: 0 },
+        goal_history: [],
+        _error: err.message,
+      });
+    }
+  });
+
   // === GOALS ===
 
   app.get("/api/goals", async (req, res) => {
