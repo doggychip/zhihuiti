@@ -564,6 +564,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
         elif self.path == "/api/scheduler":
             sched = getattr(DashboardHandler, "_scheduler", None)
             self._send_json(sched.get_status() if sched else {"running": False, "goals": []})
+        elif self.path == "/api/all-agents":
+            self._serve_all_agents()
         elif self.path == "/api/reports":
             self._serve_reports()
         elif self.path.startswith("/api/knowledge"):
@@ -627,6 +629,38 @@ class DashboardHandler(BaseHTTPRequestHandler):
         from zhihuiti.collision import THEORIES
         data = {k: {"label": v["label"], "description": v["description"]} for k, v in THEORIES.items()}
         self._send_json(data)
+
+    def _serve_all_agents(self):
+        """GET /api/all-agents — return all agents for Lovable dashboard sync."""
+        orch = self.orchestrator
+        if not orch or not hasattr(orch, "agent_manager"):
+            self._send_json({"agents": [], "count": 0})
+            return
+
+        agents = []
+        for a in orch.agent_manager.agents.values():
+            agents.append({
+                "id": a.id,
+                "name": getattr(a.config, "name", a.id[:8]),
+                "role": a.config.role.value,
+                "type": a.config.role.value,
+                "status": "active" if a.alive else "bankrupt",
+                "budget": round(a.budget, 1),
+                "avg_score": round(a.avg_score, 2),
+                "alive": a.alive,
+                "realm": a.realm.value,
+                "life_state": a.life_state.value,
+                "generation": getattr(a.config, "generation", 1),
+                "tasks_completed": len(a.scores),
+                "gene_id": getattr(a.config, "gene_id", None),
+            })
+
+        self._send_json({
+            "agents": agents,
+            "count": len(agents),
+            "active": sum(1 for a in agents if a["alive"]),
+            "bankrupt": sum(1 for a in agents if not a["alive"]),
+        })
 
     def _serve_reports(self):
         """GET /api/reports — list research reports and goal outputs."""
