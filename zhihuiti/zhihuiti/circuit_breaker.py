@@ -24,11 +24,14 @@ Human Oracle Interface (人类神谕干预接口):
 
 from __future__ import annotations
 
+import os
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Callable
+
+import httpx
 
 from rich.console import Console
 from rich.panel import Panel
@@ -305,6 +308,37 @@ class CircuitBreaker:
         )
         event.status = FuseStatus.RESOLVED
 
+    def _notify_whatsapp(self, event: FuseEvent) -> None:
+        """Send WhatsApp notification via Moltbot/OpenClaw API."""
+        webhook_url = os.environ.get("WHATSAPP_WEBHOOK_URL")
+        if not webhook_url:
+            console.print("  [dim]WHATSAPP_WEBHOOK_URL not set, skipping notification.[/dim]")
+            return
+
+        snippet = (event.output_snippet[:120] + "...") if len(event.output_snippet) > 120 else event.output_snippet
+        message = (
+            f"\U0001f6a8 熔断: {event.reason}\n"
+            f"Agent: {event.agent_id}\n"
+            f"Task: {event.task_description[:100]}\n"
+            f"Law: {event.law_name}\n"
+            f"Severity: {event.severity.value}\n"
+            f"Output: {snippet}\n"
+            f"Reply: approve / reject / purge"
+        )
+
+        try:
+            resp = httpx.post(
+                webhook_url,
+                json={"message": message},
+                timeout=10,
+            )
+            if resp.is_success:
+                console.print("  [green]WhatsApp notification sent.[/green]")
+            else:
+                console.print(f"  [yellow]WhatsApp notification failed: {resp.status_code}[/yellow]")
+        except httpx.HTTPError as exc:
+            console.print(f"  [yellow]WhatsApp notification error: {exc}[/yellow]")
+
     def _await_human_oracle(self, event: FuseEvent) -> None:
         """Human oracle intervention interface (人类神谕干预接口).
 
@@ -312,7 +346,37 @@ class CircuitBreaker:
         - approve: accept the output despite the violation
         - reject: reject the output, agent stays frozen
         - purge: reject + purge agent's lineage (诛七族)
+
+        Tries Discord oracle first; falls back to CLI stdin if unavailable.
         """
+        self._notify_whatsapp(event)
+
+        # Try Discord oracle first
+        response = self._try_discord_oracle(event)
+
+        # Fallback to CLI
+        if response is None:
+            response = self._await_cli_oracle(event)
+
+        self._apply_oracle_decision(event, response)
+
+    def _try_discord_oracle(self, event: FuseEvent) -> str | None:
+        """Attempt to get a decision via Discord. Returns None if unavailable."""
+        try:
+            from zhihuiti.discord_oracle import get_discord_oracle
+
+            oracle = get_discord_oracle()
+            if not oracle.available or not oracle._ready.is_set():
+                return None
+
+            console.print("  [cyan]Sending to Discord oracle...[/cyan]")
+            return oracle.ask(event)
+        except Exception as exc:
+            console.print(f"  [yellow]Discord oracle failed: {exc}[/yellow]")
+            return None
+
+    def _await_cli_oracle(self, event: FuseEvent) -> str:
+        """CLI stdin fallback for human oracle."""
         console.print()
         console.print("[bold]Human Oracle Interface (人类神谕干预接口)[/bold]")
         console.print("  [dim]Commands: approve, reject, purge[/dim]")
@@ -321,34 +385,35 @@ class CircuitBreaker:
             try:
                 response = console.input("[bold red]oracle>[/bold red] ").strip().lower()
             except (EOFError, KeyboardInterrupt):
-                response = "reject"
+                return "reject"
 
-            if response == "approve":
-                event.status = FuseStatus.OVERRIDDEN
-                event.human_response = "approved by human oracle"
-                self.tripped = False
-                self.current_event = None
-                console.print("  [green]Approved. System resuming.[/green]")
-                break
-            elif response == "reject":
-                event.status = FuseStatus.RESOLVED
-                event.human_response = "rejected by human oracle"
-                self.tripped = False
-                self.current_event = None
-                console.print("  [yellow]Rejected. Agent remains frozen.[/yellow]")
-                break
-            elif response == "purge":
-                event.status = FuseStatus.RESOLVED
-                event.human_response = "purged by human oracle"
-                self.tripped = False
-                self.current_event = None
-                console.print(
-                    f"  [red]Purge ordered for agent {event.agent_id}.[/red]\n"
-                    f"  [dim]Use 'purge <gene_id>' in REPL to execute 诛七族.[/dim]"
-                )
-                break
-            else:
-                console.print("  [dim]Commands: approve, reject, purge[/dim]")
+            if response in ("approve", "reject", "purge"):
+                return response
+            console.print("  [dim]Commands: approve, reject, purge[/dim]")
+
+    def _apply_oracle_decision(self, event: FuseEvent, response: str) -> None:
+        """Apply the oracle's decision to the fuse event."""
+        if response == "approve":
+            event.status = FuseStatus.OVERRIDDEN
+            event.human_response = "approved by human oracle"
+            self.tripped = False
+            self.current_event = None
+            console.print("  [green]Approved. System resuming.[/green]")
+        elif response == "purge":
+            event.status = FuseStatus.RESOLVED
+            event.human_response = "purged by human oracle"
+            self.tripped = False
+            self.current_event = None
+            console.print(
+                f"  [red]Purge ordered for agent {event.agent_id}.[/red]\n"
+                f"  [dim]Use 'purge <gene_id>' in REPL to execute 诛七族.[/dim]"
+            )
+        else:  # reject (default)
+            event.status = FuseStatus.RESOLVED
+            event.human_response = "rejected by human oracle"
+            self.tripped = False
+            self.current_event = None
+            console.print("  [yellow]Rejected. Agent remains frozen.[/yellow]")
 
         # Update saved state
         self.memory.save_economy_state(f"fuse_{event.id}", {

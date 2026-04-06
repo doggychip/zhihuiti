@@ -326,6 +326,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         from zhihuiti.routes import agent_routes, oracle_routes, knowledge_routes
 
+        # Add CORS to all GET responses
         if self.path == "/api/data":
             agent_routes.handle_data(self, self.orchestrator)
         elif self.path == "/api/theories":
@@ -337,6 +338,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
             agent_routes.handle_jobs(self)
         elif self.path == "/api/scheduler":
             agent_routes.handle_scheduler(self, DashboardHandler._scheduler)
+        elif self.path == "/api/all-agents":
+            self._serve_all_agents()
         elif self.path == "/api/reports":
             knowledge_routes.handle_reports(self, self.orchestrator)
         elif self.path.startswith("/api/knowledge"):
@@ -355,6 +358,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             agent_routes.handle_run(self, self.orchestrator)
         else:
             self.send_response(404)
+            self._add_cors()
             self.end_headers()
 
     def do_OPTIONS(self):
@@ -368,8 +372,252 @@ class DashboardHandler(BaseHTTPRequestHandler):
     def _serve_html(self):
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
+        self._add_cors()
         self.end_headers()
         self.wfile.write(DASHBOARD_HTML.encode())
+
+    def _add_cors(self):
+        """Add CORS headers to every response for Lovable cross-origin access."""
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+
+    def _serve_json(self):
+        data = _gather_data(self.orchestrator) if self.orchestrator else {}
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self._add_cors()
+        self.end_headers()
+        self.wfile.write(json.dumps(data).encode())
+
+    def _serve_theories(self):
+        from zhihuiti.collision import THEORIES
+        data = {k: {"label": v["label"], "description": v["description"]} for k, v in THEORIES.items()}
+        self._send_json(data)
+
+    def _serve_all_agents(self):
+        """GET /api/all-agents — return all agents for Lovable dashboard sync."""
+        orch = self.orchestrator
+        if not orch or not hasattr(orch, "agent_manager"):
+            self._send_json({"agents": [], "count": 0})
+            return
+
+        agents = []
+        for a in orch.agent_manager.agents.values():
+            agents.append({
+                "id": a.id,
+                "name": getattr(a.config, "name", a.id[:8]),
+                "role": a.config.role.value,
+                "type": a.config.role.value,
+                "status": "active" if a.alive else "bankrupt",
+                "budget": round(a.budget, 1),
+                "avg_score": round(a.avg_score, 2),
+                "alive": a.alive,
+                "realm": a.realm.value,
+                "life_state": a.life_state.value,
+                "generation": getattr(a.config, "generation", 1),
+                "tasks_completed": len(a.scores),
+                "gene_id": getattr(a.config, "gene_id", None),
+            })
+
+        self._send_json({
+            "agents": agents,
+            "count": len(agents),
+            "active": sum(1 for a in agents if a["alive"]),
+            "bankrupt": sum(1 for a in agents if not a["alive"]),
+        })
+
+    def _serve_reports(self):
+        """GET /api/reports — list research reports and goal outputs."""
+        orch = self.orchestrator
+        if not orch:
+            self._send_json({"reports": [], "goals": []})
+            return
+
+        # Get recent goals with their outputs
+        goals = orch.memory.get_recent_goals(limit=20) if hasattr(orch.memory, "get_recent_goals") else []
+
+        # Get recent high-scoring task results
+        rows = orch.memory._query(
+            "SELECT description, result, score, agent_role, created_at "
+            "FROM task_history WHERE score >= 0.7 ORDER BY rowid DESC LIMIT 30"
+        )
+        reports = []
+        for r in rows:
+            reports.append({
+                "task": r["description"][:100],
+                "result": r["result"][:500] if r["result"] else "",
+                "score": round(r["score"], 3),
+                "role": r["agent_role"],
+                "created_at": r["created_at"] if "created_at" in r.keys() else "",
+            })
+
+        # Check for markdown reports in ./reports/
+        report_files = []
+        import glob
+        for f in sorted(glob.glob("reports/daemon_*.md"), reverse=True)[:10]:
+            try:
+                with open(f) as fh:
+                    content = fh.read()
+                report_files.append({"filename": f, "content": content[:2000]})
+            except Exception:
+                pass
+
+        self._send_json({"reports": reports, "goals": goals, "files": report_files})
+
+    def _serve_knowledge(self):
+        """GET /api/knowledge — query the knowledge base."""
+        from urllib.parse import urlparse, parse_qs
+        parsed = urlparse(self.path)
+        params = parse_qs(parsed.query)
+        query = params.get("q", [""])[0]
+
+        orch = self.orchestrator
+        if not orch:
+            self._send_json({"chunks": [], "stats": {}})
+            return
+
+        try:
+            from zhihuiti.knowledge import KnowledgeBase
+            kb = KnowledgeBase(orch.memory)
+            if query:
+                chunks = kb.query(query, top_k=10)
+                self._send_json({
+                    "query": query,
+                    "chunks": [
+                        {"id": c.id, "title": c.title, "content": c.content[:300],
+                         "source": c.source, "confidence": c.confidence}
+                        for c in chunks
+                    ],
+                })
+            else:
+                stats = kb.get_stats()
+                self._send_json({"stats": stats})
+        except Exception as e:
+            self._send_json({"error": str(e)})
+
+    def _handle_collide(self):
+        """POST /api/collide — trigger a theory collision.
+
+        Body: {"goal": "...", "theory_a": "darwinian", "theory_b": "mutualist"}
+        Returns collision result as JSON.
+        """
+        import threading as _threading
+
+        content_length = int(self.headers.get("Content-Length", 0))
+        body = json.loads(self.rfile.read(content_length)) if content_length else {}
+
+        goal = body.get("goal", "")
+        theory_a = body.get("theory_a", "darwinian")
+        theory_b = body.get("theory_b", "mutualist")
+
+        if not goal:
+            self._send_json({"error": "goal is required"}, 400)
+            return
+
+        from zhihuiti.collision import CollisionEngine, THEORIES
+        from zhihuiti.memory import Memory
+        from zhihuiti.orchestrator import Orchestrator
+        from zhihuiti import judge as judge_mod
+
+        if theory_a not in THEORIES or theory_b not in THEORIES:
+            self._send_json({"error": f"unknown theory, available: {list(THEORIES.keys())}"}, 400)
+            return
+
+        def make_orch(config):
+            judge_mod.CULL_THRESHOLD = config["cull_threshold"]
+            judge_mod.PROMOTE_THRESHOLD = config["promote_threshold"]
+            orch = self.orchestrator
+            # Use the existing orchestrator's LLM but fresh memory
+            from zhihuiti.economy import Economy
+            from zhihuiti.bloodline import Bloodline
+            from zhihuiti.realms import RealmManager
+            from zhihuiti.agents import AgentManager
+            from zhihuiti.judge import Judge
+            from zhihuiti.circuit_breaker import CircuitBreaker
+            from zhihuiti.behavior import BehaviorDetector
+            from zhihuiti.relationships import LendingSystem, RelationshipGraph
+            from zhihuiti.arbitration import ArbitrationBureau
+            from zhihuiti.market import TradingMarket
+            from zhihuiti.futures import FuturesMarket
+            from zhihuiti.factory import Factory
+            from zhihuiti.bidding import BiddingHouse
+            from zhihuiti.messaging import MessageBoard
+
+            mem = Memory(":memory:")
+            llm = self.orchestrator.llm
+
+            o = Orchestrator.__new__(Orchestrator)
+            o.llm = llm
+            o.memory = mem
+            o.economy = Economy(mem)
+            o.bloodline = Bloodline(mem)
+            o.realm_manager = RealmManager(mem)
+            o.agent_manager = AgentManager(llm, mem, o.economy, o.bloodline, o.realm_manager)
+            o.judge = Judge(llm, mem, o.agent_manager)
+            o.circuit_breaker = CircuitBreaker(mem, interactive=False)
+            o.behavior = BehaviorDetector(mem, llm)
+            o.rel_graph = RelationshipGraph(mem)
+            o.lending = LendingSystem(mem, o.rel_graph)
+            o.arbitration = ArbitrationBureau(mem)
+            o.market = TradingMarket(mem)
+            o.futures = FuturesMarket(mem)
+            o.factory = Factory(llm=llm, memory=mem)
+            o.bidding = BiddingHouse(llm, mem, o.economy)
+            o.messages = MessageBoard(mem) if config["messaging"] else type("Null", (), {
+                "broadcast": lambda *a, **k: None,
+                "collect_context": lambda *a, **k: "",
+            })()
+            o.tasks = {}
+            o.max_workers = 4
+            o.max_retries = 0
+            o.tools_enabled = False
+            for agent in o.bidding.pool.get_all_alive():
+                if agent.id not in o.agent_manager.agents:
+                    o.agent_manager.agents[agent.id] = agent
+            o.realm_manager.allocate_budgets(o.economy.treasury.balance * 0.5)
+            return o
+
+        engine = CollisionEngine()
+        result = engine.collide(goal, theory_a, theory_b, make_orch)
+        self._send_json(result.to_dict())
+
+    # Class-level storage for background job status
+    _jobs: dict = {}
+
+    def _handle_run(self):
+        """POST /api/run — execute a goal in the background.
+
+        Body: {"goal": "..."}
+        Returns job ID immediately. Poll /api/job/<id> for results.
+        """
+        import threading as _t
+        import uuid as _uuid
+
+        content_length = int(self.headers.get("Content-Length", 0))
+        body = json.loads(self.rfile.read(content_length)) if content_length else {}
+        goal = body.get("goal", "")
+
+        if not goal:
+            self._send_json({"error": "goal is required"}, 400)
+            return
+
+        if not self.orchestrator or not hasattr(self.orchestrator, "execute_goal"):
+            self._send_json({"error": "no orchestrator — set DEEPSEEK_API_KEY"}, 500)
+            return
+
+        job_id = _uuid.uuid4().hex[:12]
+        DashboardHandler._jobs[job_id] = {"status": "running", "goal": goal, "result": None}
+
+        def _run():
+            try:
+                result = self.orchestrator.execute_goal(goal)
+                DashboardHandler._jobs[job_id] = {"status": "done", "goal": goal, "result": result}
+            except Exception as e:
+                DashboardHandler._jobs[job_id] = {"status": "error", "goal": goal, "error": str(e)}
+
+        _t.Thread(target=_run, daemon=True).start()
+        self._send_json({"job_id": job_id, "status": "running", "goal": goal})
 
     def log_message(self, format, *args):
         pass  # Suppress access logs

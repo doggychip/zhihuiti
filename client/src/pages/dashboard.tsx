@@ -11,6 +11,12 @@ export default function DashboardPage() {
     queryKey: ["/api/analytics"],
   });
 
+  // Pull live numbers from Zeabur Python dashboard
+  const { data: zh } = useQuery<any>({
+    queryKey: ["/api/zhihuiti"],
+    refetchInterval: 10000,
+  });
+
   const { data: agents, isLoading: agentsLoading } = useQuery<any[]>({
     queryKey: ["/api/agents"],
   });
@@ -27,16 +33,25 @@ export default function DashboardPage() {
   const prices: any[] = pricesData?.prices ?? [];
   const isLive: boolean = pricesData?.isLive ?? false;
 
+  // Use Zeabur agent count if available, fall back to local DB count
+  const zhAgents: any[] = zh?.agents ?? [];
+  const totalAgents = zhAgents.length > 0
+    ? zhAgents.length
+    : (analyticsLoading ? null : (analytics?.totalAgents ?? 0));
+  const activeAgents = zhAgents.length > 0
+    ? zhAgents.filter((a: any) => a.alive !== false && a.life_state !== "bankrupt").length
+    : (analyticsLoading ? null : (analytics?.activeAgents ?? 0));
+
   const statCards = [
     {
       label: "Total Agents",
-      value: analyticsLoading ? null : (analytics?.totalAgents ?? 0),
+      value: totalAgents,
       icon: Bot,
       color: "text-cyan-400",
     },
     {
       label: "Active Agents",
-      value: analyticsLoading ? null : (analytics?.activeAgents ?? 0),
+      value: activeAgents,
       icon: Activity,
       color: "text-emerald-400",
     },

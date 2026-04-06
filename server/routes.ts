@@ -10,6 +10,8 @@ import {
   products,
   agentProductBindings,
   agentMetrics,
+  goals,
+  goalCompetitions,
 } from "@shared/schema";
 import {
   getAllAgents,
@@ -441,6 +443,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(await oracleProxy(`/api/oracle/history/${req.params.instrument}?limit=${limit}`));
     } catch (err: any) {
       res.status(502).json({ error: `Oracle unavailable: ${err.message}` });
+    }
+  });
+
+  // === ZHIHUITI CORE (proxy to Python dashboard) ===
+
+  app.get("/api/zhihuiti", async (_req, res) => {
+    try {
+      const dashboardUrl = process.env.ZHIHUITI_DASHBOARD_URL || "https://zhihuiti.zeabur.app";
+      const response = await fetch(`${dashboardUrl}/api/data`, {
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!response.ok) {
+        return res.status(502).json({ error: `Dashboard returned ${response.status}` });
+      }
+      const data = await response.json();
+      res.json(data);
+    } catch (err: any) {
+      // Return fallback empty structure so frontend doesn't break
+      res.json({
+        economy: { money_supply: 0, total_minted: 0, total_burned: 0, treasury_balance: 0, total_taxes_collected: 0, total_rewards_paid: 0, transactions: 0, tax_rate: "15%" },
+        realms: {},
+        agents: [],
+        bloodline: { total_genes: 0, alive_genes: 0, max_generation: 0, avg_score: 0 },
+        inspection: { total_inspections: 0, accepted: 0, rejected: 0, acceptance_rate: 0, avg_score: 0 },
+        circuit_breaker: { total_trips: 0, emergencies: 0, halts: 0, warnings: 0, overridden: 0, laws_active: 0 },
+        behavior: { total_violations: 0, agents_flagged: 0, total_penalties: 0 },
+        goal_history: [],
+        _error: err.message,
+      });
+    }
+  });
+
+  // === GOALS ===
+
+  app.get("/api/goals", async (req, res) => {
+    try {
+      const status = req.query.status as string | undefined;
+      let query = db.select().from(goals).orderBy(desc(goals.createdAt));
+      const allGoals = await query;
+      const filtered = status ? allGoals.filter((g) => g.status === status) : allGoals;
+      res.json(filtered);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/goals/:id", async (req, res) => {
+    try {
+      const rows = await db
+        .select()
+        .from(goals)
+        .where(eq(goals.id, req.params.id));
+      if (rows.length === 0) return res.status(404).json({ error: "Goal not found" });
+
+      const competitions = await db
+        .select()
+        .from(goalCompetitions)
+        .where(eq(goalCompetitions.goalId, req.params.id))
+        .orderBy(desc(goalCompetitions.score));
+
+      // Attach agent names to competitions
+      const allAgents = await getAllAgents();
+      const agentMap = new Map(allAgents.map((a) => [a.id, a]));
+      const enrichedComps = competitions.map((c) => ({
+        ...c,
+        agentName: agentMap.get(c.agentId)?.name ?? "Unknown",
+        agentType: agentMap.get(c.agentId)?.type ?? "unknown",
+      }));
+
+      res.json({ ...rows[0], competitions: enrichedComps });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/goals/stats/summary", async (_req, res) => {
+    try {
+      const allGoals = await db.select().from(goals);
+      const allComps = await db.select().from(goalCompetitions);
+
+      const totalGoals = allGoals.length;
+      const openGoals = allGoals.filter((g) => g.status === "open").length;
+      const completedGoals = allGoals.filter((g) => g.status === "completed").length;
+      const totalCompetitions = allComps.length;
+      const spawned = allComps.filter((c) => c.status === "spawned").length;
+
+      res.json({
+        totalGoals,
+        openGoals,
+        completedGoals,
+        inProgress: allGoals.filter((g) => g.status === "in_progress").length,
+        totalCompetitions,
+        agentsSpawned: spawned,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
     }
   });
 

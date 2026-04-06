@@ -64,6 +64,30 @@ export const agentMetrics = pgTable("agent_metrics", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const goals = pgTable("goals", {
+  id: varchar("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  category: text("category").notNull().$type<"trading" | "research" | "social" | "analytics" | "coding" | "strategy">(),
+  difficulty: text("difficulty").notNull().$type<"easy" | "medium" | "hard">().default("medium"),
+  reward: real("reward").notNull().default(10),
+  status: text("status").notNull().$type<"open" | "in_progress" | "completed" | "expired">().default("open"),
+  winnerId: varchar("winner_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const goalCompetitions = pgTable("goal_competitions", {
+  id: varchar("id").primaryKey(),
+  goalId: varchar("goal_id").notNull(),
+  agentId: varchar("agent_id").notNull(),
+  score: real("score"),
+  bid: real("bid"),
+  status: text("status").notNull().$type<"competing" | "won" | "lost" | "spawned">().default("competing"),
+  result: text("result"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Insert schemas
 export const insertAgentSchema = createInsertSchema(zhAgents).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertStrategySchema = createInsertSchema(strategies).omit({ id: true, createdAt: true });
@@ -71,6 +95,9 @@ export const insertProductSchema = createInsertSchema(products).omit({ id: true,
 export const insertAgentLogSchema = createInsertSchema(agentLogs).omit({ id: true });
 export const insertBindingSchema = createInsertSchema(agentProductBindings).omit({ id: true, createdAt: true });
 export const insertMetricsSchema = createInsertSchema(agentMetrics).omit({ id: true, createdAt: true });
+
+export const insertGoalSchema = createInsertSchema(goals).omit({ id: true, createdAt: true });
+export const insertGoalCompetitionSchema = createInsertSchema(goalCompetitions).omit({ id: true, createdAt: true });
 
 // Types
 export type ZhAgent = typeof zhAgents.$inferSelect;
@@ -85,3 +112,7 @@ export type AgentProductBinding = typeof agentProductBindings.$inferSelect;
 export type InsertBinding = z.infer<typeof insertBindingSchema>;
 export type AgentMetrics = typeof agentMetrics.$inferSelect;
 export type InsertMetrics = z.infer<typeof insertMetricsSchema>;
+export type Goal = typeof goals.$inferSelect;
+export type InsertGoal = z.infer<typeof insertGoalSchema>;
+export type GoalCompetition = typeof goalCompetitions.$inferSelect;
+export type InsertGoalCompetition = z.infer<typeof insertGoalCompetitionSchema>;
