@@ -100,11 +100,29 @@ class MonitorScheduler:
     def stop(self) -> None:
         self._running = False
 
+    def _backup_db(self) -> None:
+        import shutil, os
+        db_path = str(self.memory.db_path)
+        backup_dir = os.path.join(os.path.dirname(os.path.abspath(db_path)), "backups")
+        os.makedirs(backup_dir, exist_ok=True)
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M")
+        dest = os.path.join(backup_dir, f"zhihuiti_{timestamp}.db")
+        shutil.copy2(db_path, dest)
+        backups = sorted(os.listdir(backup_dir))
+        while len(backups) > 7:
+            os.remove(os.path.join(backup_dir, backups.pop(0)))
+        console.print(f"  [green]💾 DB backed up:[/green] {dest}")
+
     def _run_loop(self, orchestrator: Orchestrator) -> None:
         import time
+        backup_interval = 6 * 3600
+        last_backup = 0
         while self._running:
             try:
                 self._check_and_run(orchestrator)
+                if time.time() - last_backup > backup_interval:
+                    self._backup_db()
+                    last_backup = time.time()
             except Exception as e:
                 console.print(f"  [red]Scheduler error:[/red] {e}")
             time.sleep(POLL_INTERVAL)

@@ -72,6 +72,12 @@ app.use((req, res, next) => {
 
   // Start background jobs when DATABASE_URL is set
   if (process.env.DATABASE_URL) {
+    // Ensure heartAI agents + goals exist before starting jobs
+    const { ensureHeartAIAgents } = await import("./jobs/ensureHeartAI");
+    const { ensureGoals } = await import("./jobs/ensureGoals");
+    await ensureHeartAIAgents();
+    await ensureGoals();
+
     const { startDataProvider } = await import("./core/dataProvider");
     const { startPriceHistory } = await import("./core/priceHistory");
     const { startAgentRunner } = await import("./jobs/agentRunner");
@@ -89,6 +95,10 @@ app.use((req, res, next) => {
     // Start heartAI community runner (10-minute interval)
     const { startHeartAIRunner } = await import("./jobs/heartaiRunner");
     startHeartAIRunner(10 * 60 * 1000);
+
+    // Start goal competition runner (2-minute interval)
+    const { startGoalRunner } = await import("./jobs/goalRunner");
+    startGoalRunner(2 * 60 * 1000);
   } else {
     // In dev without DB, still start price data for /api/data/prices
     const { startDataProvider } = await import("./core/dataProvider");
