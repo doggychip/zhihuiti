@@ -1,0 +1,81 @@
+[
+  {
+    "id": "shannon",
+    "title": "Shannon (1948): Boolean Algebra + Probability -> Information Theory",
+    "year": 1948,
+    "domains": [
+      "Boolean Algebra",
+      "Thermodynamics",
+      "Probability"
+    ],
+    "bridge_from": "S = -k sum p_i ln p_i (Boltzmann entropy)",
+    "bridge_to": "H(X) = -sum p(x) log2 p(x) (Shannon entropy)",
+    "breakthrough": "A precise, mathematical theory of communication. Information is measurable. Founded all of modern communications, data compression, cryptography, and ML.",
+    "skeleton": "Exponential Family"
+  },
+  {
+    "id": "hopfield",
+    "title": "Hopfield (1982): Statistical Physics + Neuroscience -> Neural Networks",
+    "year": 1982,
+    "domains": [
+      "Statistical Physics",
+      "Neuroscience"
+    ],
+    "bridge_from": "H = -sum J_ij s_i s_j (Ising Hamiltonian)",
+    "bridge_to": "E = -1/2 sum w_ij s_i s_j (Hopfield energy)",
+    "breakthrough": "Memories as energy minima. Retrieval = gradient descent. Directly inspired Boltzmann Machines and deep learning.",
+    "skeleton": "Gradient Flow"
+  },
+  {
+    "id": "black_scholes",
+    "title": "Black-Scholes (1973): Brownian Motion + Economics -> Options Pricing",
+    "year": 1973,
+    "domains": [
+      "Physics",
+      "Economics"
+    ],
+    "bridge_from": "du/dt = D d2u/dx2 (Heat equation)",
+    "bridge_to": "dV/dt + 1/2 sigma2 S2 d2V/dS2 + rS dV/dS - rV = 0",
+    "breakthrough": "Option prices derived from no-arbitrage + stochastic calculus. Created the modern derivatives market (~$600 trillion notional).",
+    "skeleton": "Gradient Flow"
+  },
+  {
+    "id": "turing",
+    "title": "Turing (1952): Reaction-Diffusion + Biology -> Morphogenesis",
+    "year": 1952,
+    "domains": [
+      "Mathematics",
+      "Biology"
+    ],
+    "bridge_from": "du/dt = f(u,v) + D_u nabla2 u (Reaction-Diffusion)",
+    "bridge_to": "Biological pattern formation (stripes, spots, spirals)",
+    "breakthrough": "Biological patterns from homogeneous initial state + noise. Explained leopard spots, fish stripes, fingerprint ridges.",
+    "skeleton": "Feedback / Self-Reference"
+  },
+  {
+    "id": "jaynes",
+    "title": "Jaynes (1957): Statistical Mechanics + Bayesian Inference -> MaxEnt",
+    "year": 1957,
+    "domains": [
+      "Statistical Mechanics",
+      "Bayesian Statistics"
+    ],
+    "bridge_from": "P(x) proportional to exp(-beta E(x)) (Gibbs/Boltzmann)",
+    "bridge_to": "P*(x) = (1/Z) exp(-sum lambda_k f_k(x)) (MaxEnt)",
+    "breakthrough": "Statistical mechanics is not just physics - it is a general inference algorithm. Unified thermodynamics, Bayesian statistics, and information theory.",
+    "skeleton": "Exponential Family"
+  },
+  {
+    "id": "hodgkin_huxley",
+    "title": "Hodgkin-Huxley (1952): Electrical Circuits + Neuroscience",
+    "year": 1952,
+    "domains": [
+      "Electrical Engineering",
+      "Neuroscience"
+    ],
+    "bridge_from": "C dV/dt = (V_s - V)/R + I_ext (RC circuit)",
+    "bridge_to": "C_m dV/dt = -g_Na m3 h(V-E_Na) - g_K n4(V-E_K) - g_L(V-E_L) + I_ext",
+    "breakthrough": "Quantitative prediction of action potentials from first principles. Founded computational neuroscience. Nobel Prize 1963.",
+    "skeleton": "Feedback / Self-Reference"
+  }
+]
