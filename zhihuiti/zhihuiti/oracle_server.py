@@ -242,6 +242,13 @@ class OracleHandler(BaseHTTPRequestHandler):
             self._handle_real_dashboard_data()
         elif path == "/api/evolution":
             self._handle_evolution_status()
+        # ── Backtest endpoints ──
+        elif path == "/api/backtest/run":
+            self._handle_backtest_run()
+        elif path == "/api/backtest/results":
+            self._handle_backtest_results(qs)
+        elif path == "/api/backtest/accuracy":
+            self._handle_backtest_accuracy()
         else:
             _json_response(self, {"error": "not found"}, 404)
 
@@ -298,10 +305,19 @@ class OracleHandler(BaseHTTPRequestHandler):
             history = _get_history()
             transitions = history.record_scan(results)
 
+            # Auto-record predictions and verify old ones
+            backtest_info = {}
+            try:
+                from zhihuiti.backtest import auto_record_and_verify
+                backtest_info = auto_record_and_verify(results)
+            except Exception:
+                pass
+
             _json_response(self, {
                 "results": [r.to_dict() for r in results],
                 "count": len(results),
                 "transitions": [t.to_dict() for t in transitions],
+                "backtest": backtest_info,
             })
         except Exception as e:
             _json_response(self, {"error": str(e)}, 500)
@@ -981,6 +997,82 @@ class OracleHandler(BaseHTTPRequestHandler):
                 "bloodline": data.get("bloodline", {}),
                 "inspection": data.get("inspection", {}),
                 "memory": data.get("memory", {}),
+            })
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    # ── Backtest handlers ────────────────────────────────────────
+
+    def _handle_backtest_run(self):
+        """GET /api/backtest/run — run backtest on all instruments with history."""
+        try:
+            from zhihuiti.backtest import run_backtest_all, get_overall_accuracy
+            results = run_backtest_all()
+            overall = get_overall_accuracy(results)
+            _json_response(self, {
+                "overall": overall.to_dict(),
+                "instruments": [r.to_dict() for r in results],
+                "count": len(results),
+            })
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_backtest_results(self, qs):
+        """GET /api/backtest/results?instrument=BTC_USDT — backtest for one instrument."""
+        try:
+            instrument = qs.get("instrument", [""])[0]
+            if not instrument:
+                _json_response(self, {"error": "instrument query param required"}, 400)
+                return
+
+            from zhihuiti.backtest import run_backtest_historical
+            from zhihuiti.scanner import RegimeHistory
+
+            history = RegimeHistory()
+            hist = history.get_history(instrument, limit=500)
+            if len(hist) < 10:
+                _json_response(self, {"error": f"Not enough history for {instrument} ({len(hist)} snapshots, need 10+)"}, 400)
+                return
+
+            result = run_backtest_historical(instrument, hist)
+            _json_response(self, result.to_dict())
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_backtest_accuracy(self):
+        """GET /api/backtest/accuracy — overall prediction accuracy stats."""
+        try:
+            from zhihuiti.backtest import _predictions, _predictions_lock
+
+            with _predictions_lock:
+                verified = [p for p in _predictions if p.verified_at > 0]
+                total = len(verified)
+                correct = sum(1 for p in verified if p.correct)
+
+                # Per-regime accuracy
+                regime_stats: dict[str, dict] = {}
+                for p in verified:
+                    r = p.current_regime
+                    if r not in regime_stats:
+                        regime_stats[r] = {"total": 0, "correct": 0}
+                    regime_stats[r]["total"] += 1
+                    if p.correct:
+                        regime_stats[r]["correct"] += 1
+
+                for stats in regime_stats.values():
+                    stats["accuracy"] = stats["correct"] / stats["total"] if stats["total"] > 0 else 0.0
+
+                # Recent predictions
+                recent = [p.to_dict() for p in sorted(_predictions, key=lambda x: x.timestamp, reverse=True)[:20]]
+
+            _json_response(self, {
+                "total_predictions": len(_predictions),
+                "verified": total,
+                "correct": correct,
+                "accuracy": correct / total if total > 0 else 0.0,
+                "unverified": len(_predictions) - total,
+                "regime_accuracy": regime_stats,
+                "recent": recent,
             })
         except Exception as e:
             _json_response(self, {"error": str(e)}, 500)
