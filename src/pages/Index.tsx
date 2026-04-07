@@ -1455,23 +1455,19 @@ export default function ZhihuiTiDashboard() {
   const [agentSource, setAgentSource] = useState<"zhihuiti" | "localhost" | "fallback" | "loading">("loading");
 
   const fetchData = useCallback(() => {
-    // Fetch dashboard metadata
+    // Fetch dashboard metadata + agents from /api/data
     fetch("https://zhihuiti.zeabur.app/api/data")
       .then((r) => r.json())
-      .then((d) => { setData(d); setLive(true); })
-      .catch(() => { setData(DEMO_DATA); setLive(false); });
-
-    // Fetch agents from zhihuiti API
-    fetch("https://zhihuiti.zeabur.app/api/all-agents")
-      .then((r) => r.json())
-      .then((agents) => { if (Array.isArray(agents)) { setAllAgentsRaw(agents); setAgentSource("zhihuiti"); } })
-      .catch(() => {
-        // Local dev fallback
-        fetch("http://localhost:5050/api/all-agents")
-          .then((r) => r.json())
-          .then((agents) => { if (Array.isArray(agents)) { setAllAgentsRaw(agents); setAgentSource("localhost"); } })
-          .catch(() => { setAgentSource("fallback"); });
-      });
+      .then((d) => {
+        setData(d);
+        setLive(true);
+        // Use agents from /api/data response directly
+        if (d?.agents && Array.isArray(d.agents)) {
+          setAllAgentsRaw(d.agents);
+          setAgentSource("zhihuiti");
+        }
+      })
+      .catch(() => { setData(DEMO_DATA); setLive(false); setAgentSource("fallback"); });
   }, []);
 
   // Poll jobs every 5s
