@@ -30,3 +30,23 @@ economy:
 
 agents:
   initial_count: 30
+
+# Hermes Agent backend (NousResearch/hermes-agent)
+# Enable: set HERMES_ENABLED=1 and install hermes-agent
+hermes:
+  enabled: false  # Override with HERMES_ENABLED=1 env var
+  model: "deepseek/deepseek-chat"  # Override with HERMES_MODEL env var
+  max_iterations: 30
+  # Per-role toolset mapping (what tools each agent type can use)
+  toolsets:
+    researcher: [web, file]
+    analyst: [web, file, terminal]
+    coder: [file, terminal]
+    trader: [web, terminal]
+    alphaarena_trader: [web, terminal]
+    coordinator: [file, memory]
+    auditor: [file]
+    strategist: [web, file]
+    causal_reasoner: [web, file]
+    judge: []
+    custom: [web, file]
