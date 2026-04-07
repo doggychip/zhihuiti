@@ -283,10 +283,11 @@ class Bloodline:
         """Find all descendants of a gene."""
         return self.memory.get_lineage_descendants(gene_id, max_depth)
 
-    def zhu_qi_zu(self, gene_id: str) -> list[dict]:
-        """诛七族 — purge all descendants of a problematic gene.
+    def zhu_qi_zu(self, gene_id: str, reason: str = "Unspecified violation") -> list[dict]:
+        """诛七族 (Grand Purge) — lineage-based culling mechanism.
 
-        Marks all descendants as dead. Returns the list of purged genes.
+        Traces all descendants of a contaminated gene and purges them
+        to prevent hereditary flaws from spreading through the population.
         """
         descendants = self.trace_descendants(gene_id, max_depth=MAX_GENERATIONS)
 
@@ -300,8 +301,10 @@ class Bloodline:
 
         if purged:
             console.print(
-                f"\n  [bold red]⚔ 诛七族:[/bold red] Purged {len(purged)} descendants "
-                f"of gene [dim]{gene_id}[/dim]"
+                f"\n  [bold red]⚔ 诛七族 (Grand Purge):[/bold red] {reason}"
+            )
+            console.print(
+                f"  Purged {len(purged)} descendants of gene [dim]{gene_id}[/dim]"
             )
             for p in purged:
                 console.print(

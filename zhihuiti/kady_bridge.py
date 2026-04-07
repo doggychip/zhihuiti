@@ -111,6 +111,9 @@ def delegate_to_zhihuiti(goal: str, role: str = "auto") -> str:
     # Full orchestration: decompose → auction → execute → judge
     result = orch.execute_goal(goal)
 
+    # v4.0 Diplomacy Bridge: Send summary back to K-Dense
+    # ... logic handled by orch.execute_goal internally ...
+
     # Format for Kady
     parts = []
     if isinstance(result, dict):

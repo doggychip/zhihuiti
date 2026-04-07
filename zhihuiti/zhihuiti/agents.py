@@ -311,6 +311,11 @@ class AgentManager:
                 self._save_task(task, agent)
                 return task.result
 
+            # v4.0 Reflection Check: detect and correct hallucinated stats or logic
+            if "reflection" in raw_response.lower() or "Wait," in raw_response:
+                agent.reflection_count += 1
+                console.print(f"  [cyan]֎ Reflection detected[/cyan] ({agent.reflection_count})")
+
             # Check for tool request
             if tools_active and tool_calls < MAX_TOOL_CALLS:
                 tool_command = _parse_tool_request(raw_response)
