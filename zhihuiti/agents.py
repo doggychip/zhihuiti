@@ -12,6 +12,7 @@ from rich.tree import Tree
 
 from zhihuiti.models import AgentConfig, AgentRole, AgentState, Task, TaskStatus
 from zhihuiti.prompts import SYNTHESIS_INSTRUCTIONS, TOOL_INSTRUCTIONS, get_prompt
+from zhihuiti.hermes_backend import get_hermes_backend
 
 if TYPE_CHECKING:
     from zhihuiti.bloodline import Bloodline
@@ -257,10 +258,45 @@ class AgentManager:
             system_prompt += TOOL_INSTRUCTIONS
 
         prompt = f"Task: {task.description}{context}{depth_note}"
+
+        # ── Try Hermes backend first (if enabled) ──────────────
+        hermes = get_hermes_backend()
+        if hermes.available:
+            hermes_result = hermes.execute_task(
+                agent=agent,
+                task=task,
+                system_prompt=system_prompt + depth_note,
+            )
+
+            # Wire cost into economy
+            hermes_cost = hermes_result.get("cost", 0.0)
+            if hermes_cost > 0 and self.economy:
+                # Convert USD cost to token cost (1 token ≈ $0.001)
+                token_cost = hermes_cost * 1000
+                agent.deduct_budget(token_cost)
+                self.economy.record_task_fee(agent.id, token_cost)
+
+            raw_response = hermes_result["response"]
+
+            # Check for delegation even with Hermes response
+            subtask_requests = None
+            if can_delegate:
+                subtask_requests = _parse_delegation(raw_response)
+
+            if subtask_requests:
+                result = self._execute_delegation(agent, task, subtask_requests)
+            else:
+                result = raw_response
+
+            task.status = TaskStatus.COMPLETED
+            task.result = result
+            self._save_task(task, agent)
+            return result
+
+        # ── Fallback: original agentic loop (LLM → tool → LLM) ──
         tool_history = ""  # accumulated tool call/result pairs
         tool_calls = 0
 
-        # ── Agentic loop: LLM → (tool → LLM)* → final answer ──
         while True:
             try:
                 raw_response = self.llm.chat(
