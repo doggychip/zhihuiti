@@ -36,6 +36,8 @@ TAX_RATE = 0.15                   # 15% flat tax on all earnings
 BANKRUPTCY_THRESHOLD = 1.0        # Agent is bankrupt below this balance
 INFLATION_CHECK_INTERVAL = 20     # Re-evaluate money supply every N transactions
 TARGET_VELOCITY = 0.6             # Target ratio of circulating / total supply
+DEBT_LIMIT_RATIO = 0.5            # Max debt as % of starting budget
+STAKING_MULTIPLIER = 1.2          # Bonus for high-truthfulness agents
 
 
 class TransactionType(str, Enum):
@@ -46,6 +48,8 @@ class TransactionType(str, Enum):
     SPAWN_COST = "spawn_cost"   # Cost to spawn a new agent
     TASK_FEE = "task_fee"       # Fee deducted when agent starts a task
     TRANSFER = "transfer"       # Agent-to-agent transfer (future: lending)
+    DEBT_ISSUANCE = "debt"      # Evolution of Darwinian Futures
+    STAKE_STIMULUS = "stimulus" # High-truthfulness staking bonus
 
 
 @dataclass

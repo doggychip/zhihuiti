@@ -140,6 +140,8 @@ class AgentState:
     alive: bool = True
     realm: Realm = Realm.EXECUTION
     life_state: AgentLifeState = AgentLifeState.ACTIVE
+    truthfulness: float = 1.0  # 0.0 to 1.0, drops on hallucination
+    reflection_count: int = 0  # number of times agent self-corrected
 
     @property
     def avg_score(self) -> float:
