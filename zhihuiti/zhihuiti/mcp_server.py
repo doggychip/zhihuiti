@@ -220,6 +220,8 @@ TOOLS = [
             "properties": {},
         },
     },
+    # ── CriticAI tools ─────────────────────────────────────────────
+    # (dynamically loaded from criticai_bridge.CRITICAI_MCP_TOOLS)
     # ── Crypto Oracle tools ────────────────────────────────────────
     {
         "name": "zhihuiti_crypto_diagnose",
@@ -492,6 +494,12 @@ def _handle_tool_call(name: str, arguments: dict) -> dict:
         result = diagnose(values, domain=domain, label=label)
         return {"content": [{"type": "text", "text": json.dumps(result.to_dict(), indent=2, ensure_ascii=False)}]}
 
+    # ── CriticAI tools ────────────────────────────────────────────
+    elif name.startswith("criticai_"):
+        from zhihuiti.criticai_bridge import CriticAIBridge
+        bridge = CriticAIBridge(memory=orch.memory if hasattr(orch, "memory") else None)
+        return bridge.handle_mcp_tool(name, arguments)
+
     else:
         return {
             "content": [{"type": "text", "text": f"Unknown tool: {name}"}],
@@ -552,10 +560,12 @@ def _handle_request(msg: dict) -> dict | None:
         return None  # No response for notifications
 
     elif method == "tools/list":
+        from zhihuiti.criticai_bridge import CRITICAI_MCP_TOOLS
+        all_tools = TOOLS + CRITICAI_MCP_TOOLS
         return {
             "jsonrpc": JSONRPC_VERSION,
             "id": msg_id,
-            "result": {"tools": TOOLS},
+            "result": {"tools": all_tools},
         }
 
     elif method == "tools/call":
