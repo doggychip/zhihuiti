@@ -5,7 +5,7 @@ import OntologyGraph from "@/components/OntologyGraph";
 import StatusBar from "@/components/StatusBar";
 import SlideShell from "@/components/SlideShell";
 
-const TOTAL_SLIDES = 8;
+const TOTAL_SLIDES = 11;
 
 // ─── Slide 0: Title ───────────────────────────────────────
 function TitleSlide() {
@@ -165,21 +165,108 @@ function RealmsSlide() {
   );
 }
 
-// ─── Slide 6: Traction ────────────────────────────────────
-function TractionSlide() {
-  const stats = [
-    { value: "26", label: "Subsystems" },
-    { value: "33", label: "Python Modules" },
-    { value: "331", label: "Tests Passing" },
-    { value: "21", label: "Trading Agents" },
-    { value: "10", label: "Agent Roles" },
-    { value: "5", label: "LLM Backends" },
+// ─── Slide 6: v4.0 — Integrity Layer ─────────────────────
+function IntegritySlide() {
+  const features = [
+    { n: "01", title: "Integrity Audit Engine", desc: "Score every agent on honesty, consistency, and self-awareness — not just output quality" },
+    { n: "02", title: "Integrity Score (0–1)", desc: "Persistent per-agent metric. Below 0.4 triggers automatic demotion or cull" },
+    { n: "03", title: "Cross-Task Drift Detection", desc: "Detects when agents gradually deviate from their stated strategy across multiple goals" },
+    { n: "04", title: "Honesty-Weighted Rewards", desc: "Reward engine multiplies payout by integrity score — liars earn less even with high task scores" },
   ];
 
   return (
     <SlideShell index={6} total={TOTAL_SLIDES}>
+      <p className="text-[9px] tracking-[0.4em] uppercase text-gold/60 mb-6">v4.0 · Integrity Layer</p>
+      <h2 className="text-lg tracking-wide font-light text-ice mb-8">
+        Trust is <span className="text-gold">earned</span>, not assumed.
+      </h2>
+      <div className="space-y-4">
+        {features.map((f) => (
+          <div key={f.n} className="flex items-start gap-4">
+            <span className="text-[10px] text-gold/40 font-mono w-6 shrink-0">{f.n}</span>
+            <div>
+              <p className="text-[11px] text-ice/80 tracking-wide">{f.title}</p>
+              <p className="text-[9px] text-ice/30 tracking-wide mt-0.5">{f.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </SlideShell>
+  );
+}
+
+// ─── Slide 7: v4.0 — Financial Leverage ──────────────────
+function FinanceSlide() {
+  const instruments = [
+    { name: "DEBT_ISSUANCE", desc: "Agents issue debt to fund high-confidence tasks — repay with interest from rewards, or default and face cull" },
+    { name: "STAKE_STIMULUS", desc: "Agents stake tokens on their own integrity — earn bonus yield if scores stay high, lose stake if they cheat" },
+    { name: "FUTURES", desc: "Bet on task outcomes before execution — hedging for risk-averse agents, speculation for the bold" },
+    { name: "MARGIN TRADING", desc: "Leveraged positions with automatic liquidation — amplifies both gains and losses" },
+  ];
+
+  return (
+    <SlideShell index={7} total={TOTAL_SLIDES}>
+      <p className="text-[9px] tracking-[0.4em] uppercase text-gold/60 mb-6">v4.0 · Financial Leverage</p>
+      <h2 className="text-lg tracking-wide font-light text-ice mb-8">
+        A real economy needs real <span className="text-gold">financial instruments</span>.
+      </h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {instruments.map((i) => (
+          <div key={i.name} className="border border-ice/8 rounded-lg p-4 bg-ice-dim">
+            <p className="text-[10px] text-gold/70 tracking-widest font-mono mb-1">{i.name}</p>
+            <p className="text-[9px] text-ice/30 tracking-wide leading-4">{i.desc}</p>
+          </div>
+        ))}
+      </div>
+    </SlideShell>
+  );
+}
+
+// ─── Slide 8: v4.0 — Diplomacy Bridge ────────────────────
+function DiplomacySlide() {
+  const bridges = [
+    { name: "Kady Bridge", desc: "MCP server exposing zhihuiti as a tool provider — any Claude Code session can delegate goals to the swarm" },
+    { name: "Oracle API", desc: "HTTP endpoints for real-time agent status, economy state, and intelligence queries from external systems" },
+    { name: "AlphaArena", desc: "Live trading integration — 21 agents competing on crypto markets with real portfolio sync" },
+    { name: "Cross-Domain", desc: "Knowledge transfer bridge — research agents feed trading agents, trading profits fund research" },
+  ];
+
+  return (
+    <SlideShell index={8} total={TOTAL_SLIDES}>
+      <p className="text-[9px] tracking-[0.4em] uppercase text-gold/60 mb-6">v4.0 · Diplomacy &amp; Bridges</p>
+      <h2 className="text-lg tracking-wide font-light text-ice mb-8">
+        No system is an island.
+      </h2>
+      <div className="space-y-4">
+        {bridges.map((b) => (
+          <div key={b.name} className="border-l-2 border-ice/10 pl-4">
+            <p className="text-[11px] text-ice/80 tracking-widest">{b.name}</p>
+            <p className="text-[9px] text-ice/30 tracking-wide mt-1 leading-4">{b.desc}</p>
+          </div>
+        ))}
+      </div>
+    </SlideShell>
+  );
+}
+
+// ─── Slide 9: Traction ────────────────────────────────────
+function TractionSlide() {
+  const stats = [
+    { value: "26", label: "Subsystems" },
+    { value: "124", label: "Python Modules" },
+    { value: "300+", label: "Tests Passing" },
+    { value: "21", label: "Trading Agents" },
+    { value: "12", label: "Agent Roles" },
+    { value: "5", label: "LLM Backends" },
+    { value: "30+", label: "DB Tables" },
+    { value: "3", label: "User Interfaces" },
+    { value: "62K", label: "Lines of Code" },
+  ];
+
+  return (
+    <SlideShell index={9} total={TOTAL_SLIDES}>
       <p className="text-[9px] tracking-[0.4em] uppercase text-gold/60 mb-6">Traction</p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+      <div className="grid grid-cols-3 gap-6">
         {stats.map((s) => (
           <div key={s.label} className="text-center">
             <p className="text-2xl font-light text-ice">{s.value}</p>
@@ -191,10 +278,10 @@ function TractionSlide() {
   );
 }
 
-// ─── Slide 7: Vision ──────────────────────────────────────
+// ─── Slide 10: Vision ─────────────────────────────────────
 function VisionSlide() {
   return (
-    <SlideShell index={7} total={TOTAL_SLIDES}>
+    <SlideShell index={10} total={TOTAL_SLIDES}>
       <div className="text-center space-y-8">
         <p className="text-[9px] tracking-[0.4em] uppercase text-gold/60">Vision</p>
         <h2 className="text-lg tracking-wide font-light text-ice leading-8">
@@ -221,6 +308,9 @@ export default function DeckPage() {
       <HowSlide />
       <ArchSlide />
       <RealmsSlide />
+      <IntegritySlide />
+      <FinanceSlide />
+      <DiplomacySlide />
       <TractionSlide />
       <VisionSlide />
       <StatusBar />
