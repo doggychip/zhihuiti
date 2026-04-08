@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Python Backend Tests ─────────────────────────────────
+  python-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: zhihuiti
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev]" 2>/dev/null || pip install -e .
+          pip install pytest httpx rich
+
+      - name: Run tests
+        run: python -m pytest tests/ -v --tb=short -q
+
+  # ── Anvil TypeScript Build ──────────────────────────────
+  anvil-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check & build
+        run: npm run build
+
+  # ── Next.js Deck Build ──────────────────────────────────
+  deck-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: zhihuiti-deck
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+  # ── Docker Build Verification ───────────────────────────
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Python image
+        run: docker build -f Dockerfile -t zhihuiti:test .
+
+      - name: Build full image
+        run: docker build -f Dockerfile.full -t zhihuiti-full:test .
