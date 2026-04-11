@@ -96,6 +96,17 @@ class Orchestrator:
         # Context engine for rich task context and learning extraction
         self.context_engine = ContextEngine(self.memory)
 
+        # MemPalace bridge (optional: semantic memory archival + retrieval)
+        self._mempalace = None
+        try:
+            from zhihuiti.mempalace_bridge import get_bridge
+            mp = get_bridge()
+            if mp.is_available():
+                self._mempalace = mp
+                console.print("  [dim]MemPalace: connected (semantic memory active)[/dim]")
+        except Exception:
+            pass  # MemPalace not installed — no problem
+
         # Brain Intelligence engines
         self.metacognition = MetacognitionEngine(self.memory, self.llm)
         self.consolidation = ConsolidationEngine(self.memory, self.llm)
@@ -287,6 +298,14 @@ class Orchestrator:
             if ctx_text:
                 task.description = f"{task.description}\n\n{ctx_text}"
 
+            # MemPalace: inject semantic context from past sessions
+            if self._mempalace:
+                mp_context = self._mempalace.get_context_for_task(
+                    task.description, agent.config.role.value,
+                )
+                if mp_context:
+                    task.description = f"{task.description}\n\n{mp_context}"
+
             # Brain Intelligence: predict outcome before execution
             prediction = self.prediction.predict(agent, task, goal_id)
 
@@ -345,6 +364,20 @@ class Orchestrator:
             # Context engine: extract learnings from high-scoring tasks
             if score >= 0.7:
                 self.context_engine.extract_learnings(task, agent, score)
+
+            # MemPalace: archive completed task for future semantic retrieval
+            if self._mempalace and score >= 0.5:
+                try:
+                    self._mempalace.archive_task_result(
+                        task_description=task.description[:500],
+                        result=output,
+                        agent_role=agent.config.role.value,
+                        score=score,
+                        agent_id=agent.id,
+                        goal_id=goal_id,
+                    )
+                except Exception:
+                    pass  # Non-critical: don't let archival failure break execution
 
             # ── Phase 5 (locked): penalties, realm, reward, checkpoint ──
             with _lock:
