@@ -107,6 +107,28 @@ class Orchestrator:
         except Exception:
             pass  # MemPalace not installed — no problem
 
+        # Langfuse bridge (optional: LLM call tracing + cost tracking)
+        self._langfuse = None
+        try:
+            from zhihuiti.integrations.langfuse_bridge import get_bridge as get_langfuse
+            lf = get_langfuse()
+            if lf.is_available():
+                self._langfuse = lf
+                console.print("  [dim]Langfuse: connected (LLM tracing active)[/dim]")
+        except Exception:
+            pass
+
+        # Chroma bridge (optional: vector semantic search for knowledge)
+        self._chroma = None
+        try:
+            from zhihuiti.integrations.chroma_bridge import get_bridge as get_chroma
+            ch = get_chroma()
+            if ch.is_available():
+                self._chroma = ch
+                console.print("  [dim]Chroma: connected (vector search active)[/dim]")
+        except Exception:
+            pass
+
         # Brain Intelligence engines
         self.metacognition = MetacognitionEngine(self.memory, self.llm)
         self.consolidation = ConsolidationEngine(self.memory, self.llm)
@@ -306,6 +328,19 @@ class Orchestrator:
                 if mp_context:
                     task.description = f"{task.description}\n\n{mp_context}"
 
+            # Chroma: inject vector-search context from knowledge base
+            if self._chroma:
+                try:
+                    chroma_results = self._chroma.search(task.description, limit=3)
+                    if chroma_results:
+                        ch_lines = ["Relevant knowledge (vector search):"]
+                        for cr in chroma_results:
+                            text = cr.get("text", "")[:200]
+                            ch_lines.append(f"  - {text}")
+                        task.description = f"{task.description}\n\n" + "\n".join(ch_lines)
+                except Exception:
+                    pass
+
             # Brain Intelligence: predict outcome before execution
             prediction = self.prediction.predict(agent, task, goal_id)
 
@@ -377,7 +412,33 @@ class Orchestrator:
                         goal_id=goal_id,
                     )
                 except Exception:
-                    pass  # Non-critical: don't let archival failure break execution
+                    pass  # Non-critical
+
+            # Chroma: store high-quality results for vector search
+            if self._chroma and score >= 0.5:
+                try:
+                    self._chroma.add_task_result(
+                        task_desc=task.description[:500],
+                        result=output[:1000],
+                        agent_role=agent.config.role.value,
+                        score=score,
+                        goal_id=goal_id,
+                    )
+                except Exception:
+                    pass
+
+            # Langfuse: trace completed agent task
+            if self._langfuse:
+                try:
+                    self._langfuse.trace_agent_task(
+                        agent_id=agent.id,
+                        role=agent.config.role.value,
+                        task=task.description[:200],
+                        score=score,
+                        tokens_used=0,
+                    )
+                except Exception:
+                    pass
 
             # ── Phase 5 (locked): penalties, realm, reward, checkpoint ──
             with _lock:

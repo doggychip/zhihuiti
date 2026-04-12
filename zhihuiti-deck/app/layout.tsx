@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
   title: "智慧體 Zhihuiti — Midnight Watch",
@@ -13,7 +14,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-midnight min-h-screen antialiased">
+      <body className="bg-midnight min-h-screen antialiased pt-10">
+        <Nav />
         {children}
       </body>
     </html>

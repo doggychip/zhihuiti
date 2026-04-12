@@ -22,6 +22,19 @@ build-backend = "setuptools.build_meta"
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+trading = ["ccxt>=4.0", "freqtrade>=2024.1"]
+observability = ["langfuse>=2.0", "arize-phoenix>=4.0", "openlit>=1.0"]
+memory = ["chromadb>=0.5", "mem0ai>=0.1", "mempalace>=0.1"]
+knowledge = ["graphrag>=0.3"]
+evolution = ["evotorch>=0.5"]
+rl = ["pettingzoo>=1.24"]
+simulation = ["mesa>=3.0"]
+workflow = ["temporalio>=1.7"]
+benchmark = ["swebench>=2.0"]
+interop = ["python-a2a>=0.1"]
+all = [
+    "zhihuiti[trading,observability,memory,knowledge,evolution,rl,simulation,workflow,benchmark,interop]",
+]
 
 [project.scripts]
 zhihuiti = "zhihuiti.cli:main"

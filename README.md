@@ -194,6 +194,33 @@ result = delegate_to_zhihuiti("analyze market trends for renewable energy")
 2. Copy `kady_bridge.py` into your k-dense-byok project
 3. Set `OPENROUTER_API_KEY` (shared between both systems)
 
+## Integrations
+
+zhihuiti supports 15+ optional integrations via bridge modules in `zhihuiti/integrations/`. All are zero-dependency — install the package to activate.
+
+```bash
+pip install -e ".[all]"          # install everything
+pip install -e ".[trading]"      # just CCXT + Freqtrade
+pip install -e ".[observability]" # Langfuse + Phoenix + OpenLIT
+pip install -e ".[memory]"       # Chroma + mem0 + MemPalace
+```
+
+| Category | Package | What it adds |
+|----------|---------|--------------|
+| Trading | `ccxt` | 100+ exchange API |
+| Trading | `freqtrade` | Backtesting + hyperopt |
+| Observability | `langfuse` | LLM call tracing + cost |
+| Observability | `arize-phoenix` | Embedding drift detection |
+| Memory | `chromadb` | Vector semantic search |
+| Memory | `mem0ai` | Evolved agent memory |
+| Knowledge | `graphrag` | Knowledge graph RAG |
+| Evolution | `evotorch` | GPU-accelerated CMA-ES |
+| RL | `pettingzoo` | Multi-agent reinforcement learning |
+| Simulation | `mesa` | Agent-based economic modeling |
+| Interop | `python-a2a` | Google A2A protocol |
+| Workflow | `temporalio` | Crash-resilient orchestration |
+| Benchmark | `swebench` | Coding agent evaluation |
+
 ## Tests
 
 ```bash
