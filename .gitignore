@@ -12,3 +12,4 @@ __pycache__/
 *.html
 *.png
 collision_map.json
+UNKNOWN.egg-info/
