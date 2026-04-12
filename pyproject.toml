@@ -20,8 +20,19 @@ dependencies = [
 requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools.packages.find]
-include = ["zhihuiti*", "silicon_realms*"]
+[tool.setuptools.package-dir]
+zhihuiti = "zhihuiti/zhihuiti"
+
+[tool.setuptools]
+packages = [
+    "zhihuiti",
+    "zhihuiti.integrations",
+    "zhihuiti.routes",
+    "zhihuiti.workflows",
+    "silicon_realms",
+    "silicon_realms.crews",
+    "silicon_realms.theory",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
