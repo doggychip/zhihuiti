@@ -1,21 +1,24 @@
-"""Integrations — optional third-party bridges for zhihuiti agents.
+"""zhihuiti integrations — optional bridge modules for external tools.
 
-All bridges follow the lazy-init pattern: try import on first use,
-return empty/graceful results if the dependency is not installed.
-No required dependencies — each bridge is fully optional.
+Each bridge follows the same pattern:
+  - Lazy init with try/except on import
+  - is_available() check before any operation
+  - Graceful degradation (returns empty/False on failure)
+  - Module-level get_bridge() singleton
+  - No required dependencies
 
 Available bridges:
-  - ccxt_bridge: Unified exchange API (100+ exchanges) for live trading
-  - langfuse_bridge: LLM call tracing and cost tracking
-  - chroma_bridge: Vector semantic search over agent memory
+  - nautilus_bridge: Institutional-grade trading execution (NautilusTrader)
+  - temporal_bridge: Durable workflow orchestration (Temporal)
+  - swebench_bridge: Standardized coding agent evaluation (SWE-bench)
 """
 
-from zhihuiti.integrations.ccxt_bridge import get_bridge as get_ccxt_bridge
-from zhihuiti.integrations.langfuse_bridge import get_bridge as get_langfuse_bridge
-from zhihuiti.integrations.chroma_bridge import get_bridge as get_chroma_bridge
+from zhihuiti.integrations.nautilus_bridge import get_bridge as get_nautilus_bridge
+from zhihuiti.integrations.temporal_bridge import get_bridge as get_temporal_bridge
+from zhihuiti.integrations.swebench_bridge import get_bridge as get_swebench_bridge
 
 __all__ = [
-    "get_ccxt_bridge",
-    "get_langfuse_bridge",
-    "get_chroma_bridge",
+    "get_nautilus_bridge",
+    "get_temporal_bridge",
+    "get_swebench_bridge",
 ]
