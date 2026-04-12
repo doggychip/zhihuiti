@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "zhihuiti": {
+      "command": "python",
+      "args": ["-m", "zhihuiti.mcp_server"],
+      "env": {
+        "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}",
+        "ZHIHUITI_DB": "~/.zhihuiti/zhihuiti.db",
+        "ZHIHUITI_TOOLS": "true"
+      }
+    }
+  }
+}
