@@ -225,6 +225,7 @@ def get_piece(content_id: str) -> dict | None:
 def generate_content(orch=None, topic_hint: str = "") -> ContentPiece:
     """Generate a new content piece using the LLM.
 
+    Pulls real theories from the 296-theory knowledge graph to enrich content.
     If orch is provided, uses the zhihuiti orchestrator (real agents).
     Otherwise uses direct LLM call.
     """
@@ -239,11 +240,16 @@ def generate_content(orch=None, topic_hint: str = "") -> ContentPiece:
                 pair = p
                 break
 
+    # Enrich with real theories from the knowledge graph
+    theory_context = _get_theory_context(pair)
+
     user_prompt = f"""Generate a content piece about this East-West intersection:
 
 Western science: {pair['west']}
 Eastern wisdom: {pair['east']}
 Bridge insight: {pair['bridge']}
+
+{theory_context}
 
 Expand on this bridge with:
 1. Specific scientific studies or experiments
@@ -291,6 +297,62 @@ Make it engaging, bilingual (中文 + English), and 接地气."""
         _content.append(piece)
     _save_content(piece)
     return piece
+
+
+def _get_theory_context(pair: dict) -> str:
+    """Pull relevant theories from the 296-theory knowledge graph.
+
+    Searches for theories that match the topic pair's tags,
+    finds cross-domain collisions, and adds structural skeleton connections.
+    """
+    try:
+        from zhihuiti.theory_intelligence import get_graph
+        graph = get_graph()
+
+        context_parts = []
+
+        # Search for relevant theories based on tags
+        for tag in pair.get("tags", [])[:3]:
+            results = graph.search_theories(tag, limit=3)
+            if results:
+                theories = []
+                for r in results:
+                    name = r.get("name", r.get("id", ""))
+                    domain = r.get("domain", "")
+                    theories.append(f"  - {name} ({domain})")
+                context_parts.append(f"Related theories from knowledge graph [{tag}]:\n" + "\n".join(theories))
+
+        # Find cross-domain collisions (analogies)
+        if pair.get("tags"):
+            first_tag = pair["tags"][0]
+            search_results = graph.search_theories(first_tag, limit=1)
+            if search_results:
+                theory_id = search_results[0].get("id", "")
+                if theory_id:
+                    analogies = graph.find_analogies(theory_id, limit=3)
+                    if analogies:
+                        collision_lines = []
+                        for a in analogies:
+                            bridge_theory = a.get("bridge_theory", a.get("name", ""))
+                            bridge_domain = a.get("bridge_domain", a.get("domain", ""))
+                            interpretation = a.get("interpretation", "")
+                            collision_lines.append(f"  - {bridge_theory} ({bridge_domain}): {interpretation[:100]}")
+                        if collision_lines:
+                            context_parts.append("Cross-domain collisions (碰撞):\n" + "\n".join(collision_lines))
+
+        # Get stats for context
+        stats = graph.get_stats()
+        context_parts.append(
+            f"\n[Knowledge graph: {stats.get('theories', 296)} theories, "
+            f"{stats.get('collisions', 378)} cross-domain collisions, "
+            f"{stats.get('domains', 24)} domains]"
+        )
+
+        if context_parts:
+            return "── Brain Intelligence theories for reference ──\n" + "\n\n".join(context_parts)
+    except Exception:
+        pass
+    return ""
 
 
 def _fallback_content(pair: dict) -> dict:
