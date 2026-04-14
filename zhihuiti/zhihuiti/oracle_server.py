@@ -249,6 +249,14 @@ class OracleHandler(BaseHTTPRequestHandler):
             self._handle_backtest_results(qs)
         elif path == "/api/backtest/accuracy":
             self._handle_backtest_accuracy()
+        # ── Content feed endpoints ──
+        elif path == "/api/content/feed":
+            self._handle_content_feed(qs)
+        elif path == "/api/content/topics":
+            self._handle_content_topics()
+        elif path.startswith("/api/content/") and path.count("/") == 3:
+            content_id = path.split("/")[-1]
+            self._handle_content_get(content_id)
         else:
             _json_response(self, {"error": "not found"}, 404)
 
@@ -279,6 +287,9 @@ class OracleHandler(BaseHTTPRequestHandler):
         elif path.startswith("/api/oracle/agents/") and path.endswith("/resume"):
             agent_id = path.split("/")[-2]
             self._handle_agent_status(agent_id, "active")
+        # ── Content generation ──
+        elif path == "/api/content/generate":
+            self._handle_content_generate()
         # ── Real Agent System POST endpoints ──
         elif path == "/api/goals":
             self._handle_real_goal_create()
@@ -1001,6 +1012,66 @@ class OracleHandler(BaseHTTPRequestHandler):
         except Exception as e:
             _json_response(self, {"error": str(e)}, 500)
 
+    # ── Content feed handlers ─────────────────────────────────────
+
+    def _handle_content_feed(self, qs):
+        """GET /api/content/feed — latest content feed."""
+        try:
+            from zhihuiti.content_agent import get_feed
+            limit = int(qs.get("limit", ["20"])[0])
+            tag = qs.get("tag", [""])[0]
+            feed = get_feed(limit=limit, tag=tag)
+            _json_response(self, {"content": feed, "count": len(feed)})
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_content_topics(self):
+        """GET /api/content/topics — available topic categories."""
+        try:
+            from zhihuiti.content_agent import TOPIC_PAIRS
+            topics = []
+            for pair in TOPIC_PAIRS:
+                topics.append({
+                    "west": pair["west"],
+                    "east": pair["east"],
+                    "bridge": pair["bridge"],
+                    "tags": pair["tags"],
+                })
+            _json_response(self, {"topics": topics, "count": len(topics)})
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_content_get(self, content_id):
+        """GET /api/content/:id — single content piece."""
+        try:
+            from zhihuiti.content_agent import get_piece
+            piece = get_piece(content_id)
+            if not piece:
+                _json_response(self, {"error": "content not found"}, 404)
+                return
+            _json_response(self, piece)
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_content_generate(self):
+        """POST /api/content/generate — trigger new content generation."""
+        try:
+            from zhihuiti.content_agent import generate_content
+            body = _read_body(self)
+            topic_hint = body.get("topic", "")
+
+            orch = None
+            if _has_llm_key():
+                try:
+                    orch = _get_orchestrator()
+                except Exception:
+                    pass
+
+            piece = generate_content(orch=orch, topic_hint=topic_hint)
+            _json_response(self, {"status": "generated", "content": piece.to_dict()})
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
     # ── Backtest handlers ────────────────────────────────────────
 
     def _handle_backtest_run(self):
@@ -1249,6 +1320,15 @@ SEED_GOALS = [
     "Review the auction system efficiency. Are agents bidding competitively? What's the average savings?",
     "Research the latest developments in AI agent frameworks. Compare approaches and trade-offs.",
     "Analyze S&P 500 tech sector: AAPL, MSFT, GOOGL, NVDA. Which has strongest fundamentals?",
+    # East × West content generation goals
+    "Generate a bilingual content piece about how neuroscience research on mirror neurons validates Buddhist compassion meditation. Include specific studies by Tania Singer and Matthieu Ricard.",
+    "Write about the connection between quantum observer effect and Vipassana insight meditation. How does modern physics validate ancient observation practices?",
+    "Explore how neuroplasticity research proves what Mahamudra practitioners have known for centuries. Cite specific fMRI studies by Richard Davidson.",
+    "Create content about Polyvagal theory and Pranayama breathing. How did ancient yogis discover vagus nerve stimulation thousands of years before Stephen Porges?",
+    "Write about flow state psychology (Csikszentmihalyi) and the Taoist concept of Wu Wei (无为). Both describe effortless peak performance.",
+    "Explore how epigenetics and karma both describe the same phenomenon: your choices create imprints that ripple across generations.",
+    "Write about Default Mode Network research and meditation. What happens in the brain when monks 'stop their thoughts'?",
+    "Create content about chaos theory's butterfly effect and Buddhism's Indra's Net — how both describe an interconnected universe where small actions ripple everywhere.",
 ]
 
 
