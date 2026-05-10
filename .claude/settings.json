@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m zhihuiti.*)",
+      "Bash(pip install*)",
+      "Bash(cd /home/user/zhihuiti*)"
+    ]
+  },
+  "mcpServers": {
+    "zhihuiti": {
+      "command": "python",
+      "args": ["-m", "zhihuiti.mcp_server"],
+      "cwd": "/home/user/zhihuiti/zhihuiti",
+      "env": {
+        "ZHIHUITI_DB": "/home/user/zhihuiti/zhihuiti/data/zhihuiti.db",
+        "PYTHONPATH": "/home/user/zhihuiti/zhihuiti"
+      }
+    }
+  }
+}
