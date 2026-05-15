@@ -1,0 +1,813 @@
+[
+  {
+    "id": "ryan_mean_field_theory_x_nash_equilibrium",
+    "name": "Theory-Equilibrium Interaction Network",
+    "parent_a": "Mean Field Theory",
+    "parent_b": "Nash Equilibrium",
+    "collision_score": 0.374,
+    "collision_strength": "significant",
+    "overall_score": 0.897,
+    "novelty_score": 0.91,
+    "depth_score": 0.808,
+    "impact_score": 0.974,
+    "core_equation": "⟨order_parameter_i⟩ ≈ f(⟨order_parameter⟩)  (self-consistency equation)",
+    "auxiliary_equations": [
+      "E(order_parameter) = −Σ J(interaction_strength) · interaction"
+    ],
+    "update_mechanism": "self consistent field ⊗ best response dynamics",
+    "optimization_target": "minimize free energy + maximize individual utility",
+    "backbone_patterns": [
+      "fixed_point_iteration",
+      "mean_field",
+      "pairwise_coupling"
+    ],
+    "novel_patterns": [
+      "above_average_grows",
+      "energy_based",
+      "energy_entropy_tradeoff",
+      "fixed_point_stability",
+      "frequency_dependent",
+      "order_parameter",
+      "phase_transition"
+    ],
+    "combined_operators": [
+      "best_response",
+      "expectation",
+      "mixed_strategy",
+      "pairwise_interaction",
+      "partition_function",
+      "self_consistency",
+      "variational_derivative"
+    ],
+    "combined_variables": {
+      "coupling": "interaction_strength ↔ payoff_matrix",
+      "energy": "free_energy_functional",
+      "reference": "opponent_strategy",
+      "score": "utility",
+      "state": "order_parameter ↔ strategy_profile",
+      "temperature": "inverse_beta"
+    },
+    "conservation_laws": [
+      "total_probability"
+    ],
+    "predicted_properties": [
+      "NOVEL: Exhibits phase transitions at critical parameters",
+      "CROSS-DOMAIN: Results from Statistical Physics transfer to Evolutionary Game Theory via shared fixed point iteration"
+    ],
+    "research_directions": [
+      "Investigate: when does interaction strength behave like payoff matrix?",
+      "Investigate: when does order parameter behave like strategy profile?",
+      "Map the phase diagram: identify order parameter and critical exponents",
+      "Test whether theorems from Statistical Physics hold in Evolutionary Game Theory under the variable mapping",
+      "Design experiments in Evolutionary Game Theory guided by Statistical Physics predictions"
+    ]
+  },
+  {
+    "id": "ryan_active_inference_x_mean_field_game",
+    "name": "Variational Inference-Game Principle",
+    "parent_a": "Active Inference",
+    "parent_b": "Mean-Field Game",
+    "collision_score": 0.347,
+    "collision_strength": "significant",
+    "overall_score": 0.896,
+    "novelty_score": 0.867,
+    "depth_score": 0.869,
+    "impact_score": 0.947,
+    "core_equation": "δF/δfield = 0  →  beliefs_about_hidden_states* = argmin F[field]",
+    "auxiliary_equations": [
+      "P(hypothesis|data) ∝ P(data|hypothesis) · P(hypothesis)"
+    ],
+    "update_mechanism": "free energy minimization ⊗ coupled hjb fokker planck",
+    "optimization_target": "minimize expected free energy + nash equilibrium of continuum",
+    "backbone_patterns": [
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "variational_principle"
+    ],
+    "novel_patterns": [
+      "bayesian_inference",
+      "competitive_dynamics",
+      "exploration_exploitation",
+      "fixed_point_iteration",
+      "information_gain",
+      "mean_field"
+    ],
+    "combined_operators": [
+      "belief_update",
+      "fixed_point",
+      "fokker_planck_operator",
+      "gradient",
+      "hamilton_jacobi",
+      "mean_field_coupling",
+      "policy_selection",
+      "precision_weighting",
+      "variational_inference"
+    ],
+    "combined_variables": {
+      "control": "action_policy",
+      "coupling": "mean_field_interaction",
+      "dynamics": "belief_updating ↔ coupled_pde_system",
+      "energy": "variational_free_energy ↔ social_cost",
+      "state": "beliefs_about_hidden_states ↔ value_and_distribution"
+    },
+    "conservation_laws": [
+      "mass_conservation"
+    ],
+    "predicted_properties": [
+      "Variational formulation enables optimization algorithms",
+      "CROSS-DOMAIN: Results from Neuroscience transfer to Game Theory via shared energy entropy tradeoff"
+    ],
+    "research_directions": [
+      "Investigate: when does belief updating behave like coupled pde system?",
+      "Investigate: when does variational free energy behave like social cost?",
+      "Investigate: when does beliefs about hidden states behave like value and distribution?",
+      "Derive variational bound and design efficient approximation algorithms",
+      "Test whether theorems from Neuroscience hold in Game Theory under the variable mapping",
+      "Design experiments in Game Theory guided by Neuroscience predictions"
+    ]
+  },
+  {
+    "id": "ryan_compressed_sensing_x_sparse_coding",
+    "name": "Variational Sensing-Coding Principle",
+    "parent_a": "Compressed Sensing",
+    "parent_b": "Sparse Coding / Efficient Neural Coding",
+    "collision_score": 0.405,
+    "collision_strength": "significant",
+    "overall_score": 0.895,
+    "novelty_score": 0.867,
+    "depth_score": 0.814,
+    "impact_score": 1.0,
+    "core_equation": "ΔI = D_KL(posterior ‖ prior)",
+    "auxiliary_equations": [],
+    "update_mechanism": "sparse recovery ⊗ iterative shrinkage thresholding",
+    "optimization_target": "minimize l1 norm + minimize reconstruction plus sparsity",
+    "backbone_patterns": [
+      "information_gain",
+      "optimal_inference",
+      "variational_principle"
+    ],
+    "novel_patterns": [
+      "correlation_learning",
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "one_to_one_mapping",
+      "structural_isomorphism",
+      "uncertainty_measure"
+    ],
+    "combined_operators": [
+      "basis_pursuit",
+      "dictionary_learning",
+      "gradient",
+      "lateral_inhibition",
+      "linear_measurement",
+      "projection",
+      "thresholding"
+    ],
+    "combined_variables": {
+      "basis": "dictionary_atoms",
+      "coupling": "lateral_inhibition_weights",
+      "energy": "l1_norm ↔ reconstruction_error_plus_penalty",
+      "measurement": "compressed_observations",
+      "precision": "restricted_isometry_constant",
+      "state": "sparse_signal ↔ sparse_activations"
+    },
+    "conservation_laws": [
+      "information_content",
+      "measurement_consistency"
+    ],
+    "predicted_properties": [
+      "Variational formulation enables optimization algorithms",
+      "CROSS-DOMAIN: Results from Information Theory transfer to Neuroscience via shared information gain"
+    ],
+    "research_directions": [
+      "Investigate: when does l1 norm behave like reconstruction error plus penalty?",
+      "Investigate: when does sparse signal behave like sparse activations?",
+      "Derive variational bound and design efficient approximation algorithms",
+      "Test whether theorems from Information Theory hold in Neuroscience under the variable mapping",
+      "Design experiments in Neuroscience guided by Information Theory predictions"
+    ]
+  },
+  {
+    "id": "ryan_preferential_attachment_x_wright_fisher",
+    "name": "Networks-Genetics Synthesis",
+    "parent_a": "Preferential Attachment / Scale-Free Networks",
+    "parent_b": "Wright-Fisher / Population Genetics",
+    "collision_score": 0.485,
+    "collision_strength": "significant",
+    "overall_score": 0.887,
+    "novelty_score": 0.743,
+    "depth_score": 0.897,
+    "impact_score": 1.0,
+    "core_equation": "⟨degree_sequence_i⟩ ≈ f(⟨degree_sequence⟩)  (self-consistency equation)",
+    "auxiliary_equations": [
+      "H = −Σ_{⟨ij⟩} J_ij · degree_sequence_i · degree_sequence_j"
+    ],
+    "update_mechanism": "growth attachment ⊗ binomial sampling selection",
+    "optimization_target": "characterize degree distribution + characterize allele dynamics",
+    "backbone_patterns": [
+      "mean_field",
+      "population_dynamics",
+      "symmetry_breaking"
+    ],
+    "novel_patterns": [
+      "energy_entropy_tradeoff",
+      "fixed_point_iteration",
+      "pairwise_coupling",
+      "renormalization"
+    ],
+    "combined_operators": [
+      "attachment_kernel",
+      "coalescent",
+      "degree_counting",
+      "diffusion_approximation",
+      "drift",
+      "master_equation",
+      "mean_field_approximation",
+      "mutation",
+      "selection"
+    ],
+    "combined_variables": {
+      "coupling": "attachment_kernel ↔ population_size",
+      "dynamics": "preferential_growth ↔ selection_drift_balance",
+      "energy": "network_entropy ↔ negative_fitness",
+      "state": "degree_sequence ↔ allele_frequencies"
+    },
+    "conservation_laws": [
+      "total_allele_frequency",
+      "total_edge_count"
+    ],
+    "predicted_properties": [
+      "CROSS-DOMAIN: Results from Network Science transfer to Biology via shared mean field"
+    ],
+    "research_directions": [
+      "Investigate: when does attachment kernel behave like population size?",
+      "Investigate: when does preferential growth behave like selection drift balance?",
+      "Investigate: when does network entropy behave like negative fitness?",
+      "Investigate: when does degree sequence behave like allele frequencies?",
+      "Test whether theorems from Network Science hold in Biology under the variable mapping",
+      "Design experiments in Biology guided by Network Science predictions"
+    ]
+  },
+  {
+    "id": "ryan_mean_field_game_x_mechanism_design",
+    "name": "Variational Game-Theory Principle",
+    "parent_a": "Mean-Field Game",
+    "parent_b": "Mechanism Design / Auction Theory",
+    "collision_score": 0.39,
+    "collision_strength": "significant",
+    "overall_score": 0.884,
+    "novelty_score": 1.0,
+    "depth_score": 0.778,
+    "impact_score": 0.89,
+    "core_equation": "δF/δfield = 0  →  value_and_distribution* = argmin F[field]",
+    "auxiliary_equations": [
+      "L(value_and_distribution, dual) = f(value_and_distribution) + dualᵀ g(value_and_distribution)"
+    ],
+    "update_mechanism": "coupled hjb fokker planck ⊗ incentive compatible mechanism",
+    "optimization_target": "nash equilibrium of continuum + maximize social welfare",
+    "backbone_patterns": [
+      "competitive_dynamics",
+      "variational_principle"
+    ],
+    "novel_patterns": [
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "information_gain",
+      "mean_field",
+      "optimal_inference"
+    ],
+    "combined_operators": [
+      "fixed_point",
+      "fokker_planck_operator",
+      "gradient",
+      "hamilton_jacobi",
+      "incentive_constraint",
+      "individual_rationality",
+      "mean_field_coupling",
+      "revelation_principle",
+      "vcg_payment"
+    ],
+    "combined_variables": {
+      "coupling": "mean_field_interaction ↔ type_reports",
+      "dynamics": "coupled_pde_system",
+      "energy": "social_cost ↔ negative_social_welfare",
+      "information": "private_information",
+      "state": "value_and_distribution ↔ allocation_and_payments"
+    },
+    "conservation_laws": [
+      "budget_balance",
+      "mass_conservation"
+    ],
+    "predicted_properties": [
+      "Variational formulation enables optimization algorithms",
+      "CROSS-DOMAIN: Results from Game Theory transfer to Economics via shared competitive dynamics"
+    ],
+    "research_directions": [
+      "Investigate: when does mean field interaction behave like type reports?",
+      "Investigate: when does social cost behave like negative social welfare?",
+      "Investigate: when does value and distribution behave like allocation and payments?",
+      "Derive variational bound and design efficient approximation algorithms",
+      "Test whether theorems from Game Theory hold in Economics under the variable mapping",
+      "Design experiments in Economics guided by Game Theory predictions"
+    ]
+  },
+  {
+    "id": "ryan_mean_field_game_x_wright_fisher",
+    "name": "Game-Genetics Synthesis",
+    "parent_a": "Mean-Field Game",
+    "parent_b": "Wright-Fisher / Population Genetics",
+    "collision_score": 0.356,
+    "collision_strength": "significant",
+    "overall_score": 0.883,
+    "novelty_score": 0.812,
+    "depth_score": 0.871,
+    "impact_score": 0.956,
+    "core_equation": "⟨value_and_distribution_i⟩ ≈ f(⟨value_and_distribution⟩)  (self-consistency equation)",
+    "auxiliary_equations": [],
+    "update_mechanism": "coupled hjb fokker planck ⊗ binomial sampling selection",
+    "optimization_target": "nash equilibrium of continuum + characterize allele dynamics",
+    "backbone_patterns": [
+      "energy_entropy_tradeoff",
+      "fixed_point_iteration",
+      "mean_field"
+    ],
+    "novel_patterns": [
+      "competitive_dynamics",
+      "energy_minimization",
+      "population_dynamics",
+      "symmetry_breaking",
+      "variational_principle"
+    ],
+    "combined_operators": [
+      "coalescent",
+      "diffusion_approximation",
+      "drift",
+      "fixed_point",
+      "fokker_planck_operator",
+      "gradient",
+      "hamilton_jacobi",
+      "mean_field_coupling",
+      "mutation",
+      "selection"
+    ],
+    "combined_variables": {
+      "coupling": "mean_field_interaction ↔ population_size",
+      "dynamics": "coupled_pde_system ↔ selection_drift_balance",
+      "energy": "social_cost ↔ negative_fitness",
+      "state": "value_and_distribution ↔ allele_frequencies"
+    },
+    "conservation_laws": [
+      "mass_conservation",
+      "total_allele_frequency"
+    ],
+    "predicted_properties": [
+      "CROSS-DOMAIN: Results from Game Theory transfer to Biology via shared energy entropy tradeoff"
+    ],
+    "research_directions": [
+      "Investigate: when does mean field interaction behave like population size?",
+      "Investigate: when does coupled pde system behave like selection drift balance?",
+      "Investigate: when does social cost behave like negative fitness?",
+      "Investigate: when does value and distribution behave like allele frequencies?",
+      "Test whether theorems from Game Theory hold in Biology under the variable mapping",
+      "Design experiments in Biology guided by Game Theory predictions"
+    ]
+  },
+  {
+    "id": "ryan_black_scholes_x_stochastic_optimal_control",
+    "name": "Variational Pricing-Control Principle",
+    "parent_a": "Black-Scholes / Option Pricing",
+    "parent_b": "Stochastic Optimal Control",
+    "collision_score": 0.403,
+    "collision_strength": "significant",
+    "overall_score": 0.881,
+    "novelty_score": 0.743,
+    "depth_score": 0.881,
+    "impact_score": 1.0,
+    "core_equation": "L(option_price, dual) = f(option_price) + dualᵀ g(option_price)",
+    "auxiliary_equations": [],
+    "update_mechanism": "risk neutral pricing ⊗ stochastic hjb",
+    "optimization_target": "replicate payoff + minimize expected cost",
+    "backbone_patterns": [
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "variational_principle"
+    ],
+    "novel_patterns": [
+      "conservation_law",
+      "energy_minimization",
+      "exploration_exploitation",
+      "gradient_descent"
+    ],
+    "combined_operators": [
+      "bellman_operator",
+      "delta_hedging",
+      "fokker_planck_adjoint",
+      "girsanov_transform",
+      "hamiltonian",
+      "ito_calculus",
+      "pde_solution",
+      "risk_neutral_measure",
+      "stochastic_gradient"
+    ],
+    "combined_variables": {
+      "control": "feedback_policy",
+      "coupling": "volatility_surface",
+      "dynamics": "geometric_brownian_motion ↔ controlled_diffusion",
+      "energy": "hedging_error ↔ expected_cost_to_go",
+      "state": "option_price ↔ stochastic_state_process"
+    },
+    "conservation_laws": [
+      "bellman_optimality",
+      "no_arbitrage"
+    ],
+    "predicted_properties": [
+      "Variational formulation enables optimization algorithms",
+      "CROSS-DOMAIN: Results from Economics transfer to Control Theory via shared dual variables"
+    ],
+    "research_directions": [
+      "Investigate: when does geometric brownian motion behave like controlled diffusion?",
+      "Investigate: when does hedging error behave like expected cost to go?",
+      "Investigate: when does option price behave like stochastic state process?",
+      "Derive variational bound and design efficient approximation algorithms",
+      "Test whether theorems from Economics hold in Control Theory under the variable mapping",
+      "Design experiments in Control Theory guided by Economics predictions"
+    ]
+  },
+  {
+    "id": "ryan_active_inference_x_markowitz_portfolio",
+    "name": "Variational Inference-Mean-Variance Principle",
+    "parent_a": "Active Inference",
+    "parent_b": "Markowitz Portfolio / Mean-Variance",
+    "collision_score": 0.37,
+    "collision_strength": "significant",
+    "overall_score": 0.868,
+    "novelty_score": 0.975,
+    "depth_score": 0.774,
+    "impact_score": 0.87,
+    "core_equation": "δF/δfield = 0  →  beliefs_about_hidden_states* = argmin F[field]",
+    "auxiliary_equations": [
+      "P(hypothesis|data) ∝ P(data|hypothesis) · P(hypothesis)",
+      "L(beliefs_about_hidden_states, dual) = f(beliefs_about_hidden_states) + dualᵀ g(beliefs_about_hidden_states)"
+    ],
+    "update_mechanism": "free energy minimization ⊗ mean variance optimization",
+    "optimization_target": "minimize expected free energy + minimize portfolio variance",
+    "backbone_patterns": [
+      "energy_minimization",
+      "variational_principle"
+    ],
+    "novel_patterns": [
+      "bayesian_inference",
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "exploration_exploitation",
+      "information_gain",
+      "pairwise_coupling"
+    ],
+    "combined_operators": [
+      "belief_update",
+      "covariance_estimation",
+      "gradient",
+      "lagrange_multiplier",
+      "policy_selection",
+      "precision_weighting",
+      "quadratic_programming",
+      "risk_decomposition",
+      "variational_inference"
+    ],
+    "combined_variables": {
+      "control": "action_policy",
+      "coupling": "covariance_matrix",
+      "dynamics": "belief_updating ↔ efficient_frontier",
+      "energy": "variational_free_energy ↔ portfolio_variance",
+      "state": "beliefs_about_hidden_states ↔ portfolio_weights"
+    },
+    "conservation_laws": [
+      "budget_constraint"
+    ],
+    "predicted_properties": [
+      "Variational formulation enables optimization algorithms",
+      "CROSS-DOMAIN: Results from Neuroscience transfer to Economics via shared energy minimization"
+    ],
+    "research_directions": [
+      "Investigate: when does belief updating behave like efficient frontier?",
+      "Investigate: when does variational free energy behave like portfolio variance?",
+      "Investigate: when does beliefs about hidden states behave like portfolio weights?",
+      "Derive variational bound and design efficient approximation algorithms",
+      "Test whether theorems from Neuroscience hold in Economics under the variable mapping",
+      "Design experiments in Economics guided by Neuroscience predictions"
+    ]
+  },
+  {
+    "id": "ryan_general_equilibrium_x_nash_equilibrium",
+    "name": "Equilibrium-Equilibrium Equilibrium Theory",
+    "parent_a": "General Equilibrium (Arrow-Debreu)",
+    "parent_b": "Nash Equilibrium",
+    "collision_score": 0.397,
+    "collision_strength": "significant",
+    "overall_score": 0.853,
+    "novelty_score": 0.65,
+    "depth_score": 0.879,
+    "impact_score": 1.0,
+    "core_equation": "f(price_allocation_pair*) = 0,  eigenvalues of Df(price_allocation_pair*) < 0",
+    "auxiliary_equations": [
+      "L(price_allocation_pair, dual) = f(price_allocation_pair) + dualᵀ g(price_allocation_pair)"
+    ],
+    "update_mechanism": "tatonnement price adjustment ⊗ best response dynamics",
+    "optimization_target": "maximize utility under budget + maximize individual utility",
+    "backbone_patterns": [
+      "fixed_point_iteration",
+      "fixed_point_stability",
+      "mean_field",
+      "pairwise_coupling"
+    ],
+    "novel_patterns": [
+      "above_average_grows",
+      "dual_variables",
+      "frequency_dependent",
+      "variational_principle"
+    ],
+    "combined_operators": [
+      "best_response",
+      "convex_optimization",
+      "excess_demand",
+      "expectation",
+      "fixed_point",
+      "lagrange_multiplier",
+      "mixed_strategy",
+      "pairwise_interaction",
+      "price_adjustment"
+    ],
+    "combined_variables": {
+      "coupling": "market_clearing_condition ↔ payoff_matrix",
+      "energy": "aggregate_excess_demand",
+      "reference": "opponent_strategy",
+      "score": "utility",
+      "state": "price_allocation_pair ↔ strategy_profile"
+    },
+    "conservation_laws": [
+      "total_endowment",
+      "total_probability",
+      "walras_law"
+    ],
+    "predicted_properties": [
+      "Stable equilibria exist and can be characterized",
+      "CROSS-DOMAIN: Results from Economics transfer to Evolutionary Game Theory via shared fixed point iteration"
+    ],
+    "research_directions": [
+      "Investigate: when does market clearing condition behave like payoff matrix?",
+      "Investigate: when does price allocation pair behave like strategy profile?",
+      "Test whether theorems from Economics hold in Evolutionary Game Theory under the variable mapping",
+      "Design experiments in Evolutionary Game Theory guided by Economics predictions"
+    ]
+  },
+  {
+    "id": "ryan_mechanism_design_x_information_bottleneck",
+    "name": "Variational Theory-Bottleneck Principle",
+    "parent_a": "Mechanism Design / Auction Theory",
+    "parent_b": "Information Bottleneck",
+    "collision_score": 0.419,
+    "collision_strength": "significant",
+    "overall_score": 0.8,
+    "novelty_score": 0.557,
+    "depth_score": 0.809,
+    "impact_score": 1.0,
+    "core_equation": "L(allocation_and_payments, dual) = f(allocation_and_payments) + dualᵀ g(allocation_and_payments)",
+    "auxiliary_equations": [
+      "∃ T_c: for T < T_c → ordered, T > T_c → disordered"
+    ],
+    "update_mechanism": "incentive compatible mechanism ⊗ iterative blahut arimoto",
+    "optimization_target": "maximize social welfare + minimize compression distortion",
+    "backbone_patterns": [
+      "dual_variables",
+      "information_gain",
+      "optimal_inference",
+      "variational_principle"
+    ],
+    "novel_patterns": [
+      "competitive_dynamics",
+      "energy_entropy_tradeoff",
+      "phase_transition"
+    ],
+    "combined_operators": [
+      "expectation",
+      "incentive_constraint",
+      "individual_rationality",
+      "kl_divergence",
+      "lagrange_multiplier",
+      "mutual_information",
+      "rate_distortion",
+      "revelation_principle",
+      "vcg_payment"
+    ],
+    "combined_variables": {
+      "coupling": "type_reports ↔ relevance_variable",
+      "energy": "negative_social_welfare ↔ rate_distortion_lagrangian",
+      "information": "private_information ↔ mutual_information",
+      "state": "allocation_and_payments ↔ compressed_representation"
+    },
+    "conservation_laws": [
+      "budget_balance",
+      "data_processing_inequality"
+    ],
+    "predicted_properties": [
+      "Variational formulation enables optimization algorithms",
+      "NOVEL: Exhibits phase transitions at critical parameters",
+      "CROSS-DOMAIN: Results from Economics transfer to Information Theory via shared dual variables"
+    ],
+    "research_directions": [
+      "Investigate: when does type reports behave like relevance variable?",
+      "Investigate: when does negative social welfare behave like rate distortion lagrangian?",
+      "Investigate: when does private information behave like mutual information?",
+      "Investigate: when does allocation and payments behave like compressed representation?",
+      "Map the phase diagram: identify order parameter and critical exponents",
+      "Derive variational bound and design efficient approximation algorithms"
+    ]
+  },
+  {
+    "id": "ryan_sir_model_x_spiking_neural_network",
+    "name": "Model-Integrate-and-Fire Synthesis",
+    "parent_a": "SIR / Epidemiological Model",
+    "parent_b": "Spiking Neural Network / Integrate-and-Fire",
+    "collision_score": 0.419,
+    "collision_strength": "significant",
+    "overall_score": 0.8,
+    "novelty_score": 0.557,
+    "depth_score": 0.809,
+    "impact_score": 1.0,
+    "core_equation": "Combines: [dS/dt = −βSI;  dI/dt = βSI − γI;  dR/dt = γI;  R₀ = β/γ;  herd immunity: S < 1/R₀;  final size: 1−R∞ = e^{−R₀R∞}] with [τ dV/dt = −(V−V_rest) + R·I(t);  V≥V_th ⟹ spike, V←V_reset;  STDP: Δw = A+ exp(−Δt/τ+) if pre<post, else −A− exp(Δt/τ−)]",
+    "auxiliary_equations": [
+      "E(compartment_fractions) = −Σ J(contact_rate) · interaction",
+      "H = −Σ_{⟨ij⟩} J_ij · compartment_fractions_i · compartment_fractions_j"
+    ],
+    "update_mechanism": "compartmental ode ⊗ spike timing plasticity",
+    "optimization_target": "minimize epidemic size + minimize prediction error",
+    "backbone_patterns": [
+      "conservation_law",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "population_dynamics"
+    ],
+    "novel_patterns": [
+      "energy_based",
+      "pairwise_coupling",
+      "symmetry_breaking"
+    ],
+    "combined_operators": [
+      "basic_reproduction_number",
+      "compartment_transition",
+      "integration",
+      "mass_action",
+      "refractory_dynamics",
+      "spike_response",
+      "synaptic_update",
+      "threshold",
+      "threshold_condition"
+    ],
+    "combined_variables": {
+      "coupling": "contact_rate ↔ synaptic_weights",
+      "dynamics": "transmission_recovery ↔ integrate_and_fire",
+      "energy": "epidemic_potential ↔ spike_timing_error",
+      "state": "compartment_fractions ↔ membrane_potential"
+    },
+    "conservation_laws": [
+      "charge_conservation",
+      "total_population"
+    ],
+    "predicted_properties": [
+      "CROSS-DOMAIN: Results from Biology transfer to Neuroscience via shared conservation law"
+    ],
+    "research_directions": [
+      "Investigate: when does contact rate behave like synaptic weights?",
+      "Investigate: when does transmission recovery behave like integrate and fire?",
+      "Investigate: when does epidemic potential behave like spike timing error?",
+      "Investigate: when does compartment fractions behave like membrane potential?",
+      "Test whether theorems from Biology hold in Neuroscience under the variable mapping",
+      "Design experiments in Neuroscience guided by Biology predictions"
+    ]
+  },
+  {
+    "id": "ryan_dissipative_structures_x_genetic_algorithm",
+    "name": "Structures-Algorithm Synthesis",
+    "parent_a": "Dissipative Structures (Prigogine)",
+    "parent_b": "Genetic Algorithm",
+    "collision_score": 0.067,
+    "collision_strength": "weak",
+    "overall_score": 0.631,
+    "novelty_score": 1.0,
+    "depth_score": 0.48,
+    "impact_score": 0.467,
+    "core_equation": "∃ T_c: for T < T_c → ordered, T > T_c → disordered",
+    "auxiliary_equations": [
+      "ξ ~ |T − T_c|^{−ν},  observable ~ |T − T_c|^β"
+    ],
+    "update_mechanism": "entropy production driven ⊗ selection variation inheritance",
+    "optimization_target": "maximize fitness",
+    "backbone_patterns": [
+      "phase_transition"
+    ],
+    "novel_patterns": [
+      "above_average_grows",
+      "covariance_selection",
+      "critical_phenomena",
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "exploration_exploitation",
+      "fixed_point_stability",
+      "scale_invariance"
+    ],
+    "combined_operators": [
+      "bifurcation",
+      "crossover",
+      "entropy_production",
+      "fitness_evaluation",
+      "flux",
+      "linear_stability",
+      "mutation",
+      "population_dynamics",
+      "selection",
+      "thermodynamic_force"
+    ],
+    "combined_variables": {
+      "coupling": "crossover_rate",
+      "dynamics": "selection_pressure",
+      "energy": "entropy_production_rate",
+      "field": "thermodynamic_forces",
+      "flow": "thermodynamic_fluxes",
+      "score": "fitness",
+      "state": "macroscopic_variables ↔ population_of_genotypes"
+    },
+    "conservation_laws": [
+      "population_size",
+      "total_energy"
+    ],
+    "predicted_properties": [
+      "NOVEL: Scale-free behavior near critical points",
+      "CROSS-DOMAIN: Results from Thermodynamics transfer to Evolutionary Game Theory via shared phase transition"
+    ],
+    "research_directions": [
+      "Investigate: when does macroscopic variables behave like population of genotypes?",
+      "Map the phase diagram: identify order parameter and critical exponents",
+      "Test whether theorems from Thermodynamics hold in Evolutionary Game Theory under the variable mapping",
+      "Design experiments in Evolutionary Game Theory guided by Thermodynamics predictions"
+    ]
+  },
+  {
+    "id": "ryan_free_energy_principle_x_replicator_dynamics",
+    "name": "Principle-Dynamics Synthesis",
+    "parent_a": "Free Energy Principle (Friston)",
+    "parent_b": "Replicator Dynamics (EGT)",
+    "collision_score": 0.0,
+    "collision_strength": "weak",
+    "overall_score": 0.51,
+    "novelty_score": 1.0,
+    "depth_score": 0.3,
+    "impact_score": 0.3,
+    "core_equation": "Combines: [F = D_KL[q(s)‖p(s|o)] − log p(o) ≥ −log p(o)] with [dxᵢ/dt = xᵢ(fᵢ(x) − φ(x))]",
+    "auxiliary_equations": [
+      "P(hypothesis|data) ∝ P(data|hypothesis) · P(hypothesis)"
+    ],
+    "update_mechanism": "variational inference ⊗ multiplicative error correction",
+    "optimization_target": "minimize variational free energy + maximize mean fitness",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "above_average_grows",
+      "active_inference",
+      "bayesian_inference",
+      "conservation_of_probability",
+      "energy_entropy_tradeoff",
+      "fixed_point_stability",
+      "frequency_dependent",
+      "prediction_error_correction"
+    ],
+    "combined_operators": [
+      "differential",
+      "evidence_lower_bound",
+      "expectation",
+      "kl_divergence",
+      "multiply",
+      "normalize",
+      "subtract_mean",
+      "variational"
+    ],
+    "combined_variables": {
+      "belief": "recognition_density_q",
+      "free_energy": "variational_bound",
+      "model": "generative_model_p",
+      "reference": "mean_fitness",
+      "score": "fitness",
+      "state": "strategy_frequency"
+    },
+    "conservation_laws": [
+      "total_probability"
+    ],
+    "predicted_properties": [
+      "CROSS-DOMAIN: Results from Cognitive Science transfer to Evolutionary Game Theory via shared structure"
+    ],
+    "research_directions": [
+      "Test whether theorems from Cognitive Science hold in Evolutionary Game Theory under the variable mapping",
+      "Design experiments in Evolutionary Game Theory guided by Cognitive Science predictions"
+    ]
+  }
+]
