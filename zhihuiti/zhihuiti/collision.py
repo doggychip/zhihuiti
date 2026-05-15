@@ -89,6 +89,13 @@ THEORIES = {
     },
 }
 
+# Theory-derived governance regimes (from Ryan's cross-domain synthesis)
+try:
+    from zhihuiti.theory_governance import THEORY_REGIMES
+    THEORIES.update(THEORY_REGIMES)
+except ImportError:
+    pass
+
 
 @dataclass
 class CollisionResult:

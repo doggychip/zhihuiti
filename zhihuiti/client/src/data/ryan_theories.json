@@ -60,7 +60,12 @@
       "Map the phase diagram: identify order parameter and critical exponents",
       "Test whether theorems from Statistical Physics hold in Evolutionary Game Theory under the variable mapping",
       "Design experiments in Evolutionary Game Theory guided by Statistical Physics predictions"
-    ]
+    ],
+    "plain_explanation": "This theory unifies Mean Field Theory from  with Nash Equilibrium from . Both share the structural backbone of fixed point iteration, mean field, pairwise coupling, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: .",
+    "worked_example": "Consider a system that exhibits fixed point iteration, mean field, pairwise coupling. In , this appears as mean field theory. In , the same pattern appears as nash equilibrium. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'minimize free energy + maximize individual utility' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'minimize free energy + maximize individual utility'. Use the backbone patterns (fixed point iteration, mean field, pairwise coupling) as scoring criteria. This works particularly well when tasks naturally span  and  domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating fixed point iteration in their output.",
+    "_source": "template"
   },
   {
     "id": "ryan_active_inference_x_mean_field_game",
@@ -124,7 +129,12 @@
       "Derive variational bound and design efficient approximation algorithms",
       "Test whether theorems from Neuroscience hold in Game Theory under the variable mapping",
       "Design experiments in Game Theory guided by Neuroscience predictions"
-    ]
+    ],
+    "plain_explanation": "This theory unifies Active Inference from  with Mean-Field Game from . Both share the structural backbone of energy entropy tradeoff, energy minimization, variational principle, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: .",
+    "worked_example": "Consider a system that exhibits energy entropy tradeoff, energy minimization, variational principle. In , this appears as active inference. In , the same pattern appears as mean-field game. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'minimize expected free energy + nash equilibrium of continuum' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'minimize expected free energy + nash equilibrium of continuum'. Use the backbone patterns (energy entropy tradeoff, energy minimization, variational principle) as scoring criteria. This works particularly well when tasks naturally span  and  domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating energy entropy tradeoff in their output.",
+    "_source": "template"
   },
   {
     "id": "ryan_compressed_sensing_x_sparse_coding",
@@ -185,7 +195,12 @@
       "Derive variational bound and design efficient approximation algorithms",
       "Test whether theorems from Information Theory hold in Neuroscience under the variable mapping",
       "Design experiments in Neuroscience guided by Information Theory predictions"
-    ]
+    ],
+    "plain_explanation": "This theory unifies Compressed Sensing from  with Sparse Coding / Efficient Neural Coding from . Both share the structural backbone of information gain, optimal inference, variational principle, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: .",
+    "worked_example": "Consider a system that exhibits information gain, optimal inference, variational principle. In , this appears as compressed sensing. In , the same pattern appears as sparse coding / efficient neural coding. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'minimize l1 norm + minimize reconstruction plus sparsity' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'minimize l1 norm + minimize reconstruction plus sparsity'. Use the backbone patterns (information gain, optimal inference, variational principle) as scoring criteria. This works particularly well when tasks naturally span  and  domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating information gain in their output.",
+    "_source": "template"
   },
   {
     "id": "ryan_preferential_attachment_x_wright_fisher",
@@ -246,7 +261,12 @@
       "Investigate: when does degree sequence behave like allele frequencies?",
       "Test whether theorems from Network Science hold in Biology under the variable mapping",
       "Design experiments in Biology guided by Network Science predictions"
-    ]
+    ],
+    "plain_explanation": "This theory unifies Preferential Attachment / Scale-Free Networks from  with Wright-Fisher / Population Genetics from . Both share the structural backbone of mean field, population dynamics, symmetry breaking, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: .",
+    "worked_example": "Consider a system that exhibits mean field, population dynamics, symmetry breaking. In , this appears as preferential attachment / scale-free networks. In , the same pattern appears as wright-fisher / population genetics. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'characterize degree distribution + characterize allele dynamics' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'characterize degree distribution + characterize allele dynamics'. Use the backbone patterns (mean field, population dynamics, symmetry breaking) as scoring criteria. This works particularly well when tasks naturally span  and  domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating mean field in their output.",
+    "_source": "template"
   },
   {
     "id": "ryan_mean_field_game_x_mechanism_design",
@@ -311,7 +331,12 @@
       "Derive variational bound and design efficient approximation algorithms",
       "Test whether theorems from Game Theory hold in Economics under the variable mapping",
       "Design experiments in Economics guided by Game Theory predictions"
-    ]
+    ],
+    "plain_explanation": "This theory unifies Mean-Field Game from  with Mechanism Design / Auction Theory from . Both share the structural backbone of competitive dynamics, variational principle, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: .",
+    "worked_example": "Consider a system that exhibits competitive dynamics, variational principle. In , this appears as mean-field game. In , the same pattern appears as mechanism design / auction theory. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'nash equilibrium of continuum + maximize social welfare' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'nash equilibrium of continuum + maximize social welfare'. Use the backbone patterns (competitive dynamics, variational principle) as scoring criteria. This works particularly well when tasks naturally span  and  domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating competitive dynamics in their output.",
+    "_source": "template"
   },
   {
     "id": "ryan_mean_field_game_x_wright_fisher",
@@ -372,7 +397,12 @@
       "Investigate: when does value and distribution behave like allele frequencies?",
       "Test whether theorems from Game Theory hold in Biology under the variable mapping",
       "Design experiments in Biology guided by Game Theory predictions"
-    ]
+    ],
+    "plain_explanation": "This theory unifies Mean-Field Game from  with Wright-Fisher / Population Genetics from . Both share the structural backbone of energy entropy tradeoff, fixed point iteration, mean field, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: .",
+    "worked_example": "Consider a system that exhibits energy entropy tradeoff, fixed point iteration, mean field. In , this appears as mean-field game. In , the same pattern appears as wright-fisher / population genetics. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'nash equilibrium of continuum + characterize allele dynamics' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'nash equilibrium of continuum + characterize allele dynamics'. Use the backbone patterns (energy entropy tradeoff, fixed point iteration, mean field) as scoring criteria. This works particularly well when tasks naturally span  and  domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating energy entropy tradeoff in their output.",
+    "_source": "template"
   },
   {
     "id": "ryan_black_scholes_x_stochastic_optimal_control",
@@ -433,7 +463,12 @@
       "Derive variational bound and design efficient approximation algorithms",
       "Test whether theorems from Economics hold in Control Theory under the variable mapping",
       "Design experiments in Control Theory guided by Economics predictions"
-    ]
+    ],
+    "plain_explanation": "This theory unifies Black-Scholes / Option Pricing from  with Stochastic Optimal Control from . Both share the structural backbone of dual variables, energy entropy tradeoff, variational principle, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: .",
+    "worked_example": "Consider a system that exhibits dual variables, energy entropy tradeoff, variational principle. In , this appears as black-scholes / option pricing. In , the same pattern appears as stochastic optimal control. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'replicate payoff + minimize expected cost' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'replicate payoff + minimize expected cost'. Use the backbone patterns (dual variables, energy entropy tradeoff, variational principle) as scoring criteria. This works particularly well when tasks naturally span  and  domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating dual variables in their output.",
+    "_source": "template"
   },
   {
     "id": "ryan_active_inference_x_markowitz_portfolio",
@@ -497,7 +532,12 @@
       "Derive variational bound and design efficient approximation algorithms",
       "Test whether theorems from Neuroscience hold in Economics under the variable mapping",
       "Design experiments in Economics guided by Neuroscience predictions"
-    ]
+    ],
+    "plain_explanation": "This theory unifies Active Inference from  with Markowitz Portfolio / Mean-Variance from . Both share the structural backbone of energy minimization, variational principle, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: .",
+    "worked_example": "Consider a system that exhibits energy minimization, variational principle. In , this appears as active inference. In , the same pattern appears as markowitz portfolio / mean-variance. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'minimize expected free energy + minimize portfolio variance' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'minimize expected free energy + minimize portfolio variance'. Use the backbone patterns (energy minimization, variational principle) as scoring criteria. This works particularly well when tasks naturally span  and  domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating energy minimization in their output.",
+    "_source": "template"
   },
   {
     "id": "ryan_general_equilibrium_x_nash_equilibrium",
@@ -560,7 +600,12 @@
       "Investigate: when does price allocation pair behave like strategy profile?",
       "Test whether theorems from Economics hold in Evolutionary Game Theory under the variable mapping",
       "Design experiments in Evolutionary Game Theory guided by Economics predictions"
-    ]
+    ],
+    "plain_explanation": "This theory unifies General Equilibrium (Arrow-Debreu) from  with Nash Equilibrium from . Both share the structural backbone of fixed point iteration, fixed point stability, mean field, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: .",
+    "worked_example": "Consider a system that exhibits fixed point iteration, fixed point stability, mean field. In , this appears as general equilibrium (arrow-debreu). In , the same pattern appears as nash equilibrium. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'maximize utility under budget + maximize individual utility' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'maximize utility under budget + maximize individual utility'. Use the backbone patterns (fixed point iteration, fixed point stability, mean field) as scoring criteria. This works particularly well when tasks naturally span  and  domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating fixed point iteration in their output.",
+    "_source": "template"
   },
   {
     "id": "ryan_mechanism_design_x_information_bottleneck",
@@ -623,7 +668,12 @@
       "Investigate: when does allocation and payments behave like compressed representation?",
       "Map the phase diagram: identify order parameter and critical exponents",
       "Derive variational bound and design efficient approximation algorithms"
-    ]
+    ],
+    "plain_explanation": "This theory unifies Mechanism Design / Auction Theory from  with Information Bottleneck from . Both share the structural backbone of dual variables, information gain, optimal inference, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: .",
+    "worked_example": "Consider a system that exhibits dual variables, information gain, optimal inference. In , this appears as mechanism design / auction theory. In , the same pattern appears as information bottleneck. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'maximize social welfare + minimize compression distortion' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'maximize social welfare + minimize compression distortion'. Use the backbone patterns (dual variables, information gain, optimal inference) as scoring criteria. This works particularly well when tasks naturally span  and  domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating dual variables in their output.",
+    "_source": "template"
   },
   {
     "id": "ryan_sir_model_x_spiking_neural_network",
@@ -685,7 +735,12 @@
       "Investigate: when does compartment fractions behave like membrane potential?",
       "Test whether theorems from Biology hold in Neuroscience under the variable mapping",
       "Design experiments in Neuroscience guided by Biology predictions"
-    ]
+    ],
+    "plain_explanation": "This theory unifies SIR / Epidemiological Model from  with Spiking Neural Network / Integrate-and-Fire from . Both share the structural backbone of conservation law, energy minimization, fixed point iteration, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: .",
+    "worked_example": "Consider a system that exhibits conservation law, energy minimization, fixed point iteration. In , this appears as sir / epidemiological model. In , the same pattern appears as spiking neural network / integrate-and-fire. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'minimize epidemic size + minimize prediction error' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'minimize epidemic size + minimize prediction error'. Use the backbone patterns (conservation law, energy minimization, fixed point iteration) as scoring criteria. This works particularly well when tasks naturally span  and  domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating conservation law in their output.",
+    "_source": "template"
   },
   {
     "name": "Network-Folding Energy Landscape",
@@ -734,7 +789,12 @@
     "overall_score": 0.728,
     "label": "Neural memory IS protein folding",
     "parent_a_id": "hopfield_network",
-    "parent_b_id": "protein_folding"
+    "parent_b_id": "protein_folding",
+    "plain_explanation": "This theory unifies Hopfield Network from Neuroscience with Protein Folding (Anfinsen) from Bioinformatics. Both share the structural backbone of energy based, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Neural memory IS protein folding.",
+    "worked_example": "Consider a system that exhibits energy based. In Neuroscience, this appears as hopfield network. In Bioinformatics, the same pattern appears as protein folding (anfinsen). The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'minimize energy function + minimize free energy' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'minimize energy function + minimize free energy'. Use the backbone patterns (energy based) as scoring criteria. This works particularly well when tasks naturally span Neuroscience and Bioinformatics domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating energy based in their output.",
+    "_source": "template"
   },
   {
     "name": "Kinetics-Distribution Energy Landscape",
@@ -783,7 +843,12 @@
     "overall_score": 0.723,
     "label": "Arrhenius IS Boltzmann",
     "parent_a_id": "arrhenius_kinetics",
-    "parent_b_id": "boltzmann_distribution"
+    "parent_b_id": "boltzmann_distribution",
+    "plain_explanation": "This theory unifies Arrhenius Reaction Kinetics from Chemistry with Boltzmann Distribution from Statistical Mechanics. Both share the structural backbone of energy based, exponential family, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Arrhenius IS Boltzmann.",
+    "worked_example": "Consider a system that exhibits energy based, exponential family. In Chemistry, this appears as arrhenius reaction kinetics. In Statistical Mechanics, the same pattern appears as boltzmann distribution. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'minimize activation energy + minimize free energy' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'minimize activation energy + minimize free energy'. Use the backbone patterns (energy based, exponential family) as scoring criteria. This works particularly well when tasks naturally span Chemistry and Statistical Mechanics domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating energy based in their output.",
+    "_source": "template"
   },
   {
     "name": "Profile-Theory Scale-Free Synthesis",
@@ -831,7 +896,12 @@
     "overall_score": 0.708,
     "label": "Halo IS percolation",
     "parent_a_id": "dark_matter_halo",
-    "parent_b_id": "percolation_theory"
+    "parent_b_id": "percolation_theory",
+    "plain_explanation": "This theory unifies NFW Dark Matter Halo Profile from Astrophysics with Percolation Theory from Statistical Physics. Both share the structural backbone of power law, scale invariance, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Halo IS percolation.",
+    "worked_example": "Consider a system that exhibits power law, scale invariance. In Astrophysics, this appears as nfw dark matter halo profile. In Statistical Physics, the same pattern appears as percolation theory. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'virialize + ?' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'virialize + ?'. Use the backbone patterns (power law, scale invariance) as scoring criteria. This works particularly well when tasks naturally span Astrophysics and Statistical Physics domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating power law in their output.",
+    "_source": "template"
   },
   {
     "name": "AlphaFold-Transformer Attention Network",
@@ -878,7 +948,12 @@
     "overall_score": 0.653,
     "label": "Protein folding via attention",
     "parent_a_id": "alphafold_msa",
-    "parent_b_id": "transformer_attention"
+    "parent_b_id": "transformer_attention",
+    "plain_explanation": "This theory unifies AlphaFold (Evoformer) from Bioinformatics with Transformer / Self-Attention from Linguistics. Both share the structural backbone of attention mechanism, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Protein folding via attention.",
+    "worked_example": "Consider a system that exhibits attention mechanism. In Bioinformatics, this appears as alphafold (evoformer). In Linguistics, the same pattern appears as transformer / self-attention. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'predict 3d structure + minimize lm loss' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'predict 3d structure + minimize lm loss'. Use the backbone patterns (attention mechanism) as scoring criteria. This works particularly well when tasks naturally span Bioinformatics and Linguistics domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating attention mechanism in their output.",
+    "_source": "template"
   },
   {
     "name": "Automata-Game Synthesis",
@@ -923,7 +998,12 @@
     "overall_score": 0.653,
     "label": "CA IS spatial evolution",
     "parent_a_id": "cellular_automata",
-    "parent_b_id": "spatial_evolution"
+    "parent_b_id": "spatial_evolution",
+    "plain_explanation": "This theory unifies Cellular Automata / Game of Life from Complex Systems with Spatial Evolutionary Game from Evolutionary Game Theory. Both share the structural backbone of local interaction, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: CA IS spatial evolution.",
+    "worked_example": "Consider a system that exhibits local interaction. In Complex Systems, this appears as cellular automata / game of life. In Evolutionary Game Theory, the same pattern appears as spatial evolutionary game. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'emergent patterns + cluster cooperation' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'emergent patterns + cluster cooperation'. Use the backbone patterns (local interaction) as scoring criteria. This works particularly well when tasks naturally span Complex Systems and Evolutionary Game Theory domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating local interaction in their output.",
+    "_source": "template"
   },
   {
     "name": "Path-Equation Synthesis",
@@ -972,7 +1052,12 @@
     "overall_score": 0.635,
     "label": "Dijkstra IS Bellman",
     "parent_a_id": "shortest_path_dijkstra",
-    "parent_b_id": "bellman_equation"
+    "parent_b_id": "bellman_equation",
+    "plain_explanation": "This theory unifies Dijkstra's Shortest Path from Operations Research with Bellman Equation (Dynamic Programming) from Control Theory. Both share the structural backbone of dynamic programming, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Dijkstra IS Bellman.",
+    "worked_example": "Consider a system that exhibits dynamic programming. In Operations Research, this appears as dijkstra's shortest path. In Control Theory, the same pattern appears as bellman equation (dynamic programming). The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'minimize path distance + maximize cumulative reward' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'minimize path distance + maximize cumulative reward'. Use the backbone patterns (dynamic programming) as scoring criteria. This works particularly well when tasks naturally span Operations Research and Control Theory domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating dynamic programming in their output.",
+    "_source": "template"
   },
   {
     "name": "Synchronization-Dynamics Synthesis",
@@ -1021,7 +1106,12 @@
     "overall_score": 0.632,
     "label": "Sync IS replicator",
     "parent_a_id": "synchronization_kuramoto",
-    "parent_b_id": "replicator_dynamics"
+    "parent_b_id": "replicator_dynamics",
+    "plain_explanation": "This theory unifies Kuramoto Oscillator Synchronization from Complex Systems with Replicator Dynamics (EGT) from Evolutionary Game Theory. Both share the structural backbone of mean field, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Sync IS replicator.",
+    "worked_example": "Consider a system that exhibits mean field. In Complex Systems, this appears as kuramoto oscillator synchronization. In Evolutionary Game Theory, the same pattern appears as replicator dynamics (egt). The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'phase coherence + maximize mean fitness' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'phase coherence + maximize mean fitness'. Use the backbone patterns (mean field) as scoring criteria. This works particularly well when tasks naturally span Complex Systems and Evolutionary Game Theory domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating mean field in their output.",
+    "_source": "template"
   },
   {
     "name": "Bayesian SLAM-Inference Inference",
@@ -1073,7 +1163,12 @@
     "overall_score": 0.632,
     "label": "SLAM IS active inference",
     "parent_a_id": "slam",
-    "parent_b_id": "active_inference"
+    "parent_b_id": "active_inference",
+    "plain_explanation": "This theory unifies SLAM (Simultaneous Localization and Mapping) from Robotics with Active Inference from Neuroscience. Both share the structural backbone of bayesian inference, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: SLAM IS active inference.",
+    "worked_example": "Consider a system that exhibits bayesian inference. In Robotics, this appears as slam (simultaneous localization and mapping). In Neuroscience, the same pattern appears as active inference. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'maximize posterior + minimize expected free energy' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'maximize posterior + minimize expected free energy'. Use the backbone patterns (bayesian inference) as scoring criteria. This works particularly well when tasks naturally span Robotics and Neuroscience domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating bayesian inference in their output.",
+    "_source": "template"
   },
   {
     "id": "ryan_dissipative_structures_x_genetic_algorithm",
@@ -1139,7 +1234,12 @@
       "Map the phase diagram: identify order parameter and critical exponents",
       "Test whether theorems from Thermodynamics hold in Evolutionary Game Theory under the variable mapping",
       "Design experiments in Evolutionary Game Theory guided by Thermodynamics predictions"
-    ]
+    ],
+    "plain_explanation": "This theory unifies Dissipative Structures (Prigogine) from  with Genetic Algorithm from . Both share the structural backbone of phase transition, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: .",
+    "worked_example": "Consider a system that exhibits phase transition. In , this appears as dissipative structures (prigogine). In , the same pattern appears as genetic algorithm. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'maximize fitness' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'maximize fitness'. Use the backbone patterns (phase transition) as scoring criteria. This works particularly well when tasks naturally span  and  domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating phase transition in their output.",
+    "_source": "template"
   },
   {
     "name": "Discounting-Equation Synthesis",
@@ -1186,7 +1286,12 @@
     "overall_score": 0.555,
     "label": "Discounting meets Bellman",
     "parent_a_id": "hyperbolic_discounting",
-    "parent_b_id": "bellman_equation"
+    "parent_b_id": "bellman_equation",
+    "plain_explanation": "This theory unifies Hyperbolic Discounting from Behavioral Economics with Bellman Equation (Dynamic Programming) from Control Theory. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Discounting meets Bellman.",
+    "worked_example": "Consider a system that exhibits shared structure. In Behavioral Economics, this appears as hyperbolic discounting. In Control Theory, the same pattern appears as bellman equation (dynamic programming). The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'present biased choice + maximize cumulative reward' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'present biased choice + maximize cumulative reward'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Behavioral Economics and Control Theory domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Transformer-Theory Synthesis",
@@ -1234,7 +1339,12 @@
     "overall_score": 0.534,
     "label": "Attention IS consciousness",
     "parent_a_id": "transformer_attention",
-    "parent_b_id": "global_workspace"
+    "parent_b_id": "global_workspace",
+    "plain_explanation": "This theory unifies Transformer / Self-Attention from Linguistics with Global Workspace Theory (Baars) from Cognitive Science. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Attention IS consciousness.",
+    "worked_example": "Consider a system that exhibits shared structure. In Linguistics, this appears as transformer / self-attention. In Cognitive Science, the same pattern appears as global workspace theory (baars). The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'minimize lm loss + maximize global coherence' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'minimize lm loss + maximize global coherence'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Linguistics and Cognitive Science domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Network-Theory Synthesis",
@@ -1284,7 +1394,12 @@
     "overall_score": 0.534,
     "label": "GNNs ARE spectral analysis",
     "parent_a_id": "graph_neural_network",
-    "parent_b_id": "spectral_graph_theory"
+    "parent_b_id": "spectral_graph_theory",
+    "plain_explanation": "This theory unifies Graph Neural Network (GNN) from Machine Learning with Spectral Graph Theory from Mathematics. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: GNNs ARE spectral analysis.",
+    "worked_example": "Consider a system that exhibits shared structure. In Machine Learning, this appears as graph neural network (gnn). In Mathematics, the same pattern appears as spectral graph theory. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'node graph prediction + ?' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'node graph prediction + ?'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Machine Learning and Mathematics domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "MAML-Hypothesis Synthesis",
@@ -1334,7 +1449,12 @@
     "overall_score": 0.534,
     "label": "Meta-learning IS Bayesian adaptation",
     "parent_a_id": "meta_learning_maml",
-    "parent_b_id": "bayesian_brain"
+    "parent_b_id": "bayesian_brain",
+    "plain_explanation": "This theory unifies MAML / Meta-Learning from Machine Learning with Bayesian Brain Hypothesis from Cognitive Science. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Meta-learning IS Bayesian adaptation.",
+    "worked_example": "Consider a system that exhibits shared structure. In Machine Learning, this appears as maml / meta-learning. In Cognitive Science, the same pattern appears as bayesian brain hypothesis. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'fast adaptation + maximize posterior probability' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'fast adaptation + maximize posterior probability'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Machine Learning and Cognitive Science domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Allocation-Detection Synthesis",
@@ -1382,7 +1502,12 @@
     "overall_score": 0.534,
     "label": "Topics ARE communities",
     "parent_a_id": "topic_modeling_lda",
-    "parent_b_id": "community_detection"
+    "parent_b_id": "community_detection",
+    "plain_explanation": "This theory unifies Latent Dirichlet Allocation (LDA) from Linguistics with Community Detection / Modularity from Network Science. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Topics ARE communities.",
+    "worked_example": "Consider a system that exhibits shared structure. In Linguistics, this appears as latent dirichlet allocation (lda). In Network Science, the same pattern appears as community detection / modularity. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'maximize data likelihood + maximize modularity' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'maximize data likelihood + maximize modularity'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Linguistics and Network Science domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Theory-Q-Learning Synthesis",
@@ -1428,7 +1553,12 @@
     "overall_score": 0.534,
     "label": "Utility IS Q-value",
     "parent_a_id": "expected_utility",
-    "parent_b_id": "q_learning"
+    "parent_b_id": "q_learning",
+    "plain_explanation": "This theory unifies Expected Utility Theory (vNM) from Decision Theory with Q-Learning from Reinforcement Learning. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Utility IS Q-value.",
+    "worked_example": "Consider a system that exhibits shared structure. In Decision Theory, this appears as expected utility theory (vnm). In Reinforcement Learning, the same pattern appears as q-learning. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'maximize expected utility + maximize action value' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'maximize expected utility + maximize action value'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Decision Theory and Reinforcement Learning domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Minimization-Bandit Synthesis",
@@ -1477,7 +1607,12 @@
     "overall_score": 0.534,
     "label": "Regret IS bandit",
     "parent_a_id": "regret_minimization",
-    "parent_b_id": "multi_armed_bandit"
+    "parent_b_id": "multi_armed_bandit",
+    "plain_explanation": "This theory unifies Regret Minimization from Decision Theory with Multi-Armed Bandit / UCB from Reinforcement Learning. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Regret IS bandit.",
+    "worked_example": "Consider a system that exhibits shared structure. In Decision Theory, this appears as regret minimization. In Reinforcement Learning, the same pattern appears as multi-armed bandit / ucb. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'minimize external regret + minimize cumulative regret' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'minimize external regret + minimize cumulative regret'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Decision Theory and Reinforcement Learning domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Theory-Optimization Synthesis",
@@ -1525,7 +1660,12 @@
     "overall_score": 0.534,
     "label": "Loss aversion meets policy gradient",
     "parent_a_id": "prospect_theory",
-    "parent_b_id": "ppo"
+    "parent_b_id": "ppo",
+    "plain_explanation": "This theory unifies Prospect Theory (Kahneman-Tversky) from Economics with Proximal Policy Optimization (PPO) from Reinforcement Learning. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Loss aversion meets policy gradient.",
+    "worked_example": "Consider a system that exhibits shared structure. In Economics, this appears as prospect theory (kahneman-tversky). In Reinforcement Learning, the same pattern appears as proximal policy optimization (ppo). The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'maximize prospect value + trust region policy' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'maximize prospect value + trust region policy'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Economics and Reinforcement Learning domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Minimax-Actor-Critic Synthesis",
@@ -1571,7 +1711,12 @@
     "overall_score": 0.534,
     "label": "Worst-case meets max-entropy",
     "parent_a_id": "minimax_decision",
-    "parent_b_id": "soft_actor_critic"
+    "parent_b_id": "soft_actor_critic",
+    "plain_explanation": "This theory unifies Minimax / Worst-Case Decision from Decision Theory with Soft Actor-Critic (SAC) from Reinforcement Learning. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Worst-case meets max-entropy.",
+    "worked_example": "Consider a system that exhibits shared structure. In Decision Theory, this appears as minimax / worst-case decision. In Reinforcement Learning, the same pattern appears as soft actor-critic (sac). The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'minimize worst case + entropy regularized value' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'minimize worst case + entropy regularized value'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Decision Theory and Reinforcement Learning domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Proof-Bottleneck Synthesis",
@@ -1622,7 +1767,12 @@
     "overall_score": 0.534,
     "label": "ZKP IS info compression",
     "parent_a_id": "zero_knowledge_proof",
-    "parent_b_id": "information_bottleneck"
+    "parent_b_id": "information_bottleneck",
+    "plain_explanation": "This theory unifies Zero-Knowledge Proof from Cryptography with Information Bottleneck from Information Theory. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: ZKP IS info compression.",
+    "worked_example": "Consider a system that exhibits shared structure. In Cryptography, this appears as zero-knowledge proof. In Information Theory, the same pattern appears as information bottleneck. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'preserve witness secrecy + minimize compression distortion' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'preserve witness secrecy + minimize compression distortion'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Cryptography and Information Theory domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Tree-Coding Synthesis",
@@ -1668,7 +1818,12 @@
     "overall_score": 0.534,
     "label": "Merkle IS optimal coding",
     "parent_a_id": "merkle_tree",
-    "parent_b_id": "huffman_coding"
+    "parent_b_id": "huffman_coding",
+    "plain_explanation": "This theory unifies Merkle Tree from Cryptography with Huffman Coding from Information Theory. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Merkle IS optimal coding.",
+    "worked_example": "Consider a system that exhibits shared structure. In Cryptography, this appears as merkle tree. In Information Theory, the same pattern appears as huffman coding. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'efficient membership proof + minimize expected length' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'efficient membership proof + minimize expected length'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Cryptography and Information Theory domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Model-Attachment Synthesis",
@@ -1717,7 +1872,12 @@
     "overall_score": 0.534,
     "label": "Segregation IS network growth",
     "parent_a_id": "schelling_segregation",
-    "parent_b_id": "preferential_attachment"
+    "parent_b_id": "preferential_attachment",
+    "plain_explanation": "This theory unifies Schelling Segregation Model from Sociology with Preferential Attachment / Scale-Free Networks from Network Science. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Segregation IS network growth.",
+    "worked_example": "Consider a system that exhibits shared structure. In Sociology, this appears as schelling segregation model. In Network Science, the same pattern appears as preferential attachment / scale-free networks. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'satisfy individual preferences + characterize degree distribution' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'satisfy individual preferences + characterize degree distribution'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Sociology and Network Science domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Action-Equilibrium Synthesis",
@@ -1766,7 +1926,12 @@
     "overall_score": 0.534,
     "label": "Free riding IS Nash",
     "parent_a_id": "collective_action",
-    "parent_b_id": "nash_equilibrium"
+    "parent_b_id": "nash_equilibrium",
+    "plain_explanation": "This theory unifies Olson's Logic of Collective Action from Sociology with Nash Equilibrium from Evolutionary Game Theory. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Free riding IS Nash.",
+    "worked_example": "Consider a system that exhibits shared structure. In Sociology, this appears as olson's logic of collective action. In Evolutionary Game Theory, the same pattern appears as nash equilibrium. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'individual payoff + maximize individual utility' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'individual payoff + maximize individual utility'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Sociology and Evolutionary Game Theory domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Innovations-SIR Synthesis",
@@ -1815,7 +1980,12 @@
     "overall_score": 0.534,
     "label": "Innovation spreads like virus",
     "parent_a_id": "diffusion_of_innovation",
-    "parent_b_id": "sir_model"
+    "parent_b_id": "sir_model",
+    "plain_explanation": "This theory unifies Rogers' Diffusion of Innovations from Sociology with SIR / Epidemiological Model from Biology. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Innovation spreads like virus.",
+    "worked_example": "Consider a system that exhibits shared structure. In Sociology, this appears as rogers' diffusion of innovations. In Biology, the same pattern appears as sir / epidemiological model. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'fit adoption curve + minimize epidemic size' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'fit adoption curve + minimize epidemic size'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Sociology and Biology domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Networks-Detection Synthesis",
@@ -1863,7 +2033,12 @@
     "overall_score": 0.534,
     "label": "Homophily IS community",
     "parent_a_id": "homophily",
-    "parent_b_id": "community_detection"
+    "parent_b_id": "community_detection",
+    "plain_explanation": "This theory unifies Homophily in Networks from Sociology with Community Detection / Modularity from Network Science. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Homophily IS community.",
+    "worked_example": "Consider a system that exhibits shared structure. In Sociology, this appears as homophily in networks. In Network Science, the same pattern appears as community detection / modularity. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'minimize cross type edges + maximize modularity' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'minimize cross type edges + maximize modularity'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Sociology and Network Science domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Cascades-Game Synthesis",
@@ -1913,7 +2088,12 @@
     "overall_score": 0.534,
     "label": "Herding IS mean-field game",
     "parent_a_id": "herd_behavior",
-    "parent_b_id": "mean_field_game"
+    "parent_b_id": "mean_field_game",
+    "plain_explanation": "This theory unifies Information Cascades / Herd Behavior from Behavioral Economics with Mean-Field Game from Game Theory. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Herding IS mean-field game.",
+    "worked_example": "Consider a system that exhibits shared structure. In Behavioral Economics, this appears as information cascades / herd behavior. In Game Theory, the same pattern appears as mean-field game. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'imitate predecessors + nash equilibrium of continuum' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'imitate predecessors + nash equilibrium of continuum'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Behavioral Economics and Game Theory domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Adjustment-Hypothesis Synthesis",
@@ -1963,7 +2143,12 @@
     "overall_score": 0.534,
     "label": "Anchoring IS slow updating",
     "parent_a_id": "anchoring_bias",
-    "parent_b_id": "bayesian_brain"
+    "parent_b_id": "bayesian_brain",
+    "plain_explanation": "This theory unifies Anchoring and Adjustment from Behavioral Economics with Bayesian Brain Hypothesis from Cognitive Science. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Anchoring IS slow updating.",
+    "worked_example": "Consider a system that exhibits shared structure. In Behavioral Economics, this appears as anchoring and adjustment. In Cognitive Science, the same pattern appears as bayesian brain hypothesis. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'minimize cognitive effort + maximize posterior probability' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'minimize cognitive effort + maximize posterior probability'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Behavioral Economics and Cognitive Science domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Control-Q-Network Synthesis",
@@ -2010,7 +2195,12 @@
     "overall_score": 0.534,
     "label": "MPC IS deep RL",
     "parent_a_id": "model_predictive_control",
-    "parent_b_id": "dqn"
+    "parent_b_id": "dqn",
+    "plain_explanation": "This theory unifies Model Predictive Control (MPC) from Control Theory with Deep Q-Network (DQN) from Reinforcement Learning. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: MPC IS deep RL.",
+    "worked_example": "Consider a system that exhibits shared structure. In Control Theory, this appears as model predictive control (mpc). In Reinforcement Learning, the same pattern appears as deep q-network (dqn). The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'minimize cost over horizon + minimize td error' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'minimize cost over horizon + minimize td error'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Control Theory and Reinforcement Learning domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Learning-Principle Synthesis",
@@ -2059,7 +2249,12 @@
     "overall_score": 0.534,
     "label": "Imitation IS FEP",
     "parent_a_id": "imitation_learning",
-    "parent_b_id": "free_energy_principle"
+    "parent_b_id": "free_energy_principle",
+    "plain_explanation": "This theory unifies Imitation Learning / Behavior Cloning from Robotics with Free Energy Principle (Friston) from Cognitive Science. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Imitation IS FEP.",
+    "worked_example": "Consider a system that exhibits shared structure. In Robotics, this appears as imitation learning / behavior cloning. In Cognitive Science, the same pattern appears as free energy principle (friston). The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'match expert distribution + minimize variational free energy' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'match expert distribution + minimize variational free energy'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Robotics and Cognitive Science domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Thermodynamics-Energy Synthesis",
@@ -2107,7 +2302,12 @@
     "overall_score": 0.534,
     "label": "BH IS thermodynamics",
     "parent_a_id": "black_hole_thermodynamics",
-    "parent_b_id": "free_energy_thermo"
+    "parent_b_id": "free_energy_thermo",
+    "plain_explanation": "This theory unifies Black Hole Thermodynamics from Astrophysics with Helmholtz Free Energy from Statistical Mechanics. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: BH IS thermodynamics.",
+    "worked_example": "Consider a system that exhibits shared structure. In Astrophysics, this appears as black hole thermodynamics. In Statistical Mechanics, the same pattern appears as helmholtz free energy. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'maximize entropy + minimize free energy' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'maximize entropy + minimize free energy'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Astrophysics and Statistical Mechanics domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Theory-Integral Synthesis",
@@ -2156,7 +2356,12 @@
     "overall_score": 0.534,
     "label": "Marcus IS path integral",
     "parent_a_id": "marcus_theory",
-    "parent_b_id": "path_integral"
+    "parent_b_id": "path_integral",
+    "plain_explanation": "This theory unifies Marcus Electron Transfer Theory from Chemistry with Feynman Path Integral from Quantum Physics. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Marcus IS path integral.",
+    "worked_example": "Consider a system that exhibits shared structure. In Chemistry, this appears as marcus electron transfer theory. In Quantum Physics, the same pattern appears as feynman path integral. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'minimize reorganization energy + stationary action principle' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'minimize reorganization energy + stationary action principle'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Chemistry and Quantum Physics domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Equilibrium-Energy Synthesis",
@@ -2204,7 +2409,12 @@
     "overall_score": 0.534,
     "label": "Equilibrium IS free energy min",
     "parent_a_id": "chemical_equilibrium",
-    "parent_b_id": "free_energy_thermo"
+    "parent_b_id": "free_energy_thermo",
+    "plain_explanation": "This theory unifies Chemical Equilibrium / Le Chatelier from Chemistry with Helmholtz Free Energy from Statistical Mechanics. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Equilibrium IS free energy min.",
+    "worked_example": "Consider a system that exhibits shared structure. In Chemistry, this appears as chemical equilibrium / le chatelier. In Statistical Mechanics, the same pattern appears as helmholtz free energy. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'minimize gibbs energy + minimize free energy' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'minimize gibbs energy + minimize free energy'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Chemistry and Statistical Mechanics domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Theory-Fokker-Planck Synthesis",
@@ -2254,7 +2464,12 @@
     "overall_score": 0.534,
     "label": "Queues IS Fokker-Planck",
     "parent_a_id": "queueing_theory",
-    "parent_b_id": "fokker_planck"
+    "parent_b_id": "fokker_planck",
+    "plain_explanation": "This theory unifies Queueing Theory / M/M/1 from Operations Research with Fokker-Planck / Langevin Dynamics from Statistical Physics. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Queues IS Fokker-Planck.",
+    "worked_example": "Consider a system that exhibits shared structure. In Operations Research, this appears as queueing theory / m/m/1. In Statistical Physics, the same pattern appears as fokker-planck / langevin dynamics. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'minimize wait time + ?' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'minimize wait time + ?'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Operations Research and Statistical Physics domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Rule-Value Synthesis",
@@ -2303,7 +2518,12 @@
     "overall_score": 0.534,
     "label": "Kin selection IS Shapley",
     "parent_a_id": "kin_selection",
-    "parent_b_id": "shapley_value"
+    "parent_b_id": "shapley_value",
+    "plain_explanation": "This theory unifies Hamilton's Rule / Kin Selection from Evolutionary Game Theory with Shapley Value / Cooperative Games from Game Theory. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Kin selection IS Shapley.",
+    "worked_example": "Consider a system that exhibits shared structure. In Evolutionary Game Theory, this appears as hamilton's rule / kin selection. In Game Theory, the same pattern appears as shapley value / cooperative games. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'maximize inclusive fitness + fair surplus allocation' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'maximize inclusive fitness + fair surplus allocation'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Evolutionary Game Theory and Game Theory domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Process-Wright-Fisher Synthesis",
@@ -2353,7 +2573,12 @@
     "overall_score": 0.534,
     "label": "Moran IS Wright-Fisher",
     "parent_a_id": "moran_process",
-    "parent_b_id": "wright_fisher"
+    "parent_b_id": "wright_fisher",
+    "plain_explanation": "This theory unifies Moran Process from Evolutionary Game Theory with Wright-Fisher / Population Genetics from Biology. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Moran IS Wright-Fisher.",
+    "worked_example": "Consider a system that exhibits shared structure. In Evolutionary Game Theory, this appears as moran process. In Biology, the same pattern appears as wright-fisher / population genetics. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'fixation probability + characterize allele dynamics' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'fixation probability + characterize allele dynamics'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Evolutionary Game Theory and Biology domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Equation-Kinetics Synthesis",
@@ -2401,7 +2626,12 @@
     "overall_score": 0.534,
     "label": "Hill IS Michaelis-Menten",
     "parent_a_id": "dose_response",
-    "parent_b_id": "michaelis_menten"
+    "parent_b_id": "michaelis_menten",
+    "plain_explanation": "This theory unifies Hill Equation / Dose-Response from Pharmacology with Michaelis-Menten Enzyme Kinetics from Biology. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Hill IS Michaelis-Menten.",
+    "worked_example": "Consider a system that exhibits shared structure. In Pharmacology, this appears as hill equation / dose-response. In Biology, the same pattern appears as michaelis-menten enzyme kinetics. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'potency efficacy + maximize catalytic rate' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'potency efficacy + maximize catalytic rate'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Pharmacology and Biology domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Modeling-Fokker-Planck Synthesis",
@@ -2452,7 +2682,12 @@
     "overall_score": 0.534,
     "label": "PK IS Fokker-Planck",
     "parent_a_id": "pk_pd_modeling",
-    "parent_b_id": "fokker_planck"
+    "parent_b_id": "fokker_planck",
+    "plain_explanation": "This theory unifies PK-PD Modeling from Pharmacology with Fokker-Planck / Langevin Dynamics from Statistical Physics. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: PK IS Fokker-Planck.",
+    "worked_example": "Consider a system that exhibits shared structure. In Pharmacology, this appears as pk-pd modeling. In Statistical Physics, the same pattern appears as fokker-planck / langevin dynamics. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'therapeutic window + ?' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'therapeutic window + ?'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Pharmacology and Statistical Physics domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "id": "ryan_free_energy_principle_x_replicator_dynamics",
@@ -2509,7 +2744,12 @@
     "research_directions": [
       "Test whether theorems from Cognitive Science hold in Evolutionary Game Theory under the variable mapping",
       "Design experiments in Evolutionary Game Theory guided by Cognitive Science predictions"
-    ]
+    ],
+    "plain_explanation": "This theory unifies Free Energy Principle (Friston) from  with Replicator Dynamics (EGT) from . Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: .",
+    "worked_example": "Consider a system that exhibits shared structure. In , this appears as free energy principle (friston). In , the same pattern appears as replicator dynamics (egt). The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'minimize variational free energy + maximize mean fitness' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'minimize variational free energy + maximize mean fitness'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span  and  domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   },
   {
     "name": "Game-Equilibrium Synthesis",
@@ -2559,7 +2799,12 @@
     "overall_score": 0.506,
     "label": "Hawk-Dove IS Nash",
     "parent_a_id": "hawk_dove",
-    "parent_b_id": "nash_equilibrium"
+    "parent_b_id": "nash_equilibrium",
+    "plain_explanation": "This theory unifies Hawk-Dove Game from Evolutionary Game Theory with Nash Equilibrium from Evolutionary Game Theory. Both share the structural backbone of frequency dependent, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Hawk-Dove IS Nash.",
+    "worked_example": "Consider a system that exhibits frequency dependent. In Evolutionary Game Theory, this appears as hawk-dove game. In Evolutionary Game Theory, the same pattern appears as nash equilibrium. The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'evolutionary stability + maximize individual utility' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'evolutionary stability + maximize individual utility'. Use the backbone patterns (frequency dependent) as scoring criteria. This works particularly well when tasks naturally span Evolutionary Game Theory and Evolutionary Game Theory domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating frequency dependent in their output.",
+    "_source": "template"
   },
   {
     "name": "Multilevel-Equation Synthesis",
@@ -2607,6 +2852,11 @@
     "overall_score": 0.425,
     "label": "Group selection IS Price equation",
     "parent_a_id": "group_selection",
-    "parent_b_id": "price_equation"
+    "parent_b_id": "price_equation",
+    "plain_explanation": "This theory unifies Multilevel / Group Selection from Evolutionary Game Theory with Price Equation (Multilevel Selection) from Evolutionary Game Theory. Both share the structural backbone of shared structure, suggesting that the same mathematical machinery solves problems in both fields. The deep insight: Group selection IS Price equation.",
+    "worked_example": "Consider a system that exhibits shared structure. In Evolutionary Game Theory, this appears as multilevel / group selection. In Evolutionary Game Theory, the same pattern appears as price equation (multilevel selection). The synthesis tells us that solutions to one problem transfer to the other through the variable mapping. For instance, optimizing for 'multilevel fitness + maximize mean fitness' in one domain often implies optimizing for it in the other.",
+    "governance_application": "For zhihuiti agent governance: implement a regime where agents optimize for 'multilevel fitness + maximize mean fitness'. Use the backbone patterns (shared structure) as scoring criteria. This works particularly well when tasks naturally span Evolutionary Game Theory and Evolutionary Game Theory domains.",
+    "implementation_hint": "Add a scoring_modifier in theory_governance.py that rewards agents demonstrating the shared backbone in their output.",
+    "_source": "template"
   }
 ]
