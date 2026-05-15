@@ -688,6 +688,394 @@
     ]
   },
   {
+    "name": "Network-Folding Energy Landscape",
+    "parent_a": "Hopfield Network",
+    "parent_b": "Protein Folding (Anfinsen)",
+    "domain_a": "Neuroscience",
+    "domain_b": "Bioinformatics",
+    "collision_score": 0.301,
+    "collision_strength": "significant",
+    "backbone_patterns": [
+      "energy_based"
+    ],
+    "novel_patterns": [
+      "attractor_dynamics",
+      "content_addressable_memory",
+      "energy_minimization",
+      "gradient_descent",
+      "pairwise_coupling",
+      "structural_self_assembly"
+    ],
+    "combined_operators": [
+      "explore_conformation",
+      "fold",
+      "gradient_descent",
+      "minimize_energy",
+      "pairwise_interaction",
+      "sign_activation",
+      "sum"
+    ],
+    "combined_variables": {
+      "energy": "network_energy ↔ free_energy",
+      "sequence": "amino_acid",
+      "state": "neuron_activation ↔ protein_conformation",
+      "weight": "synaptic_matrix"
+    },
+    "conservation_laws": [
+      "covalent_bonds",
+      "energy_non_increasing_under_updates",
+      "mass"
+    ],
+    "update_mechanism": "energy minimization ⊗ energy minimization",
+    "optimization_target": "minimize energy function + minimize free energy",
+    "novelty_score": 1.0,
+    "depth_score": 0.521,
+    "impact_score": 0.701,
+    "overall_score": 0.728,
+    "label": "Neural memory IS protein folding",
+    "parent_a_id": "hopfield_network",
+    "parent_b_id": "protein_folding"
+  },
+  {
+    "name": "Kinetics-Distribution Energy Landscape",
+    "parent_a": "Arrhenius Reaction Kinetics",
+    "parent_b": "Boltzmann Distribution",
+    "domain_a": "Chemistry",
+    "domain_b": "Statistical Mechanics",
+    "collision_score": 0.193,
+    "collision_strength": "resonance",
+    "backbone_patterns": [
+      "energy_based",
+      "exponential_family"
+    ],
+    "novel_patterns": [
+      "conservation_of_probability",
+      "maximum_entropy_subject_to_mean_energy",
+      "normalization",
+      "temperature_controls_sharpness",
+      "thermal_activation"
+    ],
+    "combined_operators": [
+      "boltzmann_factor",
+      "exponential",
+      "exponentiate",
+      "normalize",
+      "partition_function",
+      "temperature_scale"
+    ],
+    "combined_variables": {
+      "energy": "activation_barrier",
+      "normalizer": "partition_function",
+      "reference": "temperature",
+      "score": "energy",
+      "state": "reaction_rate ↔ microstate",
+      "temperature": "kinetic_temp"
+    },
+    "conservation_laws": [
+      "activation_energy",
+      "total_probability"
+    ],
+    "update_mechanism": "rate law ⊗ exponential weighting",
+    "optimization_target": "minimize activation energy + minimize free energy",
+    "novelty_score": 0.929,
+    "depth_score": 0.577,
+    "impact_score": 0.693,
+    "overall_score": 0.723,
+    "label": "Arrhenius IS Boltzmann",
+    "parent_a_id": "arrhenius_kinetics",
+    "parent_b_id": "boltzmann_distribution"
+  },
+  {
+    "name": "Profile-Theory Scale-Free Synthesis",
+    "parent_a": "NFW Dark Matter Halo Profile",
+    "parent_b": "Percolation Theory",
+    "domain_a": "Astrophysics",
+    "domain_b": "Statistical Physics",
+    "collision_score": 0.161,
+    "collision_strength": "resonance",
+    "backbone_patterns": [
+      "power_law",
+      "scale_invariance"
+    ],
+    "novel_patterns": [
+      "critical_phenomena",
+      "gravitational_clustering",
+      "no_characteristic_scale",
+      "order_parameter",
+      "phase_transition"
+    ],
+    "combined_operators": [
+      "cluster_counting",
+      "integrate_mass",
+      "pairwise_interaction",
+      "radial_profile",
+      "renormalization",
+      "scale",
+      "scaling"
+    ],
+    "combined_variables": {
+      "concentration": "c_param",
+      "coupling": "bond_probability",
+      "order": "percolation_strength",
+      "scale": "halo_radius ↔ correlation_length",
+      "state": "density_profile ↔ occupation_probability"
+    },
+    "conservation_laws": [
+      "mass"
+    ],
+    "update_mechanism": "gravitational collapse ⊗ bond site occupation",
+    "optimization_target": "virialize + ?",
+    "novelty_score": 0.929,
+    "depth_score": 0.564,
+    "impact_score": 0.661,
+    "overall_score": 0.708,
+    "label": "Halo IS percolation",
+    "parent_a_id": "dark_matter_halo",
+    "parent_b_id": "percolation_theory"
+  },
+  {
+    "name": "AlphaFold-Transformer Attention Network",
+    "parent_a": "AlphaFold (Evoformer)",
+    "parent_b": "Transformer / Self-Attention",
+    "domain_a": "Bioinformatics",
+    "domain_b": "Linguistics",
+    "collision_score": 0.15,
+    "collision_strength": "resonance",
+    "backbone_patterns": [
+      "attention_mechanism"
+    ],
+    "novel_patterns": [
+      "coevolution",
+      "compositional_structure",
+      "soft_routing",
+      "structure_prediction"
+    ],
+    "combined_operators": [
+      "attend_msa",
+      "dot_product",
+      "matrix_product",
+      "pair_representation",
+      "softmax",
+      "structure_module",
+      "weighted_sum"
+    ],
+    "combined_variables": {
+      "key_value": "key_value_pairs",
+      "msa": "multiple_alignment",
+      "pair": "residue_pair",
+      "query": "query_vector",
+      "state": "atomic_coordinates ↔ token_embedding"
+    },
+    "conservation_laws": [
+      "geometric_constraints",
+      "softmax_sum"
+    ],
+    "update_mechanism": "attention based inference ⊗ attention computation",
+    "optimization_target": "predict 3d structure + minimize lm loss",
+    "novelty_score": 1.0,
+    "depth_score": 0.46,
+    "impact_score": 0.55,
+    "overall_score": 0.653,
+    "label": "Protein folding via attention",
+    "parent_a_id": "alphafold_msa",
+    "parent_b_id": "transformer_attention"
+  },
+  {
+    "name": "Automata-Game Synthesis",
+    "parent_a": "Cellular Automata / Game of Life",
+    "parent_b": "Spatial Evolutionary Game",
+    "domain_a": "Complex Systems",
+    "domain_b": "Evolutionary Game Theory",
+    "collision_score": 0.15,
+    "collision_strength": "resonance",
+    "backbone_patterns": [
+      "local_interaction"
+    ],
+    "novel_patterns": [
+      "clustering",
+      "discrete_dynamics",
+      "emergence",
+      "spatial_structure"
+    ],
+    "combined_operators": [
+      "compute_local_payoff",
+      "discrete_update",
+      "lattice_neighborhood",
+      "local_rule",
+      "neighborhood",
+      "update_strategy"
+    ],
+    "combined_variables": {
+      "neighborhood": "local_pattern ↔ k_neighbors",
+      "payoff": "local",
+      "rule": "transition_function",
+      "state": "cell_state ↔ lattice_strategy"
+    },
+    "conservation_laws": [
+      "cell_count_in_period",
+      "lattice_topology"
+    ],
+    "update_mechanism": "local rule update ⊗ local imitation update",
+    "optimization_target": "emergent patterns + cluster cooperation",
+    "novelty_score": 1.0,
+    "depth_score": 0.46,
+    "impact_score": 0.55,
+    "overall_score": 0.653,
+    "label": "CA IS spatial evolution",
+    "parent_a_id": "cellular_automata",
+    "parent_b_id": "spatial_evolution"
+  },
+  {
+    "name": "Path-Equation Synthesis",
+    "parent_a": "Dijkstra's Shortest Path",
+    "parent_b": "Bellman Equation (Dynamic Programming)",
+    "domain_a": "Operations Research",
+    "domain_b": "Control Theory",
+    "collision_score": 0.113,
+    "collision_strength": "resonance",
+    "backbone_patterns": [
+      "dynamic_programming"
+    ],
+    "novel_patterns": [
+      "fixed_point_iteration",
+      "graph_traversal",
+      "greedy_search",
+      "optimality_principle",
+      "recursive_decomposition",
+      "temporal_credit_assignment"
+    ],
+    "combined_operators": [
+      "discount",
+      "expectation",
+      "extract_min",
+      "maximize",
+      "recursive_decomposition",
+      "relax",
+      "update_neighbors"
+    ],
+    "combined_variables": {
+      "discount": "gamma",
+      "graph": "weighted_edges",
+      "predecessor": "parent_in_tree",
+      "reward": "immediate_reward",
+      "score": "value",
+      "state": "distance ↔ system_state"
+    },
+    "conservation_laws": [
+      "triangle_inequality"
+    ],
+    "update_mechanism": "relaxation priority ⊗ recursive value propagation",
+    "optimization_target": "minimize path distance + maximize cumulative reward",
+    "novelty_score": 1.0,
+    "depth_score": 0.445,
+    "impact_score": 0.512,
+    "overall_score": 0.635,
+    "label": "Dijkstra IS Bellman",
+    "parent_a_id": "shortest_path_dijkstra",
+    "parent_b_id": "bellman_equation"
+  },
+  {
+    "name": "Synchronization-Dynamics Synthesis",
+    "parent_a": "Kuramoto Oscillator Synchronization",
+    "parent_b": "Replicator Dynamics (EGT)",
+    "domain_a": "Complex Systems",
+    "domain_b": "Evolutionary Game Theory",
+    "collision_score": 0.106,
+    "collision_strength": "resonance",
+    "backbone_patterns": [
+      "mean_field"
+    ],
+    "novel_patterns": [
+      "above_average_grows",
+      "conservation_of_probability",
+      "fixed_point_stability",
+      "frequency_dependent",
+      "phase_transition",
+      "synchronization"
+    ],
+    "combined_operators": [
+      "couple",
+      "differential",
+      "multiply",
+      "normalize",
+      "phase_average",
+      "subtract_mean",
+      "sum_sin_phases"
+    ],
+    "combined_variables": {
+      "coupling": "K",
+      "frequency": "natural_freq",
+      "reference": "mean_fitness",
+      "score": "fitness",
+      "state": "oscillator_phase ↔ strategy_frequency"
+    },
+    "conservation_laws": [
+      "mean_phase_velocity",
+      "total_probability"
+    ],
+    "update_mechanism": "coupled phase evolution ⊗ multiplicative error correction",
+    "optimization_target": "phase coherence + maximize mean fitness",
+    "novelty_score": 1.0,
+    "depth_score": 0.442,
+    "impact_score": 0.506,
+    "overall_score": 0.632,
+    "label": "Sync IS replicator",
+    "parent_a_id": "synchronization_kuramoto",
+    "parent_b_id": "replicator_dynamics"
+  },
+  {
+    "name": "Bayesian SLAM-Inference Inference",
+    "parent_a": "SLAM (Simultaneous Localization and Mapping)",
+    "parent_b": "Active Inference",
+    "domain_a": "Robotics",
+    "domain_b": "Neuroscience",
+    "collision_score": 0.106,
+    "collision_strength": "resonance",
+    "backbone_patterns": [
+      "bayesian_inference"
+    ],
+    "novel_patterns": [
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "exploration_exploitation",
+      "information_gain",
+      "joint_estimation",
+      "prediction_error_correction",
+      "recursive_estimation"
+    ],
+    "combined_operators": [
+      "bayes_rule",
+      "belief_update",
+      "gradient",
+      "marginalize",
+      "policy_selection",
+      "precision_weighting",
+      "predict",
+      "update",
+      "variational_inference"
+    ],
+    "combined_variables": {
+      "control": "action_policy",
+      "dynamics": "belief_updating",
+      "energy": "variational_free_energy",
+      "map": "landmark_positions",
+      "observation": "sensor_readings",
+      "state": "robot_pose ↔ beliefs_about_hidden_states"
+    },
+    "conservation_laws": [
+      "measurement_consistency"
+    ],
+    "update_mechanism": "recursive bayesian ⊗ free energy minimization",
+    "optimization_target": "maximize posterior + minimize expected free energy",
+    "novelty_score": 1.0,
+    "depth_score": 0.442,
+    "impact_score": 0.506,
+    "overall_score": 0.632,
+    "label": "SLAM IS active inference",
+    "parent_a_id": "slam",
+    "parent_b_id": "active_inference"
+  },
+  {
     "id": "ryan_dissipative_structures_x_genetic_algorithm",
     "name": "Structures-Algorithm Synthesis",
     "parent_a": "Dissipative Structures (Prigogine)",
@@ -754,6 +1142,1319 @@
     ]
   },
   {
+    "name": "Discounting-Equation Synthesis",
+    "parent_a": "Hyperbolic Discounting",
+    "parent_b": "Bellman Equation (Dynamic Programming)",
+    "domain_a": "Behavioral Economics",
+    "domain_b": "Control Theory",
+    "collision_score": 0.092,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "dynamic_programming",
+      "fixed_point_iteration",
+      "non_exponential_decay",
+      "optimality_principle",
+      "present_bias",
+      "recursive_decomposition",
+      "time_inconsistency"
+    ],
+    "combined_operators": [
+      "discount",
+      "expectation",
+      "maximize",
+      "recursive_decomposition",
+      "reverse_preference",
+      "time_compare"
+    ],
+    "combined_variables": {
+      "delay": "time_lag",
+      "discount": "gamma",
+      "discount_rate": "k",
+      "reward": "immediate_reward",
+      "score": "value",
+      "state": "future_value ↔ system_state"
+    },
+    "conservation_laws": [
+      "preference_at_each_time"
+    ],
+    "update_mechanism": "time inconsistent ⊗ recursive value propagation",
+    "optimization_target": "present biased choice + maximize cumulative reward",
+    "novelty_score": 1.0,
+    "depth_score": 0.337,
+    "impact_score": 0.392,
+    "overall_score": 0.555,
+    "label": "Discounting meets Bellman",
+    "parent_a_id": "hyperbolic_discounting",
+    "parent_b_id": "bellman_equation"
+  },
+  {
+    "name": "Transformer-Theory Synthesis",
+    "parent_a": "Transformer / Self-Attention",
+    "parent_b": "Global Workspace Theory (Baars)",
+    "domain_a": "Linguistics",
+    "domain_b": "Cognitive Science",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "attention_mechanism",
+      "competition_selection",
+      "compositional_structure",
+      "feedback_loop",
+      "information_gain",
+      "phase_transition",
+      "soft_routing"
+    ],
+    "combined_operators": [
+      "comparison",
+      "competition",
+      "dot_product",
+      "matrix_product",
+      "softmax",
+      "threshold",
+      "weighted_sum"
+    ],
+    "combined_variables": {
+      "key_value": "key_value_pairs",
+      "query": "query_vector",
+      "reference": "attention_threshold",
+      "score": "global_coherence",
+      "state": "token_embedding ↔ workspace_content"
+    },
+    "conservation_laws": [
+      "processing_capacity",
+      "softmax_sum"
+    ],
+    "update_mechanism": "attention computation ⊗ competitive broadcast",
+    "optimization_target": "minimize lm loss + maximize global coherence",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Attention IS consciousness",
+    "parent_a_id": "transformer_attention",
+    "parent_b_id": "global_workspace"
+  },
+  {
+    "name": "Network-Theory Synthesis",
+    "parent_a": "Graph Neural Network (GNN)",
+    "parent_b": "Spectral Graph Theory",
+    "domain_a": "Machine Learning",
+    "domain_b": "Mathematics",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "compositional_structure",
+      "message_passing",
+      "pairwise_coupling",
+      "permutation_invariance",
+      "phase_transition",
+      "scale_invariance",
+      "structural_isomorphism"
+    ],
+    "combined_operators": [
+      "adjacency",
+      "aggregate_neighbors",
+      "cheeger_constant",
+      "eigenvalue_decomposition",
+      "graph_fourier_transform",
+      "laplacian",
+      "pool_graph",
+      "transform"
+    ],
+    "combined_variables": {
+      "coupling": "adjacency_matrix",
+      "energy": "dirichlet_energy",
+      "graph": "adjacency",
+      "message": "aggregated",
+      "spectrum": "laplacian_eigenvalues",
+      "state": "node_embedding ↔ graph_signal"
+    },
+    "conservation_laws": [
+      "permutation_equivariance",
+      "total_edge_weight"
+    ],
+    "update_mechanism": "message passing ⊗ eigenvalue decomposition",
+    "optimization_target": "node graph prediction + ?",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "GNNs ARE spectral analysis",
+    "parent_a_id": "graph_neural_network",
+    "parent_b_id": "spectral_graph_theory"
+  },
+  {
+    "name": "MAML-Hypothesis Synthesis",
+    "parent_a": "MAML / Meta-Learning",
+    "parent_b": "Bayesian Brain Hypothesis",
+    "domain_a": "Machine Learning",
+    "domain_b": "Cognitive Science",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "bayesian_inference",
+      "gradient_descent",
+      "hierarchical_optimization",
+      "likelihood_weighting",
+      "optimal_inference",
+      "prior_to_posterior",
+      "transfer_learning"
+    ],
+    "combined_operators": [
+      "bayes_rule",
+      "inner_gradient",
+      "likelihood",
+      "normalize",
+      "outer_gradient",
+      "prior",
+      "task_sample"
+    ],
+    "combined_variables": {
+      "adaptation": "few_shot_update",
+      "data": "sensory_observation",
+      "hypothesis": "world_state",
+      "posterior": "belief",
+      "prior": "expectation",
+      "state": "meta_params",
+      "task": "support_set"
+    },
+    "conservation_laws": [
+      "meta_objective",
+      "total_probability"
+    ],
+    "update_mechanism": "gradient through gradient ⊗ bayesian belief update",
+    "optimization_target": "fast adaptation + maximize posterior probability",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Meta-learning IS Bayesian adaptation",
+    "parent_a_id": "meta_learning_maml",
+    "parent_b_id": "bayesian_brain"
+  },
+  {
+    "name": "Allocation-Detection Synthesis",
+    "parent_a": "Latent Dirichlet Allocation (LDA)",
+    "parent_b": "Community Detection / Modularity",
+    "domain_a": "Linguistics",
+    "domain_b": "Network Science",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "bayesian_inference",
+      "energy_minimization",
+      "latent_variable",
+      "mean_field",
+      "mixture_model",
+      "pairwise_coupling",
+      "structural_isomorphism"
+    ],
+    "combined_operators": [
+      "categorical_sample",
+      "dirichlet_sample",
+      "likelihood_ratio",
+      "louvain_merge",
+      "marginalize",
+      "modularity_matrix",
+      "spectral_bisection"
+    ],
+    "combined_variables": {
+      "coupling": "adjacency_minus_null_model",
+      "energy": "negative_modularity",
+      "spectrum": "modularity_eigenvalues",
+      "state": "topic_distribution ↔ community_assignment",
+      "topic": "latent_assignment",
+      "word": "observed"
+    },
+    "conservation_laws": [
+      "probability_simplex"
+    ],
+    "update_mechanism": "variational em ⊗ modularity optimization",
+    "optimization_target": "maximize data likelihood + maximize modularity",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Topics ARE communities",
+    "parent_a_id": "topic_modeling_lda",
+    "parent_b_id": "community_detection"
+  },
+  {
+    "name": "Theory-Q-Learning Synthesis",
+    "parent_a": "Expected Utility Theory (vNM)",
+    "parent_b": "Q-Learning",
+    "domain_a": "Decision Theory",
+    "domain_b": "Reinforcement Learning",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "bootstrapping",
+      "linearity_in_probabilities",
+      "off_policy",
+      "probability_weighted",
+      "rational_choice",
+      "temporal_difference"
+    ],
+    "combined_operators": [
+      "bootstrap",
+      "max_over_actions",
+      "maximize",
+      "sum_utility",
+      "td_update",
+      "weight_probability"
+    ],
+    "combined_variables": {
+      "policy": "epsilon_greedy",
+      "probability": "p",
+      "state": "lottery ↔ state_action_value",
+      "td_target": "r_plus_max_q",
+      "utility": "u_function"
+    },
+    "conservation_laws": [
+      "bellman_equation",
+      "preference_ordering"
+    ],
+    "update_mechanism": "linear expectation ⊗ td with bootstrapping",
+    "optimization_target": "maximize expected utility + maximize action value",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Utility IS Q-value",
+    "parent_a_id": "expected_utility",
+    "parent_b_id": "q_learning"
+  },
+  {
+    "name": "Minimization-Bandit Synthesis",
+    "parent_a": "Regret Minimization",
+    "parent_b": "Multi-Armed Bandit / UCB",
+    "domain_a": "Decision Theory",
+    "domain_b": "Reinforcement Learning",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "bayesian_inference",
+      "competitive_ratio",
+      "energy_minimization",
+      "exploration_exploitation",
+      "information_gain",
+      "no_regret",
+      "online_learning"
+    ],
+    "combined_operators": [
+      "average_regret",
+      "compute_regret",
+      "confidence_bound",
+      "exploration_bonus",
+      "match_distribution",
+      "posterior_update",
+      "regret_decomposition"
+    ],
+    "combined_variables": {
+      "best_fixed": "hindsight_optimal",
+      "dynamics": "sequential_allocation",
+      "energy": "cumulative_regret",
+      "information": "posterior_uncertainty",
+      "regret": "deficit",
+      "state": "action_history ↔ arm_statistics"
+    },
+    "conservation_laws": [
+      "sublinear_regret_bound",
+      "total_pulls_equal_time"
+    ],
+    "update_mechanism": "no regret learning ⊗ index policy update",
+    "optimization_target": "minimize external regret + minimize cumulative regret",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Regret IS bandit",
+    "parent_a_id": "regret_minimization",
+    "parent_b_id": "multi_armed_bandit"
+  },
+  {
+    "name": "Theory-Optimization Synthesis",
+    "parent_a": "Prospect Theory (Kahneman-Tversky)",
+    "parent_b": "Proximal Policy Optimization (PPO)",
+    "domain_a": "Economics",
+    "domain_b": "Reinforcement Learning",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "asymmetric_response",
+      "clipping",
+      "diminishing_sensitivity",
+      "energy_entropy_tradeoff",
+      "framing_dependence",
+      "policy_gradient",
+      "trust_region"
+    ],
+    "combined_operators": [
+      "advantage",
+      "clip",
+      "compute_ratio",
+      "nonlinear_weighting",
+      "piecewise_function",
+      "probability_distortion",
+      "reference_shift",
+      "softmax"
+    ],
+    "combined_variables": {
+      "advantage": "gae",
+      "ratio": "importance_ratio",
+      "reference": "reference_point",
+      "score": "decision_weight",
+      "state": "subjective_value ↔ policy_params"
+    },
+    "conservation_laws": [
+      "kl_divergence_bound"
+    ],
+    "update_mechanism": "reference dependent valuation ⊗ clipped surrogate",
+    "optimization_target": "maximize prospect value + trust region policy",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Loss aversion meets policy gradient",
+    "parent_a_id": "prospect_theory",
+    "parent_b_id": "ppo"
+  },
+  {
+    "name": "Minimax-Actor-Critic Synthesis",
+    "parent_a": "Minimax / Worst-Case Decision",
+    "parent_b": "Soft Actor-Critic (SAC)",
+    "domain_a": "Decision Theory",
+    "domain_b": "Reinforcement Learning",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "adversarial",
+      "entropy_regularization",
+      "exploration_exploitation",
+      "pessimistic",
+      "robust_optimization",
+      "soft_optimization"
+    ],
+    "combined_operators": [
+      "entropy_bonus",
+      "min",
+      "reparameterize",
+      "robustify",
+      "soft_value",
+      "worst_case"
+    ],
+    "combined_variables": {
+      "entropy": "policy_entropy",
+      "loss": "regret",
+      "state": "action ↔ policy_params",
+      "temperature": "alpha",
+      "uncertainty": "worst_state"
+    },
+    "conservation_laws": [
+      "soft_bellman_equation",
+      "worst_case_bound"
+    ],
+    "update_mechanism": "adversarial evaluation ⊗ maximum entropy rl",
+    "optimization_target": "minimize worst case + entropy regularized value",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Worst-case meets max-entropy",
+    "parent_a_id": "minimax_decision",
+    "parent_b_id": "soft_actor_critic"
+  },
+  {
+    "name": "Proof-Bottleneck Synthesis",
+    "parent_a": "Zero-Knowledge Proof",
+    "parent_b": "Information Bottleneck",
+    "domain_a": "Cryptography",
+    "domain_b": "Information Theory",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "completeness_soundness",
+      "dual_variables",
+      "energy_entropy_tradeoff",
+      "information_gain",
+      "information_hiding",
+      "interactive_protocol",
+      "optimal_inference"
+    ],
+    "combined_operators": [
+      "challenge",
+      "commit",
+      "expectation",
+      "kl_divergence",
+      "lagrange_multiplier",
+      "mutual_information",
+      "rate_distortion",
+      "respond",
+      "verify"
+    ],
+    "combined_variables": {
+      "coupling": "relevance_variable",
+      "energy": "rate_distortion_lagrangian",
+      "information": "mutual_information",
+      "state": "statement ↔ compressed_representation",
+      "transcript": "interaction",
+      "witness": "secret_proof"
+    },
+    "conservation_laws": [
+      "data_processing_inequality",
+      "zero_knowledge_property"
+    ],
+    "update_mechanism": "challenge response ⊗ iterative blahut arimoto",
+    "optimization_target": "preserve witness secrecy + minimize compression distortion",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "ZKP IS info compression",
+    "parent_a_id": "zero_knowledge_proof",
+    "parent_b_id": "information_bottleneck"
+  },
+  {
+    "name": "Tree-Coding Synthesis",
+    "parent_a": "Merkle Tree",
+    "parent_b": "Huffman Coding",
+    "domain_a": "Cryptography",
+    "domain_b": "Information Theory",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "binding_commitment",
+      "entropy_coding",
+      "logarithmic_proof",
+      "optimal_compression",
+      "recursive_structure",
+      "tree_structure"
+    ],
+    "combined_operators": [
+      "assign_code",
+      "build_tree",
+      "concatenate",
+      "hash",
+      "merge_lowest_freq",
+      "tree_walk"
+    ],
+    "combined_variables": {
+      "leaf": "data_block",
+      "length": "code_bits",
+      "path": "merkle_path",
+      "probability": "p_x",
+      "state": "root_hash ↔ code_tree"
+    },
+    "conservation_laws": [
+      "collision_resistance",
+      "kraft_inequality"
+    ],
+    "update_mechanism": "recursive hash ⊗ greedy tree construction",
+    "optimization_target": "efficient membership proof + minimize expected length",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Merkle IS optimal coding",
+    "parent_a_id": "merkle_tree",
+    "parent_b_id": "huffman_coding"
+  },
+  {
+    "name": "Model-Attachment Synthesis",
+    "parent_a": "Schelling Segregation Model",
+    "parent_b": "Preferential Attachment / Scale-Free Networks",
+    "domain_a": "Sociology",
+    "domain_b": "Network Science",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "emergence",
+      "local_interaction",
+      "mean_field",
+      "pairwise_coupling",
+      "population_dynamics",
+      "renormalization",
+      "threshold_dynamics"
+    ],
+    "combined_operators": [
+      "attachment_kernel",
+      "compare_threshold",
+      "count_neighbors",
+      "degree_counting",
+      "master_equation",
+      "mean_field_approximation",
+      "relocate"
+    ],
+    "combined_variables": {
+      "coupling": "attachment_kernel",
+      "dynamics": "preferential_growth",
+      "energy": "network_entropy",
+      "state": "spatial_arrangement ↔ degree_sequence",
+      "tolerance": "similarity_threshold",
+      "type": "agent_type"
+    },
+    "conservation_laws": [
+      "agent_population",
+      "total_edge_count"
+    ],
+    "update_mechanism": "tolerance threshold move ⊗ growth attachment",
+    "optimization_target": "satisfy individual preferences + characterize degree distribution",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Segregation IS network growth",
+    "parent_a_id": "schelling_segregation",
+    "parent_b_id": "preferential_attachment"
+  },
+  {
+    "name": "Action-Equilibrium Synthesis",
+    "parent_a": "Olson's Logic of Collective Action",
+    "parent_b": "Nash Equilibrium",
+    "domain_a": "Sociology",
+    "domain_b": "Evolutionary Game Theory",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "above_average_grows",
+      "coordination_failure",
+      "fixed_point_iteration",
+      "fixed_point_stability",
+      "free_rider_problem",
+      "frequency_dependent",
+      "public_good"
+    ],
+    "combined_operators": [
+      "best_response",
+      "compute_benefit",
+      "coordinate",
+      "expectation",
+      "free_ride",
+      "mixed_strategy",
+      "pairwise_interaction"
+    ],
+    "combined_variables": {
+      "benefit": "shared_good",
+      "cost": "individual_cost",
+      "coupling": "payoff_matrix",
+      "reference": "opponent_strategy",
+      "score": "utility",
+      "state": "contribution_level ↔ strategy_profile"
+    },
+    "conservation_laws": [
+      "aggregate_payoff",
+      "total_probability"
+    ],
+    "update_mechanism": "rational choice ⊗ best response dynamics",
+    "optimization_target": "individual payoff + maximize individual utility",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Free riding IS Nash",
+    "parent_a_id": "collective_action",
+    "parent_b_id": "nash_equilibrium"
+  },
+  {
+    "name": "Innovations-SIR Synthesis",
+    "parent_a": "Rogers' Diffusion of Innovations",
+    "parent_b": "SIR / Epidemiological Model",
+    "domain_a": "Sociology",
+    "domain_b": "Biology",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "conservation_law",
+      "contagion",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "innovator_imitator",
+      "population_dynamics",
+      "s_curve"
+    ],
+    "combined_operators": [
+      "basic_reproduction_number",
+      "compartment_transition",
+      "external_influence",
+      "imitate",
+      "mass_action",
+      "saturate",
+      "threshold_condition"
+    ],
+    "combined_variables": {
+      "coupling": "contact_rate",
+      "dynamics": "transmission_recovery",
+      "energy": "epidemic_potential",
+      "imitation_coef": "q",
+      "innovation_coef": "p",
+      "state": "adopters ↔ compartment_fractions"
+    },
+    "conservation_laws": [
+      "market_potential",
+      "total_population"
+    ],
+    "update_mechanism": "bass diffusion ⊗ compartmental ode",
+    "optimization_target": "fit adoption curve + minimize epidemic size",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Innovation spreads like virus",
+    "parent_a_id": "diffusion_of_innovation",
+    "parent_b_id": "sir_model"
+  },
+  {
+    "name": "Networks-Detection Synthesis",
+    "parent_a": "Homophily in Networks",
+    "parent_b": "Community Detection / Modularity",
+    "domain_a": "Sociology",
+    "domain_b": "Network Science",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "assortativity",
+      "energy_minimization",
+      "mean_field",
+      "pairwise_coupling",
+      "selection_effect",
+      "social_influence",
+      "structural_isomorphism"
+    ],
+    "combined_operators": [
+      "assort",
+      "form_edge",
+      "likelihood_ratio",
+      "louvain_merge",
+      "measure_similarity",
+      "modularity_matrix",
+      "spectral_bisection"
+    ],
+    "combined_variables": {
+      "attribute": "agent_type",
+      "coupling": "adjacency_minus_null_model",
+      "energy": "negative_modularity",
+      "spectrum": "modularity_eigenvalues",
+      "state": "social_network ↔ community_assignment",
+      "tie_strength": "edge_weight"
+    },
+    "conservation_laws": [
+      "network_size"
+    ],
+    "update_mechanism": "similarity attachment ⊗ modularity optimization",
+    "optimization_target": "minimize cross type edges + maximize modularity",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Homophily IS community",
+    "parent_a_id": "homophily",
+    "parent_b_id": "community_detection"
+  },
+  {
+    "name": "Cascades-Game Synthesis",
+    "parent_a": "Information Cascades / Herd Behavior",
+    "parent_b": "Mean-Field Game",
+    "domain_a": "Behavioral Economics",
+    "domain_b": "Game Theory",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "cascade",
+      "competitive_dynamics",
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "fixed_point_iteration",
+      "information_aggregation_failure",
+      "social_learning"
+    ],
+    "combined_operators": [
+      "fixed_point",
+      "fokker_planck_operator",
+      "follow",
+      "gradient",
+      "hamilton_jacobi",
+      "ignore_private",
+      "mean_field_coupling",
+      "observe_others"
+    ],
+    "combined_variables": {
+      "coupling": "mean_field_interaction",
+      "dynamics": "coupled_pde_system",
+      "energy": "social_cost",
+      "private_signal": "info",
+      "public_history": "observed_actions",
+      "state": "action ↔ value_and_distribution"
+    },
+    "conservation_laws": [
+      "aggregate_action_history",
+      "mass_conservation"
+    ],
+    "update_mechanism": "social information dominance ⊗ coupled hjb fokker planck",
+    "optimization_target": "imitate predecessors + nash equilibrium of continuum",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Herding IS mean-field game",
+    "parent_a_id": "herd_behavior",
+    "parent_b_id": "mean_field_game"
+  },
+  {
+    "name": "Adjustment-Hypothesis Synthesis",
+    "parent_a": "Anchoring and Adjustment",
+    "parent_b": "Bayesian Brain Hypothesis",
+    "domain_a": "Behavioral Economics",
+    "domain_b": "Cognitive Science",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "bayesian_inference",
+      "cognitive_heuristic",
+      "insufficient_correction",
+      "likelihood_weighting",
+      "optimal_inference",
+      "prior_to_posterior",
+      "starting_point_bias"
+    ],
+    "combined_operators": [
+      "adjust_partially",
+      "anchor",
+      "bayes_rule",
+      "bias",
+      "likelihood",
+      "normalize",
+      "prior"
+    ],
+    "combined_variables": {
+      "adjustment": "deviation",
+      "anchor": "initial_value",
+      "data": "sensory_observation",
+      "hypothesis": "world_state",
+      "posterior": "belief",
+      "prior": "expectation",
+      "state": "estimate"
+    },
+    "conservation_laws": [
+      "anchor_influence",
+      "total_probability"
+    ],
+    "update_mechanism": "insufficient adjustment ⊗ bayesian belief update",
+    "optimization_target": "minimize cognitive effort + maximize posterior probability",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Anchoring IS slow updating",
+    "parent_a_id": "anchoring_bias",
+    "parent_b_id": "bayesian_brain"
+  },
+  {
+    "name": "Control-Q-Network Synthesis",
+    "parent_a": "Model Predictive Control (MPC)",
+    "parent_b": "Deep Q-Network (DQN)",
+    "domain_a": "Control Theory",
+    "domain_b": "Reinforcement Learning",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "convex_optimization",
+      "deep_function_approximation",
+      "dual_variables",
+      "energy_minimization",
+      "experience_replay",
+      "feedback_loop",
+      "temporal_difference"
+    ],
+    "combined_operators": [
+      "gradient",
+      "linear_combination",
+      "matrix_multiply",
+      "projection",
+      "replay_buffer",
+      "target_network",
+      "td_minimize"
+    ],
+    "combined_variables": {
+      "memory": "replay_buffer",
+      "reference": "constraints",
+      "score": "cost_over_horizon",
+      "state": "predicted_trajectory ↔ deep_q_params",
+      "target": "frozen_target"
+    },
+    "conservation_laws": [
+      "bellman_equation"
+    ],
+    "update_mechanism": "receding horizon optimization ⊗ experience replay target net",
+    "optimization_target": "minimize cost over horizon + minimize td error",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "MPC IS deep RL",
+    "parent_a_id": "model_predictive_control",
+    "parent_b_id": "dqn"
+  },
+  {
+    "name": "Learning-Principle Synthesis",
+    "parent_a": "Imitation Learning / Behavior Cloning",
+    "parent_b": "Free Energy Principle (Friston)",
+    "domain_a": "Robotics",
+    "domain_b": "Cognitive Science",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "active_inference",
+      "bayesian_inference",
+      "distribution_matching",
+      "energy_entropy_tradeoff",
+      "gradient_descent",
+      "prediction_error_correction",
+      "supervised_learning"
+    ],
+    "combined_operators": [
+      "distill",
+      "evidence_lower_bound",
+      "expectation",
+      "kl_divergence",
+      "minimize_loss",
+      "regress",
+      "sample",
+      "variational"
+    ],
+    "combined_variables": {
+      "action": "expert_demonstration",
+      "belief": "recognition_density_q",
+      "free_energy": "variational_bound",
+      "model": "generative_model_p",
+      "policy": "learned_mapping",
+      "state": "observation"
+    },
+    "conservation_laws": [
+      "expert_distribution"
+    ],
+    "update_mechanism": "supervised loss minimization ⊗ variational inference",
+    "optimization_target": "match expert distribution + minimize variational free energy",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Imitation IS FEP",
+    "parent_a_id": "imitation_learning",
+    "parent_b_id": "free_energy_principle"
+  },
+  {
+    "name": "Thermodynamics-Energy Synthesis",
+    "parent_a": "Black Hole Thermodynamics",
+    "parent_b": "Helmholtz Free Energy",
+    "domain_a": "Astrophysics",
+    "domain_b": "Statistical Mechanics",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "energy_entropy_tradeoff",
+      "entropy_maximization",
+      "generating_function",
+      "holographic_principle",
+      "temperature_controls_tradeoff",
+      "thermodynamic_law",
+      "variational_principle"
+    ],
+    "combined_operators": [
+      "area_increase",
+      "entropy",
+      "first_law",
+      "legendre_transform",
+      "logarithm",
+      "surface_gravity",
+      "temperature_scale"
+    ],
+    "combined_variables": {
+      "energy": "internal_energy",
+      "entropy": "horizon_area ↔ boltzmann_entropy",
+      "state": "mass",
+      "temperature": "surface_gravity ↔ kT"
+    },
+    "conservation_laws": [
+      "angular_momentum",
+      "charge",
+      "energy"
+    ],
+    "update_mechanism": "horizon dynamics ⊗ legendre transform of energy",
+    "optimization_target": "maximize entropy + minimize free energy",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "BH IS thermodynamics",
+    "parent_a_id": "black_hole_thermodynamics",
+    "parent_b_id": "free_energy_thermo"
+  },
+  {
+    "name": "Theory-Integral Synthesis",
+    "parent_a": "Marcus Electron Transfer Theory",
+    "parent_b": "Feynman Path Integral",
+    "domain_a": "Chemistry",
+    "domain_b": "Quantum Physics",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "barrier_crossing",
+      "exponential_family",
+      "exponential_weighting",
+      "partition_function",
+      "quadratic_dependence",
+      "saddle_point_approximation",
+      "sum_over_histories"
+    ],
+    "combined_operators": [
+      "action",
+      "couple",
+      "exponential",
+      "functional_integral",
+      "gaussian_integrate",
+      "quantum_tunnel",
+      "sum_over_paths"
+    ],
+    "combined_variables": {
+      "action": "integral_of_lagrangian",
+      "coupling": "donor_acceptor",
+      "energy": "reorganization",
+      "path": "history",
+      "state": "electron_position",
+      "weight": "exp(iS/hbar)"
+    },
+    "conservation_laws": [
+      "total_energy",
+      "unitarity"
+    ],
+    "update_mechanism": "tunneling rate ⊗ sum over histories",
+    "optimization_target": "minimize reorganization energy + stationary action principle",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Marcus IS path integral",
+    "parent_a_id": "marcus_theory",
+    "parent_b_id": "path_integral"
+  },
+  {
+    "name": "Equilibrium-Energy Synthesis",
+    "parent_a": "Chemical Equilibrium / Le Chatelier",
+    "parent_b": "Helmholtz Free Energy",
+    "domain_a": "Chemistry",
+    "domain_b": "Statistical Mechanics",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "equilibrium",
+      "generating_function",
+      "mass_action",
+      "temperature_controls_tradeoff",
+      "variational_principle"
+    ],
+    "combined_operators": [
+      "entropy",
+      "exponentiate",
+      "legendre_transform",
+      "logarithm",
+      "product",
+      "ratio",
+      "temperature_scale"
+    ],
+    "combined_variables": {
+      "constant": "equilibrium_K",
+      "energy": "gibbs_free ↔ internal_energy",
+      "entropy": "boltzmann_entropy",
+      "state": "concentration",
+      "temperature": "kT"
+    },
+    "conservation_laws": [
+      "energy",
+      "mass"
+    ],
+    "update_mechanism": "mass action kinetics ⊗ legendre transform of energy",
+    "optimization_target": "minimize gibbs energy + minimize free energy",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Equilibrium IS free energy min",
+    "parent_a_id": "chemical_equilibrium",
+    "parent_b_id": "free_energy_thermo"
+  },
+  {
+    "name": "Theory-Fokker-Planck Synthesis",
+    "parent_a": "Queueing Theory / M/M/1",
+    "parent_b": "Fokker-Planck / Langevin Dynamics",
+    "domain_a": "Operations Research",
+    "domain_b": "Statistical Physics",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "conservation_of_probability",
+      "energy_based",
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "little_law",
+      "markov_process",
+      "steady_state"
+    ],
+    "combined_operators": [
+      "arrive",
+      "depart",
+      "diffusion",
+      "drift",
+      "gradient",
+      "laplacian",
+      "partition_function",
+      "serve"
+    ],
+    "combined_variables": {
+      "arrival_rate": "lambda",
+      "energy": "potential_function",
+      "flow": "probability_current",
+      "service_rate": "mu",
+      "state": "queue_length ↔ probability_density",
+      "temperature": "noise_intensity"
+    },
+    "conservation_laws": [
+      "customer_count",
+      "total_probability"
+    ],
+    "update_mechanism": "birth death process ⊗ drift diffusion",
+    "optimization_target": "minimize wait time + ?",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Queues IS Fokker-Planck",
+    "parent_a_id": "queueing_theory",
+    "parent_b_id": "fokker_planck"
+  },
+  {
+    "name": "Rule-Value Synthesis",
+    "parent_a": "Hamilton's Rule / Kin Selection",
+    "parent_b": "Shapley Value / Cooperative Games",
+    "domain_a": "Evolutionary Game Theory",
+    "domain_b": "Game Theory",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "altruism",
+      "compositional_structure",
+      "dual_variables",
+      "inclusive_fitness",
+      "relatedness",
+      "structural_isomorphism",
+      "variational_principle"
+    ],
+    "combined_operators": [
+      "coalition_function",
+      "compare",
+      "compute_relatedness",
+      "marginal_contribution",
+      "permutation_average",
+      "weight_benefit",
+      "weighted_sum"
+    ],
+    "combined_variables": {
+      "benefit_cost": "b_c",
+      "coupling": "coalition_function",
+      "energy": "deviation_from_core",
+      "information": "marginal_contributions",
+      "relatedness": "r",
+      "state": "behavior ↔ allocation_vector"
+    },
+    "conservation_laws": [
+      "efficiency_axiom",
+      "gene_propagation"
+    ],
+    "update_mechanism": "inclusive fitness ⊗ marginal contribution average",
+    "optimization_target": "maximize inclusive fitness + fair surplus allocation",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Kin selection IS Shapley",
+    "parent_a_id": "kin_selection",
+    "parent_b_id": "shapley_value"
+  },
+  {
+    "name": "Process-Wright-Fisher Synthesis",
+    "parent_a": "Moran Process",
+    "parent_b": "Wright-Fisher / Population Genetics",
+    "domain_a": "Evolutionary Game Theory",
+    "domain_b": "Biology",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "energy_entropy_tradeoff",
+      "finite_population",
+      "fixation_probability",
+      "fixed_point_iteration",
+      "mean_field",
+      "population_dynamics",
+      "stochastic_evolution"
+    ],
+    "combined_operators": [
+      "birth",
+      "coalescent",
+      "death",
+      "diffusion_approximation",
+      "drift",
+      "mutation",
+      "select_by_fitness",
+      "selection"
+    ],
+    "combined_variables": {
+      "coupling": "population_size",
+      "dynamics": "selection_drift_balance",
+      "energy": "negative_fitness",
+      "fitness": "selection_intensity",
+      "population_size": "N",
+      "state": "type_count ↔ allele_frequencies"
+    },
+    "conservation_laws": [
+      "population_size",
+      "total_allele_frequency"
+    ],
+    "update_mechanism": "birth death process ⊗ binomial sampling selection",
+    "optimization_target": "fixation probability + characterize allele dynamics",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Moran IS Wright-Fisher",
+    "parent_a_id": "moran_process",
+    "parent_b_id": "wright_fisher"
+  },
+  {
+    "name": "Equation-Kinetics Synthesis",
+    "parent_a": "Hill Equation / Dose-Response",
+    "parent_b": "Michaelis-Menten Enzyme Kinetics",
+    "domain_a": "Pharmacology",
+    "domain_b": "Biology",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "cooperative_binding",
+      "cooperativity",
+      "energy_minimization",
+      "enzyme_saturation",
+      "exponential_family",
+      "sigmoidal_response",
+      "threshold_response"
+    ],
+    "combined_operators": [
+      "cooperativity",
+      "exponential",
+      "hill_function",
+      "hyperbolic_function",
+      "quasi_steady_state",
+      "saturate",
+      "saturation"
+    ],
+    "combined_variables": {
+      "dose": "D",
+      "potency": "EC50",
+      "reference": "michaelis_constant",
+      "score": "reaction_rate",
+      "state": "effect ↔ substrate_concentration"
+    },
+    "conservation_laws": [
+      "max_effect_bound",
+      "total_enzyme"
+    ],
+    "update_mechanism": "cooperative binding ⊗ saturation kinetics",
+    "optimization_target": "potency efficacy + maximize catalytic rate",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "Hill IS Michaelis-Menten",
+    "parent_a_id": "dose_response",
+    "parent_b_id": "michaelis_menten"
+  },
+  {
+    "name": "Modeling-Fokker-Planck Synthesis",
+    "parent_a": "PK-PD Modeling",
+    "parent_b": "Fokker-Planck / Langevin Dynamics",
+    "domain_a": "Pharmacology",
+    "domain_b": "Statistical Physics",
+    "collision_score": 0.05,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "compartmental_model",
+      "conservation_of_probability",
+      "dose_response",
+      "energy_based",
+      "energy_entropy_tradeoff",
+      "energy_minimization",
+      "saturation"
+    ],
+    "combined_operators": [
+      "absorb",
+      "diffusion",
+      "distribute",
+      "drift",
+      "excrete",
+      "gradient",
+      "laplacian",
+      "metabolize",
+      "partition_function"
+    ],
+    "combined_variables": {
+      "effect": "drug_response",
+      "elimination": "k_e",
+      "energy": "potential_function",
+      "flow": "probability_current",
+      "state": "concentration ↔ probability_density",
+      "temperature": "noise_intensity"
+    },
+    "conservation_laws": [
+      "drug_mass",
+      "total_probability"
+    ],
+    "update_mechanism": "compartmental kinetics ⊗ drift diffusion",
+    "optimization_target": "therapeutic window + ?",
+    "novelty_score": 1.0,
+    "depth_score": 0.32,
+    "impact_score": 0.35,
+    "overall_score": 0.534,
+    "label": "PK IS Fokker-Planck",
+    "parent_a_id": "pk_pd_modeling",
+    "parent_b_id": "fokker_planck"
+  },
+  {
     "id": "ryan_free_energy_principle_x_replicator_dynamics",
     "name": "Principle-Dynamics Synthesis",
     "parent_a": "Free Energy Principle (Friston)",
@@ -809,5 +2510,103 @@
       "Test whether theorems from Cognitive Science hold in Evolutionary Game Theory under the variable mapping",
       "Design experiments in Evolutionary Game Theory guided by Cognitive Science predictions"
     ]
+  },
+  {
+    "name": "Game-Equilibrium Synthesis",
+    "parent_a": "Hawk-Dove Game",
+    "parent_b": "Nash Equilibrium",
+    "domain_a": "Evolutionary Game Theory",
+    "domain_b": "Evolutionary Game Theory",
+    "collision_score": 0.062,
+    "collision_strength": "weak",
+    "backbone_patterns": [
+      "frequency_dependent"
+    ],
+    "novel_patterns": [
+      "above_average_grows",
+      "evolutionary_stability",
+      "fixed_point_iteration",
+      "fixed_point_stability",
+      "mean_field",
+      "mixed_equilibrium"
+    ],
+    "combined_operators": [
+      "best_response",
+      "compute_payoff_matrix",
+      "expectation",
+      "find_ess",
+      "frequency_track",
+      "mixed_strategy",
+      "pairwise_interaction"
+    ],
+    "combined_variables": {
+      "cost": "C",
+      "coupling": "payoff_matrix",
+      "reference": "opponent_strategy",
+      "score": "utility",
+      "state": "strategy_proportion ↔ strategy_profile",
+      "value": "V"
+    },
+    "conservation_laws": [
+      "population_normalization",
+      "total_probability"
+    ],
+    "update_mechanism": "frequency dependent payoff ⊗ best response dynamics",
+    "optimization_target": "evolutionary stability + maximize individual utility",
+    "novelty_score": 1.0,
+    "depth_score": 0.425,
+    "impact_score": 0.163,
+    "overall_score": 0.506,
+    "label": "Hawk-Dove IS Nash",
+    "parent_a_id": "hawk_dove",
+    "parent_b_id": "nash_equilibrium"
+  },
+  {
+    "name": "Multilevel-Equation Synthesis",
+    "parent_a": "Multilevel / Group Selection",
+    "parent_b": "Price Equation (Multilevel Selection)",
+    "domain_a": "Evolutionary Game Theory",
+    "domain_b": "Evolutionary Game Theory",
+    "collision_score": 0.042,
+    "collision_strength": "weak",
+    "backbone_patterns": [],
+    "novel_patterns": [
+      "above_average_grows",
+      "altruism",
+      "bayesian_inference",
+      "conservation_of_probability",
+      "covariance_decomposition",
+      "frequency_dependent",
+      "multilevel_selection"
+    ],
+    "combined_operators": [
+      "covariance",
+      "decompose",
+      "decomposition",
+      "expectation",
+      "price_equation",
+      "recursive_decomposition"
+    ],
+    "combined_variables": {
+      "group": "subpopulation",
+      "individual": "agent",
+      "reference": "mean_fitness",
+      "score": "fitness",
+      "state": "trait_frequency",
+      "trait": "phenotype_value"
+    },
+    "conservation_laws": [
+      "price_identity",
+      "total_probability"
+    ],
+    "update_mechanism": "price decomposition ⊗ covariance driven selection",
+    "optimization_target": "multilevel fitness + maximize mean fitness",
+    "novelty_score": 1.0,
+    "depth_score": 0.317,
+    "impact_score": 0.042,
+    "overall_score": 0.425,
+    "label": "Group selection IS Price equation",
+    "parent_a_id": "group_selection",
+    "parent_b_id": "price_equation"
   }
 ]
