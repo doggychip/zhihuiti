@@ -85,9 +85,8 @@ def template_fallback(theory: dict) -> dict:
     }
 
 
-def llm_explain(theory: dict, llm) -> dict:
-    """Generate explanations via LLM. Falls back to template on error."""
-    prompt = PROMPT_TEMPLATE.format(
+def _build_prompt(theory: dict) -> str:
+    return PROMPT_TEMPLATE.format(
         name=theory.get("name", ""),
         parent_a=theory.get("parent_a", ""),
         parent_b=theory.get("parent_b", ""),
@@ -104,20 +103,62 @@ def llm_explain(theory: dict, llm) -> dict:
         update=theory.get("update_mechanism", ""),
     )
 
+
+def _parse_llm_response(text: str) -> dict | None:
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("```")[1]
+        if text.startswith("json"):
+            text = text[4:]
+        text = text.rsplit("```", 1)[0]
+    data = json.loads(text.strip())
+    required = {"plain_explanation", "worked_example", "governance_application", "implementation_hint"}
+    if not required.issubset(data.keys()):
+        return None
+    data["_source"] = "llm"
+    return data
+
+
+class AnthropicClient:
+    """Direct Anthropic API client (no SDK dependency)."""
+
+    def __init__(self, api_key: str, model: str = "claude-haiku-4-5-20251001"):
+        self.api_key = api_key
+        self.model = model
+        self.url = "https://api.anthropic.com/v1/messages"
+
+    def chat(self, prompt: str) -> str:
+        import httpx
+        resp = httpx.post(
+            self.url,
+            headers={
+                "x-api-key": self.api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": self.model,
+                "max_tokens": 1024,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data["content"][0]["text"]
+
+
+def llm_explain(theory: dict, llm) -> dict:
+    """Generate explanations via LLM. Falls back to template on error."""
+    prompt = _build_prompt(theory)
     try:
-        response = llm.chat([{"role": "user", "content": prompt}])
-        text = response.strip()
-        # Strip optional markdown fences if model added them anyway
-        if text.startswith("```"):
-            text = text.split("```")[1]
-            if text.startswith("json"):
-                text = text[4:]
-            text = text.rsplit("```", 1)[0]
-        data = json.loads(text.strip())
-        required = {"plain_explanation", "worked_example", "governance_application", "implementation_hint"}
-        if not required.issubset(data.keys()):
+        if isinstance(llm, AnthropicClient):
+            response = llm.chat(prompt)
+        else:
+            response = llm.chat([{"role": "user", "content": prompt}])
+        data = _parse_llm_response(response)
+        if data is None:
             return template_fallback(theory)
-        data["_source"] = "llm"
         return data
     except Exception as e:
         print(f"    LLM error: {e}; using template", file=sys.stderr)
@@ -144,7 +185,12 @@ def main():
 
     # Try to load LLM; fall back to templates if no key
     llm = None
-    if any(os.environ.get(k) for k in ["DEEPSEEK_API_KEY", "OPENROUTER_API_KEY", "OPENAI_API_KEY", "LLM_API_KEY"]):
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if anthropic_key:
+        model = os.environ.get("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
+        llm = AnthropicClient(anthropic_key, model)
+        print(f"Using Anthropic API (model: {model})")
+    elif any(os.environ.get(k) for k in ["DEEPSEEK_API_KEY", "OPENROUTER_API_KEY", "OPENAI_API_KEY", "LLM_API_KEY"]):
         try:
             sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
             from zhihuiti.llm import LLM
