@@ -150,6 +150,140 @@ def _fetch_crypto_book(instrument: str) -> dict | None:
         return None
 
 
+# ── Macro factor layer (cross-asset cockpit feed) ───────────────────────────
+# Mirrors server/core/macro.ts. The price-regime oracle has no macro factor read
+# (rates / USD index / gold-as-macro / inflation); this fills that gap and speaks
+# the same regime vocabulary as /api/oracle/summary. Daily-snapshot cadence.
+_MACRO_SNAPSHOT = {
+    "asof": "2026-06-29", "curveDate": "2026-06-26",
+    "curve": {
+        "cur": {"3M": 3.83, "1Y": 3.94, "2Y": 4.07, "3Y": 4.09, "5Y": 4.12, "7Y": 4.23, "10Y": 4.38, "20Y": 4.87, "30Y": 4.87},
+        "w1":  {"3M": 3.83, "1Y": 4.00, "2Y": 4.19, "3Y": 4.19, "5Y": 4.23, "7Y": 4.34, "10Y": 4.46, "20Y": 4.91, "30Y": 4.90},
+    },
+    "y10": 4.38, "y2": 4.07, "y30": 4.87, "y3m": 3.83, "bei10": 2.35, "real10": 2.03,
+    "dxy": 100.94, "dxyChg": -0.42, "gold": 4036.5, "goldChg": -1.46,
+    "wti": 70.52, "brent": 73.68, "wtiChg": -1.95,
+    "spx": 7399.4, "spxChg": 0.62, "ndx": 29426, "rut": 2981.2, "rutChg": -0.96,
+    "vix": 18.27, "vixChg": -0.76, "move": 66.8, "gvz": 28.15, "gvzChg": 3.57, "ovx": 46.6,
+    "btc": 59253, "btcChg": -0.41, "coreCPI": 3.8, "cpi": 3.2, "fiscalDef": 6.3,
+}
+
+
+def _macro_clamp(x, lo, hi):
+    return max(lo, min(hi, x))
+
+
+def _macro_composite(facs):
+    s = sum(f["s"] * f["w"] for f in facs)
+    w = sum(f["w"] for f in facs)
+    return round(s / w)
+
+
+def _macro_confidence(facs, score):
+    w = sum(f["w"] for f in facs)
+    v = sum(f["w"] * (f["s"] - score) ** 2 for f in facs)
+    disp = (v / w) ** 0.5
+    return round(_macro_clamp(1 - disp / 120, 0.8, 0.99), 3)
+
+
+def _macro_regime(score, mom, vol):
+    """Map composite + momentum + vol onto the oracle regime vocabulary."""
+    strong = abs(mom) >= 2
+    if vol == "crisis":
+        return "crisis"
+    if mom > 0 and score >= 60:
+        return "trending_up"
+    if mom < 0 and score <= 42:
+        return "trending_down"
+    if vol == "high" and not strong:
+        return "volatile"
+    if vol == "low" and abs(mom) <= 1 and 44 <= score <= 56:
+        return "quiet"
+    return "mean_reverting"
+
+
+def _macro_feed():
+    s = _MACRO_SNAPSHOT
+    defs = [
+        ("inflation", "通胀压力 IPS", "Inflation Pressure", "IPS = P + E + D + F + N", "#fbbf24",
+         [("P 价格 (核心CPI 3.8%)", 58, .25, "服务+住房粘性", True), ("E 预期 (10Y BEI 2.35%)", 50, .20, "长端锚定良好", True),
+          ("D 驱动 (油价/工资)", 55, .20, "油价回落降温", False), ("F 财政 (赤字 ~6.3%)", 72, .15, "暗刺激仍在", True),
+          ("N 叙事 (Fed 偏鹰)", 62, .20, "粘性自我强化", True)],
+         ["回落", "温和", "粘性", "再加速"], 1, "low"),
+        ("duration", "美债久期立场", "Duration Stance", "Dur = −real − growth + mom + (低)vol", "#38bdf8",
+         [("实际利率 (10Y real ~2.0%)", 42, .30, "高位封顶久期", True), ("曲线动能 (10Y −8bp/周)", 64, .22, "前端领涨·牛陡", False),
+          ("债券波动 MOVE 66.8", 66, .18, "低位·偏支撑", False), ("增长/风险 (SPX 近高)", 38, .18, "risk-on 抽水", False),
+          ("供给/财政", 40, .12, "长端供给压力", True)],
+         ["强空", "偏空", "中性", "偏多"], 1, "low"),
+        ("usd", "美元估值 γ", "USD Valuation", "γ = r_f + π_risk − cy + σ_alert", "#34d399",
+         [("r_f 利率差 (Fed 3.6 vs ECB 2.2)", 62, .35, "利差仍宽·支撑", False), ("π_risk 风险溢价 (VIX 18)", 40, .25, "无避险买盘", False),
+          ("cy 便利收益 (黄金 +强)", 40, .25, "去美元化拖累", False), ("σ_alert 波动预警 (MOVE 低)", 34, .15, "低波·中性", False)],
+         ["弱", "偏弱", "中性", "强"], -1, "low"),
+        ("gold", "黄金信号", "Gold Signal", "Au = −real + softUSD + mom + haven", "#e0b53c",
+         [("实际利率 (逆风)", 44, .25, "高实际利率压制", True), ("美元 (软美元顺风)", 66, .22, "DXY 动能转弱", False),
+          ("价格动能 (创新高)", 82, .23, "强势·超买", False), ("恐慌溢价 GVZ 28.2", 74, .15, "避险升温", False),
+          ("地缘/油波 OVX 46.6", 70, .15, "尾部对冲需求", False)],
+         ["看空", "中性", "偏多", "强多"], 2, "high"),
+    ]
+    monitors = []
+    for (mid, name, en, formula, accent, facs, zones, mom, vol) in defs:
+        factors = [{"key": k, "score": sc, "weight": w, "note": note, "est": est} for (k, sc, w, note, est) in facs]
+        fc = [{"s": sc, "w": w} for (k, sc, w, note, est) in facs]
+        score = _macro_composite(fc)
+        monitors.append({
+            "id": mid, "name": name, "nameEn": en, "formula": formula, "accent": accent,
+            "score": score, "stance": zones[min(3, score // 25)],
+            "regime": _macro_regime(score, mom, vol), "signal_score": _macro_confidence(fc, score),
+            "factors": factors,
+        })
+
+    def tow(score, mom, vol):
+        return _macro_regime(score, mom, vol), round(_macro_clamp(0.82 + abs(score - 50) / 250, 0.8, 0.99), 3)
+
+    t0, t1, t2, t3 = tow(66, 2, "high"), tow(47, -1, "low"), tow(50, 1, "low"), tow(64, 2, "low")
+    tower = [
+        {"asset": "黄金", "symbol": "XAU/USD", "price": f"${s['gold']:,} · {s['goldChg']}%", "bias": "偏多", "lean": "long",
+         "regime": t0[0], "signal_score": t0[1], "strength": 4,
+         "chain": "软美元 + 实际利率见顶预期 + 去美元化/避险 资金流", "window": "1–3 月", "risk": "超买回撤;实际利率反弹或 GVZ 退潮则首当其冲"},
+        {"asset": "美元", "symbol": "DXY", "price": f"{s['dxy']:.2f} · {s['dxyChg']}%", "bias": "偏空", "lean": "short",
+         "regime": t1[0], "signal_score": t1[1], "strength": 2,
+         "chain": "前端 dovish drift + 动能转弱;利差宽但边际收敛", "window": "1–3 月", "risk": "外部避险事件 → 美元冲高;Fed 重新转鹰"},
+        {"asset": "美债", "symbol": "UST 10Y", "price": f"{s['y10']:.2f}% · −8bp/wk", "bias": "中性偏多", "lean": "neutral",
+         "regime": t2[0], "signal_score": t2[1], "strength": 3,
+         "chain": "前端领涨牛陡 + MOVE 低位;实际利率高位封住上行空间", "window": "3–6 月", "risk": "通胀/供给反扑 → 长端再定价;财政发债压力"},
+        {"asset": "美股", "symbol": "SPX", "price": f"{s['spx']:,} · +{s['spxChg']}%", "bias": "偏多·拥挤", "lean": "long",
+         "regime": t3[0], "signal_score": t3[1], "strength": 3,
+         "chain": "软美元 melt-up + 低 VIX 流动性顺风", "window": "1–3 月", "risk": "广度恶化(RUT −1%落后) + 黄金/油波 stress 传导"},
+    ]
+    return {
+        "asof": s["asof"],
+        "source": "zhihuiti macro cockpit · FRED/Treasury/Yahoo/FMP · score-based",
+        "regime_label": "软美元 · 风险偏好回升 · 黄金避险并存",
+        "regime_en": "Soft-USD Risk-On with a Parallel Gold Hedge",
+        "risk_appetite": 62, "fragility": 57,
+        "read": ("权益逼近历史高位 + VIX 低位、美元动能转弱、前端收益率领涨透出 dovish drift——表面顺畅 risk-on;"
+                 "但黄金近历史高位叠加 GVZ/OVX 偏高,存在一条避险/去美元化暗线。MOVE 低位说明债市尚未定价这层背离。"),
+        "monitors": monitors, "tower": tower, "snapshot": s,
+    }
+
+
+def _macro_summary(feed):
+    by = {m["id"]: m for m in feed["monitors"]}
+    s = feed["snapshot"]
+    inst = {
+        "INFL_IPS": {"regime": by["inflation"]["regime"], "signal_score": by["inflation"]["signal_score"],
+                     "score": by["inflation"]["score"], "stance": by["inflation"]["stance"], "snapshots": 1},
+        "UST_10Y": {"regime": by["duration"]["regime"], "price": s["y10"], "signal_score": by["duration"]["signal_score"],
+                    "score": by["duration"]["score"], "stance": by["duration"]["stance"], "snapshots": 1},
+        "USD_IDX": {"regime": by["usd"]["regime"], "price": s["dxy"], "signal_score": by["usd"]["signal_score"],
+                    "score": by["usd"]["score"], "stance": by["usd"]["stance"], "snapshots": 1},
+        "GOLD_MACRO": {"regime": by["gold"]["regime"], "price": s["gold"], "signal_score": by["gold"]["signal_score"],
+                       "score": by["gold"]["score"], "stance": by["gold"]["stance"], "snapshots": 1},
+    }
+    return {"instruments": inst, "count": len(inst), "regime_label": feed["regime_label"],
+            "asof": feed["asof"], "source": feed["source"]}
+
+
 class OracleHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
@@ -197,6 +331,8 @@ class OracleHandler(BaseHTTPRequestHandler):
             self._handle_transitions(instrument, limit)
         elif path == "/api/oracle/summary":
             self._handle_summary()
+        elif path == "/api/oracle/macro":
+            self._handle_macro(qs)
         # ── New: equities, forex, indices ──
         elif path == "/api/oracle/scan/equities":
             self._handle_scan_equities(qs)
@@ -442,6 +578,16 @@ class OracleHandler(BaseHTTPRequestHandler):
             history = _get_history()
             summary = history.get_summary()
             _json_response(self, {"instruments": summary, "count": len(summary)})
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_macro(self, qs):
+        # Cross-asset macro factor feed (mirrors server/core/macro.ts).
+        # ?format=summary flattens into the /api/oracle/summary shape.
+        try:
+            feed = _macro_feed()
+            fmt = qs.get("format", [""])[0]
+            _json_response(self, _macro_summary(feed) if fmt == "summary" else feed)
         except Exception as e:
             _json_response(self, {"error": str(e)}, 500)
 
