@@ -26,6 +26,7 @@ import {
 import { getAllProducts, getProduct, createProduct } from "./products/registry";
 import { getCurrentPrices } from "./core/dataProvider";
 import { getPriceHistory } from "./core/priceHistory";
+import { computeMacro, toSummary } from "./core/macro";
 
 /**
  * Proxy a request to the zhihuiti Python API server.
@@ -423,6 +424,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(await oracleProxy("/api/oracle/summary"));
     } catch (err: any) {
       res.status(502).json({ error: `Oracle unavailable: ${err.message}` });
+    }
+  });
+
+  // Macro factor layer — computed locally; the upstream oracle has no macro read
+  // (rates / USD index / gold-as-macro / inflation). Speaks the oracle regime
+  // vocabulary so it merges into summary consumers + the 378-theory graph.
+  //   GET /api/oracle/macro                 → full feed (4 monitors + signal tower)
+  //   GET /api/oracle/macro?format=summary  → flattened {instruments} like /summary
+  app.get("/api/oracle/macro", (req, res) => {
+    try {
+      const feed = computeMacro();
+      res.json(req.query.format === "summary" ? toSummary(feed) : feed);
+    } catch (err: any) {
+      res.status(500).json({ error: `Macro feed error: ${err.message}` });
     }
   });
 
