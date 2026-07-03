@@ -168,6 +168,13 @@ _MACRO_SNAPSHOT = {
     "btc": 59253, "btcChg": -0.41, "coreCPI": 3.8, "cpi": 3.2, "fiscalDef": 6.3,
 }
 
+# The seed above is the calibration baseline + offline fallback. A background
+# thread (below) refreshes it from keyless sources; failed fields keep their seed
+# value, so the endpoint never breaks. _MACRO_META records refresh provenance.
+_MACRO_META = {"refreshed_at": None, "sources": {}, "errors": [], "live_fields": 0}
+_MACRO_REFRESHER_STARTED = False
+_MACRO_REFRESHER_LOCK = threading.Lock()
+
 
 def _macro_clamp(x, lo, hi):
     return max(lo, min(hi, x))
@@ -202,34 +209,215 @@ def _macro_regime(score, mom, vol):
     return "mean_reverting"
 
 
+def _lin(x, x0, s0, x1, s1):
+    """Clamped linear transfer: input value -> 0..100 score. None in -> None out."""
+    if x is None:
+        return None
+    t = 0.0 if x1 == x0 else (x - x0) / (x1 - x0)
+    return int(_macro_clamp(round(s0 + t * (s1 - s0)), 0, 100))
+
+
+def _macro_http_get(url, timeout=6):
+    import urllib.request
+    req = urllib.request.Request(url, headers={"User-Agent": "zhihuiti-macro/1.0"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read().decode("utf-8", "replace")
+
+
+def _fred_series(series_id, days_back=0):
+    """Latest value of a FRED series (keyless CSV), or the value ~days_back rows back."""
+    txt = _macro_http_get(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}")
+    vals = []
+    for ln in txt.strip().splitlines()[1:]:
+        p = ln.split(",")
+        if len(p) >= 2 and p[1] not in (".", ""):
+            vals.append(p[1])
+    if not vals:
+        return None
+    idx = max(0, len(vals) - 1 - days_back) if days_back > 0 else len(vals) - 1
+    return float(vals[idx])
+
+
+def _stooq_close(sym):
+    txt = _macro_http_get(f"https://stooq.com/q/l/?s={sym}&f=sd2t2ohlcv&e=csv")
+    p = txt.strip().splitlines()[-1].split(",")   # Symbol,Date,Time,O,H,L,Close,Vol
+    if len(p) >= 7 and p[6] not in ("", "N/D"):
+        return float(p[6])
+    return None
+
+
+def _yahoo_meta(sym):
+    import json as _json
+    txt = _macro_http_get(
+        f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}?range=1d&interval=1d")
+    return _json.loads(txt)["chart"]["result"][0]["meta"]
+
+
+def _yahoo_price(sym):
+    return float(_yahoo_meta(sym)["regularMarketPrice"])
+
+
+def _yahoo_chg_pct(sym):
+    m = _yahoo_meta(sym)
+    prev = m.get("chartPreviousClose") or m.get("previousClose")
+    px = m.get("regularMarketPrice")
+    return round((px / prev - 1) * 100, 2) if prev and px else None
+
+
+def _refresh_macro_snapshot():
+    """Pull live data into a fresh snapshot and atomically swap it in. Fully guarded:
+    any failed field keeps its previous value; the endpoint never breaks."""
+    import copy as _copy, datetime as _dt
+    global _MACRO_SNAPSHOT
+    s = _copy.deepcopy(_MACRO_SNAPSHOT)
+    src, errs = {}, []
+
+    def setf(field, fn, source):
+        try:
+            v = fn()
+            if v is not None:
+                s[field] = round(v, 4) if isinstance(v, float) else v
+                src[field] = source
+        except Exception as e:
+            errs.append(f"{field}:{type(e).__name__}")
+
+    fred_curve = {"3M": "DGS3MO", "1Y": "DGS1", "2Y": "DGS2", "3Y": "DGS3", "5Y": "DGS5",
+                  "7Y": "DGS7", "10Y": "DGS10", "20Y": "DGS20", "30Y": "DGS30"}
+    for tenor, fid in fred_curve.items():
+        try:
+            c = _fred_series(fid)
+            if c is not None:
+                s["curve"]["cur"][tenor] = c
+                src[f"curve.{tenor}"] = "FRED"
+            w = _fred_series(fid, days_back=5)
+            if w is not None:
+                s["curve"]["w1"][tenor] = w
+        except Exception as e:
+            errs.append(f"curve.{tenor}:{type(e).__name__}")
+    for k, t in (("y10", "10Y"), ("y2", "2Y"), ("y30", "30Y"), ("y3m", "3M")):
+        s[k] = s["curve"]["cur"].get(t, s.get(k))
+
+    setf("bei10", lambda: _fred_series("T10YIE"), "FRED")
+    setf("real10", lambda: _fred_series("DFII10"), "FRED")
+    setf("vix", lambda: _fred_series("VIXCLS"), "FRED")
+    setf("gvz", lambda: _fred_series("GVZCLS"), "FRED")
+    setf("ovx", lambda: _fred_series("OVXCLS"), "FRED")
+    setf("move", lambda: _yahoo_price("%5EMOVE"), "Yahoo")
+    setf("wti", lambda: _fred_series("DCOILWTICO"), "FRED")
+    setf("brent", lambda: _fred_series("DCOILBRENTEU"), "FRED")
+    setf("spx", lambda: _fred_series("SP500"), "FRED")
+    setf("ndx", lambda: _fred_series("NASDAQ100"), "FRED")
+    setf("btc", lambda: _fred_series("CBBTCUSD"), "FRED")
+    setf("rut", lambda: _stooq_close("^rut") or _yahoo_price("%5ERUT"), "Stooq/Yahoo")
+    setf("gold", lambda: _stooq_close("xauusd") or _yahoo_price("GC=F"), "Stooq/Yahoo")
+    setf("dxy", lambda: _stooq_close("^dxy") or _yahoo_price("DX-Y.NYB"), "Stooq/Yahoo")
+    setf("dxyChg", lambda: _yahoo_chg_pct("DX-Y.NYB"), "Yahoo")
+    setf("goldChg", lambda: _yahoo_chg_pct("GC=F"), "Yahoo")
+    setf("spxChg", lambda: _yahoo_chg_pct("%5EGSPC"), "Yahoo")
+    setf("wtiChg", lambda: _yahoo_chg_pct("CL=F"), "Yahoo")
+    setf("rutChg", lambda: _yahoo_chg_pct("%5ERUT"), "Yahoo")
+    setf("vixChg", lambda: _yahoo_chg_pct("%5EVIX"), "Yahoo")
+    setf("gvzChg", lambda: _yahoo_chg_pct("%5EGVZ"), "Yahoo")
+    setf("btcChg", lambda: _yahoo_chg_pct("BTC-USD"), "Yahoo")
+
+    # derive real rate if BEI came through but TIPS didn't
+    if s.get("bei10") is not None and s["curve"]["cur"].get("10Y") is not None and "real10" not in src:
+        s["real10"] = round(s["curve"]["cur"]["10Y"] - s["bei10"], 3)
+
+    today = _dt.date.today().isoformat()
+    s["asof"], s["curveDate"] = today, today
+    _MACRO_META["refreshed_at"] = _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds")
+    _MACRO_META["sources"] = src
+    _MACRO_META["errors"] = errs[:15]
+    _MACRO_META["live_fields"] = len(src)
+    _MACRO_SNAPSHOT = s
+    return _MACRO_META
+
+
+def _refresh_loop(interval):
+    import time as _time
+    while True:
+        try:
+            _refresh_macro_snapshot()
+        except Exception:
+            pass
+        _time.sleep(interval)
+
+
+def _ensure_refresher(interval=1800):
+    """Start the daemon refresher once (idempotent). 30-min cadence by default."""
+    global _MACRO_REFRESHER_STARTED
+    if _MACRO_REFRESHER_STARTED:
+        return
+    with _MACRO_REFRESHER_LOCK:
+        if _MACRO_REFRESHER_STARTED:
+            return
+        _MACRO_REFRESHER_STARTED = True
+        threading.Thread(target=_refresh_loop, args=(interval,), daemon=True,
+                         name="macro-refresh").start()
+
+
 def _macro_feed():
+    _ensure_refresher()
     s = _MACRO_SNAPSHOT
+    cur, w1 = s["curve"]["cur"], s["curve"]["w1"]
+    d10 = round((s["y10"] - w1.get("10Y", s["y10"])) * 100)   # weekly 10Y change, bp
+
+    def dv(x, args, carried):
+        """Data-driven sub-score from a live input, falling back to a carried constant.
+        Anchors are calibrated so the seed snapshot reproduces the baseline scores."""
+        v = _lin(x, *args)
+        return v if v is not None else carried
+
+    ips_facs = [
+        ("P 价格 (核心CPI %)", dv(s.get("coreCPI"), (2.0, 31, 5.0, 76), 58), .25, "服务+住房粘性", False),
+        ("E 预期 (10Y BEI %)", dv(s.get("bei10"), (2.0, 40, 2.8, 63), 50), .20, "长端锚定", False),
+        ("D 驱动 (油价/工资)", 55, .20, "油价回落降温", True),
+        ("F 财政 (赤字 ~6.3%)", 72, .15, "暗刺激仍在", True),
+        ("N 叙事 (Fed 偏鹰)", 62, .20, "粘性自我强化", True),
+    ]
+    dur_facs = [
+        ("实际利率 (10Y real %)", dv(s.get("real10"), (1.5, 55, 2.5, 30), 42), .30, "高实际利率封顶久期", False),
+        ("曲线动能 (10Y 周变 bp)", dv(d10, (15, 22, -15, 78), 64), .22, "前端领涨·牛陡", False),
+        ("债券波动 MOVE", dv(s.get("move"), (60, 70, 120, 30), 66), .18, "低位·偏支撑", False),
+        ("增长/风险 (VIX)", dv(s.get("vix"), (12, 28, 30, 56), 38), .18, "risk-on 抽水", False),
+        ("供给/财政", 40, .12, "长端供给压力", True),
+    ]
+    usd_facs = [
+        ("r_f 利率差 (Fed vs ECB/BOJ)", 62, .35, "利差仍宽·支撑", True),
+        ("π_risk 风险溢价 (VIX)", dv(s.get("vix"), (12, 30, 35, 68), 40), .25, "避险买盘", False),
+        ("cy 便利收益 (黄金强)", 40, .25, "去美元化拖累", True),
+        ("σ_alert 波动预警 (MOVE)", dv(s.get("move"), (60, 30, 120, 70), 34), .15, "低波·中性", False),
+    ]
+    gold_facs = [
+        ("实际利率 (逆风)", dv(s.get("real10"), (1.5, 58, 2.5, 32), 44), .25, "高实际利率压制", False),
+        ("美元 (软美元顺风)", dv(s.get("dxyChg"), (1.0, 46, -1.0, 74), 66), .22, "DXY 动能", False),
+        ("价格动能 (创新高)", 82, .23, "强势·超买", True),
+        ("恐慌溢价 GVZ", dv(s.get("gvz"), (15, 48, 35, 88), 74), .15, "避险升温", False),
+        ("地缘/油波 OVX", dv(s.get("ovx"), (30, 52, 60, 84), 70), .15, "尾部对冲需求", False),
+    ]
+
+    gold_vol = "high" if (s.get("gvz") or 0) >= 24 else "low"
+    dur_vol = "high" if (s.get("move") or 0) >= 100 else "low"
+    dur_mom = 1 if d10 <= 0 else -1
+    usd_mom = -1 if (s.get("dxyChg") or 0) < 0 else 1
+
     defs = [
         ("inflation", "通胀压力 IPS", "Inflation Pressure", "IPS = P + E + D + F + N", "#fbbf24",
-         [("P 价格 (核心CPI 3.8%)", 58, .25, "服务+住房粘性", True), ("E 预期 (10Y BEI 2.35%)", 50, .20, "长端锚定良好", True),
-          ("D 驱动 (油价/工资)", 55, .20, "油价回落降温", False), ("F 财政 (赤字 ~6.3%)", 72, .15, "暗刺激仍在", True),
-          ("N 叙事 (Fed 偏鹰)", 62, .20, "粘性自我强化", True)],
-         ["回落", "温和", "粘性", "再加速"], 1, "low"),
+         ips_facs, ["回落", "温和", "粘性", "再加速"], 1, "low"),
         ("duration", "美债久期立场", "Duration Stance", "Dur = −real − growth + mom + (低)vol", "#38bdf8",
-         [("实际利率 (10Y real ~2.0%)", 42, .30, "高位封顶久期", True), ("曲线动能 (10Y −8bp/周)", 64, .22, "前端领涨·牛陡", False),
-          ("债券波动 MOVE 66.8", 66, .18, "低位·偏支撑", False), ("增长/风险 (SPX 近高)", 38, .18, "risk-on 抽水", False),
-          ("供给/财政", 40, .12, "长端供给压力", True)],
-         ["强空", "偏空", "中性", "偏多"], 1, "low"),
+         dur_facs, ["强空", "偏空", "中性", "偏多"], dur_mom, dur_vol),
         ("usd", "美元估值 γ", "USD Valuation", "γ = r_f + π_risk − cy + σ_alert", "#34d399",
-         [("r_f 利率差 (Fed 3.6 vs ECB 2.2)", 62, .35, "利差仍宽·支撑", False), ("π_risk 风险溢价 (VIX 18)", 40, .25, "无避险买盘", False),
-          ("cy 便利收益 (黄金 +强)", 40, .25, "去美元化拖累", False), ("σ_alert 波动预警 (MOVE 低)", 34, .15, "低波·中性", False)],
-         ["弱", "偏弱", "中性", "强"], -1, "low"),
+         usd_facs, ["弱", "偏弱", "中性", "强"], usd_mom, "low"),
         ("gold", "黄金信号", "Gold Signal", "Au = −real + softUSD + mom + haven", "#e0b53c",
-         [("实际利率 (逆风)", 44, .25, "高实际利率压制", True), ("美元 (软美元顺风)", 66, .22, "DXY 动能转弱", False),
-          ("价格动能 (创新高)", 82, .23, "强势·超买", False), ("恐慌溢价 GVZ 28.2", 74, .15, "避险升温", False),
-          ("地缘/油波 OVX 46.6", 70, .15, "尾部对冲需求", False)],
-         ["看空", "中性", "偏多", "强多"], 2, "high"),
+         gold_facs, ["看空", "中性", "偏多", "强多"], 2, gold_vol),
     ]
-    monitors = []
+    monitors, sc = [], {}
     for (mid, name, en, formula, accent, facs, zones, mom, vol) in defs:
-        factors = [{"key": k, "score": sc, "weight": w, "note": note, "est": est} for (k, sc, w, note, est) in facs]
-        fc = [{"s": sc, "w": w} for (k, sc, w, note, est) in facs]
+        factors = [{"key": k, "score": v, "weight": w, "note": note, "est": est} for (k, v, w, note, est) in facs]
+        fc = [{"s": v, "w": w} for (k, v, w, note, est) in facs]
         score = _macro_composite(fc)
+        sc[mid] = score
         monitors.append({
             "id": mid, "name": name, "nameEn": en, "formula": formula, "accent": accent,
             "score": score, "stance": zones[min(3, score // 25)],
@@ -237,30 +425,46 @@ def _macro_feed():
             "factors": factors,
         })
 
+    spx_score = _lin(s.get("vix"), 12, 74, 30, 44)
+    spx_score = spx_score if spx_score is not None else 64
+
     def tow(score, mom, vol):
         return _macro_regime(score, mom, vol), round(_macro_clamp(0.82 + abs(score - 50) / 250, 0.8, 0.99), 3)
 
-    t0, t1, t2, t3 = tow(66, 2, "high"), tow(47, -1, "low"), tow(50, 1, "low"), tow(64, 2, "low")
+    tg, tu, td, ts = tow(sc["gold"], 2, gold_vol), tow(sc["usd"], usd_mom, "low"), tow(sc["duration"], dur_mom, dur_vol), tow(spx_score, 2, "low")
+    d10s = f"{d10:+d}bp/wk"
     tower = [
-        {"asset": "黄金", "symbol": "XAU/USD", "price": f"${s['gold']:,} · {s['goldChg']}%", "bias": "偏多", "lean": "long",
-         "regime": t0[0], "signal_score": t0[1], "strength": 4,
+        {"asset": "黄金", "symbol": "XAU/USD", "price": f"${s['gold']:,.0f} · {s.get('goldChg', 0)}%", "bias": "偏多", "lean": "long",
+         "regime": tg[0], "signal_score": tg[1], "strength": 4,
          "chain": "软美元 + 实际利率见顶预期 + 去美元化/避险 资金流", "window": "1–3 月", "risk": "超买回撤;实际利率反弹或 GVZ 退潮则首当其冲"},
-        {"asset": "美元", "symbol": "DXY", "price": f"{s['dxy']:.2f} · {s['dxyChg']}%", "bias": "偏空", "lean": "short",
-         "regime": t1[0], "signal_score": t1[1], "strength": 2,
+        {"asset": "美元", "symbol": "DXY", "price": f"{s['dxy']:.2f} · {s.get('dxyChg', 0)}%", "bias": "偏空", "lean": "short",
+         "regime": tu[0], "signal_score": tu[1], "strength": 2,
          "chain": "前端 dovish drift + 动能转弱;利差宽但边际收敛", "window": "1–3 月", "risk": "外部避险事件 → 美元冲高;Fed 重新转鹰"},
-        {"asset": "美债", "symbol": "UST 10Y", "price": f"{s['y10']:.2f}% · −8bp/wk", "bias": "中性偏多", "lean": "neutral",
-         "regime": t2[0], "signal_score": t2[1], "strength": 3,
+        {"asset": "美债", "symbol": "UST 10Y", "price": f"{s['y10']:.2f}% · {d10s}", "bias": "中性偏多", "lean": "neutral",
+         "regime": td[0], "signal_score": td[1], "strength": 3,
          "chain": "前端领涨牛陡 + MOVE 低位;实际利率高位封住上行空间", "window": "3–6 月", "risk": "通胀/供给反扑 → 长端再定价;财政发债压力"},
-        {"asset": "美股", "symbol": "SPX", "price": f"{s['spx']:,} · +{s['spxChg']}%", "bias": "偏多·拥挤", "lean": "long",
-         "regime": t3[0], "signal_score": t3[1], "strength": 3,
-         "chain": "软美元 melt-up + 低 VIX 流动性顺风", "window": "1–3 月", "risk": "广度恶化(RUT −1%落后) + 黄金/油波 stress 传导"},
+        {"asset": "美股", "symbol": "SPX", "price": f"{s['spx']:,.0f} · {s.get('spxChg', 0)}%", "bias": "偏多·拥挤", "lean": "long",
+         "regime": ts[0], "signal_score": ts[1], "strength": 3,
+         "chain": "软美元 melt-up + 低 VIX 流动性顺风", "window": "1–3 月", "risk": "广度恶化(RUT 落后) + 黄金/油波 stress 传导"},
     ]
+
+    vix_stress = _lin(s.get("vix"), 12, 15, 40, 95)
+    vix_stress = vix_stress if vix_stress is not None else 33
+    gvz_f = _lin(s.get("gvz"), 15, 20, 40, 90) or 57
+    ovx_f = _lin(s.get("ovx"), 25, 25, 70, 90) or 56
+    vix_calm = 100 - (_lin(s.get("vix"), 12, 20, 40, 95) or 37)
+    risk = int(_macro_clamp(round(0.55 * spx_score + 0.25 * (100 - vix_stress) + 0.20 * (100 - sc["usd"])), 0, 100))
+    frag = int(_macro_clamp(round(0.40 * gvz_f + 0.30 * ovx_f + 0.30 * vix_calm), 0, 100))
+
     return {
         "asof": s["asof"],
-        "source": "zhihuiti macro cockpit · FRED/Treasury/Yahoo/FMP · score-based",
+        "refreshed_at": _MACRO_META.get("refreshed_at"),
+        "live_fields": _MACRO_META.get("live_fields", 0),
+        "sources": _MACRO_META.get("sources", {}),
+        "source": "zhihuiti macro cockpit · FRED/Stooq/Yahoo · score-based · auto-refresh(30m)",
         "regime_label": "软美元 · 风险偏好回升 · 黄金避险并存",
         "regime_en": "Soft-USD Risk-On with a Parallel Gold Hedge",
-        "risk_appetite": 62, "fragility": 57,
+        "risk_appetite": risk, "fragility": frag,
         "read": ("权益逼近历史高位 + VIX 低位、美元动能转弱、前端收益率领涨透出 dovish drift——表面顺畅 risk-on;"
                  "但黄金近历史高位叠加 GVZ/OVX 偏高,存在一条避险/去美元化暗线。MOVE 低位说明债市尚未定价这层背离。"),
         "monitors": monitors, "tower": tower, "snapshot": s,
