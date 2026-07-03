@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>zhihuiti 黄金深度看板 · Gold Deep-Dive Board</title>
+<style>
+  :root{
+    --bg:#0a0e14; --bg2:#0d121b; --panel:#111824; --panel2:#0f1520;
+    --bd:#1e2734; --bd2:#283242;
+    --tx:#cdd7e4; --mut:#788396; --dim:#566072;
+    --cy:#38bdf8; --am:#fbbf24; --gn:#34d399; --rd:#f87171; --gold:#e0b53c; --vi:#a78bfa;
+    --mono:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:
+     radial-gradient(1200px 600px at 80% -10%,rgba(224,181,60,.08),transparent 60%),
+     radial-gradient(900px 500px at 0% 110%,rgba(56,189,248,.05),transparent 55%),
+     var(--bg);
+     color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+     -webkit-font-smoothing:antialiased;line-height:1.5;}
+  a{color:inherit}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px 64px}
+  .mono{font-family:var(--mono)}
+  .up{color:var(--gn)} .dn{color:var(--rd)} .fl{color:var(--mut)}
+
+  header.top{position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);
+     background:linear-gradient(180deg,rgba(10,14,20,.92),rgba(10,14,20,.72));
+     border-bottom:1px solid var(--bd)}
+  .top .wrap{display:flex;align-items:center;gap:16px;padding-top:12px;padding-bottom:12px}
+  .brand{display:flex;flex-direction:column;gap:2px}
+  .brand b{font-size:15px;letter-spacing:.3px}
+  .brand b .zh{color:var(--gold)}
+  .brand .sub{font-size:11px;color:var(--mut);font-family:var(--mono);letter-spacing:.2px}
+  .nav{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .nav a{font-size:12px;color:var(--mut);text-decoration:none;padding:5px 10px;border:1px solid var(--bd);border-radius:999px}
+  .nav a:hover{color:var(--tx);border-color:var(--bd2)}
+  .nav a.back{color:var(--cy);border-color:rgba(56,189,248,.35)}
+  .head-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+  .srcpill{font-size:10px;font-family:var(--mono);padding:3px 9px;border-radius:999px;border:1px solid var(--bd2);color:var(--mut);white-space:nowrap}
+  .srcpill.live{color:var(--gn);border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.07)}
+  .srcpill.snap{color:var(--am);border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.05)}
+  .snap{font-size:11px;color:var(--dim);font-family:var(--mono);white-space:nowrap}
+
+  h2.sec{font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:var(--mut);
+     margin:38px 0 14px;display:flex;align-items:center;gap:10px;font-weight:600}
+  h2.sec::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px var(--gold)}
+  h2.sec span{color:var(--dim);font-weight:400;letter-spacing:.5px;text-transform:none}
+
+  .hero{margin-top:22px;border:1px solid var(--bd);border-radius:16px;overflow:hidden;
+     background:linear-gradient(135deg,var(--panel),var(--panel2))}
+  .hero-top{padding:22px 24px 18px;border-bottom:1px solid var(--bd);display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center}
+  .px-block{display:flex;flex-direction:column;gap:4px}
+  .px-eyebrow{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-family:var(--mono)}
+  .px-big{font-size:46px;font-weight:800;font-family:var(--mono);line-height:1;letter-spacing:-.5px;color:var(--tx);margin-top:6px}
+  .px-big small{font-size:16px;color:var(--dim);font-weight:400;margin-left:4px}
+  .px-row{display:flex;align-items:baseline;gap:12px;margin-top:8px;flex-wrap:wrap}
+  .px-chg{font-family:var(--mono);font-size:16px;font-weight:700}
+  .px-ctx{font-size:11px;color:var(--dim);font-family:var(--mono)}
+  .regime-box{border-left:1px solid var(--bd);padding-left:24px}
+  .regime-eyebrow{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mut);font-family:var(--mono)}
+  .regime-name{font-size:26px;font-weight:700;margin:6px 0 3px;letter-spacing:.3px;color:var(--gold)}
+  .regime-en{font-size:12px;color:var(--mut);font-family:var(--mono)}
+  .regime-read{font-size:13px;color:var(--tx);margin-top:11px;line-height:1.65}
+  .regime-read b{color:var(--cy);font-weight:600}
+  .regime-read .g{color:var(--gold)}
+  .regime-read .r{color:var(--rd)}
+
+  .hero-gauges{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--bd)}
+  .gauge{padding:18px 24px;background:var(--panel2)}
+  .gauge .lab{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--mut)}
+  .gauge .lab b{font-size:22px;color:var(--tx);font-family:var(--mono);font-weight:700}
+  .gauge .lab b small{font-size:12px;color:var(--dim);font-weight:400}
+  .track{height:8px;border-radius:6px;margin-top:11px;position:relative;
+     background:linear-gradient(90deg,#1c5e4a,#3a7a3a,#7a6f2a,#7a3a2a)}
+  .track.inv{background:linear-gradient(90deg,#2a4a7a,#3a6f7a,#7a6f2a,#7a3a2a)}
+  .track .pin{position:absolute;top:-4px;width:3px;height:16px;border-radius:2px;background:#fff;box-shadow:0 0 6px rgba(255,255,255,.6);transform:translateX(-1.5px)}
+  .gauge .ends{display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-top:5px;font-family:var(--mono)}
+
+  .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  .dcard{border:1px solid var(--bd);border-radius:14px;background:var(--panel);padding:15px 15px 13px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+  .dcard::after{content:"";position:absolute;left:0;top:0;width:100%;height:2px;background:var(--gold);opacity:.75}
+  .dcard .dt{font-size:13px;font-weight:700}
+  .dcard .dt .en{display:block;font-size:9.5px;color:var(--dim);font-family:var(--mono);font-weight:400;margin-top:2px;letter-spacing:.3px}
+  .dcard .role{font-size:9.5px;color:var(--dim);font-family:var(--mono);margin-top:7px;letter-spacing:.2px}
+  .dcard .val{display:flex;align-items:baseline;gap:6px;margin:9px 0 2px}
+  .dcard .val b{font-size:23px;font-weight:800;font-family:var(--mono);line-height:1;color:var(--tx)}
+  .dcard .val s{font-size:10px;color:var(--dim);text-decoration:none;font-family:var(--mono)}
+  .impact{align-self:flex-start;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;margin-top:4px}
+  .sc-row{display:flex;justify-content:space-between;align-items:baseline;font-size:9.5px;color:var(--dim);font-family:var(--mono);margin:11px 0 4px}
+  .sc-row b{font-size:15px;color:var(--tx);font-weight:700}
+  .bar{height:6px;border-radius:4px;background:#161d29;margin:0 0 10px;position:relative;overflow:hidden}
+  .bar i{position:absolute;top:0;left:0;height:100%;border-radius:4px;background:var(--gold);opacity:.85}
+  .dtag{font-size:10px;color:var(--mut);line-height:1.4;margin-top:auto}
+  .est{color:var(--vi);border:1px solid rgba(167,139,250,.3);border-radius:4px;padding:0 3px;font-size:8.5px;margin-left:4px;font-family:var(--mono)}
+
+  .panel{border:1px solid var(--bd);border-radius:14px;background:var(--panel);padding:16px 18px}
+  .panel h3{margin:0 0 4px;font-size:12px;letter-spacing:.5px}
+  .panel h3 .en{color:var(--dim);font-family:var(--mono);font-weight:400;font-size:10px;margin-left:6px}
+  svg.attrib{width:100%;height:auto;display:block;margin-top:8px}
+  .attrib-note{font-size:10px;color:var(--dim);font-family:var(--mono);margin-top:8px;line-height:1.5}
+  .attrib-note b{color:var(--gn)} .attrib-note s{color:var(--rd);text-decoration:none}
+
+  .read-panel{margin-top:14px;border:1px solid var(--bd);border-radius:14px;background:var(--panel);padding:16px 18px}
+  .read-panel .rl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);font-family:var(--mono)}
+  .read-panel p{font-size:13.5px;line-height:1.7;margin:9px 0 0;color:var(--tx)}
+  .read-panel p b{color:var(--cy)} .read-panel p .g{color:var(--gold)} .read-panel p .r{color:var(--rd)}
+
+  footer{margin-top:40px;border-top:1px solid var(--bd);padding-top:18px;font-size:11px;color:var(--dim);line-height:1.7}
+  footer .intg{border:1px solid rgba(224,181,60,.25);background:rgba(224,181,60,.04);border-radius:10px;padding:11px 14px;color:var(--mut);margin-bottom:14px;font-size:11.5px}
+  footer .intg b{color:var(--gold)}
+  footer code{font-family:var(--mono);color:var(--mut);background:#10161f;padding:1px 5px;border-radius:4px}
+  .disc{color:#5a6473}
+  @media(max-width:920px){
+    .grid5{grid-template-columns:repeat(2,1fr)}
+    .hero-top{grid-template-columns:1fr}
+    .regime-box{border-left:none;border-top:1px solid var(--bd);padding-left:0;padding-top:16px}
+    .hero-gauges{grid-template-columns:1fr}
+    .nav a:not(.back){display:none}
+  }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="brand">
+    <b><span class="zh">zhihuiti</span> 黄金深度看板 · Gold Deep-Dive Board</b>
+    <span class="sub">Au = −real + softUSD + mom + haven + infl → 综合金分 → regime</span>
+  </div>
+  <nav class="nav">
+    <a class="back" href="/macro-cockpit">← 驾驶舱</a>
+    <a href="#drivers">驱动因子</a><a href="#attrib">归因</a><a href="#read">研判</a>
+  </nav>
+  <div class="head-meta">
+    <span class="srcpill snap" id="srcpill">○ 连接中…</span>
+    <span class="snap mono" id="snapdate"></span>
+  </div>
+</div></header>
+
+<div class="wrap">
+
+  <section class="hero">
+    <div class="hero-top">
+      <div class="px-block">
+        <div class="px-eyebrow">黄金现货 · XAU/USD</div>
+        <div class="px-big" id="pxbig">—<small>/oz</small></div>
+        <div class="px-row">
+          <span class="px-chg" id="pxchg">—</span>
+          <span class="px-ctx" id="pxctx"></span>
+        </div>
+        <div class="px-ctx" id="px52" style="margin-top:6px"></div>
+      </div>
+      <div class="regime-box">
+        <div class="regime-eyebrow">综合研判 · Composite Read</div>
+        <div class="regime-name" id="rname">—</div>
+        <div class="regime-en" id="ren">—</div>
+        <p class="regime-read" id="rread"></p>
+      </div>
+    </div>
+    <div class="hero-gauges">
+      <div class="gauge">
+        <div class="lab"><span>综合金分 · Composite Score</span><b id="compv">—<small>/100</small></b></div>
+        <div class="track" id="comptrack"><div class="pin" id="comppin"></div></div>
+        <div class="ends"><span>看空</span><span>中性</span><span>强多</span></div>
+      </div>
+      <div class="gauge">
+        <div class="lab"><span>实际利率逆风 · Real-Rate Drag</span><b id="dragv">—<small>/100</small></b></div>
+        <div class="track inv" id="dragtrack"><div class="pin" id="dragpin"></div></div>
+        <div class="ends"><span>宽松·顺风</span><span>中性</span><span>紧缩·逆风</span></div>
+      </div>
+    </div>
+  </section>
+
+  <h2 class="sec" id="drivers">驱动因子归因 <span>· 五因子 → 每因子 0–100 分 + 对金价方向冲击</span></h2>
+  <div class="grid5" id="dcards"></div>
+  <div class="attrib-note" style="margin-top:10px">每张卡的分数 = 该因子当前对金价的支持度(0 极度逆风 · 50 中性 · 100 极度顺风),由实时读数经钳位线性传递得出;箭头标注方向冲击,标签给出中文因子解读。</div>
+
+  <h2 class="sec" id="attrib">因子归因条形图 <span>· 顺风向右 · 逆风向左 · 长度 = 偏离中性强度</span></h2>
+  <div class="panel">
+    <h3>净驱动分解 <span class="en">Net Driver Attribution · impact = score − 50</span></h3>
+    <svg class="attrib" id="attribsvg" viewBox="0 0 620 240" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="attrib-note" id="attribnote"></div>
+  </div>
+
+  <h2 class="sec" id="read">研判摘要 <span>· 自动生成 · Auto Read</span></h2>
+  <div class="read-panel">
+    <div class="rl">Gold Regime Read</div>
+    <p id="autoread"></p>
+  </div>
+
+  <footer id="src">
+    <div class="intg">⚙ <b>已接入 zhihuiti oracle</b> · 本看板启动时拉取 <code>GET /api/oracle/macro</code>(单一事实源 <code>server/core/macro.ts</code>);失败回退内嵌快照。因子传递函数经校准,在快照读数上大致重现驾驶舱 <code>MODEL.gold</code> 的因子分与 <code>trending_up</code> 体制。返回 <code>← 驾驶舱</code> 可见跨资产统一视图。</div>
+    <div><b style="color:var(--mut)">数据源</b> · 金价与波动率: Yahoo Finance / FMP(XAU · GVZ 金波 · VIX 股波) · 实际利率/盈亏平衡: U.S. Treasury TIPS / FRED · 美元指数: ICE DXY · 52 周区间为静态语境估算(<span class="est">est</span>)</div>
+    <div style="margin-top:8px"><b style="color:var(--mut)">评分逻辑</b> · 实际利率(逆向)· 美元(逆向)· 避险/波动 · 通胀对冲 · 价格动量;权重可调,综合分映射体制词表 <code>trending_up/down · quiet · mean_reverting</code>。</div>
+    <div class="disc" style="margin-top:10px">⚠ 教育演示用途。所有指标、信号、评分均为研究框架示意,基于历史样本,不构成任何买入/卖出/仓位建议;历史表现不预示未来。</div>
+  </footer>
+</div>
+
+<script>
+/* ===========================================================
+   EMBEDDED FALLBACK SNAPSHOT — mirrors server/core/macro.ts
+   Used when /api/oracle/macro is unreachable (e.g. file://).
+   =========================================================== */
+const SNAP = {
+  asof:'2026-06-29',
+  gold:4036.5, goldChg:-1.46, gvz:28.15, gvzChg:3.57,
+  real10:2.03, bei10:2.35, dxy:100.94, dxyChg:-0.42, vix:18.3, vixChg:-0.76
+};
+/* static 52-week context (estimated, carried) */
+const CTX52 = { lo:2540, hi:4082 };
+
+/* ===========================================================
+   helpers
+   =========================================================== */
+const $=s=>document.querySelector(s);
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const cl100=x=>clamp(Math.round(x),0,100);
+const clsOf=x=> x>0?'up':x<0?'dn':'fl';
+const pct=(v,d=2)=> (v==null||isNaN(v))?'—':(+v).toFixed(d)+'%';
+const sign=(v,suf='')=> (v>0?'+':'')+(+v)+suf;
+
+/* factor transfer functions — each returns a 0..100 gold-support score,
+   calibrated so the embedded snapshot roughly reproduces MODEL.gold. */
+function factorsOf(s){
+  const real  = cl100(85 - s.real10*20);                       // 2.03% → 44  (inverse: opportunity cost)
+  const usd   = cl100(60 - s.dxyChg*20 - (s.dxy-100)*2);        // -0.42 / 100.94 → 66 (inverse: soft-USD tailwind)
+  const haven = cl100(28 + s.gvz*1.5 + s.gvzChg*1.0 - (s.vix-18)*1.5); // 28.15 / +3.57 / 18.3 → 73
+  const infl  = cl100(s.bei10*22);                             // 2.35% → 52 (breakeven inflation hedge)
+  const mom   = cl100(76 + s.goldChg*7);                       // -1.46% → 66 (near-high base, day pullback drag)
+  return { real, usd, haven, infl, mom };
+}
+
+/* composite: cockpit-style weighted average of the five factors */
+const WEIGHTS = { real:.25, usd:.22, haven:.20, infl:.13, mom:.20 };
+function composite(f){
+  let s=0,w=0; for(const k in WEIGHTS){ s+=f[k]*WEIGHTS[k]; w+=WEIGHTS[k]; }
+  return Math.round(s/w);
+}
+
+/* composite → regime word (cockpit vocabulary) */
+function regimeOf(c){
+  if(c>=72) return {word:'强多', en:'Strong Bull', reg:'trending_up',   col:'var(--gn)'};
+  if(c>=58) return {word:'偏多', en:'Constructive', reg:'trending_up',   col:'var(--gn)'};
+  if(c>=45) return {word:'中性', en:'Neutral',      reg:'quiet',         col:'var(--am)'};
+  if(c>=32) return {word:'偏空', en:'Soft',         reg:'mean_reverting',col:'var(--rd)'};
+  return             {word:'看空', en:'Bearish',      reg:'trending_down', col:'var(--rd)'};
+}
+
+/* driver-card metadata bound to live values + scores */
+function driversOf(s,f){
+  const arrow=sc=> sc>=55?{t:'顺风',ico:'▲',col:'var(--gn)'} : sc<=45?{t:'逆风',ico:'▼',col:'var(--rd)'} : {t:'中性',ico:'◆',col:'var(--am)'};
+  return [
+    { id:'real', name:'实际利率', en:'10Y Real Yield', role:'逆向驱动 · 持有成本', s:f.real,
+      val:pct(s.real10), unit:'TIPS', est:true, imp:arrow(f.real),
+      tag:'实际利率是持金的机会成本,'+(s.real10>1.8?'2% 上方高位对金价构成主要压制。':'回落将松开久期封顶。') },
+    { id:'usd', name:'美元', en:'US Dollar DXY', role:'逆向驱动 · 计价货币', s:f.usd,
+      val:(+s.dxy).toFixed(2), unit:sign(+s.dxyChg.toFixed(2),'%'), est:false, imp:arrow(f.usd),
+      tag:(s.dxyChg<0?'软美元顺风,DXY 动能转弱':'强美元逆风,DXY 走强')+',直接抬升以美元计价的金价。' },
+    { id:'haven', name:'避险 · 波动', en:'GVZ / VIX Haven', role:'尾部对冲 · 恐慌溢价', s:f.haven,
+      val:(+s.gvz).toFixed(1), unit:'GVZ '+sign(+s.gvzChg.toFixed(1)), est:false, imp:arrow(f.haven),
+      tag:'金波 GVZ '+((+s.gvz).toFixed(0))+(s.gvzChg>0?' 升温':' 回落')+'、股波 VIX '+((+s.vix).toFixed(0))+',对冲需求'+(f.haven>55?'旺盛。':'温和。') },
+    { id:'infl', name:'通胀对冲', en:'10Y Breakeven', role:'实物保值 · 长端预期', s:f.infl,
+      val:pct(s.bei10), unit:'BEI', est:true, imp:arrow(f.infl),
+      tag:'盈亏平衡通胀 '+pct(s.bei10)+',长端预期'+(s.bei10>2.4?'抬升,强化保值需求。':'锚定良好,保值动能中性。') },
+    { id:'mom', name:'价格动量', en:'Price Momentum', role:'趋势 · 位置', s:f.mom,
+      val:sign(+s.goldChg.toFixed(2),'%'), unit:'日内', est:false, imp:arrow(f.mom),
+      tag:'现价贴近历史高位,结构性趋势偏强;单日 '+sign(+s.goldChg.toFixed(2),'%')+(s.goldChg<0?' 为上行趋势内的回调。':' 延续动能。') }
+  ];
+}
+
+/* ===========================================================
+   state builders
+   =========================================================== */
+function defaultState(){
+  return { live:false, source:'内嵌快照 (oracle 不可达)', snap:{...SNAP} };
+}
+function feedToState(feed){
+  const src = feed.snapshot || feed;                   // fields may be top-level or under snapshot
+  const pick=(k)=> src[k]!=null ? src[k] : feed[k];
+  const snap = {
+    asof: feed.asof || feed.refreshed_at || SNAP.asof,
+    gold:   +pick('gold')   ?? SNAP.gold,
+    goldChg:+pick('goldChg')?? SNAP.goldChg,
+    gvz:    +pick('gvz')    ?? SNAP.gvz,
+    gvzChg: +pick('gvzChg') ?? SNAP.gvzChg,
+    real10: +pick('real10') ?? SNAP.real10,
+    bei10:  +pick('bei10')  ?? SNAP.bei10,
+    dxy:    +pick('dxy')    ?? SNAP.dxy,
+    dxyChg: +pick('dxyChg') ?? SNAP.dxyChg,
+    vix:    +pick('vix')    ?? SNAP.vix,
+    vixChg: +pick('vixChg') ?? SNAP.vixChg
+  };
+  // guard against nulls from a partial feed
+  for(const k in SNAP){ if(snap[k]==null || isNaN(snap[k])) snap[k]=SNAP[k]; }
+  return { live:true, source:feed.source||'oracle /api/oracle/macro', snap };
+}
+
+/* ===========================================================
+   render(S)
+   =========================================================== */
+function setSrc(S){
+  const p=$('#srcpill');
+  if(S.live){ p.className='srcpill live'; p.textContent='● LIVE · /api/oracle/macro'; }
+  else { p.className='srcpill snap'; p.textContent='○ 内嵌快照'; }
+  $('#snapdate').textContent='快照 · '+S.snap.asof+' · 16:00 ET';
+}
+
+function render(S){
+  const s=S.snap, f=factorsOf(s), comp=composite(f), rg=regimeOf(comp);
+  setSrc(S);
+
+  /* hero price */
+  $('#pxbig').innerHTML = '$'+(+s.gold).toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1})+'<small>/oz</small>';
+  const cc=clsOf(s.goldChg);
+  $('#pxchg').innerHTML = `<span class="${cc}">${sign(+s.goldChg.toFixed(2),'%')} 今日</span>`;
+  $('#pxctx').textContent = '现货 XAU · 美元/盎司';
+  const offHi = ((s.gold-CTX52.hi)/CTX52.hi*100), yrRange=CTX52.hi-CTX52.lo, posInRange=Math.round((s.gold-CTX52.lo)/yrRange*100);
+  $('#px52').innerHTML = `52 周区间 <span class="est">est</span> $${CTX52.lo.toLocaleString()} – $${CTX52.hi.toLocaleString()} · 距高点 ${offHi.toFixed(1)}% · 区间分位 ${clamp(posInRange,0,100)}%`;
+
+  /* hero regime */
+  $('#rname').textContent = rg.word; $('#rname').style.color = rg.col;
+  $('#ren').textContent = rg.en+' · '+rg.reg;
+  $('#rread').innerHTML =
+    `综合金分 <b>${comp}</b> 落在 <span class="g">${rg.word}</span> 区间:`+
+    `<span class="g">软美元 + 避险溢价</span> 提供主顺风,`+
+    `<span class="r">实际利率高位</span> 是主要逆风;单日 ${sign(+s.goldChg.toFixed(2),'%')} 属`+
+    (s.goldChg<0?'趋势内回调':'动能延续')+`。`;
+
+  /* gauges */
+  $('#compv').innerHTML = comp+'<small>/100</small>';
+  $('#comppin').style.left = comp+'%';
+  const drag = cl100((100-f.real)*.7 + (s.dxy>100?(s.dxy-100)*3:0)); // real-rate + strong-USD pressure
+  $('#dragv').innerHTML = drag+'<small>/100</small>';
+  $('#dragpin').style.left = drag+'%';
+
+  /* driver cards */
+  const drivers=driversOf(s,f);
+  $('#dcards').innerHTML = drivers.map(d=>`
+    <div class="dcard">
+      <div class="dt">${d.name}<span class="en">${d.en}</span></div>
+      <div class="role">${d.role}</div>
+      <div class="val"><b>${d.val}</b><s>${d.unit}</s></div>
+      <span class="impact" style="background:${d.imp.col}1f;color:${d.imp.col}">${d.imp.ico} ${d.imp.t}</span>
+      <div class="sc-row"><span>因子分${d.est?'<span class="est">est</span>':''}</span><b>${d.s}<s style="font-size:9px;color:var(--dim)">/100</s></b></div>
+      <div class="bar"><i style="width:${d.s}%"></i></div>
+      <div class="dtag">${d.tag}</div>
+    </div>`).join('');
+
+  drawAttrib(drivers);
+  buildRead(s,f,comp,rg,drivers);
+}
+
+/* horizontal attribution bar chart — impact = score − 50, positive right */
+function drawAttrib(drivers){
+  const W=620, rowH=34, top=18, labW=118, centerGap=6;
+  const H = top + drivers.length*rowH + 24;
+  const cx = labW + (W-labW-24)/2;         // center axis x
+  const half = (W-labW-24)/2 - 8;
+  const scale = half/40;                    // impact magnitude up to ~40 fills half
+  let svg = `<rect x="${labW}" y="${top-6}" width="${W-labW-24}" height="${drivers.length*rowH-2}" fill="#0d1420" rx="6"/>`;
+  // center axis
+  svg += `<line x1="${cx}" y1="${top-8}" x2="${cx}" y2="${top+drivers.length*rowH-8}" stroke="#33404f" stroke-width="1"/>`;
+  svg += `<text x="${cx}" y="${top+drivers.length*rowH+14}" fill="#566072" font-size="9" font-family="monospace" text-anchor="middle">中性 (50)</text>`;
+  drivers.forEach((d,i)=>{
+    const y = top + i*rowH;
+    const imp = d.s - 50;
+    const len = clamp(Math.abs(imp)*scale, 1, half);
+    const pos = imp>=0;
+    const bx = pos ? cx+centerGap : cx-centerGap-len;
+    const col = pos ? '#e0b53c' : '#f87171';
+    svg += `<text x="${labW-8}" y="${y+16}" fill="#cdd7e4" font-size="11.5" font-family="-apple-system,PingFang SC,sans-serif" text-anchor="end">${d.name}</text>`;
+    svg += `<rect x="${bx.toFixed(1)}" y="${y+5}" width="${len.toFixed(1)}" height="16" rx="3" fill="${col}" opacity="0.85"/>`;
+    const tx = pos ? bx+len+6 : bx-6;
+    svg += `<text x="${tx.toFixed(1)}" y="${y+17}" fill="${col}" font-size="10.5" font-family="monospace" text-anchor="${pos?'start':'end'}">${sign(imp)}</text>`;
+  });
+  const el=$('#attribsvg'); el.setAttribute('viewBox',`0 0 ${W} ${H}`); el.innerHTML=svg;
+
+  const pos=drivers.filter(d=>d.s>50), neg=drivers.filter(d=>d.s<50);
+  const sum=arr=>arr.reduce((a,d)=>a+Math.abs(d.s-50),0);
+  $('#attribnote').innerHTML =
+    `<b>顺风合力 +${sum(pos)}</b>(${pos.map(d=>d.name).join(' · ')||'—'}) · `+
+    `<s>逆风阻力 −${sum(neg)}</s>(${neg.map(d=>d.name).join(' · ')||'—'})`;
+}
+
+function buildRead(s,f,comp,rg,drivers){
+  const top = [...drivers].sort((a,b)=>Math.abs(b.s-50)-Math.abs(a.s-50));
+  const upFac = top.find(d=>d.s>50), dnFac = top.find(d=>d.s<50);
+  $('#autoread').innerHTML =
+    `黄金现货 <span class="g">$${(+s.gold).toLocaleString()}</span>,单日 <span class="${clsOf(s.goldChg)}">${sign(+s.goldChg.toFixed(2),'%')}</span>。`+
+    `五因子模型给出综合金分 <b>${comp}/100</b>,映射体制 <span class="g">${rg.word} · ${rg.reg}</span>。`+
+    (upFac?`当前最强顺风来自 <span class="g">${upFac.name}(${upFac.s})</span>——${upFac.tag}`:'')+
+    (dnFac?`最主要逆风为 <span class="r">${dnFac.name}(${dnFac.s})</span>——实际利率 ${pct(s.real10)} 仍在高位,构成金价的机会成本天花板。`:'')+
+    `美元 DXY ${(+s.dxy).toFixed(2)}(${sign(+s.dxyChg.toFixed(2),'%')})与金波 GVZ ${(+s.gvz).toFixed(1)} 共同刻画了一条`+
+    `<b>软美元 + 避险并存</b>的暗线:只要实际利率不再上冲、GVZ 不退潮,${rg.word}结构就有支撑;反之实际利率反弹将是首要风险点。`;
+}
+
+/* ===========================================================
+   boot — fetch oracle macro feed, fall back to embedded snapshot
+   override endpoint with ?api=…
+   =========================================================== */
+const API = new URLSearchParams(location.search).get('api')
+  || (location.protocol.indexOf('http')===0 ? '/api/oracle/macro'
+      : 'https://zhihuiti-oracle.zeabur.app/api/oracle/macro');
+
+async function boot(){
+  render(defaultState());                        // paint immediately
+  try{
+    const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),4000);
+    const r=await fetch(API,{signal:ctrl.signal}); clearTimeout(t);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const feed=await r.json();
+    if(!feed || (feed.snapshot==null && feed.gold==null)) throw new Error('bad payload');
+    render(feedToState(feed));                    // upgrade to live
+  }catch(e){ /* stay on embedded snapshot */ }
+}
+if (typeof document!=='undefined' && document.getElementById('dcards')) boot();
+</script>
+</body>
+</html>

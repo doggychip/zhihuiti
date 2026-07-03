@@ -267,12 +267,13 @@ const pillColor=(id,sc)=> id==='ips'||id==='inflation' ? (sc>55?'var(--am)':'var
 const leanColor=l=> l==='long'?'var(--gn)':l==='short'?'var(--rd)':'var(--cy)';
 const leanLabel=l=> l==='long'?'▲ long-lean':l==='short'?'▼ short-lean':'◆ neutral+';
 
-/* monitor-id → hub deep-link (mapped by id, not array position) */
+/* monitor-id → hub deep-link (own /monitor/* boards; absolute when opened as file://) */
+const HUB_BASE = location.protocol.indexOf('http')===0 ? '' : 'https://zhihuiti-oracle.zeabur.app';
 const HUB={
-  dur:'https://us-treasury-bonds-monitor-luffa.vercel.app/', rates:'https://us-treasury-bonds-monitor-luffa.vercel.app/',
-  usd:'https://usd-monitor.vercel.app/',
-  gold:'https://gold-monitor-delta.vercel.app/',
-  ips:'https://inflation-monitor-nine.vercel.app/', inflation:'https://inflation-monitor-nine.vercel.app/'
+  dur:HUB_BASE+'/monitor/rates', rates:HUB_BASE+'/monitor/rates',
+  usd:HUB_BASE+'/monitor/usd',
+  gold:HUB_BASE+'/monitor/gold',
+  ips:HUB_BASE+'/monitor/inflation', inflation:HUB_BASE+'/monitor/inflation'
 };
 /* per-monitor 明细 detail panel — reads only from the in-scope snap (live or fallback) */
 function monDetail(id, s){

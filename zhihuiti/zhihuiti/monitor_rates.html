@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>zhihuiti 美债利率深度看板 · UST Rates Deep-Dive</title>
+<style>
+  :root{
+    --bg:#0a0e14; --bg2:#0d121b; --panel:#111824; --panel2:#0f1520;
+    --bd:#1e2734; --bd2:#283242;
+    --tx:#cdd7e4; --mut:#788396; --dim:#566072;
+    --cy:#38bdf8; --am:#fbbf24; --gn:#34d399; --rd:#f87171; --gold:#e0b53c; --vi:#a78bfa;
+    --mono:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:
+     radial-gradient(1200px 600px at 82% -12%,rgba(56,189,248,.07),transparent 60%),
+     radial-gradient(900px 500px at -5% 108%,rgba(167,139,250,.05),transparent 55%),
+     var(--bg);
+     color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+     -webkit-font-smoothing:antialiased;line-height:1.5;}
+  a{color:inherit}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px 64px}
+  .mono{font-family:var(--mono)}
+
+  header.top{position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);
+     background:linear-gradient(180deg,rgba(10,14,20,.92),rgba(10,14,20,.72));
+     border-bottom:1px solid var(--bd)}
+  .top .wrap{display:flex;align-items:center;gap:16px;padding-top:12px;padding-bottom:12px}
+  .back{font-size:12px;color:var(--mut);text-decoration:none;padding:5px 11px;border:1px solid var(--bd);border-radius:999px;white-space:nowrap}
+  .back:hover{color:var(--tx);border-color:var(--bd2);background:rgba(255,255,255,.03)}
+  .brand{display:flex;flex-direction:column;gap:2px}
+  .brand b{font-size:15px;letter-spacing:.3px}
+  .brand b .zh{color:var(--cy)}
+  .brand .sub{font-size:11px;color:var(--mut);font-family:var(--mono);letter-spacing:.2px}
+  .head-meta{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+  .srcpill{font-size:10px;font-family:var(--mono);padding:3px 9px;border-radius:999px;border:1px solid var(--bd2);color:var(--mut);white-space:nowrap}
+  .srcpill.live{color:var(--gn);border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.07)}
+  .srcpill.snap{color:var(--am);border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.05)}
+  .snap{font-size:11px;color:var(--dim);font-family:var(--mono);white-space:nowrap}
+
+  h2.sec{font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:var(--mut);
+     margin:38px 0 14px;display:flex;align-items:center;gap:10px;font-weight:600}
+  h2.sec::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--cy);box-shadow:0 0 8px var(--cy)}
+  h2.sec span{color:var(--dim);font-weight:400;letter-spacing:.5px;text-transform:none}
+
+  /* ── hero ── */
+  .hero{margin-top:22px;border:1px solid var(--bd);border-radius:16px;overflow:hidden;
+     background:linear-gradient(135deg,var(--panel),var(--panel2))}
+  .hero-top{padding:22px 24px 18px;border-bottom:1px solid var(--bd)}
+  .eyebrow{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--cy);font-family:var(--mono)}
+  .rname{font-size:27px;font-weight:700;margin:8px 0 4px;letter-spacing:.3px}
+  .ren{font-size:13px;color:var(--mut);font-family:var(--mono)}
+  .rread{font-size:13.5px;color:var(--tx);max-width:820px;margin-top:12px;line-height:1.7}
+  .rread b{color:var(--cy);font-weight:600}
+  .rread .g{color:var(--gold)} .rread .r{color:var(--rd)} .rread .p{color:var(--vi)}
+  .hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--bd)}
+  .hs{padding:16px 20px;background:var(--panel2)}
+  .hs .k{font-size:11px;color:var(--mut)}
+  .hs .v{font-size:23px;font-family:var(--mono);font-weight:700;margin-top:6px;line-height:1;color:var(--tx)}
+  .hs .v small{font-size:11px;font-weight:400;margin-left:5px}
+  .hs .sub2{font-size:10px;color:var(--dim);font-family:var(--mono);margin-top:6px}
+
+  /* ── curve panel ── */
+  .curvewrap{display:grid;grid-template-columns:1.55fr 1fr;gap:14px}
+  .panel{border:1px solid var(--bd);border-radius:14px;background:var(--panel);padding:16px 18px}
+  .panel h3{margin:0 0 4px;font-size:12.5px;letter-spacing:.4px;font-weight:700}
+  .panel h3 .en{color:var(--dim);font-family:var(--mono);font-weight:400;font-size:10px;margin-left:6px}
+  svg.curve{width:100%;height:260px;display:block;margin-top:8px}
+  .legend{display:flex;gap:16px;font-size:10.5px;color:var(--mut);font-family:var(--mono);margin-top:8px;flex-wrap:wrap;align-items:center}
+  .legend i{display:inline-block;width:16px;height:2px;vertical-align:middle;margin-right:5px}
+  .legend i.dash{background:linear-gradient(90deg,var(--dim) 60%,transparent 60%);background-size:6px 2px}
+  .ttbl{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px;margin-top:4px}
+  .ttbl th{color:var(--dim);font-weight:600;text-align:right;padding:6px 6px;border-bottom:1px solid var(--bd2);font-size:10px;letter-spacing:.5px;text-transform:uppercase}
+  .ttbl th:first-child{text-align:left}
+  .ttbl td{text-align:right;padding:6px 6px;color:var(--mut);border-bottom:1px solid var(--bd)}
+  .ttbl td:first-child{text-align:left;color:var(--tx);font-weight:600}
+  .ttbl tr:last-child td{border-bottom:none}
+  .ttbl td.cur{color:var(--cy)}
+  .up{color:var(--gn)} .dn{color:var(--rd)} .fl{color:var(--mut)}
+
+  /* ── slope cards ── */
+  .slopes{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .scard{border:1px solid var(--bd);border-radius:14px;background:var(--panel);padding:16px 16px 15px;position:relative;overflow:hidden}
+  .scard::after{content:"";position:absolute;left:0;top:0;width:100%;height:2px;background:var(--accent,var(--cy));opacity:.85}
+  .scard .st{font-size:12.5px;font-weight:700}
+  .scard .st .en{display:block;font-size:9.5px;color:var(--dim);font-family:var(--mono);font-weight:400;margin-top:2px;letter-spacing:.3px}
+  .scard .sv{font-size:32px;font-weight:800;font-family:var(--mono);line-height:1;margin:12px 0 3px;color:var(--accent,var(--cy))}
+  .scard .sv small{font-size:12px;color:var(--dim);font-weight:400;margin-left:3px}
+  .scard .schg{font-size:11px;font-family:var(--mono);color:var(--mut)}
+  .scard .schg b{font-weight:600}
+  .spill{display:inline-block;font-size:10px;padding:2px 8px;border-radius:999px;font-weight:600;margin-top:11px;font-family:var(--mono);letter-spacing:.3px}
+  .scard .snote{font-size:10.5px;color:var(--dim);margin-top:9px;line-height:1.5}
+
+  /* ── decomposition ── */
+  .decomp{display:grid;grid-template-columns:1.2fr 1fr;gap:14px}
+  .stackbar{height:30px;border-radius:7px;overflow:hidden;display:flex;margin:16px 0 8px;border:1px solid var(--bd)}
+  .stackbar i{height:100%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;color:#0a0e14}
+  .decrow{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:7px 0;font-size:12px;color:var(--mut);border-top:1px solid var(--bd)}
+  .decrow:first-of-type{border-top:none}
+  .decrow b{color:var(--tx);font-family:var(--mono);font-weight:600;font-size:13px}
+  .decrow .sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:7px;vertical-align:middle}
+  .dnote{font-size:10.5px;color:var(--dim);margin-top:10px;line-height:1.55}
+
+  .gaugewrap{margin-top:6px}
+  .gauge-head{display:flex;justify-content:space-between;align-items:baseline}
+  .gauge-head .gv{font-size:30px;font-family:var(--mono);font-weight:800;line-height:1}
+  .gauge-head .gl{font-size:11px;color:var(--mut)}
+  .track{height:9px;border-radius:6px;margin-top:16px;position:relative;
+     background:linear-gradient(90deg,#1c4a5e 0%,#1c4a5e 33%,#7a6f2a 33%,#7a6f2a 66%,#7a3a2a 66%,#7a3a2a 100%)}
+  .track .pin{position:absolute;top:-4px;width:3px;height:17px;border-radius:2px;background:#fff;box-shadow:0 0 6px rgba(255,255,255,.7);transform:translateX(-1.5px)}
+  .zlabs{display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-top:7px;font-family:var(--mono)}
+  .gnote{font-size:10.5px;color:var(--dim);margin-top:13px;line-height:1.55}
+  .gnote b{color:var(--tx)}
+
+  footer{margin-top:40px;border-top:1px solid var(--bd);padding-top:18px;font-size:11px;color:var(--dim);line-height:1.7}
+  footer .intg{border:1px solid rgba(56,189,248,.25);background:rgba(56,189,248,.04);border-radius:10px;padding:11px 14px;color:var(--mut);margin-bottom:14px;font-size:11.5px}
+  footer .intg b{color:var(--cy)}
+  footer code{font-family:var(--mono);color:var(--mut);background:#10161f;padding:1px 5px;border-radius:4px}
+  .disc{color:#5a6473;margin-top:10px}
+  @media(max-width:880px){
+    .curvewrap,.decomp{grid-template-columns:1fr}
+    .slopes{grid-template-columns:1fr}
+    .hero-stats{grid-template-columns:1fr 1fr}
+  }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="back" href="/macro-cockpit">← 驾驶舱</a>
+  <div class="brand">
+    <b><span class="zh">zhihuiti</span> 美债利率深度看板 · UST Rates Deep-Dive</b>
+    <span class="sub">curve · slope · decomposition = f( par yields · MOVE · real10 · BEI )</span>
+  </div>
+  <div class="head-meta">
+    <span class="srcpill snap" id="srcpill">○ 连接中…</span>
+    <span class="snap mono" id="snapdate"></span>
+  </div>
+</div></header>
+
+<div class="wrap">
+
+  <section class="hero">
+    <div class="hero-top">
+      <div class="eyebrow">曲线体制读数 · Curve Regime Read</div>
+      <div class="rname" id="rname">—</div>
+      <div class="ren" id="ren">—</div>
+      <p class="rread" id="rread"></p>
+    </div>
+    <div class="hero-stats" id="herostats"></div>
+  </section>
+
+  <h2 class="sec">收益率曲线 <span>· Par Yield Curve · 当前 vs 一周前</span></h2>
+  <div class="curvewrap">
+    <div class="panel">
+      <h3>期限结构 <span class="en">Term Structure · par yield %</span></h3>
+      <svg class="curve" id="curve" viewBox="0 0 620 260" preserveAspectRatio="none"></svg>
+      <div class="legend">
+        <span><i style="background:var(--cy)"></i>当前 <span id="cd" class="mono"></span></span>
+        <span><i class="dash"></i>一周前</span>
+        <span id="curvenote" style="margin-left:auto"></span>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>逐期限 <span class="en">Tenor Table · Δbp</span></h3>
+      <table class="ttbl" id="ttbl"></table>
+    </div>
+  </div>
+
+  <h2 class="sec">斜率与陡峭化 <span>· Slopes & Steepening Regime</span></h2>
+  <div class="slopes" id="slopes"></div>
+  <p class="rread" id="sloperead" style="max-width:none;margin-top:14px;font-size:12.5px;color:var(--mut)"></p>
+
+  <h2 class="sec">10Y 分解与波动 <span>· 10Y Decomposition & Rate Vol</span></h2>
+  <div class="decomp">
+    <div class="panel">
+      <h3>10Y 名义 = 实际利率 + 盈亏平衡通胀 <span class="en">Nominal = Real + Breakeven</span></h3>
+      <div class="stackbar" id="stackbar"></div>
+      <div id="decrows"></div>
+      <div class="dnote" id="decnote"></div>
+    </div>
+    <div class="panel">
+      <h3>MOVE 债市波动率 <span class="en">Rate Volatility Gauge</span></h3>
+      <div class="gaugewrap">
+        <div class="gauge-head">
+          <div class="gv mono" id="movev">—</div>
+          <div class="gl" id="movelab">—</div>
+        </div>
+        <div class="track"><div class="pin" id="movepin"></div></div>
+        <div class="zlabs"><span>低波 &lt;80</span><span>中枢 80–110</span><span>高波 &gt;110</span></div>
+        <div class="gnote" id="movenote"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="intg">⚙ <b>已接入 zhihuiti oracle</b> · 本看板启动时拉取 <code>GET /api/oracle/macro</code>(单一事实源);读取 <code>curve.cur / curve.w1</code>(9 期限)、<code>y10 · y2 · y30 · y3m · bei10 · real10 · move · vix</code>。曲线、斜率、分解与波动读数全部由这些字段驱动;连接失败回退内嵌快照。</div>
+    <div id="srcline"><b style="color:var(--mut)">数据源</b> · 收益率: U.S. Treasury / FRED H.15 · 盈亏平衡与实际利率: TIPS 隐含 · 债市波动率: ICE BofA MOVE · 股波: CBOE VIX</div>
+    <div class="disc">⚠ 教育演示用途。曲线体制、斜率标签与分解读数均为基于当前快照的框架示意,不构成任何久期/仓位建议;历史表现不预示未来。</div>
+  </footer>
+</div>
+
+<script>
+/* ===========================================================
+   EMBEDDED FALLBACK SNAPSHOT — used when /api/oracle/macro is
+   unreachable (e.g. opened as a local file before deploy).
+   Mirrors the oracle macro feed shape.
+   =========================================================== */
+const SNAP = {
+  refreshed_at:'2026-07-03T16:00:00-04:00', curveDate:'2026-07-02',
+  curve:{
+    cur:{'3M':3.83,'1Y':3.94,'2Y':4.07,'3Y':4.09,'5Y':4.12,'7Y':4.23,'10Y':4.38,'20Y':4.87,'30Y':4.87},
+    w1 :{'3M':3.83,'1Y':4.00,'2Y':4.19,'3Y':4.19,'5Y':4.23,'7Y':4.34,'10Y':4.46,'20Y':4.91,'30Y':4.90}
+  },
+  y3m:3.83, y2:4.07, y10:4.38, y30:4.87,
+  bei10:2.35, real10:2.03, move:66.8, vix:18.3,
+  live_fields:[], sources:{}
+};
+
+/* ── helpers ── */
+const $=s=>document.querySelector(s);
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const bp=(a,b)=>Math.round((a-b)*100);
+const cls=x=>x>0?'up':x<0?'dn':'fl';
+const sbp=x=>(x>0?'+':'')+x+'bp';
+const TENORS=['3M','1Y','2Y','3Y','5Y','7Y','10Y','20Y','30Y'];
+
+/* normalize either a top-level feed or a {snapshot:{…}} wrapper into one flat state */
+function normalize(feed){
+  const s = feed.snapshot || feed;
+  const curve = s.curve || SNAP.curve;
+  const g=(k,f)=> (s[k]!=null?s[k]:(feed[k]!=null?feed[k]:f));
+  const y=(k,fb)=> (curve.cur&&curve.cur[k]!=null?curve.cur[k]:fb);
+  return {
+    live:true,
+    refreshed_at: feed.refreshed_at || s.refreshed_at || s.asof || s.date || SNAP.refreshed_at,
+    curveDate: s.curveDate || s.curve_date || SNAP.curveDate,
+    curve,
+    y3m:g('y3m',y('3M',SNAP.y3m)), y2:g('y2',y('2Y',SNAP.y2)),
+    y10:g('y10',y('10Y',SNAP.y10)), y30:g('y30',y('30Y',SNAP.y30)),
+    bei10:g('bei10',SNAP.bei10), real10:g('real10',SNAP.real10),
+    move:g('move',SNAP.move), vix:g('vix',SNAP.vix),
+    live_fields:feed.live_fields||s.live_fields||[], sources:feed.sources||s.sources||{}
+  };
+}
+function fallbackState(){ const S=normalize(SNAP); S.live=false; return S; }
+
+/* ── curve regime classifier (drives hero copy) ── */
+function classify(S){
+  const c=S.curve.cur, w=S.curve.w1;
+  const d10=bp(c['10Y'],w['10Y']);                 // 10Y weekly change
+  const d2 =bp(c['2Y'], w['2Y']);
+  const slopeNow=bp(c['10Y'],c['2Y']);
+  const slopeW1 =bp(w['10Y'],w['2Y']);
+  const dSlope=slopeNow-slopeW1;
+  const bull = d10<0;                               // yields falling → bull
+  const steepen = dSlope>0;                         // 2s10s widening → steepen
+  const flat = d10===0 && dSlope===0;
+  let name,en;
+  if(flat){ name='横盘 · 曲线静止'; en='Flat / Unchanged'; }
+  else if(bull&&steepen){ name='牛陡 · 前端领涨'; en='Bull Steepening'; }
+  else if(bull&&!steepen){ name='牛平 · 长端领涨'; en='Bull Flattening'; }
+  else if(!bull&&steepen){ name='熊陡 · 长端领跌'; en='Bear Steepening'; }
+  else{ name='熊平 · 前端领跌'; en='Bear Flattening'; }
+  return {d10,d2,slopeNow,slopeW1,dSlope,bull,steepen,name,en};
+}
+const volTier=mv=> mv<80?{t:'低波',c:'var(--gn)',d:'债市平静,期权定价温和'} : mv<=110?{t:'中枢',c:'var(--am)',d:'处于历史中枢,双向定价'} : {t:'高波',c:'var(--rd)',d:'利率恐慌升温,尾部对冲需求上升'};
+
+/* ── render ── */
+function setSrc(S){
+  const p=$('#srcpill');
+  if(S.live){ p.className='srcpill live'; p.textContent='● LIVE · /api/oracle/macro'; }
+  else { p.className='srcpill snap'; p.textContent='○ 内嵌快照'; }
+  const t=new Date(S.refreshed_at);
+  const hhmm=isNaN(t)?'':t.toLocaleString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/New_York'});
+  $('#snapdate').textContent='刷新 · '+String(S.refreshed_at).slice(0,10)+(hhmm?' · '+hhmm+' ET':'');
+  $('#cd').textContent='('+String(S.curveDate).slice(5)+')';
+}
+
+function render(S){
+  setSrc(S);
+  const R=classify(S);
+
+  /* hero headline + copy */
+  $('#rname').textContent=R.name;
+  $('#ren').textContent=R.en+' · '+(R.slopeNow>=0?'正斜率':'倒挂')+' 2s10s '+sbp(R.slopeNow);
+  const dir=R.d10<0?'整体<b>下行</b>':R.d10>0?'整体<b>上行</b>':'基本走平';
+  const front=R.d2<R.d10?'前端 2Y('+sbp(R.d2)+')跌幅领先长端':'长端跌幅领先前端';
+  const steepWord = R.dSlope>0?'走陡':R.dSlope<0?'走平':'持平';
+  const vt=volTier(S.move);
+  $('#rread').innerHTML=
+    `过去一周美债收益率${dir},10Y 累计 <b>${sbp(R.d10)}</b>、2Y <b>${sbp(R.d2)}</b>,`+
+    `2s10s 斜率由 ${sbp(R.slopeW1)} ${steepWord}至 <b>${sbp(R.slopeNow)}</b>——`+
+    `${R.bull?(R.steepen?`典型的<b>牛陡</b>结构:${front},市场在为宽松路径定价,而长端受期限溢价与供给拖累下行有限`:`<b>牛平</b>结构:长端领涨,增长/通胀预期降温压过降息定价`):(R.steepen?`<b>熊陡</b>结构:长端领跌,期限溢价与财政供给推动曲线变陡`:`<b>熊平</b>结构:前端领跌,货币政策再定价压平曲线`)}。`+
+    `债市隐含波动 MOVE <span class="${vt.c==='var(--gn)'?'g':vt.c==='var(--rd)'?'r':'p'}">${S.move.toFixed(1)}</span> 处于<b>${vt.t}</b>区,`+
+    `${S.move<80?'尚未对这层结构性变化报警——若 MOVE 上破或实际利率反弹,当前形态将首先承压':'已在为利率路径的不确定性定价,曲线波动放大'}。`+
+    ` 名义 10Y 拆为 <span class="p">实际 ${S.real10.toFixed(2)}%</span> + <span class="g">盈亏平衡 ${S.bei10.toFixed(2)}%</span>,`+
+    `${S.real10>1.8?'实际利率高位仍是压制久期的主导变量':'实际利率回落为久期提供支撑'}。`;
+
+  /* hero stats */
+  const stats=[
+    ['10Y 名义', S.y10.toFixed(2), '%', 'weekly '+sbp(R.d10), cls(R.d10)],
+    ['2s10s 斜率', (R.slopeNow>=0?'+':'')+R.slopeNow, 'bp', (R.slopeNow>=0?'正斜率':'倒挂')+' · Δ'+sbp(R.dSlope), cls(R.dSlope)],
+    ['10Y 实际利率', S.real10.toFixed(2), '%', 'real10 · TIPS', ''],
+    ['MOVE 债波', S.move.toFixed(1), '', vt.t+' · <'+ '80/110>', vt.c==='var(--gn)'?'up':vt.c==='var(--rd)'?'dn':'fl']
+  ];
+  $('#herostats').innerHTML=stats.map(s=>
+    `<div class="hs"><div class="k">${s[0]}</div>`+
+    `<div class="v">${s[1]}<small>${s[2]}</small></div>`+
+    `<div class="sub2 ${s[4]}">${s[3]}</div></div>`).join('');
+
+  drawCurve(S);
+  drawTable(S);
+  drawSlopes(S,R);
+  drawDecomp(S);
+}
+
+function drawCurve(S){
+  const cur=S.curve.cur, w1=S.curve.w1;
+  const all=TENORS.flatMap(k=>[cur[k],w1[k]]);
+  const lo=Math.min(...all)-0.12, hi=Math.max(...all)+0.12;
+  const W=620,H=260,padL=40,padR=16,padT=16,padB=30;
+  const x=i=> padL+(W-padL-padR)*i/(TENORS.length-1);
+  const y=v=> padT+(H-padT-padB)*(1-(v-lo)/(hi-lo));
+  const path=o=>TENORS.map((k,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(o[k]).toFixed(1)).join(' ');
+  const area=`${path(cur)} L ${x(TENORS.length-1).toFixed(1)} ${H-padB} L ${padL} ${H-padB} Z`;
+  const dots=(o,col)=>TENORS.map((k,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(o[k]).toFixed(1)}" r="2.8" fill="${col}"/>`).join('');
+  let grid='';
+  for(let g=0;g<=4;g++){const yy=padT+(H-padT-padB)*g/4,val=(hi-(hi-lo)*g/4).toFixed(2);
+    grid+=`<line x1="${padL}" y1="${yy.toFixed(1)}" x2="${W-padR}" y2="${yy.toFixed(1)}" stroke="#1a212d"/>`+
+          `<text x="8" y="${(yy+3).toFixed(1)}" fill="#566072" font-size="9" font-family="monospace">${val}</text>`;}
+  const labels=TENORS.map((k,i)=>`<text x="${x(i).toFixed(1)}" y="${H-9}" fill="#566072" font-size="9.5" font-family="monospace" text-anchor="middle">${k}</text>`).join('');
+  $('#curve').innerHTML=
+    `<defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">`+
+    `<stop offset="0" stop-color="#38bdf8" stop-opacity=".18"/><stop offset="1" stop-color="#38bdf8" stop-opacity="0"/></linearGradient></defs>`+
+    grid+labels+
+    `<path d="${area}" fill="url(#cg)" stroke="none"/>`+
+    `<path d="${path(w1)}" fill="none" stroke="#566072" stroke-width="1.6" stroke-dasharray="5 3" stroke-linejoin="round"/>`+
+    `<path d="${path(cur)}" fill="none" stroke="#38bdf8" stroke-width="2.4" stroke-linejoin="round"/>`+
+    dots(w1,'#566072')+dots(cur,'#38bdf8');
+  const R=classify(S);
+  $('#curvenote').innerHTML=`2s10s <b style="color:var(--tx)">${sbp(R.slopeNow)}</b> · ${R.name.split(' · ')[0]}`;
+}
+
+function drawTable(S){
+  const cur=S.curve.cur, w1=S.curve.w1;
+  const rows=TENORS.map(k=>{const d=bp(cur[k],w1[k]);
+    return `<tr><td>${k}</td><td class="cur">${cur[k].toFixed(2)}</td><td>${w1[k].toFixed(2)}</td>`+
+      `<td class="${cls(d)}">${sbp(d)}</td></tr>`;}).join('');
+  $('#ttbl').innerHTML=`<tr><th>期限</th><th>当前</th><th>一周前</th><th>Δbp</th></tr>${rows}`;
+}
+
+function drawSlopes(S,R){
+  const c=S.curve.cur, w=S.curve.w1;
+  const def=[
+    {id:'2s10s', k:'2s10s 斜率', en:'10Y − 2Y', a:'10Y', b:'2Y', accent:'var(--cy)'},
+    {id:'3m10y', k:'3m10y 斜率', en:'10Y − 3M', a:'10Y', b:'3M', accent:'var(--vi)'},
+    {id:'10s30s',k:'10s30s 斜率', en:'30Y − 10Y', a:'30Y', b:'10Y', accent:'var(--gold)'}
+  ];
+  $('#slopes').innerHTML=def.map(s=>{
+    const now=bp(c[s.a],c[s.b]), was=bp(w[s.a],w[s.b]), dS=now-was;
+    const inv=now<0;
+    const steep=dS>0;
+    const yUp=bp(c[s.a],w[s.a])>0;           // did long leg yield rise?
+    let tag,tc;
+    if(dS===0){ tag='持平 Unchanged'; tc='var(--mut)'; }
+    else if(steep){ tag=(yUp?'熊陡 Bear Steep':'牛陡 Bull Steep'); tc='var(--gn)'; }
+    else{ tag=(yUp?'熊平 Bear Flat':'牛平 Bull Flat'); tc=inv?'var(--rd)':'var(--am)'; }
+    const note = inv ? '曲线倒挂,前端高于长端 — 衰退/紧缩定价信号'
+      : steep ? '一周内变陡,长短端利差走扩'
+      : '一周内变平,利差压缩';
+    return `<div class="scard" style="--accent:${s.accent}">`+
+      `<div class="st">${s.k}<span class="en">${s.en}</span></div>`+
+      `<div class="sv">${(now>=0?'+':'')+now}<small>bp</small></div>`+
+      `<div class="schg">一周前 ${(was>=0?'+':'')+was}bp · Δ <b class="${cls(dS)}">${sbp(dS)}</b></div>`+
+      `<span class="spill" style="background:${tc}1f;color:${tc}">${tag}</span>`+
+      `<div class="snote">${note}</div></div>`;
+  }).join('');
+
+  const s2=bp(c['10Y'],c['2Y']), s3=bp(c['10Y'],c['3M']), s10_30=bp(c['30Y'],c['10Y']);
+  $('#sloperead').innerHTML=
+    `三段斜率共同勾勒当前形态:短端 <b style="color:var(--tx)">3m10y ${sbp(s3)}</b> 与 <b style="color:var(--tx)">2s10s ${sbp(s2)}</b> `+
+    `${s2>=0&&s3>=0?'均为正斜率,曲线已脱离倒挂区间':'仍含倒挂段,货币政策仍偏紧'};`+
+    `长端 <b style="color:var(--tx)">10s30s ${sbp(s10_30)}</b> ${s10_30>0?'保持正向,反映期限溢价与长期供给':'趋平,长端需求旺盛'}。`+
+    `${R.bull?'本周利率下行由'+(R.d2<R.d10?'前端':'长端')+'主导,':'本周利率上行,'}`+
+    `${R.steepen?'曲线整体变陡——通常对应降息预期升温或期限溢价重建':'曲线整体变平——通常对应政策再定价或避险买盘涌入长端'}。`;
+}
+
+function drawDecomp(S){
+  const real=S.real10, bei=S.bei10, nom=real+bei;
+  const rp=(real/nom*100), bp_=(bei/nom*100);
+  $('#stackbar').innerHTML=
+    `<i style="width:${rp.toFixed(1)}%;background:var(--vi)">${real.toFixed(2)}%</i>`+
+    `<i style="width:${bp_.toFixed(1)}%;background:var(--gold)">${bei.toFixed(2)}%</i>`;
+  $('#decrows').innerHTML=
+    `<div class="decrow"><span><span class="sw" style="background:var(--vi)"></span>实际利率 10Y real</span><b>${real.toFixed(2)}%</b></div>`+
+    `<div class="decrow"><span><span class="sw" style="background:var(--gold)"></span>盈亏平衡通胀 10Y BEI</span><b>${bei.toFixed(2)}%</b></div>`+
+    `<div class="decrow"><span>= 名义收益率 10Y nominal</span><b style="color:var(--cy)">${nom.toFixed(2)}%</b></div>`;
+  $('#decnote').innerHTML=
+    `名义 10Y 的 <b style="color:var(--gold)">${bp_.toFixed(0)}%</b> 来自通胀补偿、<b style="color:var(--vi)">${rp.toFixed(0)}%</b> 来自实际利率。`+
+    `${real>1.8?'实际利率处于高位,是压制久期与黄金的主导变量;通胀预期锚定良好则限制了长端的上行空间。':'实际利率回落,为久期与实物资产提供顺风。'}`;
+
+  const vt=volTier(S.move);
+  $('#movev').textContent=S.move.toFixed(1);
+  $('#movev').style.color=vt.c;
+  $('#movelab').textContent=vt.t+' · ICE MOVE';
+  $('#movepin').style.left=clamp((S.move-40)/(160-40)*100,0,100)+'%';
+  $('#movenote').innerHTML=`<b>${vt.t}区</b> · ${vt.d}。MOVE 是债市的 “VIX”,衡量利率期权的隐含波动;`+
+    `${S.move<80?'低位说明市场对当前曲线形态有信心,也意味着一旦意外冲击,波动的抬升空间更大。':S.move<=110?'中枢水平下,曲线的方向性押注需要更高的胜率补偿。':'高位往往伴随流动性收缩与久期抛售,需警惕跨资产传导。'}`;
+}
+
+/* ===========================================================
+   boot — fetch oracle macro feed, fall back to embedded snapshot
+   override endpoint with ?api=…
+   =========================================================== */
+const API = new URLSearchParams(location.search).get('api')
+  || (location.protocol.indexOf('http')===0 ? '/api/oracle/macro'
+      : 'https://zhihuiti-oracle.zeabur.app/api/oracle/macro');
+
+async function boot(){
+  render(fallbackState());                       // paint immediately
+  try{
+    const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),4000);
+    const r=await fetch(API,{signal:ctrl.signal}); clearTimeout(t);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const feed=await r.json();
+    const s=feed.snapshot||feed;
+    if(!s.curve||!s.curve.cur) throw new Error('bad payload');
+    render(normalize(feed));                      // upgrade to live
+  }catch(e){ /* stay on embedded snapshot */ }
+}
+if (typeof document!=='undefined' && document.getElementById('curve')) boot();
+</script>
+</body>
+</html>
