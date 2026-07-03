@@ -217,16 +217,17 @@ def _lin(x, x0, s0, x1, s1):
     return int(_macro_clamp(round(s0 + t * (s1 - s0)), 0, 100))
 
 
-def _macro_http_get(url, timeout=6):
+def _macro_http_get(url, timeout=6, ua="zhihuiti-macro/1.0"):
     import urllib.request
-    req = urllib.request.Request(url, headers={"User-Agent": "zhihuiti-macro/1.0"})
+    # ua=None sends urllib's default User-Agent — FRED's WAF hangs on custom UAs
+    req = urllib.request.Request(url, headers={"User-Agent": ua} if ua else {})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return r.read().decode("utf-8", "replace")
 
 
 def _fred_series(series_id, days_back=0):
     """Latest value of a FRED series (keyless CSV), or the value ~days_back rows back."""
-    txt = _macro_http_get(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}")
+    txt = _macro_http_get(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}", ua=None)
     vals = []
     for ln in txt.strip().splitlines()[1:]:
         p = ln.split(",")
@@ -239,10 +240,14 @@ def _fred_series(series_id, days_back=0):
 
 
 def _stooq_close(sym):
-    txt = _macro_http_get(f"https://stooq.com/q/l/?s={sym}&f=sd2t2ohlcv&e=csv")
-    p = txt.strip().splitlines()[-1].split(",")   # Symbol,Date,Time,O,H,L,Close,Vol
-    if len(p) >= 7 and p[6] not in ("", "N/D"):
-        return float(p[6])
+    # Fail soft (None) so `_stooq_close(x) or _yahoo_price(y)` fallbacks actually run
+    try:
+        txt = _macro_http_get(f"https://stooq.com/q/l/?s={sym}&f=sd2t2ohlcv&e=csv")
+        p = txt.strip().splitlines()[-1].split(",")   # Symbol,Date,Time,O,H,L,Close,Vol
+        if len(p) >= 7 and p[6] not in ("", "N/D"):
+            return float(p[6])
+    except Exception:
+        pass
     return None
 
 
