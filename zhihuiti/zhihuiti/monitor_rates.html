@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>美债因子看板 · US Rates Factor Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4f3fd; --panel:#ffffff; --panel-2:#f6f7fb; --panel-3:#ecedf7;
+    --line:#e9ebf5; --line-soft:#f0f1f8;
+    --ink:#1e2148; --muted:#6c7099; --faint:#a5a9c6;
+    --accent:#ff7a5c; --accent-dim:#e85b3a; --accent-soft:#fff0eb;
+    --bull:#2dc97e; --bear:#ff5b73; --neutral:#9aa0c0;
+    --blue:#5b6fee; --indigo:#3d3f8c;
+    --shadow-sm:0 2px 8px rgba(30,33,72,.04);
+    --shadow:0 4px 20px rgba(30,33,72,.06);
+    --shadow-lg:0 12px 32px rgba(30,33,72,.10);
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --sans:'Plus Jakarta Sans',system-ui,sans-serif;
+    --serif:'Plus Jakarta Sans',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg); color:var(--ink); font-family:var(--sans);
+    font-size:14px; line-height:1.55; font-weight:500;
+    background-image:
+      radial-gradient(circle at 8% 12%, rgba(91,111,238,.07) 0%, transparent 36%),
+      radial-gradient(circle at 92% 86%, rgba(255,122,92,.07) 0%, transparent 38%);
+    background-attachment:fixed;
+  }
+  ::selection{background:var(--accent);color:#fff}
+  a{color:inherit}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .wrap{max-width:1280px;margin:0 auto;padding:0 22px}
+
+  /* ---------- header ---------- */
+  header{
+    position:sticky;top:0;z-index:50;
+    background:rgba(244,243,253,.85);backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line-soft);
+  }
+  .hbar{display:flex;align-items:center;gap:18px;padding:16px 22px;max-width:1280px;margin:0 auto;flex-wrap:wrap}
+  .brand{display:flex;align-items:baseline;gap:11px;flex:0 0 auto}
+  .brand .glyph{
+    font-family:var(--sans);font-weight:800;font-size:22px;color:var(--ink);
+    letter-spacing:-.01em;
+  }
+  .brand .glyph::after{
+    content:'.';color:var(--accent);
+  }
+  .brand .sub{font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--faint);text-transform:uppercase}
+  .hspace{flex:1}
+  .stamp{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right;line-height:1.4}
+  .stamp b{color:var(--ink);font-weight:600}
+  .freshpill{
+    font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.02em;
+    padding:5px 11px;border-radius:999px;display:inline-flex;align-items:center;gap:6px;
+    white-space:nowrap;transition:.25s;flex:0 0 auto;
+  }
+  .freshpill.live{color:var(--bull);background:rgba(45,201,126,.12)}
+  .freshpill.snap{color:var(--muted);background:var(--panel-3)}
+  .btn{
+    background:var(--accent);color:#fff;border:none;font-family:var(--sans);
+    font-size:12px;font-weight:700;padding:10px 18px;border-radius:999px;cursor:pointer;
+    letter-spacing:.01em;transition:.2s;box-shadow:0 4px 14px rgba(255,122,92,.3);
+  }
+  .btn:hover{background:var(--accent-dim);transform:translateY(-1px);box-shadow:0 6px 18px rgba(255,122,92,.4)}
+  .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);box-shadow:none}
+  .btn.ghost:hover{color:var(--ink);border-color:var(--accent);background:var(--accent-soft);transform:none;box-shadow:none}
+  nav.tabs{display:flex;gap:0 4px;row-gap:0;padding:0 22px 6px;max-width:1280px;margin:0 auto;flex-wrap:wrap}
+  nav.tabs a{
+    font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.01em;color:var(--muted);
+    text-decoration:none;padding:7px 14px;border-radius:999px;
+    line-height:1.4;transition:.18s;
+  }
+  nav.tabs a:hover{color:var(--ink);background:var(--panel-2)}
+  nav.tabs a.active{color:#fff;background:var(--ink)}
+
+  /* ---------- section frame ---------- */
+  section{padding:42px 0 8px}
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:18px}
+  .sec-num{
+    font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:600;
+    background:var(--accent-soft);padding:4px 10px;border-radius:999px;letter-spacing:.04em;
+  }
+  .sec-title{font-family:var(--sans);font-size:26px;font-weight:700;letter-spacing:-.015em;color:var(--ink)}
+  .sec-en{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--faint);text-transform:uppercase}
+  .sec-note{font-size:13px;color:var(--muted);max-width:780px;margin:-8px 0 18px;line-height:1.65}
+
+  .panel{background:var(--panel);border:1px solid transparent;border-radius:18px;box-shadow:var(--shadow)}
+  .grid{display:grid;gap:14px}
+
+  /* fade in */
+  .fade{opacity:0;transform:translateY(14px);animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards}
+  @keyframes rise{to{opacity:1;transform:none}}
+
+  /* ---------- summary strip ---------- */
+  .hero{
+    background:#fff;
+    border-radius:24px;padding:30px;margin-top:6px;box-shadow:var(--shadow-lg);
+    position:relative;overflow:hidden;
+  }
+  .hero::before{
+    content:'';position:absolute;top:-60px;right:-60px;width:240px;height:240px;
+    background:radial-gradient(circle, rgba(255,122,92,.14) 0%, transparent 70%);
+    pointer-events:none;
+  }
+  .regime{
+    display:inline-flex;align-items:center;gap:8px;font-family:var(--sans);font-size:12px;font-weight:600;
+    letter-spacing:.01em;color:var(--bear);
+    background:rgba(255,91,115,.1);padding:7px 14px;border-radius:999px;margin-bottom:18px;
+    position:relative;
+  }
+  .regime .dot{width:7px;height:7px;border-radius:50%;background:var(--bear);animation:pulse 2s infinite;box-shadow:0 0 0 4px rgba(255,91,115,.18)}
+  @keyframes pulse{50%{opacity:.35}}
+  .hero-line{font-family:var(--sans);font-size:19px;font-weight:500;line-height:1.55;color:var(--ink);max-width:880px;position:relative}
+  .hero-line em{color:var(--accent);font-style:normal;font-weight:700}
+
+  .tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:24px;position:relative}
+  .tile{background:var(--panel-2);border:1px solid transparent;border-radius:16px;padding:16px 16px;transition:.2s}
+  .tile:hover{transform:translateY(-2px);box-shadow:var(--shadow);background:#fff}
+  .tile .lab{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--faint);text-transform:uppercase}
+  .tile .val{font-family:var(--sans);font-size:24px;font-weight:700;margin-top:8px;letter-spacing:-.02em;color:var(--ink)}
+  .tile .chg{font-family:var(--mono);font-size:11px;font-weight:600;margin-top:4px}
+  .up{color:var(--bear)} .down{color:var(--bull)} .flat{color:var(--neutral)}
+
+  .stance-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px;position:relative}
+  .stance{
+    background:linear-gradient(135deg,var(--panel-2) 0%,#eef0fb 100%);
+    border:1px solid transparent;border-radius:18px;padding:20px 22px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .stance .skey{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--faint);text-transform:uppercase}
+  .stance .sval{font-family:var(--sans);font-size:28px;font-weight:700;margin-top:6px;color:var(--ink);letter-spacing:-.02em}
+  .stance .sdesc{font-size:12px;color:var(--muted);margin-top:6px;max-width:240px;line-height:1.5}
+  .stance .badge{
+    font-family:var(--mono);font-size:36px;font-weight:700;padding:0 4px;
+  }
+
+  /* ---------- yield curve ---------- */
+  .curve-grid{display:grid;grid-template-columns:1.45fr 1fr;gap:14px}
+  .chart-card{padding:22px}
+  .chart-card h4,.tbl-card h4{
+    font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--ink);
+    text-transform:uppercase;margin-bottom:8px;
+  }
+  .legend{display:flex;gap:18px;margin:12px 0 6px;flex-wrap:wrap}
+  .legend span{font-family:var(--sans);font-size:11px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:7px}
+  .legend i{width:18px;height:3px;display:inline-block;border-radius:2px}
+  svg{display:block;width:100%;overflow:visible}
+  .tbl-card{padding:20px 22px}
+  table{width:100%;border-collapse:collapse}
+  th{
+    font-family:var(--sans);font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--faint);
+    text-transform:uppercase;text-align:right;padding:8px 8px;border-bottom:1px solid var(--line);
+  }
+  th:first-child,td:first-child{text-align:left}
+  td{font-family:var(--mono);font-size:12px;padding:9px 8px;border-bottom:1px solid var(--line-soft);color:var(--ink)}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:var(--panel-2)}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
+  .metric{background:#fff;border:1px solid transparent;border-radius:16px;padding:16px 16px;box-shadow:var(--shadow-sm);transition:.2s}
+  .metric:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+  .metric .mk{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--faint);text-transform:uppercase}
+  .metric .mv{font-family:var(--sans);font-size:22px;font-weight:700;margin-top:8px;color:var(--ink);letter-spacing:-.02em}
+  .metric .mn{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5}
+
+  /* ---------- scorecard ---------- */
+  .gauge-card{padding:26px 26px;margin-bottom:14px}
+  .gauge-top{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+  .gauge-read .gk{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--faint);text-transform:uppercase}
+  .gauge-read .gv{font-family:var(--sans);font-size:32px;font-weight:700;margin-top:6px;color:var(--ink);letter-spacing:-.02em}
+  .gauge-read .gs{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--muted);margin-top:4px}
+  .gtrack-wrap{margin-top:24px}
+  .gtrack{
+    position:relative;height:14px;border-radius:999px;
+    background:linear-gradient(90deg,var(--bear) 0%,#ffb7c2 38%,#e7e8f0 50%,#a9eccd 62%,var(--bull) 100%);
+  }
+  .gmarker{
+    position:absolute;top:-7px;width:6px;height:28px;background:var(--ink);
+    border-radius:999px;transform:translateX(-50%);transition:left .5s cubic-bezier(.2,.7,.2,1);
+    box-shadow:0 0 0 4px var(--bg),0 4px 12px rgba(30,33,72,.25);
+  }
+  .gscale{display:flex;justify-content:space-between;font-family:var(--sans);font-size:10.5px;font-weight:600;color:var(--faint);margin-top:12px;text-transform:uppercase;letter-spacing:.04em}
+
+  .grp{margin-bottom:12px;border:1px solid transparent;border-radius:18px;overflow:hidden;background:var(--panel);box-shadow:var(--shadow-sm)}
+  .grp-head{
+    display:flex;align-items:center;gap:13px;padding:14px 18px;cursor:pointer;
+    background:transparent;user-select:none;transition:.18s;
+  }
+  .grp-head:hover{background:var(--panel-2)}
+  .grp.open .grp-head{background:var(--panel-2)}
+  .grp-name{font-family:var(--sans);font-size:16px;font-weight:700;flex:0 0 auto;color:var(--ink)}
+  .grp-en{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.1em;color:var(--faint);text-transform:uppercase}
+  .grp-sp{flex:1}
+  .wgt{display:flex;align-items:center;gap:6px}
+  .wgt label{font-family:var(--sans);font-size:10px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em}
+  .wgt input{
+    width:48px;background:#fff;border:1px solid var(--line);color:var(--ink);
+    font-family:var(--mono);font-size:11px;padding:5px 6px;text-align:center;border-radius:8px;
+  }
+  .gscore{font-family:var(--sans);font-size:16px;font-weight:700;min-width:58px;text-align:right;color:var(--ink)}
+  .chev{color:var(--faint);font-size:12px;transition:.2s;font-family:var(--mono);font-weight:600}
+  .grp.open .chev{transform:rotate(90deg);color:var(--accent)}
+  .grp-body{display:none}
+  .grp.open .grp-body{display:block}
+  .frow{
+    display:grid;grid-template-columns:1.5fr 1.1fr auto 2fr;gap:14px;align-items:center;
+    padding:13px 18px;border-top:1px solid var(--line-soft);
+  }
+  .fname{font-size:13px;font-weight:600;color:var(--ink)}
+  .fname .ftag{font-family:var(--mono);font-size:9.5px;font-weight:500;color:var(--faint);display:block;margin-top:3px;letter-spacing:.04em}
+  .fval{font-family:var(--mono);font-size:13px;color:var(--ink);font-weight:500}
+  .fval small{color:var(--muted);font-size:10.5px}
+  .fnote{font-size:12px;color:var(--muted);line-height:1.55}
+  .sig{display:flex;gap:4px;align-items:center}
+  .sig .seg{
+    width:16px;height:16px;border-radius:5px;background:var(--panel-3);cursor:pointer;
+    border:none;transition:.12s;
+  }
+  .sig .seg:hover{transform:scale(1.15)}
+  .sig .lbl{font-family:var(--mono);font-size:10.5px;font-weight:600;margin-left:8px;min-width:80px;color:var(--ink)}
+
+  /* ---------- yield decomposition ---------- */
+  .decomp-main{padding:26px}
+  .decomp-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+  .dh-t{font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--ink);text-transform:uppercase}
+  .dh-eq{font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.04em}
+  .decomp-row{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap}
+  .d-card{flex:1;min-width:140px;background:var(--panel-2);border:1px solid transparent;border-radius:14px;padding:15px 14px;display:flex;flex-direction:column;transition:.2s}
+  .d-card:hover{transform:translateY(-2px);background:#fff;box-shadow:var(--shadow)}
+  .d-sum{background:linear-gradient(135deg,#fff 0%,var(--accent-soft) 100%);box-shadow:var(--shadow)}
+  .dlab{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--muted);line-height:1.35}
+  .dlab small{color:var(--faint);font-size:9.5px;font-weight:500;display:block;margin-top:3px;letter-spacing:.02em}
+  .dval{font-family:var(--sans);font-size:26px;font-weight:700;margin:10px 0 5px;color:var(--ink);letter-spacing:-.02em}
+  .dpct{font-size:14px;color:var(--muted);font-weight:600}
+  .dchg{font-family:var(--mono);font-size:10.5px;font-weight:600;margin-top:auto;padding-top:6px}
+  .dnote{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5}
+  .dtag{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.06em;color:var(--accent);text-transform:uppercase;margin-top:auto;padding-top:10px}
+  .d-eq,.d-plus{font-family:var(--sans);font-size:22px;color:var(--accent);align-self:center;flex:0 0 auto;padding:0 2px;font-weight:700}
+
+  .vw-eq{font-family:var(--mono);font-size:11.5px;color:var(--muted);text-align:center;padding:8px 0;border-bottom:1px dashed var(--line);margin-bottom:6px;letter-spacing:.02em}
+  .vw-num{font-size:15px;color:var(--ink);font-weight:700;border-bottom:1px solid var(--line);margin-bottom:12px;padding-bottom:10px;letter-spacing:-.01em}
+
+  .attr-card{padding:22px 24px}
+  .attr-card h4{font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--ink);text-transform:uppercase;margin-bottom:12px;display:flex;justify-content:space-between}
+  .attr-tbl th{font-size:10px;text-align:right}
+  .attr-tbl td{font-size:12px;text-align:right}
+  .attr-tbl th:first-child,.attr-tbl td:first-child,.attr-tbl th:last-child,.attr-tbl td:last-child{text-align:left}
+  .drv-inf{background:rgba(255,91,115,.14);color:var(--bear);padding:4px 10px;border-radius:999px;font-family:var(--sans);font-size:10.5px;font-weight:700}
+  .drv-tp{background:var(--accent-soft);color:var(--accent-dim);padding:4px 10px;border-radius:999px;font-family:var(--sans);font-size:10.5px;font-weight:700}
+  .drv-mix{background:rgba(91,111,238,.14);color:var(--blue);padding:4px 10px;border-radius:999px;font-family:var(--sans);font-size:10.5px;font-weight:700}
+  .drv-pol{background:rgba(45,201,126,.14);color:var(--bull);padding:4px 10px;border-radius:999px;font-family:var(--sans);font-size:10.5px;font-weight:700}
+
+  .attr-bars{margin-top:18px;padding-top:16px;border-top:1px solid var(--line-soft)}
+  .ab-title{font-family:var(--sans);font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}
+  .ab-row{display:grid;grid-template-columns:130px 1fr 38px;gap:12px;align-items:center;padding:6px 0}
+  .ab-lab{font-family:var(--sans);font-size:11.5px;font-weight:600;color:var(--muted)}
+  .ab-track{height:11px;background:var(--panel-3);border-radius:999px;overflow:hidden}
+  .ab-bar{display:block;height:100%;border-radius:999px}
+  .ab-r{background:var(--bull)}
+  .ab-pi{background:var(--bear)}
+  .ab-tp{background:var(--accent)}
+  .ab-ip{background:var(--blue)}
+  .ab-num{font-family:var(--mono);font-size:11.5px;color:var(--ink);text-align:right;font-weight:700}
+
+  .exp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .exp-card{background:var(--panel-2);border:1px solid transparent;border-radius:14px;padding:16px 16px;transition:.2s}
+  .exp-card:hover{background:#fff;box-shadow:var(--shadow);transform:translateY(-2px)}
+  .ec-h{font-family:var(--sans);font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+  .ec-v{font-family:var(--sans);font-size:16px;font-weight:700;color:var(--ink);margin-bottom:8px;letter-spacing:-.01em}
+  .ec-n{font-size:12px;color:var(--muted);line-height:1.55}
+
+  /* ---------- generic info panels ---------- */
+  .cols-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .cols-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .ipanel{padding:22px 24px}
+  .ipanel h4{
+    font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--ink);
+    text-transform:uppercase;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;
+  }
+  .ipanel h4 span{font-weight:500;color:var(--faint);font-size:10px;letter-spacing:.06em}
+  .kv{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line-soft);font-size:13px;gap:14px}
+  .kv:last-child{border-bottom:none}
+  .kv .k{color:var(--muted);font-weight:500}
+  .kv .v{font-family:var(--mono);font-weight:600;color:var(--ink);text-align:right}
+  .meterbar{height:7px;background:var(--panel-3);border-radius:999px;overflow:hidden;margin-top:6px}
+  .meterbar i{display:block;height:100%;border-radius:999px}
+
+  .path{display:flex;gap:8px;margin-top:8px}
+  .pcell{flex:1;background:var(--panel-2);border:1px solid transparent;border-radius:12px;padding:11px 8px;text-align:center}
+  .pcell .pm{font-family:var(--sans);font-size:10.5px;font-weight:600;color:var(--faint)}
+  .pcell .pp{font-family:var(--sans);font-size:17px;font-weight:700;margin:5px 0 3px;color:var(--ink);letter-spacing:-.01em}
+  .pcell .pt{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+  .pbar{height:5px;border-radius:999px;margin-top:6px;background:var(--panel-3);overflow:hidden}
+  .pbar i{display:block;height:100%;border-radius:999px}
+
+  .grade{font-family:var(--sans);font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:999px}
+  .g-strong{background:rgba(45,201,126,.14);color:var(--bull)}
+  .g-soft{background:rgba(255,91,115,.14);color:var(--bear)}
+  .g-mid{background:rgba(154,160,192,.18);color:var(--neutral)}
+
+  .news-item{padding:13px 0;border-bottom:1px solid var(--line-soft);display:flex;gap:14px}
+  .news-item:last-child{border-bottom:none}
+  .news-date{font-family:var(--mono);font-size:10.5px;font-weight:600;color:var(--accent);flex:0 0 56px;padding-top:2px}
+  .news-body{font-size:13px;line-height:1.55;color:var(--ink)}
+  .news-body .src{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;display:block;margin-top:3px}
+  .cal-item{display:grid;grid-template-columns:68px 1fr auto;gap:12px;padding:11px 0;border-bottom:1px solid var(--line-soft);align-items:center}
+  .cal-item:last-child{border-bottom:none}
+  .cal-date{font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--ink)}
+  .cal-ev{font-size:12.5px;color:var(--ink)}
+  .imp{font-family:var(--sans);font-size:9.5px;font-weight:700;letter-spacing:.04em;padding:3px 8px;border-radius:999px;text-transform:uppercase}
+  .imp-h{background:rgba(255,91,115,.14);color:var(--bear)}
+  .imp-m{background:var(--accent-soft);color:var(--accent-dim)}
+  .imp-l{background:rgba(154,160,192,.18);color:var(--neutral)}
+
+  /* ---------- synthesis ---------- */
+  .synth{padding:28px}
+  .thesis{
+    font-family:var(--sans);font-size:17px;font-weight:500;line-height:1.7;color:var(--ink);
+    border-left:3px solid var(--accent);padding:6px 0 6px 20px;outline:none;border-radius:0 8px 8px 0;
+  }
+  .thesis:focus{background:var(--panel-2);padding-right:14px}
+  .edit-hint{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin:10px 0 20px;padding-left:24px}
+  .trade{
+    display:grid;grid-template-columns:auto 1fr;gap:18px;padding:18px 0;
+    border-top:1px solid var(--line-soft);
+  }
+  .trade .tno{font-family:var(--sans);font-size:24px;font-weight:700;color:var(--accent);width:36px}
+  .trade .tt{font-family:var(--sans);font-size:15px;font-weight:700;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .trade .tt .dir{padding:3px 10px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.02em;font-family:var(--sans)}
+  .dir-short{background:rgba(255,91,115,.14);color:var(--bear)}
+  .dir-long{background:rgba(45,201,126,.14);color:var(--bull)}
+  .dir-rv{background:rgba(91,111,238,.14);color:var(--blue)}
+  .trade .tb{font-size:13px;color:var(--muted);line-height:1.6}
+  .trade .tlink{font-family:var(--mono);font-size:10.5px;font-weight:600;color:var(--faint);margin-top:8px;text-transform:uppercase;letter-spacing:.04em}
+  .risk{background:rgba(255,91,115,.06);border:1px solid rgba(255,91,115,.2);border-radius:14px;padding:18px 20px;margin-top:20px}
+  .risk .rt{font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--bear);text-transform:uppercase;margin-bottom:8px}
+  .risk .rb{font-size:12.5px;color:var(--muted);line-height:1.6}
+
+  footer{border-top:1px solid var(--line-soft);margin-top:52px;padding:28px 0 44px}
+  .foot{font-family:var(--mono);font-size:11px;color:var(--faint);line-height:1.75}
+  .foot b{color:var(--muted);font-weight:600}
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);
+    background:var(--ink);border:none;color:#fff;
+    font-family:var(--sans);font-size:12px;font-weight:600;padding:13px 22px;border-radius:999px;
+    transition:.35s;z-index:99;box-shadow:var(--shadow-lg);
+  }
+  .toast.show{transform:translateX(-50%) translateY(0)}
+
+  @media(max-width:920px){
+    .tiles{grid-template-columns:repeat(3,1fr)}
+    .curve-grid,.cols-2,.stance-row{grid-template-columns:1fr}
+    .cols-3{grid-template-columns:1fr}
+    .metrics{grid-template-columns:repeat(2,1fr)}
+    .frow{grid-template-columns:1fr;gap:7px}
+    .path{flex-wrap:wrap}.pcell{min-width:80px}
+    .decomp-row{flex-direction:column}
+    .d-eq,.d-plus{align-self:flex-start;padding:4px 0}
+    .exp-grid{grid-template-columns:1fr}
+    .ab-row{grid-template-columns:100px 1fr 36px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hbar">
+    <div class="brand">
+      <span class="glyph">美债因子看板</span>
+      <span class="sub">US Rates Factor Desk</span>
+    </div>
+    <span class="freshpill snap" id="freshPill">○ 快照</span>
+    <div class="hspace"></div>
+    <div class="stamp">
+      数据快照 · <b id="asOf">2026-05-18 收盘</b> · 日频研究节奏
+    </div>
+  </div>
+  <nav class="tabs" id="tabs">
+    <a href="#summary" class="active">摘要</a>
+    <a href="#curve">收益率曲线</a>
+    <a href="#decomp">成分分解</a>
+    <a href="#scorecard">因子计分卡</a>
+    <a href="#policy">货币政策</a>
+    <a href="#supply">供给与拍卖</a>
+    <a href="#positioning">持仓与资金流</a>
+    <a href="#cross">跨市场</a>
+    <a href="#events">事件与新闻</a>
+    <a href="#synthesis">投资观点</a>
+  </nav>
+</header>
+
+<div class="wrap">
+
+<!-- ========== 0 · SUMMARY ========== -->
+<section id="summary">
+  <div class="hero fade">
+    <div class="regime"><span class="dot"></span>当前市场状态 · 政策与地缘双重转折</div>
+    <div class="hero-line">
+      美债定价正陷入 <em>两股反向力量</em> 的拉扯:一侧是 <em>美伊停火协议</em> 即将签署、油价从冲击高点回落,
+      通胀风险溢价开始释放;另一侧是 <em>凯文·沃什</em> 接掌美联储,以"规则化货币政策 + 缩表常态化"为旗帜的结构性改革启动,
+      中性利率与政策可信度被市场重新定价。曲线在两端拉扯中仍维持 <em>熊市变陡</em>。
+    </div>
+    <div class="tiles" id="heroTiles"></div>
+    <div class="stance-row">
+      <div class="stance">
+        <div>
+          <div class="skey">久期立场 · Duration Stance</div>
+          <div class="sval" id="durStance">—</div>
+          <div class="sdesc" id="durDesc">由下方因子计分卡实时汇总</div>
+        </div>
+        <div class="badge mono" id="durBadge">—</div>
+      </div>
+      <div class="stance">
+        <div>
+          <div class="skey">曲线立场 · Curve Stance</div>
+          <div class="sval" id="curveStance">—</div>
+          <div class="sdesc" id="curveDesc">供给与政策因子驱动的曲线方向</div>
+        </div>
+        <div class="badge mono" id="curveBadge">—</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 1 · YIELD CURVE ========== -->
+<section id="curve">
+  <div class="sec-head">
+    <span class="sec-num">01</span>
+    <span class="sec-title">收益率曲线</span>
+    <span class="sec-en">Yield Curve</span>
+  </div>
+  <p class="sec-note">全曲线 11 个期限的水平与变动。叠加图对比当前、一周前、一月前——可直接读出曲线是平移、变陡还是变平,以及驱动来自前端(政策)还是长端(供给/通胀)。</p>
+  <div class="curve-grid">
+    <div class="panel chart-card fade">
+      <h4>par 收益率曲线 · 叠加对比</h4>
+      <div class="legend">
+        <span><i style="background:var(--accent)"></i>当前 (5/18)</span>
+        <span><i style="background:var(--blue)"></i>一周前</span>
+        <span><i style="background:var(--faint)"></i>一月前</span>
+      </div>
+      <div id="curveChart"></div>
+    </div>
+    <div class="panel tbl-card fade">
+      <h4>期限明细 · 单位 %</h4>
+      <table>
+        <thead><tr><th>期限</th><th>收益率</th><th>1日</th><th>1周</th><th>1月</th></tr></thead>
+        <tbody id="curveTable"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="metrics" id="curveMetrics"></div>
+</section>
+
+<!-- ========== 2 · YIELD DECOMPOSITION ========== -->
+<section id="decomp">
+  <div class="sec-head">
+    <span class="sec-num">02</span>
+    <span class="sec-title">收益率成分分解</span>
+    <span class="sec-en">Yield Decomposition</span>
+  </div>
+  <p class="sec-note">看到 10Y 在涨,先问<em style="color:var(--accent);font-style:normal">是谁在涨</em>。依据前美联储副主席 Clarida (2019) 四分法,把长期名义利率拆为<b>短端实际利率 + 短端通胀预期 + 实际期限溢价 + 通胀风险溢价</b>,从而判断本轮利率上行究竟是<em style="color:var(--accent);font-style:normal">加息预期</em>、<em style="color:var(--accent);font-style:normal">通胀冲击</em>,还是<em style="color:var(--accent);font-style:normal">供给/风险溢价</em>驱动——这是把"利率变化"翻译成"叙事变化"的核心环节。</p>
+
+  <!-- A. CLARIDA 四分法主公式 -->
+  <div class="panel decomp-main fade">
+    <div class="decomp-head">
+      <span class="dh-t">10年期名义收益率 · Clarida 四分法快照</span>
+      <span class="dh-eq">10Y Nominal = E[r_short] + E[π_short] + TP_real + RP_inflation</span>
+    </div>
+    <div class="decomp-row">
+      <div class="d-card d-sum">
+        <div class="dlab">10Y 名义<small>Nominal yield</small></div>
+        <div class="dval">4.61<span class="dpct">%</span></div>
+        <div class="dchg up">+35bp · 1月</div>
+      </div>
+      <div class="d-eq">=</div>
+      <div class="d-card">
+        <div class="dlab">① 短端实际利率<small>E[real short rate]</small></div>
+        <div class="dval">~1.6<span class="dpct">%</span></div>
+        <div class="dnote">EFFR 3.63 − 短期通胀预期 ≈ 2.0;受产出缺口与"双重使命"约束</div>
+        <div class="dtag">基本面 + 政策</div>
+      </div>
+      <div class="d-plus">+</div>
+      <div class="d-card">
+        <div class="dlab">② 短端通胀预期<small>E[π short]</small></div>
+        <div class="dval">~2.5<span class="dpct">%</span></div>
+        <div class="dnote">10Y BEI 约 2.48%;受能源/供应链与需求冲击驱动,长期锚定尚未完全脱锚</div>
+        <div class="dtag">供需冲击</div>
+      </div>
+      <div class="d-plus">+</div>
+      <div class="d-card">
+        <div class="dlab">③ 实际期限溢价<small>Real term premium</small></div>
+        <div class="dval">+0.31<span class="dpct">%</span></div>
+        <div class="dnote">ACM 模型估算;对供给压力、经济不确定性、风险偏好敏感</div>
+        <div class="dtag">供给 + 风险偏好</div>
+      </div>
+      <div class="d-plus">+</div>
+      <div class="d-card">
+        <div class="dlab">④ 通胀风险溢价<small>Inflation risk prem.</small></div>
+        <div class="dval">+0.20<span class="dpct">%</span></div>
+        <div class="dnote">≈ TIPS IC − E[π] − TIPS 流动性溢价;补偿未来通胀的不确定性</div>
+        <div class="dtag">通胀不确定性</div>
+      </div>
+    </div>
+    <p class="fnote" style="margin-top:14px"><b>读法</b> · 克拉里达框架强调:<em style="color:var(--accent);font-style:normal">基本面决定方向与趋势,美联储决定节奏,市场预期围绕美联储变化放大波动</em>。2020–2021 美联储零利率 + QE 把实际利率压至极低;2022 转向限制性政策推升实际利率。2026 当下的局面是 <b style="color:var(--bear)">实际利率重新上台阶,通胀补偿维持高位</b>——市场同时要求更高真实回报和通胀补偿,这是最难缠的组合。</p>
+  </div>
+
+  <!-- B. 双视角解读 -->
+  <div class="cols-2" style="margin-top:14px">
+    <div class="panel ipanel fade">
+      <h4>基本面视角 <span style="color:var(--faint)">Fundamental</span></h4>
+      <div class="vw-eq">长端名义 = 长端实际 + 长端通胀预期</div>
+      <div class="vw-eq vw-num">4.61% = 2.13% + 2.48%</div>
+      <div class="kv"><span class="k">10Y TIPS 实际利率</span><span class="v">2.13%</span></div>
+      <div class="kv"><span class="k">10Y 盈亏平衡通胀 (BEI)</span><span class="v">2.48%</span></div>
+      <div class="kv"><span class="k">实际利率 1月变动</span><span class="v up" style="color:var(--bear)">+23bp</span></div>
+      <div class="kv"><span class="k">BEI 1月变动</span><span class="v up" style="color:var(--bear)">+12bp</span></div>
+      <div class="kv"><span class="k">5y5y 远期通胀</span><span class="v" style="color:var(--bear)">上行</span></div>
+      <p class="fnote" style="margin-top:11px"><b>判断</b> · 实际利率反映真实增长、政策约束和期限风险。过去一个月 10Y 上行 35bp,其中实际利率贡献约 23bp、BEI 贡献约 12bp——当前已从单纯"通胀补偿上行"升级为 <b style="color:var(--bear)">真实利率再定价 + 通胀补偿高位</b> 的复合冲击。</p>
+    </div>
+    <div class="panel ipanel fade">
+      <h4>政策视角 <span style="color:var(--faint)">Policy</span></h4>
+      <div class="vw-eq">长端名义 = 短端名义 + 名义期限溢价</div>
+      <div class="vw-eq vw-num">4.61% = 3.63% + 0.98%</div>
+      <div class="kv"><span class="k">短端名义 (EFFR 锚定)</span><span class="v">3.63%</span></div>
+      <div class="kv"><span class="k">名义期限溢价/远期补偿</span><span class="v">+0.98%</span></div>
+      <div class="kv"><span class="k">短端 1月变动</span><span class="v flat" style="color:var(--neutral)">+0bp · 政策按兵</span></div>
+      <div class="kv"><span class="k">长端补偿 1月变动</span><span class="v up" style="color:var(--bear)">+35bp</span></div>
+      <div class="kv"><span class="k">10Y−2Y 期限利差</span><span class="v">+54bp · 熊陡</span></div>
+      <p class="fnote" style="margin-top:11px"><b>判断</b> · 当美联储短端政策保持 3.50–3.75% 不变,长端继续上行就意味着市场在要求更高的期限补偿。过去一个月前端被锚定,10Y–2Y 斜率扩大到约 54bp,熊陡逻辑仍然成立。</p>
+    </div>
+  </div>
+
+  <!-- C. 变动归因表 -->
+  <div class="panel attr-card fade" style="margin-top:14px">
+    <h4>近期 10Y 变动归因 <span style="color:var(--faint)">Move Attribution · 单位 bp</span></h4>
+    <table class="attr-tbl">
+      <thead>
+        <tr>
+          <th>时间窗口</th>
+          <th>10Y 总变动</th>
+          <th>① 实际利率</th>
+          <th>② 通胀预期</th>
+          <th>③ 期限溢价</th>
+          <th>④ 通胀风险</th>
+          <th>主驱动</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1 日</td>
+          <td style="color:var(--bear);font-weight:600">+2</td>
+          <td style="color:var(--bear)">+3</td>
+          <td style="color:var(--bull)">−1</td>
+          <td>+0</td>
+          <td>+0</td>
+          <td><span class="drv-tp">实际利率</span></td>
+        </tr>
+        <tr>
+          <td>1 周</td>
+          <td style="color:var(--bear);font-weight:600">+19</td>
+          <td style="color:var(--bear)">+18</td>
+          <td>+1</td>
+          <td>+0</td>
+          <td>+0</td>
+          <td><span class="drv-tp">真实利率</span></td>
+        </tr>
+        <tr>
+          <td>1 月</td>
+          <td style="color:var(--bear);font-weight:600">+35</td>
+          <td style="color:var(--bear)">+23</td>
+          <td style="color:var(--bear)">+12</td>
+          <td>+0</td>
+          <td>+0</td>
+          <td><span class="drv-mix">真实利率+通胀</span></td>
+        </tr>
+        <tr>
+          <td>YTD (年初至今)</td>
+          <td style="color:var(--bear);font-weight:600">+42</td>
+          <td style="color:var(--bear)">+19</td>
+          <td style="color:var(--bear)">+23</td>
+          <td>—</td>
+          <td>—</td>
+          <td><span class="drv-inf">双轮驱动</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="attr-bars">
+      <div class="ab-title">近 1 月 ↑35bp 的成分贡献</div>
+      <div class="ab-row">
+        <span class="ab-lab">① 实际利率</span>
+        <div class="ab-track"><i class="ab-bar ab-r" style="width:66%"></i></div>
+        <span class="ab-num">+23</span>
+      </div>
+      <div class="ab-row">
+        <span class="ab-lab">② 通胀预期</span>
+        <div class="ab-track"><i class="ab-bar ab-pi" style="width:34%"></i></div>
+        <span class="ab-num">+12</span>
+      </div>
+      <div class="ab-row">
+        <span class="ab-lab">③ 期限溢价</span>
+        <div class="ab-track"><i class="ab-bar ab-tp" style="width:0%"></i></div>
+        <span class="ab-num">—</span>
+      </div>
+      <div class="ab-row">
+        <span class="ab-lab">④ 通胀风险溢价</span>
+        <div class="ab-track"><i class="ab-bar ab-ip" style="width:0%"></i></div>
+        <span class="ab-num">—</span>
+      </div>
+    </div>
+    <p class="fnote" style="margin-top:14px"><b>结论</b> · 近一月 10Y 上行 35bp,其中 <b style="color:var(--bear)">10Y TIPS 实际利率贡献约 23bp,BEI 贡献约 12bp</b>。这说明本轮上行已不是"通胀预期单点上行",而是能源冲击推高通胀补偿后,市场又开始要求更高真实回报。反向催化需要同时看到<em style="color:var(--accent);font-style:normal">能源回落/地缘缓和</em>和<em style="color:var(--accent);font-style:normal">增长或就业降温</em>,单凭鸽派语调难以扭转长端方向。</p>
+  </div>
+
+  <!-- D. 三种短端预期来源 -->
+  <div class="panel ipanel fade" style="margin-top:14px">
+    <h4>短端利率预期 · 三种来源对比 <span style="color:var(--faint)">Expectations Sources</span></h4>
+    <p class="fnote" style="margin-bottom:13px">①式中的"短端实际利率"取决于<em style="color:var(--accent);font-style:normal">看谁的预期</em>。三种来源的覆盖面、频率与滞后性差异巨大,差异本身就是定价信号。</p>
+    <div class="exp-grid">
+      <div class="exp-card">
+        <div class="ec-h">① 美联储 SEP · 点阵图</div>
+        <div class="ec-v">2026 中位数 ~3.75%</div>
+        <div class="ec-n">官方季度预期,反映 19 位票委观点。4 月会议 8–4 投票为 1992 年以来最多异议,Warsh 接任后市场关注政策反应函数是否更鹰。频率最低 (季度)。</div>
+      </div>
+      <div class="exp-card">
+        <div class="ec-h">② FF 期货 / OIS 隐含</div>
+        <div class="ec-v">降息定价显著退潮 · 加息尾部升温</div>
+        <div class="ec-n">实时市场定价(彭博 WIRP / CME FedWatch),覆盖货币市场参与者,优势在实时性。油价冲击后,市场从"降息路径"转向重新评估更高终端利率风险。</div>
+      </div>
+      <div class="exp-card">
+        <div class="ec-h">③ 调查 (SPF / Blue Chip)</div>
+        <div class="ec-v">2026 年末 ~3.75%</div>
+        <div class="ec-n">覆盖更广的机构经济学家,通常作为"理性预期"基准。频率较低(月/季),滞后明显,但能反映非货币市场参与者的看法。</div>
+      </div>
+    </div>
+    <p class="fnote" style="margin-top:13px"><b>差异解读</b> · 市场隐含路径已明显鹰于年初宽松预期,但官方点阵图仍偏季度滞后。这种"<em style="color:var(--accent);font-style:normal">市场先跑、官方后确认</em>"的格局,正是 2025→2026 政策路径逆转的典型形态。三者收敛到哪一头,就是下一阶段的方向。</p>
+  </div>
+</section>
+
+<!-- ========== 3 · SCORECARD ========== -->
+<section id="scorecard">
+  <div class="sec-head">
+    <span class="sec-num">03</span>
+    <span class="sec-title">因子计分卡</span>
+    <span class="sec-en">Factor Scorecard</span>
+  </div>
+  <p class="sec-note">看板的核心——把数据翻译成立场。每个因子打 −2(强烈利空久期)到 +2(强烈利多久期)分,加权汇总为综合久期立场。<b style="color:var(--accent)">点击信号格可手动调整评分</b>,综合分与立场会实时重算;权重也可编辑。这就是"分析"与"数据"的接口。</p>
+
+  <div class="panel gauge-card fade">
+    <div class="gauge-top">
+      <div class="gauge-read">
+        <div class="gk">综合久期立场 · Composite</div>
+        <div class="gv" id="compLabel">—</div>
+        <div class="gs" id="compScore">综合分 —</div>
+      </div>
+      <div class="gauge-read" style="text-align:right">
+        <div class="gk">曲线立场 · Curve</div>
+        <div class="gv" id="compCurve">—</div>
+        <div class="gs" id="compCurveScore">曲线分 —</div>
+      </div>
+    </div>
+    <div class="gtrack-wrap">
+      <div class="gtrack"><div class="gmarker" id="gMarker" style="left:50%"></div></div>
+      <div class="gscale">
+        <span>强烈看空</span><span>看空</span><span>中性</span><span>看多</span><span>强烈看多</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="groups"></div>
+</section>
+
+<!-- ========== 4 · POLICY ========== -->
+<section id="policy">
+  <div class="sec-head">
+    <span class="sec-num">04</span>
+    <span class="sec-title">货币政策路径</span>
+    <span class="sec-en">Monetary Policy</span>
+  </div>
+  <p class="sec-note">政策利率、市场隐含路径与流动性管道。注意:2026 年的核心叙事是市场定价从"降息"转向"加息"——这是看板需要持续盯防的拐点。</p>
+  <div class="cols-3">
+    <div class="panel ipanel fade">
+      <h4>政策利率 <span style="color:var(--faint)">Policy Rate</span></h4>
+      <div class="kv"><span class="k">联邦基金目标区间</span><span class="v">3.50–3.75%</span></div>
+      <div class="kv"><span class="k">有效联邦基金利率 EFFR</span><span class="v">3.63%</span></div>
+      <div class="kv"><span class="k">SOFR (担保隔夜)</span><span class="v">~3.65%</span></div>
+      <div class="kv"><span class="k">上次会议 (4/28–29)</span><span class="v" style="color:var(--bear)">按兵不动</span></div>
+      <div class="kv"><span class="k">投票分歧</span><span class="v">8–4</span></div>
+      <div class="kv"><span class="k">新任主席</span><span class="v">K. Warsh</span></div>
+      <p class="fnote" style="margin-top:10px">连续三次维持利率;8–4 投票为 1992 年以来最多异议——一名理事主张降息,三名反对"未来恢复降息"的措辞。Warsh 于 5/15 接任后,市场重新评估政策反应函数是否更鹰。</p>
+    </div>
+    <div class="panel ipanel fade">
+      <h4>市场隐含政策路径 <span style="color:var(--faint)">Implied Path</span></h4>
+      <p class="fnote" style="margin-bottom:10px">Fed Funds 期货隐含的各次会议结果概率(加息 / 持平 / 降息):</p>
+      <div class="path" id="fedPath"></div>
+      <p class="fnote" style="margin-top:11px">近端会议仍几乎完全定价按兵不动,但远端已与 2025 年降息周期 <b style="color:var(--bear)">明显逆转</b>:市场开始给年内加息尾部风险更高权重,定价驱动来自能源通胀传导。</p>
+    </div>
+    <div class="panel ipanel fade">
+      <h4>流动性管道 <span style="color:var(--faint)">Plumbing</span></h4>
+      <div class="kv"><span class="k">美联储资产负债表</span><span class="v">~$6.73T</span></div>
+      <div class="kv"><span class="k">缩表 (QT)</span><span class="v">已结束</span></div>
+      <div class="kv"><span class="k">准备金余额</span><span class="v">~$3.0T · 充裕</span></div>
+      <div class="kv"><span class="k">ON RRP 其他账户</span><span class="v">~$0.004T (近枯竭)</span></div>
+      <div class="kv"><span class="k">财政部一般账户 TGA</span><span class="v">~$0.81T</span></div>
+      <p class="fnote" style="margin-top:10px">H.4.1 显示总资产约 6.73 万亿美元、TGA 约 8070 亿美元。ON RRP 已接近枯竭,但准备金仍充裕;TGA 高位意味着财政现金对银行体系流动性仍有抽水压力。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 5 · SUPPLY ========== -->
+<section id="supply">
+  <div class="sec-head">
+    <span class="sec-num">05</span>
+    <span class="sec-title">供给与拍卖</span>
+    <span class="sec-en">Supply &amp; Auctions</span>
+  </div>
+  <p class="sec-note">发行节奏、拍卖质量与财政现金。拍卖"尾部"(中标利率高于发行前水平)和投标倍数偏低,是长端需求疲弱最直接的实证信号。</p>
+  <div class="cols-2">
+    <div class="panel ipanel fade">
+      <h4>近期拍卖评分 <span style="color:var(--faint)">Recent Auctions</span></h4>
+      <table>
+        <thead><tr><th>品种</th><th>规模</th><th>中标利率</th><th>投标倍数</th><th>评级</th></tr></thead>
+        <tbody>
+          <tr><td>30年期 国债</td><td>$25B</td><td>5.046%</td><td>2.30</td><td><span class="grade g-soft">疲弱·尾部</span></td></tr>
+          <tr><td>10年期 国债</td><td>$42B</td><td>4.468%</td><td>2.40</td><td><span class="grade g-mid">中性偏弱</span></td></tr>
+          <tr><td>3年期 国债</td><td>$58B</td><td>3.965%</td><td>2.54</td><td><span class="grade g-mid">偏软</span></td></tr>
+          <tr><td>13周 国库券</td><td>$89B</td><td>~3.60%</td><td>2.86</td><td><span class="grade g-strong">稳健</span></td></tr>
+        </tbody>
+      </table>
+      <p class="fnote" style="margin-top:11px">长端拍卖明显走弱:30 年期以 5.046% 高收益率发行(2007 年以来首次在拍卖中破 5%),投标倍数 2.30 且出现尾部。前端票据需求仍稳健——需求分层明确。</p>
+    </div>
+    <div class="panel ipanel fade">
+      <h4>发行结构与财政 <span style="color:var(--faint)">Issuance &amp; Fiscal</span></h4>
+      <div class="kv"><span class="k">季度再融资 (QRA)</span><span class="v">息票规模维持高位</span></div>
+      <div class="kv"><span class="k">净息票供给趋势</span><span class="v" style="color:var(--bear)">上行</span></div>
+      <div class="kv"><span class="k">国库券占比</span><span class="v">偏高</span></div>
+      <div class="kv"><span class="k">联邦赤字 (占 GDP)</span><span class="v" style="color:var(--bear)">~6%+</span></div>
+      <div class="kv"><span class="k">TGA 余额趋势</span><span class="v">高位 ~$0.81T</span></div>
+      <p class="fnote" style="margin-top:11px">财政赤字高企叠加再融资规模,长端供给压力持续——这是曲线"做陡"逻辑的结构性支柱。下一次 QRA(约 8 月)是关键观察点:若进一步上调长债占比,长端期限溢价将再受冲击。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 6 · POSITIONING ========== -->
+<section id="positioning">
+  <div class="sec-head">
+    <span class="sec-num">06</span>
+    <span class="sec-title">持仓与资金流</span>
+    <span class="sec-en">Positioning &amp; Flows</span>
+  </div>
+  <p class="sec-note">谁在买、谁在卖。CFTC 持仓为周频,TIC 外资数据为月频且滞后约六周——频率较低是天然限制,但持仓极值往往是反向交易的预警。</p>
+  <div class="cols-2">
+    <div class="panel ipanel fade">
+      <h4>CFTC 期货持仓 <span style="color:var(--faint)">Weekly · 周频</span></h4>
+      <div class="kv"><span class="k">杠杆基金 · 长端 (10Y/30Y)</span><span class="v" style="color:var(--bear)">净空头 (偏极端)</span></div>
+      <div class="kv"><span class="k">杠杆基金 · 前端 (2Y/5Y)</span><span class="v">净空头</span></div>
+      <div class="kv"><span class="k">资产管理人 · 长端</span><span class="v" style="color:var(--bull)">净多头</span></div>
+      <div class="kv"><span class="k">基差交易 (现券-期货)</span><span class="v">规模庞大</span></div>
+      <p class="fnote" style="margin-top:11px">杠杆基金长端净空头处历史偏极端水平——一旦出现利好催化(衰退信号、地缘缓和),存在 <b style="color:var(--accent)">轧空风险</b>,对久期构成反向温和利多。基差交易规模大,需警惕去杠杆引发的流动性事件。</p>
+    </div>
+    <div class="panel ipanel fade">
+      <h4>海外持仓 (TIC) <span style="color:var(--faint)">Monthly · 月频滞后</span></h4>
+      <div class="kv"><span class="k">日本 (最大持有国)</span><span class="v">~$1.192T · 下降</span></div>
+      <div class="kv"><span class="k">中国</span><span class="v" style="color:var(--bear)">~$0.652T · 下降</span></div>
+      <div class="kv"><span class="k">全球外资总持仓</span><span class="v">~$9.35T</span></div>
+      <div class="kv"><span class="k">长债海外需求</span><span class="v" style="color:var(--bear)">边际走弱</span></div>
+      <p class="fnote" style="margin-top:11px">3 月 TIC 数据显示,前十大海外持有者中多数减持;日本减持约 477 亿美元,中国降至约 6523 亿美元。海外买盘对长端的边际支撑下降,与拍卖端长债需求偏弱相互印证。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 7 · CROSS-MARKET ========== -->
+<section id="cross">
+  <div class="sec-head">
+    <span class="sec-num">07</span>
+    <span class="sec-title">跨市场背景</span>
+    <span class="sec-en">Cross-Market</span>
+  </div>
+  <p class="sec-note">美债从不孤立定价。全球利率、风险资产、美元与通胀补偿共同构成背景板——其中实际利率与盈亏平衡通胀的拆分,是判断"利率上行由真实利率还是通胀预期驱动"的关键。</p>
+  <div class="cols-3">
+    <div class="panel ipanel fade">
+      <h4>全球 10 年期国债 <span style="color:var(--faint)">Global 10Y</span></h4>
+      <div class="kv"><span class="k">美国 UST</span><span class="v">4.61%</span></div>
+      <div class="kv"><span class="k">德国 Bund</span><span class="v">~2.92%</span></div>
+      <div class="kv"><span class="k">英国 Gilt</span><span class="v">~4.88%</span></div>
+      <div class="kv"><span class="k">日本 JGB</span><span class="v">~1.92%</span></div>
+      <div class="kv"><span class="k">UST–Bund 利差</span><span class="v">~+169bp</span></div>
+      <p class="fnote" style="margin-top:10px">美德利差走阔反映美国通胀与供给溢价更高。全球长端同步承压,属系统性而非美国独有。</p>
+    </div>
+    <div class="panel ipanel fade">
+      <h4>风险资产与美元 <span style="color:var(--faint)">Risk &amp; USD</span></h4>
+      <div class="kv"><span class="k">标普 500</span><span class="v">近历史高位</span></div>
+      <div class="kv"><span class="k">VIX</span><span class="v">偏低·小幅抬升</span></div>
+      <div class="kv"><span class="k">美元指数 DXY</span><span class="v" style="color:var(--bull)">走强</span></div>
+      <div class="kv"><span class="k">IG 信用利差 OAS</span><span class="v">温和走阔</span></div>
+      <div class="kv"><span class="k">HY 信用利差 OAS</span><span class="v">走阔</span></div>
+      <p class="fnote" style="margin-top:10px">股市与利率背离——股票对加息预期相对钝化;美元因加息预期走强;信用利差小幅走阔,暗示市场已嗅到紧缩风险。</p>
+    </div>
+    <div class="panel ipanel fade">
+      <h4>通胀补偿与商品 <span style="color:var(--faint)">Inflation &amp; Cmdty</span></h4>
+      <div class="kv"><span class="k">10年盈亏平衡通胀</span><span class="v" style="color:var(--bear)">~2.48%</span></div>
+      <div class="kv"><span class="k">10年实际利率 (TIPS)</span><span class="v">~2.13%</span></div>
+      <div class="kv"><span class="k">5y5y 远期通胀</span><span class="v" style="color:var(--bear)">上行</span></div>
+      <div class="kv"><span class="k">原油 (布伦特)</span><span class="v" style="color:var(--bear)">高位·霍尔木兹</span></div>
+      <div class="kv"><span class="k">黄金 / 白银</span><span class="v">强势</span></div>
+      <p class="fnote" style="margin-top:10px">名义利率上行 <b style="color:var(--accent)">同时</b>由实际利率(政策更紧)和盈亏平衡通胀(能源冲击)推动——这是最难缠的组合,削弱了"久期避险"属性。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 8 · EVENTS ========== -->
+<section id="events">
+  <div class="sec-head">
+    <span class="sec-num">08</span>
+    <span class="sec-title">事件与新闻</span>
+    <span class="sec-en">Events &amp; News</span>
+  </div>
+  <p class="sec-note">市场交易的是"超预期"而非数据本身。下方左侧为前瞻事件日历,右侧为驱动近期价格的新闻流。</p>
+  <div class="cols-2">
+    <div class="panel ipanel fade">
+      <h4>前瞻事件日历 <span style="color:var(--faint)">Calendar</span></h4>
+      <div class="cal-item"><span class="cal-date">5/20</span><span class="cal-ev">FOMC 4月会议纪要</span><span class="imp imp-m">中</span></div>
+      <div class="cal-item"><span class="cal-date">5/27–29</span><span class="cal-ev">2Y / 5Y / 7Y 国债拍卖</span><span class="imp imp-m">中</span></div>
+      <div class="cal-item"><span class="cal-date">6/5</span><span class="cal-ev">5月非农就业报告</span><span class="imp imp-h">高</span></div>
+      <div class="cal-item"><span class="cal-date">6/10</span><span class="cal-ev">5月 CPI 通胀数据</span><span class="imp imp-h">高</span></div>
+      <div class="cal-item"><span class="cal-date">6/16–17</span><span class="cal-ev">FOMC 决议 + 经济预测/点阵图</span><span class="imp imp-h">高</span></div>
+      <div class="cal-item"><span class="cal-date">~8月初</span><span class="cal-ev">季度再融资公告 (QRA)</span><span class="imp imp-h">高</span></div>
+      <p class="fnote" style="margin-top:11px">6 月 FOMC 附带新的点阵图——若多数票委转向"加息"指引,将是政策路径正式逆转的确认点。</p>
+    </div>
+    <div class="panel ipanel fade">
+      <h4>驱动新闻流 <span style="color:var(--faint)">News Flow</span></h4>
+      <div id="newsFeed"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 9 · SYNTHESIS ========== -->
+<section id="synthesis">
+  <div class="sec-head">
+    <span class="sec-num">09</span>
+    <span class="sec-title">投资观点综合</span>
+    <span class="sec-en">Investment View</span>
+  </div>
+  <p class="sec-note">计分卡的结论落到可执行的交易上。每个想法都标注其背后的因子来源——这是把"数据表现"与"投资分析"绑定的最后一环。</p>
+
+  <div class="panel synth fade">
+    <div class="thesis" id="thesisBox" contenteditable="true"></div>
+    <div class="edit-hint">↑ 可直接点击编辑这段论点 · 计分卡评分变动时会给出更新提示</div>
+
+    <div class="trade">
+      <div class="tno">01</div>
+      <div>
+        <div class="tt">战术减久期 / 维持低于基准久期<span class="dir dir-short">SHORT 久期</span></div>
+        <div class="tb">通胀动能尚未见顶、政策路径向加息倾斜之前,组合久期保持低配。等待 CPI 环比动能转弱或地缘降温作为加回久期的触发条件。</div>
+        <div class="tlink">因子来源 → 宏观基本面 · 货币政策</div>
+      </div>
+    </div>
+    <div class="trade">
+      <div class="tno">02</div>
+      <div>
+        <div class="tt">做陡 5s30s 曲线<span class="dir dir-rv">CURVE 做陡</span></div>
+        <div class="tb">前端被"按兵不动"的美联储锚定,长端受供给压力 + 期限溢价上行 + 海外需求走弱三重拖累。熊市变陡是当前结构最顺的曲线方向。</div>
+        <div class="tlink">因子来源 → 供给与技术面 · 需求与持仓</div>
+      </div>
+    </div>
+    <div class="trade">
+      <div class="tno">03</div>
+      <div>
+        <div class="tt">前端持有 · 吃 carry<span class="dir dir-long">LONG 前端</span></div>
+        <div class="tb">2Y 收益率被政策锚定、波动相对可控,持有票息回报为正且 roll-down 友好。相对长端,前端是"风险调整后"更优的久期敞口。</div>
+        <div class="tlink">因子来源 → 货币政策 · 相对价值</div>
+      </div>
+    </div>
+    <div class="trade">
+      <div class="tno">04</div>
+      <div>
+        <div class="tt">战术做多盈亏平衡通胀<span class="dir dir-rv">RV 通胀</span></div>
+        <div class="tb">能源冲击向核心通胀传导的过程中,买入盈亏平衡(做多 TIPS / 做空名义)可对冲通胀上行。属战术性头寸,需在能源冲击消退迹象出现时了结。</div>
+        <div class="tlink">因子来源 → 跨市场 · 宏观基本面</div>
+      </div>
+    </div>
+
+    <div class="risk">
+      <div class="rt">⚠ 风险情景 · Risk Scenarios</div>
+      <div class="rb">
+        本立场的最大反向风险:<b style="color:var(--ink)">①</b> 地缘冲突快速缓和、霍尔木兹复航 → 油价回落、通胀预期降温,利率快速下行;
+        <b style="color:var(--ink)">②</b> 劳动力市场骤然恶化 → 衰退叙事回归,曲线转为牛市变陡;
+        <b style="color:var(--ink)">③</b> 杠杆基金长端净空头轧空 + 基差交易去杠杆 → 利率剧烈下行的非基本面行情。
+        所有久期空头与做陡头寸均应带止损,持仓集中度需控制。
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <b>数据来源</b> · 收益率曲线: U.S. Treasury / FRED H.15 · 政策与流动性: Federal Reserve / NY Fed · 拍卖: TreasuryDirect · 持仓: CFTC COT / Treasury TIC · 跨市场与新闻: 公开市场数据与财经媒体快照<br>
+    <b>更新机制</b> · 看板按日频研究节奏维护静态快照;MOVE 指数等付费数据以收益率已实现波动作替代。<br>
+    <b>免责声明</b> · 本看板为研究与观测工具,所有评分与交易想法为框架示意,不构成投资建议。利率衍生品交易涉及重大风险。
+  </div>
+</footer>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   DATA LAYER  —  单一数据对象,便于更新或接入实时源
+   ============================================================ */
+const DATA = {
+  /* === BEGIN_PIPELINE_DATA === */
+  asOf:"2026-07-01",
+  curve:{
+    tenors:["1M","3M","6M","1Y","2Y","3Y","5Y","7Y","10Y","20Y","30Y"],
+    today:[3.67,3.85,4.00,4.00,4.17,4.19,4.24,4.35,4.48,4.97,4.97],
+    w1:   [3.66,3.85,3.95,3.99,4.11,4.15,4.17,4.28,4.41,4.87,4.86],
+    m1:   [3.72,3.78,3.79,3.83,4.05,4.09,4.18,4.32,4.47,4.99,4.99],
+    d1:   [-0.03,-0.02,-0.01,0.02,0.03,0.04,0.05,0.05,0.04,0.04,0.06]
+  },
+/* === END_PIPELINE_DATA === */
+  fedPath:[
+    {m:"6/17",hike:0,hold:99,cut:1},
+    {m:"7/29",hike:5,hold:93,cut:2},
+    {m:"9/16",hike:18,hold:78,cut:4},
+    {m:"10/28",hike:34,hold:62,cut:4},
+    {m:"12/9",hike:56,hold:40,cut:4}
+  ],
+  news:[
+    {d:"5/18",s:"U.S. Treasury",t:"日度收益率曲线更新:10Y 收于 4.61%,30Y 收于 5.14%"},
+    {d:"5/18",s:"U.S. Treasury TIC",t:"3月海外持仓下降:日本和中国均减持美债,外资总持仓降至约 9.35 万亿美元"},
+    {d:"5/15",s:"CNBC",t:"通胀数据指向棘手的利率路径,美债收益率走高"},
+    {d:"5/14",s:"CNBC",t:"进出口物价大幅超预期,收益率维持高位震荡"},
+    {d:"5/13",s:"CNBC",t:"PPI 数据火热,10年期收益率刷新年内新高"},
+    {d:"5/12",s:"BLS",t:"4月 CPI 同比 3.8%,核心 CPI 同比 2.8%,能源项贡献显著"}
+  ],
+  // 因子计分卡:score 正=利多久期(收益率下行),curve 正=做陡
+  groups:[
+    {id:"g1",name:"货币政策",en:"Monetary Policy",weight:25,factors:[
+      {n:"联邦基金目标利率",tag:"3.50–3.75% · 连续3次持平",v:"持平",score:-1,
+       note:"政策按兵不动,但市场已转向定价加息,基准已不再是宽松。"},
+      {n:"隐含政策路径",tag:"Fed Funds 期货",v:"偏加息",score:-2,
+       note:"期货/OIS 已显著削弱降息定价,市场开始给加息尾部风险更高权重。"},
+      {n:"新任主席倾向",tag:"K. Warsh · 5/15接任",v:"偏鹰",score:-1,
+       note:"Warsh 接替 Powell,市场视其为偏鹰,强化紧缩预期。"},
+      {n:"资产负债表 / 准备金",tag:"QT 已结束",v:"温和宽松",score:1,
+       note:"美联储维持购买短期国债保持准备金充裕,对前端温和利多。"}
+    ]},
+    {id:"g2",name:"宏观基本面",en:"Macro Fundamentals",weight:25,factors:[
+      {n:"CPI 通胀 (4月)",tag:"3.8% 同比 / 0.6% 环比",v:"超预期",score:-2,
+       note:"能源冲击向核心通胀传导, headline CPI 创近三年高位。"},
+      {n:"PPI 生产者物价 (4月)",tag:"+1.4% 环比 / +6% 同比",v:"爆表",score:-2,
+       note:"生产端价格大幅超预期,通胀压力链条向下游延伸。"},
+      {n:"劳动力市场",tag:"就业增长偏低",v:"温和降温",score:1,
+       note:"就业增长偏低、失业率变化不大;降温但被通胀压制。"},
+      {n:"增长动能",tag:"活动稳健扩张",v:"稳健",score:-1,
+       note:"经济仍以稳健速度扩张,衰退风险有限,不支持降息。"}
+    ]},
+    {id:"g3",name:"供给与技术面",en:"Supply & Technicals",weight:15,factors:[
+      {n:"30年期拍卖",tag:"5.046% · 2.30x",v:"疲弱",score:-2,curve:2,
+       note:"30年期以5.046%发行、投标倍数2.30且尾部,长端需求疲弱。"},
+      {n:"发行节奏 / QRA",tag:"息票规模高位",v:"压力大",score:-1,curve:1,
+       note:"财政赤字叠加再融资规模,长端供给压力结构性持续。"},
+      {n:"TGA 与现金管理",tag:"~$0.81T",v:"抽水",score:-1,
+       note:"TGA 高位对银行体系流动性仍有边际抽水压力。"}
+    ]},
+    {id:"g4",name:"需求与持仓",en:"Demand & Positioning",weight:15,factors:[
+      {n:"CFTC 杠杆基金持仓",tag:"长端净空 · 偏极端",v:"反向利多",score:1,
+       note:"杠杆基金长端净空头偏极端,存在轧空风险,反向温和利多。"},
+      {n:"TIC 海外持仓",tag:"3月外资减持",v:"偏弱",score:-1,
+       note:"日本、中国及多家主要海外持有者减持,外资对长端边际支撑下降。"},
+      {n:"一级交易商持仓",tag:"中性",v:"中性",score:0,
+       note:"交易商库存中性,未见明显被动累库压力。"}
+    ]},
+    {id:"g5",name:"相对价值",en:"Relative Value",weight:10,factors:[
+      {n:"期限溢价 (ACM)",tag:"长端抛售推升",v:"估值转吸引",score:1,
+       note:"长端抛售推升期限溢价,从相对价值看长端估值转吸引。"},
+      {n:"实际利率 / 盈亏平衡",tag:"10Y TIPS 2.13% / BEI 2.48%",v:"偏空",score:-1,
+       note:"实际利率快速上台阶,盈亏平衡通胀仍处高位,名义利率承压。"},
+      {n:"互换利差",tag:"中性",v:"中性",score:0,
+       note:"互换利差未见极端信号,跨产品基差大体均衡。"}
+    ]},
+    {id:"g6",name:"情绪与流动性",en:"Sentiment & Liquidity",weight:10,factors:[
+      {n:"利率波动 (MOVE 代理)",tag:"收益率创年内新高",v:"高波动",score:-1,
+       note:"收益率创一年新高,地缘风险推升利率波动,波动代理处高位。"},
+      {n:"市场流动性",tag:"轻度承压",v:"偏紧",score:-1,
+       note:"长端深度变薄、买卖价差走阔,流动性边际转差。"},
+      {n:"新老券利差",tag:"中性",v:"中性",score:0,
+       note:"新老券利差未见明显挤压,融资市场大体平稳。"}
+    ]}
+  ]
+};
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const fmt=n=>(n>=0?"+":"")+n.toFixed(2);
+const SCORE_COLORS={"-2":"var(--bear)","-1":"var(--bear)","0":"var(--neutral)","1":"var(--bull)","2":"var(--bull)"};
+const SCORE_LABEL={"-2":"强烈利空","-1":"利空久期","0":"中性","1":"利多久期","2":"强烈利多"};
+
+function toast(msg){
+  const t=$("#toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(t._tm); t._tm=setTimeout(()=>t.classList.remove("show"),3200);
+}
+
+/* ---- duration stance mapping ---- */
+function stanceLabel(c){
+  if(c<=-1.3) return["强烈看空","SELL"];
+  if(c<=-0.5) return["看空久期","SELL"];
+  if(c<=-0.18)return["中性偏空","HOLD"];
+  if(c< 0.18)return["中性","HOLD"];
+  if(c< 0.5) return["中性偏多","BUY"];
+  if(c< 1.3) return["看多久期","BUY"];
+  return["强烈看多","BUY"];
+}
+
+/* ============================================================
+   RENDER · SUMMARY TILES
+   ============================================================ */
+function renderHeroTiles(){
+  const C=DATA.curve, idx={"2Y":4,"5Y":6,"10Y":8,"30Y":10};
+  const tiles=[];
+  ["2Y","5Y","10Y","30Y"].forEach(k=>{
+    const i=idx[k], d=C.d1[i];
+    tiles.push({lab:k,val:C.today[i].toFixed(2)+"%",
+      chg:fmt(d*100).replace("+","+").replace("-","−")+" bp",cls:d>0?"up":d<0?"down":"flat"});
+  });
+  const s2s10=(C.today[8]-C.today[4])*100, s5s30=(C.today[10]-C.today[6])*100;
+  tiles.push({lab:"2s10s 斜率",val:Math.round(s2s10)+" bp",chg:"曲线变陡",cls:"flat"});
+  tiles.push({lab:"5s30s 斜率",val:Math.round(s5s30)+" bp",chg:"曲线变陡",cls:"flat"});
+  $("#heroTiles").innerHTML=tiles.map(t=>`
+    <div class="tile">
+      <div class="lab">${t.lab}</div>
+      <div class="val">${t.val}</div>
+      <div class="chg ${t.cls}">${t.chg}</div>
+    </div>`).join("");
+}
+
+/* ============================================================
+   RENDER · YIELD CURVE CHART (hand-drawn SVG)
+   ============================================================ */
+function renderCurveChart(){
+  const C=DATA.curve, W=560,H=290,
+    pL=42,pR=14,pT=16,pB=34, n=C.tenors.length;
+  const all=[...C.today,...C.w1,...C.m1];
+  let lo=Math.floor(Math.min(...all)*10)/10-0.1, hi=Math.ceil(Math.max(...all)*10)/10+0.1;
+  const x=i=>pL+i*((W-pL-pR)/(n-1));
+  const y=v=>pT+(hi-v)/(hi-lo)*(H-pT-pB);
+  const path=arr=>arr.map((v,i)=>(i?"L":"M")+x(i).toFixed(1)+","+y(v).toFixed(1)).join(" ");
+  // gridlines
+  let grid="";
+  for(let g=Math.ceil(lo*2)/2; g<=hi; g+=0.5){
+    grid+=`<line x1="${pL}" y1="${y(g)}" x2="${W-pR}" y2="${y(g)}" style="stroke:var(--line-soft)" stroke-width="1"/>
+           <text x="${pL-7}" y="${y(g)+3.5}" style="fill:var(--faint)" font-size="9" text-anchor="end" font-family="'JetBrains Mono',monospace">${g.toFixed(1)}</text>`;
+  }
+  let xlab="";
+  C.tenors.forEach((t,i)=>{ xlab+=`<text x="${x(i)}" y="${H-12}" style="fill:var(--faint)" font-size="9" text-anchor="middle" font-family="'JetBrains Mono',monospace">${t}</text>`; });
+  // dots for today
+  let dots="";
+  C.today.forEach((v,i)=>{ dots+=`<circle cx="${x(i)}" cy="${y(v)}" r="3" style="fill:var(--accent)"/>`; });
+  $("#curveChart").innerHTML=`
+    <svg viewBox="0 0 ${W} ${H}">
+      ${grid}${xlab}
+      <path d="${path(C.m1)}" style="fill:none;stroke:var(--faint)" stroke-width="1.6" stroke-dasharray="3 3"/>
+      <path d="${path(C.w1)}" style="fill:none;stroke:var(--blue)" stroke-width="1.8"/>
+      <path d="${path(C.today)}" style="fill:none;stroke:var(--accent)" stroke-width="2.4"/>
+      ${dots}
+    </svg>`;
+}
+
+/* ============================================================
+   RENDER · CURVE TABLE + METRICS
+   ============================================================ */
+function renderCurveTable(){
+  const C=DATA.curve;
+  $("#curveTable").innerHTML=C.tenors.map((t,i)=>{
+    const d1=C.d1[i]*100, dw=(C.today[i]-C.w1[i])*100, dm=(C.today[i]-C.m1[i])*100;
+    const col=v=>v>0.5?"up":v<-0.5?"down":"flat";
+    const cell=v=>`<span class="${col(v)}">${(v>=0?"+":"−")+Math.abs(v).toFixed(0)}</span>`;
+    return `<tr><td>${t}</td><td>${C.today[i].toFixed(2)}</td>
+      <td>${cell(d1)}</td><td>${cell(dw)}</td><td>${cell(dm)}</td></tr>`;
+  }).join("");
+}
+function renderCurveMetrics(){
+  const C=DATA.curve;
+  const s2s10=(C.today[8]-C.today[4])*100;
+  const s5s30=(C.today[10]-C.today[6])*100;
+  const s3m10=(C.today[8]-C.today[1])*100;
+  const fly=(2*C.today[6]-C.today[4]-C.today[8])*100;
+  const m=[
+    {k:"2s10s",v:Math.round(s2s10)+" bp",n:"正斜率,熊市变陡——长端领涨收益率。"},
+    {k:"5s30s",v:Math.round(s5s30)+" bp",n:"长端陡峭化,反映供给与期限溢价压力。"},
+    {k:"3m10y",v:Math.round(s3m10)+" bp",n:"久违转正,衰退信号暂时解除。"},
+    {k:"2s5s10s 蝶式",v:(fly>=0?"+":"")+Math.round(fly)+" bp",n:"中段相对便宜,曲率轻微凹陷。"}
+  ];
+  $("#curveMetrics").innerHTML=m.map(x=>`
+    <div class="metric">
+      <div class="mk">${x.k}</div>
+      <div class="mv">${x.v}</div>
+      <div class="mn">${x.n}</div>
+    </div>`).join("");
+}
+
+/* ============================================================
+   RENDER · FED PATH
+   ============================================================ */
+function renderFedPath(){
+  $("#fedPath").innerHTML=DATA.fedPath.map(p=>{
+    const dom=Math.max(p.hike,p.hold,p.cut);
+    const state=p.hike===dom?"加息":p.cut===dom?"降息":"持平";
+    const col=state==="加息"?"var(--bear)":state==="降息"?"var(--bull)":"var(--ink)";
+    return `<div class="pcell">
+      <div class="pm">${p.m}</div>
+      <div class="pp" style="color:${col}">${dom}%</div>
+      <div class="pt" style="color:${state==='持平'?'var(--muted)':col}">${state}</div>
+      <div class="pbar">
+        <i style="width:${dom}%;background:${col}"></i>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ============================================================
+   RENDER · NEWS
+   ============================================================ */
+function renderNews(){
+  $("#newsFeed").innerHTML=DATA.news.map(x=>`
+    <div class="news-item">
+      <div class="news-date">${x.d}</div>
+      <div class="news-body">${x.t}<br><span class="src">来源 · ${x.s}</span></div>
+    </div>`).join("");
+}
+
+/* ============================================================
+   RENDER · SCORECARD  (interactive)
+   ============================================================ */
+function groupScore(g){
+  let s=0; g.factors.forEach(f=>s+=f.score); return s/g.factors.length;
+}
+function curveScore(){
+  let s=0,c=0;
+  DATA.groups.forEach(g=>g.factors.forEach(f=>{
+    if(typeof f.curve==="number"){ s+=f.curve; c++; }
+  }));
+  return c?s/c:0;
+}
+function compositeScore(){
+  let wsum=0, acc=0;
+  DATA.groups.forEach(g=>{ wsum+=Number(g.weight)||0; });
+  DATA.groups.forEach(g=>{ acc+=groupScore(g)*((Number(g.weight)||0)/(wsum||1)); });
+  return acc;
+}
+
+function renderGroups(){
+  $("#groups").innerHTML=DATA.groups.map(g=>{
+    const gs=groupScore(g);
+    const rows=g.factors.map((f,fi)=>{
+      const segs=[-2,-1,0,1,2].map(v=>{
+        const active=f.score===v;
+        const bg=active?SCORE_COLORS[v]:"var(--panel-3)";
+        return `<div class="seg" style="background:${bg}" data-g="${g.id}" data-f="${fi}" data-v="${v}" title="${SCORE_LABEL[v]}"></div>`;
+      }).join("");
+      return `<div class="frow">
+        <div class="fname">${f.n}<span class="ftag">${f.tag}</span></div>
+        <div class="fval">${f.v}</div>
+        <div class="sig">${segs}<span class="lbl" style="color:${SCORE_COLORS[f.score]}">${SCORE_LABEL[f.score]}</span></div>
+        <div class="fnote">${f.note}</div>
+      </div>`;
+    }).join("");
+    return `<div class="grp open" id="grp-${g.id}">
+      <div class="grp-head" data-toggle="${g.id}">
+        <span class="grp-name">${g.name}</span>
+        <span class="grp-en">${g.en}</span>
+        <span class="grp-sp"></span>
+        <span class="wgt"><label>权重%</label>
+          <input type="number" min="0" max="100" value="${g.weight}" data-weight="${g.id}"></span>
+        <span class="gscore" style="color:${SCORE_COLORS[Math.round(Math.max(-2,Math.min(2,gs)))]}">${fmt(gs)}</span>
+        <span class="chev">▶</span>
+      </div>
+      <div class="grp-body">${rows}</div>
+    </div>`;
+  }).join("");
+  bindScorecard();
+}
+
+function bindScorecard(){
+  // toggle groups
+  $$(".grp-head").forEach(h=>{
+    h.addEventListener("click",e=>{
+      if(e.target.tagName==="INPUT") return;
+      $("#grp-"+h.dataset.toggle).classList.toggle("open");
+    });
+  });
+  // signal segments
+  $$(".seg").forEach(s=>{
+    s.addEventListener("click",()=>{
+      const g=DATA.groups.find(x=>x.id===s.dataset.g);
+      g.factors[+s.dataset.f].score=+s.dataset.v;
+      renderGroups(); renderGauge(); flagThesis();
+    });
+  });
+  // weights
+  $$("[data-weight]").forEach(inp=>{
+    inp.addEventListener("change",()=>{
+      const g=DATA.groups.find(x=>x.id===inp.dataset.weight);
+      g.weight=Math.max(0,Math.min(100,+inp.value||0));
+      renderGauge();
+    });
+    inp.addEventListener("click",e=>e.stopPropagation());
+  });
+}
+
+/* ============================================================
+   RENDER · GAUGE + STANCE BADGES
+   ============================================================ */
+function renderGauge(){
+  const c=compositeScore();
+  const [lab,act]=stanceLabel(c);
+  const pos=((c+2)/4)*100;
+  $("#gMarker").style.left=Math.max(1,Math.min(99,pos))+"%";
+  const col=c<-0.18?"var(--bear)":c>0.18?"var(--bull)":"var(--neutral)";
+  $("#compLabel").textContent=lab;
+  $("#compLabel").style.color=col;
+  $("#compScore").textContent="综合分 "+fmt(c)+" / ±2.0";
+
+  // curve
+  const cv=curveScore();
+  const curveLab = cv>0.3?"做陡 (Steepener)" : cv<-0.3?"做平 (Flattener)" : "中性 (Neutral)";
+  const curveCol = cv>0.3?"var(--accent)" : cv<-0.3?"var(--blue)" : "var(--neutral)";
+  $("#compCurve").textContent=curveLab;
+  $("#compCurve").style.color=curveCol;
+  $("#compCurveScore").textContent="曲线分 "+fmt(cv)+" · 熊市变陡";
+
+  // hero badges
+  $("#durStance").textContent=lab;
+  $("#durStance").style.color=col;
+  $("#durBadge").textContent=act;
+  $("#durBadge").style.color=col;
+  $("#durDesc").textContent=
+    c<-0.18?"组合久期低配,等待通胀动能转弱作为加回久期信号。"
+    :c>0.18?"组合久期增配,把握利率回落机会。"
+    :"久期中性,数据指向不明,以 carry 为主。";
+
+  $("#curveStance").textContent=curveLab.split(" ")[0];
+  $("#curveStance").style.color=curveCol;
+  $("#curveBadge").textContent=cv>0.3?"STEEP":cv<-0.3?"FLAT":"FLAT·N";
+  $("#curveBadge").style.color=curveCol;
+  $("#curveDesc").textContent=
+    cv>0.3?"前端被政策锚定、长端受供给压制——做陡顺势。"
+    :"曲线方向信号不强,以利差区间交易为主。";
+}
+
+/* ============================================================
+   RENDER · THESIS
+   ============================================================ */
+function baseThesis(){
+  return "利率市场的范式已从 2025 年的宽松周期切换为通胀冲击下的政策对峙。能源价格冲击向核心通胀传导,迫使美联储路径从降息转向潜在加息,长端则同时承受供给扩张与期限溢价上行的压力。综合因子计分卡指向看空久期、曲线做陡的组合——在通胀动能见顶信号出现之前,维持低于基准的久期暴露,并以前端 carry 与 5s30s 做陡作为核心表达。";
+}
+function flagThesis(){
+  toast("计分卡评分已更新 — 综合立场已重算,可据此修订论点");
+}
+
+/* ============================================================
+   NAV scroll-spy
+   ============================================================ */
+function initNav(){
+  const links=$$("#tabs a");
+  const secs=[...links].map(l=>$(l.getAttribute("href")));
+  window.addEventListener("scroll",()=>{
+    let cur=0;
+    secs.forEach((s,i)=>{ if(s&&s.getBoundingClientRect().top<140) cur=i; });
+    links.forEach((l,i)=>l.classList.toggle("active",i===cur));
+  },{passive:true});
+}
+
+/* ============================================================
+   LIVE DATA · override embedded curve snapshot with oracle API
+   Patches DATA.curve BEFORE first render (no flicker). On any
+   failure/timeout the page keeps the embedded snapshot untouched.
+   Only curve/yield numbers the API provides are overridden; all
+   other factor content (auctions, positioning, news) stays static.
+   ============================================================ */
+async function applyLiveData(){
+  const pill=$("#freshPill");
+  const fallback=()=>{ if(pill){ pill.className="freshpill snap"; pill.textContent="○ 快照"; } };
+  // same-origin when served from the oracle service; absolute otherwise (file:// or other host)
+  const sameOrigin=(location.protocol==="http:"||location.protocol==="https:") && !!location.host;
+  const url=(sameOrigin?"":"https://zhihuiti-oracle.zeabur.app")+"/api/oracle/macro";
+  try{
+    const ctrl=new AbortController();
+    const timer=setTimeout(()=>ctrl.abort(),4000);
+    const res=await fetch(url,{signal:ctrl.signal,cache:"no-store"});
+    clearTimeout(timer);
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const j=await res.json();
+    const cur=j&&j.curve&&j.curve.cur, w1=j&&j.curve&&j.curve.w1;
+    if(!cur||typeof cur!=="object") throw new Error("no curve data");
+    // Override matching tenors; tenors absent from the API (1M/6M) keep snapshot.
+    DATA.curve.tenors.forEach((t,i)=>{
+      if(typeof cur[t]==="number") DATA.curve.today[i]=cur[t];
+      if(w1&&typeof w1[t]==="number") DATA.curve.w1[i]=w1[t];
+    });
+    // Freshness pill · refreshed_at → HH:MM UTC
+    let stamp="实时";
+    if(j.refreshed_at){
+      const d=new Date(j.refreshed_at);
+      if(!isNaN(d.getTime())){
+        const p=n=>String(n).padStart(2,"0");
+        stamp=p(d.getUTCHours())+":"+p(d.getUTCMinutes())+" UTC";
+      }
+    }
+    if(pill){ pill.className="freshpill live"; pill.textContent="● LIVE · "+stamp; }
+  }catch(e){
+    fallback();
+  }
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init(){
+  $("#asOf").textContent=DATA.asOf+" 收盘";
+  renderHeroTiles();
+  renderCurveChart();
+  renderCurveTable();
+  renderCurveMetrics();
+  renderFedPath();
+  renderNews();
+  renderGroups();
+  renderGauge();
+  $("#thesisBox").textContent=baseThesis();
+  initNav();
+  // staggered reveal
+  $$(".fade").forEach((el,i)=>{ el.style.animationDelay=(i*0.06)+"s"; });
+}
+document.addEventListener("DOMContentLoaded",async()=>{ await applyLiveData(); init(); });
+</script>
+</body>
+</html>

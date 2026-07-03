@@ -13,3 +13,4 @@ __pycache__/
 *.png
 collision_map.json
 !zhihuiti/macro_cockpit.html
+!zhihuiti/monitor_rates.html

@@ -500,21 +500,26 @@ class OracleHandler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         _json_response(self, {})
 
+    _HTML_PAGES = {
+        "/macro-cockpit": "macro_cockpit.html",
+        "/monitor/rates": "monitor_rates.html",
+    }
+
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/")
         qs = parse_qs(parsed.query)
 
-        if path == "/macro-cockpit":
+        if path in self._HTML_PAGES:
             try:
-                with open(os.path.join(os.path.dirname(__file__), "macro_cockpit.html"), "rb") as f:
+                with open(os.path.join(os.path.dirname(__file__), self._HTML_PAGES[path]), "rb") as f:
                     body = f.read()
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.end_headers()
                 self.wfile.write(body)
             except OSError:
-                _json_response(self, {"error": "cockpit not bundled"}, 404)
+                _json_response(self, {"error": "page not bundled"}, 404)
 
         elif path == "/health":
             mode = "full" if _has_llm_key() else "oracle-only"
