@@ -85,6 +85,22 @@
   .fbar i{position:absolute;height:100%;border-radius:3px;opacity:.55}
   .tag{font-size:9px;color:var(--dim);font-family:var(--mono);margin-top:5px;letter-spacing:.2px}
   .est{color:var(--vi);border:1px solid rgba(167,139,250,.3);border-radius:4px;padding:0 3px;font-size:8.5px;margin-left:4px;font-family:var(--mono)}
+  .mon .deep{position:absolute;top:12px;right:12px;z-index:2;font-size:10px;font-family:var(--mono);color:var(--mut);text-decoration:none;border:1px solid var(--bd);border-radius:999px;padding:2px 8px;letter-spacing:.2px}
+  .mon .deep:hover{color:var(--tx);border-color:var(--bd2);background:rgba(255,255,255,.03)}
+  .mon details.dtl{margin-top:11px;border-top:1px solid var(--bd);padding-top:9px}
+  .mon details.dtl summary{font-size:10px;font-family:var(--mono);color:var(--mut);cursor:pointer;list-style:none;user-select:none;letter-spacing:.3px}
+  .mon details.dtl summary::-webkit-details-marker{display:none}
+  .mon details.dtl[open] summary{color:var(--tx)}
+  .mon .dtl-body{margin-top:9px}
+  .mon .drow{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:3px 0;font-size:10.5px;color:var(--mut)}
+  .mon .drow b{color:var(--tx);font-family:var(--mono);font-weight:600}
+  .mon .drow b small{margin-left:5px;font-size:9.5px;font-weight:400}
+  .mon .dtbl{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:9.5px;margin-bottom:4px}
+  .mon .dtbl th{color:var(--dim);font-weight:600;text-align:right;padding:2px 3px;border-bottom:1px solid var(--bd)}
+  .mon .dtbl th:first-child{text-align:left}
+  .mon .dtbl td{text-align:right;padding:2px 3px;color:var(--mut)}
+  .mon .dtbl td:first-child{text-align:left;color:var(--tx)}
+  .mon .dnote{font-size:9.5px;color:var(--dim);margin-top:6px;font-family:var(--mono);line-height:1.4}
 
   .tower{border:1px solid var(--bd);border-radius:14px;overflow:hidden;background:var(--panel)}
   .trow{display:grid;grid-template-columns:132px 104px 1fr 86px 1fr;gap:0;border-top:1px solid var(--bd)}
@@ -214,7 +230,7 @@ const SNAP = {
     cur:{'3M':3.83,'1Y':3.94,'2Y':4.07,'3Y':4.09,'5Y':4.12,'7Y':4.23,'10Y':4.38,'20Y':4.87,'30Y':4.87},
     w1 :{'3M':3.83,'1Y':4.00,'2Y':4.19,'3Y':4.19,'5Y':4.23,'7Y':4.34,'10Y':4.46,'20Y':4.91,'30Y':4.90}
   },
-  y10:4.38, y2:4.07, dxy:100.94, dxyChg:-0.42, gold:4036.5, goldChg:-1.46,
+  y10:4.38, y2:4.07, bei10:2.35, real10:2.03, dxy:100.94, dxyChg:-0.42, gold:4036.5, goldChg:-1.46,
   wti:70.52, brent:73.68, wtiChg:-1.95, spx:7399.4, spxChg:0.62, ndx:29426,
   rut:2981.2, rutChg:-0.96, vix:18.27, vixChg:-0.76, move:66.8, gvz:28.15, gvzChg:3.57,
   ovx:46.6, btc:59253, btcChg:-0.41
@@ -251,6 +267,46 @@ const pillColor=(id,sc)=> id==='ips'||id==='inflation' ? (sc>55?'var(--am)':'var
 const leanColor=l=> l==='long'?'var(--gn)':l==='short'?'var(--rd)':'var(--cy)';
 const leanLabel=l=> l==='long'?'▲ long-lean':l==='short'?'▼ short-lean':'◆ neutral+';
 
+/* monitor-id → hub deep-link (mapped by id, not array position) */
+const HUB={
+  dur:'https://us-treasury-bonds-monitor-luffa.vercel.app/', rates:'https://us-treasury-bonds-monitor-luffa.vercel.app/',
+  usd:'https://usd-monitor.vercel.app/',
+  gold:'https://gold-monitor-delta.vercel.app/',
+  ips:'https://inflation-monitor-nine.vercel.app/', inflation:'https://inflation-monitor-nine.vercel.app/'
+};
+/* per-monitor 明细 detail panel — reads only from the in-scope snap (live or fallback) */
+function monDetail(id, s){
+  const bp=(a,b)=> Math.round((a-b)*100);
+  const chg=v=>{ if(v==null||isNaN(v)) return ''; const c=clsOf(v); return `<small class="${c}">${(v>0?'+':'')+(+v).toFixed(2)}%</small>`; };
+  const pctv=v=> (v==null||isNaN(v))?'—':(+v).toFixed(2)+'%';
+  if(id==='dur'||id==='rates'){
+    const ten=['3M','1Y','2Y','3Y','5Y','7Y','10Y','20Y','30Y'];
+    const rows=ten.map(k=>{const cur=s.curve.cur[k],w1=s.curve.w1[k],d=bp(cur,w1),c=clsOf(d);
+      return `<tr><td>${k}</td><td>${cur.toFixed(2)}</td><td>${w1.toFixed(2)}</td><td class="${c}">${(d>0?'+':'')+d}</td></tr>`;}).join('');
+    const s2s10=bp(s.curve.cur['10Y'],s.curve.cur['2Y']), s3m10=bp(s.curve.cur['10Y'],s.curve.cur['3M']);
+    return `<table class="dtbl"><tr><th>期限</th><th>当前</th><th>一周前</th><th>Δbp</th></tr>${rows}</table>
+      <div class="drow"><span>2s10s 斜率</span><b>${(s2s10>0?'+':'')+s2s10}bp</b></div>
+      <div class="drow"><span>3m10y 斜率</span><b>${(s3m10>0?'+':'')+s3m10}bp</b></div>
+      <div class="drow"><span>MOVE 债波</span><b>${s.move.toFixed(1)}</b></div>`;
+  }
+  if(id==='usd'){
+    const dir = s.dxyChg<0?'贬值 · 软美元':s.dxyChg>0?'升值 · 强美元':'走平';
+    return `<div class="drow"><span>美元指数 DXY</span><b>${s.dxy.toFixed(2)}${chg(s.dxyChg)}</b></div>
+      <div class="dnote">方向 · ${dir}(据日内 %变动)</div>`;
+  }
+  if(id==='gold'){
+    return `<div class="drow"><span>黄金 XAU</span><b>$${s.gold.toLocaleString()}${chg(s.goldChg)}</b></div>
+      <div class="drow"><span>GVZ 金波</span><b>${s.gvz.toFixed(1)}</b></div>
+      <div class="drow"><span>实际利率 10Y real</span><b>${pctv(s.real10)}</b></div>`;
+  }
+  if(id==='ips'||id==='inflation'){
+    return `<div class="drow"><span>盈亏平衡通胀 10Y BEI</span><b>${pctv(s.bei10)}</b></div>
+      <div class="drow"><span>实际利率 10Y real</span><b>${pctv(s.real10)}</b></div>
+      <div class="drow"><span>原油 WTI</span><b>$${s.wti.toFixed(1)}${chg(s.wtiChg)}</b></div>`;
+  }
+  return '';
+}
+
 function defaultState(){
   const order=['ips','dur','usd','gold'];
   return {
@@ -271,7 +327,7 @@ function feedToState(f){
     monitors:f.monitors.map(m=>({id:m.id, name:m.name, en:m.nameEn, formula:m.formula, accent:m.accent, score:m.score, stance:m.stance, regime:m.regime,
       facs:m.factors.map(x=>({k:x.key,v:String(x.score),s:x.score,tag:x.note,est:!!x.est}))})),
     tower:f.tower.map(t=>({a:t.asset,en:t.symbol,px:t.price,bias:t.bias,lean:t.lean,regime:t.regime,stars:t.strength,chain:t.chain,win:t.window,risk:t.risk})),
-    snap:{date:s.asof, curveDate:s.curveDate, curve:s.curve, y10:s.y10, y2:s.y2, dxy:s.dxy, dxyChg:s.dxyChg, gold:s.gold, goldChg:s.goldChg,
+    snap:{date:s.asof, curveDate:s.curveDate, curve:s.curve, y10:s.y10, y2:s.y2, bei10:s.bei10, real10:s.real10, dxy:s.dxy, dxyChg:s.dxyChg, gold:s.gold, goldChg:s.goldChg,
       wti:s.wti, wtiChg:s.wtiChg, spx:s.spx, spxChg:s.spxChg, ndx:s.ndx, rut:s.rut, rutChg:s.rutChg, vix:s.vix, vixChg:s.vixChg,
       move:s.move, gvz:s.gvz, gvzChg:s.gvzChg, ovx:s.ovx, btc:s.btc, btcChg:s.btcChg}
   };
@@ -303,14 +359,18 @@ function render(S){
     const col=pillColor(m.id,m.score);
     const facs=m.facs.map(f=>`<div class="fac"><div class="fr"><span>${f.k}${f.est?'<span class="est">est</span>':''}</span><b>${f.v}</b></div>
       <div class="fbar"><i style="width:${f.s}%;background:${m.accent}"></i></div><div class="tag">${f.tag}</div></div>`).join('');
-    return `<div class="mon" style="--accent:${m.accent}">
+    const hub=HUB[m.id];
+    const deep=hub?`<a class="deep" href="${hub}" target="_blank" rel="noopener">深入 →</a>`:'';
+    const dtl=monDetail(m.id,S.snap);
+    const dtlHtml=dtl?`<details class="dtl"><summary>明细 展开 ▾</summary><div class="dtl-body">${dtl}</div></details>`:'';
+    return `<div class="mon" style="--accent:${m.accent}">${deep}
       <div class="mt">${m.name}<span class="en">${m.en}</span></div>
       <div class="formula">${m.formula}</div>
       <div class="reg">regime → ${m.regime}</div>
       <div class="score"><b>${m.score}</b><s>/100</s></div>
       <span class="pill" style="background:${col}1f;color:${col}">${m.stance}</span>
       <div class="bar"><i style="width:${m.score}%"></i></div>
-      <div class="facs">${facs}</div></div>`;
+      <div class="facs">${facs}</div>${dtlHtml}</div>`;
   }).join('');
 
   $('#towerbox').innerHTML=
