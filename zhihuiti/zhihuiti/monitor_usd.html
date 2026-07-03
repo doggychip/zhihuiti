@@ -248,10 +248,16 @@ function derive(s){
   const gold=num(s.gold,SNAP.gold), goldChg=num(s.goldChg,SNAP.goldChg);
   const btc=num(s.btc,SNAP.btc), btcChg=num(s.btcChg,SNAP.btcChg);
   const real10=num(s.real10,SNAP.real10), y10=num(s.y10,SNAP.y10);
+  const de10=num(s.de10,null), jp10=num(s.jp10,null);
 
-  /* 1 · 利差动能 — front-end carry proxy from 2Y & 3M */
+  /* 1 · 利差动能 — real rate differential vs 德/日 when live, else front-end carry proxy */
+  const hasDiff=de10!=null&&jp10!=null;
+  const foreignAvg=hasDiff?(de10+jp10)/2:null;
+  const spread=hasDiff?y10-foreignAvg:null;          // 美10Y − avg(德10Y, 日10Y)
   const carry=(y2+y3m)/2;
-  const s1=Math.round(clamp(lin(carry,2.4,5.0,30,84),0,100));
+  const s1=hasDiff
+    ? Math.round(clamp(lin(spread,0,3.0,32,90),0,100))   // spread≈1.53 → ~62, matches proxy snapshot
+    : Math.round(clamp(lin(carry,2.4,5.0,30,84),0,100));
 
   /* 2 · 避险需求 — VIX level (+ its daily move) */
   const s2=Math.round(clamp(lin(vix,12,34,24,82)+clamp(vixChg,-6,6)*0.9,0,100));
@@ -273,9 +279,13 @@ function derive(s){
 
   const factors=[
     {id:'carry',name:'利差动能',en:'Carry / Rate Differential',accent:'var(--cy)',score:s1,weight:W[0],
-      formula:'carry = avg(2Y, 3M) → 支撑',
-      rows:[['2Y 前端',y2.toFixed(2)+'%'],['3M 前端',y3m.toFixed(2)+'%'],['10Y 参照',y10.toFixed(2)+'%']],
-      tag: s1>60?'前端利差仍宽,美元的硬支撑仍在。':'前端 carry 中性,支撑力度边际转弱。'},
+      formula: hasDiff?'spread = 美10Y − avg(德10Y, 日10Y)':'carry = avg(2Y, 3M) → 支撑(proxy)',
+      rows: hasDiff
+        ? [['美 10Y',y10.toFixed(2)+'%'],['德/日 均值',foreignAvg.toFixed(2)+'%'],['利差 spread',(spread>0?'+':'')+spread.toFixed(2)+'pp']]
+        : [['2Y 前端',y2.toFixed(2)+'%'],['3M 前端',y3m.toFixed(2)+'%'],['10Y 参照',y10.toFixed(2)+'%']],
+      tag: hasDiff
+        ? `真实利差 ${(spread>0?'+':'')+spread.toFixed(2)}pp vs 德/日均值——${s1>60?'美债收益率优势明显,美元硬支撑仍在。':'利差优势收窄,支撑力度边际转弱。'}`
+        : (s1>60?'前端 carry 仍宽(proxy),美元的硬支撑仍在。':'前端 carry 中性(proxy),支撑力度边际转弱。')},
     {id:'haven',name:'避险需求',en:'Haven Demand',accent:'var(--vi)',score:s2,weight:W[1],
       formula:'haven = f(VIX 水平, 日变)',
       rows:[['VIX 股波',vix.toFixed(1)+(vixChg?` (${(vixChg>0?'+':'')+vixChg.toFixed(2)}%)`:'')],['实际利率 10Y',real10.toFixed(2)+'%']],
@@ -398,7 +408,8 @@ function normalize(feed){
     date:s.asof||feed.asof||s.date, refreshed_at:feed.refreshed_at||s.refreshed_at||s.asof,
     dxy:s.dxy, dxyChg:s.dxyChg, y2:s.y2, y3m:(s.y3m!=null?s.y3m:(s.curve&&s.curve.cur?s.curve.cur['3M']:undefined)),
     y10:s.y10, real10:s.real10, vix:s.vix, vixChg:s.vixChg,
-    gold:s.gold, goldChg:s.goldChg, btc:s.btc, btcChg:s.btcChg, spxChg:s.spxChg};
+    gold:s.gold, goldChg:s.goldChg, btc:s.btc, btcChg:s.btcChg, spxChg:s.spxChg,
+    de10:s.de10, jp10:s.jp10};
 }
 
 async function boot(){

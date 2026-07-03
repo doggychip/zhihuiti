@@ -219,6 +219,7 @@ const SNAP = {
   refreshed_at:'2026-06-29',
   bei10:2.35, real10:2.03, y10:4.38, y3m:3.83,
   wti:70.52, brent:73.68, wtiChg:-1.95,
+  coreCpiYoY:2.96,
   live_fields:[]                 // empty → treat as snapshot
 };
 
@@ -252,6 +253,14 @@ const zoneOf=sc=>ZONES[Math.min(3,Math.floor(sc/25))];
 /* factor colour tiers: 高分=更偏通胀=红/琥珀, 低分=降温=绿 */
 const tierVar=sc=> sc>=67?'--rd' : sc>=50?'--am' : '--gn';
 
+/* live factor P — core CPI YoY. Calibrated: 2.0%→~35, 3.0%→~57, 4.0%→~75. */
+function scoreP(cpi){ return clamp(Math.round(57+(cpi-3.0)*20),0,100); }
+function noteP(cpi){
+  const stick = cpi>=3.5 ? '仍显著高于目标,粘性通胀尚未打破'
+    : cpi>=2.5 ? '高于 2% 目标,核心<b>服务与业主等价租金(OER)</b>的粘性抵消商品通缩'
+    : '接近 2% 目标,价格压力明显消退';
+  return `核心 CPI 同比 <b>${cpi.toFixed(2)}%</b>:${stick}——最大权重、也是最难松动的一项。`;
+}
 /* live factor E — 10Y breakeven anchoring. Center 2.30% ≈ neutral(50). */
 function scoreE(bei){ return clamp(Math.round(50+(bei-2.30)*50),0,100); }
 function noteE(bei){
@@ -282,10 +291,11 @@ const DIAG = {
    =========================================================== */
 function buildState(s, live){
   const facs = FACTORS.map(f=>{
-    let score=f.base, note=f.note, isLive=false;
+    let score=f.base, note=f.note, isLive=false, sub=f.sub;
+    if(f.id==='P' && s.coreCpiYoY!=null){ score=scoreP(s.coreCpiYoY); note=noteP(s.coreCpiYoY); isLive=live; sub='核心CPI 同比 '+(+s.coreCpiYoY).toFixed(2)+'%'; }
     if(f.id==='E'){ score=scoreE(s.bei10); note=noteE(s.bei10); isLive=live; }
     if(f.id==='D'){ score=scoreD(s.wti,s.wtiChg); note=noteD(s.wti,s.brent,s.wtiChg); isLive=live; }
-    return {...f, score, note, isLive};
+    return {...f, score, note, isLive, sub};
   });
   let sum=0,wsum=0; facs.forEach(f=>{sum+=f.score*f.w;wsum+=f.w;});
   const composite=Math.round(sum/wsum);
@@ -405,6 +415,7 @@ function normalize(feed){
     wti: num(s.wti, SNAP.wti),
     brent: num(s.brent, SNAP.brent),
     wtiChg: num(s.wtiChg, SNAP.wtiChg),
+    coreCpiYoY: num(s.coreCpiYoY, SNAP.coreCpiYoY),
     live_fields: Array.isArray(s.live_fields)?s.live_fields:(Array.isArray(feed.live_fields)?feed.live_fields:[])
   };
 }
