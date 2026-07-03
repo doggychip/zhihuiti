@@ -502,6 +502,10 @@ class OracleHandler(BaseHTTPRequestHandler):
 
     _HTML_PAGES = {
         "/macro-cockpit": "macro_cockpit.html",
+        "/monitor/rates": "monitor_rates.html",
+        "/monitor/usd": "monitor_usd.html",
+        "/monitor/gold": "monitor_gold.html",
+        "/monitor/inflation": "monitor_inflation.html",
     }
 
     def do_GET(self):

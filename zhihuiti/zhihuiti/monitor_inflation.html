@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>zhihuiti 通胀压力深度看板 · Inflation Pressure Deep-Dive</title>
+<style>
+  :root{
+    --bg:#0a0e14; --bg2:#0d121b; --panel:#111824; --panel2:#0f1520;
+    --bd:#1e2734; --bd2:#283242;
+    --tx:#cdd7e4; --mut:#788396; --dim:#566072;
+    --cy:#38bdf8; --am:#fbbf24; --gn:#34d399; --rd:#f87171; --gold:#e0b53c; --vi:#a78bfa;
+    --mono:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:
+     radial-gradient(1100px 560px at 82% -12%,rgba(251,191,36,.07),transparent 60%),
+     radial-gradient(880px 480px at -5% 108%,rgba(248,113,113,.05),transparent 55%),
+     var(--bg);
+     color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+     -webkit-font-smoothing:antialiased;line-height:1.5;}
+  a{color:inherit}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 20px 64px}
+  .mono{font-family:var(--mono)}
+
+  header.top{position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);
+     background:linear-gradient(180deg,rgba(10,14,20,.92),rgba(10,14,20,.72));
+     border-bottom:1px solid var(--bd)}
+  .top .wrap{display:flex;align-items:center;gap:16px;padding-top:12px;padding-bottom:12px}
+  .brand{display:flex;flex-direction:column;gap:2px}
+  .brand b{font-size:15px;letter-spacing:.3px}
+  .brand b .zh{color:var(--am)}
+  .brand .sub{font-size:11px;color:var(--mut);font-family:var(--mono);letter-spacing:.2px}
+  .back{font-size:12px;color:var(--mut);text-decoration:none;padding:5px 11px;border:1px solid var(--bd);border-radius:999px;white-space:nowrap}
+  .back:hover{color:var(--tx);border-color:var(--bd2)}
+  .head-meta{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+  .srcpill{font-size:10px;font-family:var(--mono);padding:3px 9px;border-radius:999px;border:1px solid var(--bd2);color:var(--mut);white-space:nowrap}
+  .srcpill.live{color:var(--gn);border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.07)}
+  .srcpill.snap{color:var(--am);border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.05)}
+  .snap{font-size:11px;color:var(--dim);font-family:var(--mono);white-space:nowrap}
+
+  h2.sec{font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:var(--mut);
+     margin:38px 0 14px;display:flex;align-items:center;gap:10px;font-weight:600}
+  h2.sec::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--am);box-shadow:0 0 8px var(--am)}
+  h2.sec span{color:var(--dim);font-weight:400;letter-spacing:.5px;text-transform:none}
+
+  /* hero */
+  .hero{margin-top:22px;border:1px solid var(--bd);border-radius:16px;overflow:hidden;
+     background:linear-gradient(135deg,var(--panel),var(--panel2))}
+  .hero-grid{display:grid;grid-template-columns:250px 1fr;gap:1px;background:var(--bd)}
+  .hero-score{background:var(--panel2);padding:24px 26px;display:flex;flex-direction:column;justify-content:center}
+  .eyebrow{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--am);font-family:var(--mono)}
+  .bigscore{display:flex;align-items:baseline;gap:8px;margin:12px 0 2px}
+  .bigscore b{font-size:64px;font-weight:800;font-family:var(--mono);line-height:.9;color:var(--am)}
+  .bigscore s{font-size:16px;color:var(--dim);text-decoration:none;font-family:var(--mono)}
+  .zonechip{align-self:flex-start;font-size:13px;font-weight:700;padding:4px 13px;border-radius:999px;margin-top:6px;letter-spacing:1px}
+  .formula{font-size:10px;color:var(--dim);font-family:var(--mono);margin-top:14px;letter-spacing:.3px}
+  .hero-read{background:var(--panel2);padding:24px 26px;display:flex;flex-direction:column;justify-content:center}
+  .zonetrack{position:relative;height:40px;border-radius:9px;overflow:hidden;
+     background:linear-gradient(90deg,#1c5e4a 0%,#3a6f3a 25%,#7a6f2a 55%,#7a3a2a 100%);border:1px solid var(--bd2)}
+  .zonetrack .zseg{position:absolute;top:0;height:100%;border-right:1px solid rgba(10,14,20,.55);display:flex;align-items:center;justify-content:center}
+  .zonetrack .zseg span{font-size:10.5px;font-family:var(--mono);color:rgba(255,255,255,.82);letter-spacing:.5px;font-weight:600}
+  .zonetrack .zseg:last-child{border-right:none}
+  .zonetrack .zpin{position:absolute;top:-3px;width:3px;height:46px;background:#fff;border-radius:2px;box-shadow:0 0 8px rgba(255,255,255,.75);transform:translateX(-1.5px);z-index:3}
+  .zscale{display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-top:6px;font-family:var(--mono)}
+  .diag{font-size:13.5px;color:var(--tx);line-height:1.65;margin-top:16px}
+  .diag b{color:var(--am);font-weight:600}
+  .diag .g{color:var(--gn)} .diag .r{color:var(--rd)}
+
+  /* factor cards */
+  .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  .fc{border:1px solid var(--bd);border-radius:14px;background:var(--panel);padding:15px 15px 14px;position:relative;overflow:hidden;display:flex;flex-direction:column}
+  .fc::after{content:"";position:absolute;left:0;top:0;width:100%;height:2px;background:var(--accent,var(--am));opacity:.85}
+  .fc-top{display:flex;align-items:center;gap:9px}
+  .glyph{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:800;font-size:15px;background:var(--accent,var(--am));color:#0a0e14;flex:none}
+  .fc-name{font-size:13px;font-weight:700;line-height:1.1}
+  .fc-name .en{display:block;font-size:9px;color:var(--dim);font-family:var(--mono);font-weight:400;margin-top:2px;letter-spacing:.3px}
+  .fc-w{font-size:9px;color:var(--dim);font-family:var(--mono);margin-top:9px;letter-spacing:.3px}
+  .fc-score{display:flex;align-items:baseline;gap:5px;margin:6px 0 2px}
+  .fc-score b{font-size:30px;font-weight:800;font-family:var(--mono);line-height:1;color:var(--accent,var(--am))}
+  .fc-score s{font-size:11px;color:var(--dim);text-decoration:none;font-family:var(--mono)}
+  .fbar{height:5px;border-radius:4px;background:#161d29;margin:8px 0 10px;position:relative;overflow:hidden}
+  .fbar i{position:absolute;top:0;left:0;height:100%;border-radius:4px;background:var(--accent,var(--am));opacity:.85}
+  .fc-sub{font-size:10px;color:var(--mut);font-family:var(--mono);letter-spacing:.2px}
+  .fc-note{font-size:11px;color:var(--mut);line-height:1.5;margin-top:8px;flex:1}
+  .fc-note b{color:var(--tx);font-weight:600}
+  .badge{align-self:flex-start;margin-top:9px;font-size:8.5px;font-family:var(--mono);padding:1px 6px;border-radius:5px;letter-spacing:.4px}
+  .badge.live{color:var(--gn);border:1px solid rgba(52,211,153,.4);background:rgba(52,211,153,.06)}
+  .badge.est{color:var(--vi);border:1px solid rgba(167,139,250,.35);background:rgba(167,139,250,.05)}
+
+  /* rates decomposition */
+  .data{display:grid;grid-template-columns:1.35fr 1fr;gap:14px}
+  .panel{border:1px solid var(--bd);border-radius:14px;background:var(--panel);padding:17px 19px}
+  .panel h3{margin:0 0 3px;font-size:12.5px;letter-spacing:.4px}
+  .panel h3 .en{color:var(--dim);font-family:var(--mono);font-weight:400;font-size:10px;margin-left:6px}
+  .decomp{margin-top:16px}
+  .decomp .eq{font-family:var(--mono);font-size:12px;color:var(--mut);margin-bottom:11px}
+  .decomp .eq b{color:var(--tx)}
+  .stack{display:flex;height:46px;border-radius:9px;overflow:hidden;border:1px solid var(--bd2)}
+  .stack .seg{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#0a0e14;font-family:var(--mono);position:relative}
+  .stack .seg .sv{font-size:15px;font-weight:800}
+  .stack .seg .sk{font-size:9px;font-weight:600;opacity:.8}
+  .stack .real{background:linear-gradient(180deg,#5eead4,#2dd4bf)}
+  .stack .bei{background:linear-gradient(180deg,#fcd34d,#f59e0b)}
+  .declegend{display:flex;gap:16px;font-size:10px;color:var(--mut);font-family:var(--mono);margin-top:9px}
+  .declegend i{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+  .decnote{font-size:11.5px;color:var(--mut);line-height:1.6;margin-top:14px}
+  .decnote b{color:var(--tx);font-weight:600}
+  .decnote .g{color:var(--gn)} .decnote .a{color:var(--am)}
+  .rows{margin-top:4px}
+  .rrow{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--bd);padding:9px 0;font-size:12px}
+  .rrow:last-child{border-bottom:none}
+  .rrow .k{color:var(--mut)}
+  .rrow .v{font-family:var(--mono);font-size:13px;font-weight:600}
+  .rrow .v small{font-size:10px;margin-left:5px;font-weight:400}
+  .up{color:var(--gn)} .dn{color:var(--rd)} .fl{color:var(--mut)}
+
+  /* regime summary */
+  .summ{border:1px solid var(--bd);border-radius:14px;background:linear-gradient(135deg,var(--panel),var(--panel2));padding:20px 22px}
+  .summ .rlab{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--am);font-family:var(--mono)}
+  .summ .rword{font-size:23px;font-weight:700;margin:8px 0 3px;letter-spacing:.3px}
+  .summ .rword small{font-size:12px;color:var(--mut);font-family:var(--mono);font-weight:400;margin-left:8px}
+  .summ p{font-size:13.5px;color:var(--tx);line-height:1.72;margin:14px 0 0;max-width:900px}
+  .summ p b{color:var(--am);font-weight:600}
+  .summ p .g{color:var(--gn)} .summ p .r{color:var(--rd)} .summ p .m{color:var(--mono);font-family:var(--mono)}
+
+  footer{margin-top:40px;border-top:1px solid var(--bd);padding-top:18px;font-size:11px;color:var(--dim);line-height:1.7}
+  footer .intg{border:1px solid rgba(251,191,36,.22);background:rgba(251,191,36,.04);border-radius:10px;padding:11px 14px;color:var(--mut);margin-bottom:14px;font-size:11.5px}
+  footer .intg b{color:var(--am)}
+  footer code{font-family:var(--mono);color:var(--mut);background:#10161f;padding:1px 5px;border-radius:4px}
+  .disc{color:#5a6473}
+  @media(max-width:880px){
+    .grid5{grid-template-columns:1fr 1fr}
+    .hero-grid{grid-template-columns:1fr}
+    .data{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="back" href="/macro-cockpit">← 驾驶舱</a>
+  <div class="brand">
+    <b><span class="zh">zhihuiti</span> 通胀压力深度看板 · Inflation Pressure Deep-Dive</b>
+    <span class="sub">IPS = P<sub>价格</sub> + E<sub>预期</sub> + D<sub>驱动</sub> + F<sub>财政</sub> + N<sub>叙事</sub> → { 回落 · 温和 · 粘性 · 再加速 }</span>
+  </div>
+  <div class="head-meta">
+    <span class="srcpill snap" id="srcpill">○ 连接中…</span>
+    <span class="snap mono" id="snapdate"></span>
+  </div>
+</div></header>
+
+<div class="wrap">
+
+  <section class="hero">
+    <div class="hero-grid">
+      <div class="hero-score">
+        <div class="eyebrow">通胀压力综合分</div>
+        <div class="bigscore"><b id="composite">—</b><s>/100</s></div>
+        <span class="zonechip" id="zonechip">—</span>
+        <div class="formula">五因子加权 · P.25 E.20 D.20 F.15 N.20</div>
+      </div>
+      <div class="hero-read">
+        <div class="zonetrack" id="zonetrack">
+          <div class="zseg" style="left:0;width:25%"><span>回落</span></div>
+          <div class="zseg" style="left:25%;width:25%"><span>温和</span></div>
+          <div class="zseg" style="left:50%;width:25%"><span>粘性</span></div>
+          <div class="zseg" style="left:75%;width:25%"><span>再加速</span></div>
+          <div class="zpin" id="zpin"></div>
+        </div>
+        <div class="zscale"><span>0 · 反通胀</span><span>50</span><span>100 · 过热</span></div>
+        <p class="diag" id="diag"></p>
+      </div>
+    </div>
+  </section>
+
+  <h2 class="sec">五因子拆解 <span>· 每个分项独立打分,加权合成 IPS · E/D 接入实时读数,P/F/N 为模型估算</span></h2>
+  <div class="grid5" id="cards"></div>
+
+  <h2 class="sec">收益率拆解与交叉验证 <span>· 名义 10Y = 实际利率 + 盈亏平衡通胀</span></h2>
+  <div class="data">
+    <div class="panel">
+      <h3>10Y 收益率分解 <span class="en">real vs breakeven</span></h3>
+      <div class="decomp">
+        <div class="eq" id="eq"></div>
+        <div class="stack" id="stack"></div>
+        <div class="declegend">
+          <span><i class="stack real" style="display:inline-block"></i>实际利率 real10 · 政策限制性</span>
+          <span><i class="stack bei" style="display:inline-block"></i>盈亏平衡 BEI · 市场通胀预期</span>
+        </div>
+        <p class="decnote" id="decnote"></p>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>关键读数 <span class="en">Live Inputs</span></h3>
+      <div class="rows" id="rows"></div>
+    </div>
+  </div>
+
+  <h2 class="sec">体制判定 <span>· 综合分 → 体制词 + 实时输入自动生成中文研判</span></h2>
+  <div class="summ">
+    <div class="rlab">当前通胀体制 · Inflation Regime</div>
+    <div class="rword"><span id="rword">—</span><small id="rworden"></small></div>
+    <p id="rsumm"></p>
+  </div>
+
+  <footer>
+    <div class="intg">⚙ <b>本页与宏观驾驶舱同源</b> · 启动时拉取 <code>GET /api/oracle/macro</code>(单一事实源 <code>server/core/macro.ts</code>);失败回退内嵌快照。IPS 因子框架与 <code>macro_cockpit.html</code> 的 <code>MODEL.ips</code> 一致,权重 P.25 / E.20 / D.20 / F.15 / N.20,并按 oracle 的 <code>mean_reverting</code> 体制词映射。</div>
+    <div><b style="color:var(--mut)">数据源</b> · 盈亏平衡与实际利率: U.S. Treasury TIPS / FRED · 油价: WTI · Brent(Yahoo / FMP)· 核心CPI / 财政赤字: BLS · BEA · Treasury(<span style="color:var(--vi)">est·模型估算/沿用</span>)· 叙事分项为定性打分</div>
+    <div class="disc" style="margin-top:10px">⚠ 教育演示用途。所有评分、区间与体制判定均为研究框架示意,基于历史样本与模型估算,不构成任何投资建议;历史表现不预示未来。</div>
+  </footer>
+</div>
+
+<script>
+/* ===========================================================
+   EMBEDDED FALLBACK SNAPSHOT — mirrors server/core/macro.ts
+   Used when /api/oracle/macro is unreachable (file:// preview).
+   =========================================================== */
+const SNAP = {
+  refreshed_at:'2026-06-29',
+  bei10:2.35, real10:2.03, y10:4.38, y3m:3.83,
+  wti:70.52, brent:73.68, wtiChg:-1.95,
+  live_fields:[]                 // empty → treat as snapshot
+};
+
+/* IPS factor framework — reused verbatim from MODEL.ips in macro_cockpit.html.
+   base = the cockpit's static score; live factors (E,D) recompute from feed. */
+const ZONES = ['回落','温和','粘性','再加速'];
+const REGIME_WORD = { label:'粘性通胀 · 最后一公里', en:'Sticky Last-Mile Inflation' };
+const FACTORS = [
+  { id:'P', name:'价格', en:'Prices', w:.25, base:58, live:false, accent:'--am',
+    sub:'核心CPI 3.8%',
+    note:'核心商品已转通缩,但被<b>服务与业主等价租金(OER)</b>的粘性抵消,环比降速慢于名义读数——最大权重、也是最难松动的一项。' },
+  { id:'E', name:'预期', en:'Expectations', w:.20, base:50, live:true, accent:'--cy',
+    sub:'10Y 盈亏平衡', note:'' },
+  { id:'D', name:'驱动', en:'Drivers', w:.20, base:55, live:true, accent:'--gn',
+    sub:'油价 · 工资', note:'' },
+  { id:'F', name:'财政', en:'Fiscal', w:.15, base:72, live:false, accent:'--rd',
+    sub:'联邦赤字 ~6.3% GDP',
+    note:'赤字维持在充分就业下的历史高位,财政脉冲对总需求形成<b>持续暗刺激</b>,是五项里最偏鹰的分项。' },
+  { id:'N', name:'叙事', en:'Narrative', w:.20, base:62, live:false, accent:'--am',
+    sub:'Fed 偏鹰 · 预期自强化',
+    note:'政策沟通偏鹰,叠加对"最后一公里"的反复渲染,使<b>粘性预期自我强化</b>,短期难以证伪。' },
+];
+
+/* ===========================================================
+   helpers
+   =========================================================== */
+const $=s=>document.querySelector(s);
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const clsOf=x=> x>0?'up':x<0?'dn':'fl';
+const zoneOf=sc=>ZONES[Math.min(3,Math.floor(sc/25))];
+/* factor colour tiers: 高分=更偏通胀=红/琥珀, 低分=降温=绿 */
+const tierVar=sc=> sc>=67?'--rd' : sc>=50?'--am' : '--gn';
+
+/* live factor E — 10Y breakeven anchoring. Center 2.30% ≈ neutral(50). */
+function scoreE(bei){ return clamp(Math.round(50+(bei-2.30)*50),0,100); }
+function noteE(bei){
+  const anchor = bei<2.40 ? '<b>锚定良好</b>,市场未定价长期超调,长端预期仍收敛于 2% 目标附近'
+    : bei<2.70 ? '预期<b>温和上移</b>,锚定尚在但边际松动,需盯防二次抬升'
+    : '预期存在<b>脱锚风险</b>,长端已持续定价高于目标的通胀路径';
+  return `10Y 盈亏平衡 <b>${bei.toFixed(2)}%</b> ≈ 隐含约 2.0% PCE:${anchor}。`;
+}
+/* live factor D — oil level(band 72) + momentum. Falling oil = 降温. */
+function scoreD(wti,chg){ return clamp(Math.round(50+(wti-72)*0.6+chg*2),0,100); }
+function noteD(wti,brent,chg){
+  const dir = chg<-0.5 ? '<b class="down">回落降温</b>,对总体通胀构成下拉'
+    : chg>0.5 ? '<b>反弹升温</b>,商品通胀风险抬头'
+    : '横盘,商品驱动中性';
+  const spread=(brent-wti).toFixed(2);
+  return `WTI <b>$${wti.toFixed(1)}</b> · 日内 ${chg>0?'+':''}${chg.toFixed(2)}% ${dir};Brent-WTI 价差 ${spread},供给端无明显紧张。`;
+}
+
+const DIAG = {
+  '回落':'通胀压力快速消退,<span class="g">反通胀交易占优</span>,久期与成长资产受益,政策转向宽松的空间打开。',
+  '温和':'压力温和可控、接近目标区,政策具备渐进宽松空间,商品与预期均无明显上行张力。',
+  '粘性':'压力卡在<b>粘性区</b>,最后一公里进展缓慢:价格分项与财政暗刺激把综合分锚住,货币政策维持限制性,难言胜利也难见再加速。',
+  '再加速':'压力二次抬头,<span class="r">再加速风险上升</span>,长端收益率与黄金对冲需求升温,政策容错空间收窄。'
+};
+
+/* ===========================================================
+   state builder
+   =========================================================== */
+function buildState(s, live){
+  const facs = FACTORS.map(f=>{
+    let score=f.base, note=f.note, isLive=false;
+    if(f.id==='E'){ score=scoreE(s.bei10); note=noteE(s.bei10); isLive=live; }
+    if(f.id==='D'){ score=scoreD(s.wti,s.wtiChg); note=noteD(s.wti,s.brent,s.wtiChg); isLive=live; }
+    return {...f, score, note, isLive};
+  });
+  let sum=0,wsum=0; facs.forEach(f=>{sum+=f.score*f.w;wsum+=f.w;});
+  const composite=Math.round(sum/wsum);
+  return { live, asof:s.refreshed_at, snap:s, facs, composite, zone:zoneOf(composite) };
+}
+
+/* ===========================================================
+   render
+   =========================================================== */
+function setSrc(S){
+  const p=$('#srcpill');
+  if(S.live){ p.className='srcpill live'; p.textContent='● LIVE · /api/oracle/macro'; }
+  else { p.className='srcpill snap'; p.textContent='○ 内嵌快照'; }
+  $('#snapdate').textContent='快照 · '+S.asof;
+}
+
+function render(S){
+  setSrc(S);
+
+  // hero
+  $('#composite').textContent=S.composite;
+  const zc=$('#zonechip'); zc.textContent=S.zone;
+  const zcol = S.composite>=75?'--rd':S.composite>=50?'--am':S.composite>=25?'--gn':'--cy';
+  zc.style.background='var('+zcol+')1f'; zc.style.color='var('+zcol+')';
+  $('#zpin').style.left=clamp(S.composite,1,99)+'%';
+  $('#diag').innerHTML='综合分落入「<b>'+S.zone+'</b>」区间:'+DIAG[S.zone];
+
+  // factor cards
+  $('#cards').innerHTML=S.facs.map(f=>{
+    const col='var('+f.accent+')';
+    const scol='var('+tierVar(f.score)+')';
+    const badge = f.isLive
+      ? '<span class="badge live">● LIVE 实时</span>'
+      : '<span class="badge est">est · 估算</span>';
+    return `<div class="fc" style="--accent:${f.accent==='--am'?'#fbbf24':f.accent==='--cy'?'#38bdf8':f.accent==='--gn'?'#34d399':'#f87171'}">
+      <div class="fc-top">
+        <div class="glyph">${f.id}</div>
+        <div class="fc-name">${f.name}<span class="en">${f.en}</span></div>
+      </div>
+      <div class="fc-w">权重 ${(f.w*100).toFixed(0)}% · ${f.sub}</div>
+      <div class="fc-score"><b style="color:${scol}">${f.score}</b><s>/100</s></div>
+      <div class="fbar"><i style="width:${f.score}%;background:${scol}"></i></div>
+      <div class="fc-note">${f.note}</div>
+      ${badge}
+    </div>`;
+  }).join('');
+
+  drawDecomp(S.snap);
+  drawRows(S.snap);
+  drawRegime(S);
+}
+
+function drawDecomp(s){
+  const real=s.real10, bei=s.bei10, y=s.y10;
+  const sum=real+bei;
+  const rw=(real/sum*100), bw=(bei/sum*100);
+  $('#eq').innerHTML=`名义 10Y <b>${y.toFixed(2)}%</b> = 实际利率 <b>${real.toFixed(2)}%</b> + 盈亏平衡 <b>${bei.toFixed(2)}%</b>`;
+  $('#stack').innerHTML=
+    `<div class="seg real" style="width:${rw.toFixed(1)}%"><span class="sv">${real.toFixed(2)}</span><span class="sk">real10</span></div>
+     <div class="seg bei" style="width:${bw.toFixed(1)}%"><span class="sv">${bei.toFixed(2)}</span><span class="sk">BEI10</span></div>`;
+  const realHi = real>=1.8;
+  const beiHot = bei>=2.6;
+  const note = `实际利率 <b>${real.toFixed(2)}%</b> 处于 ${realHi?'<span class="a">明显限制性区间</span>':'温和区间'},意味着货币政策仍在<b>压制需求侧通胀</b>;`
+    + `盈亏平衡 <b>${bei.toFixed(2)}%</b> ${beiHot?'<span class="a">偏高,市场已定价通胀上行</span>':'<span class="g">温和,通胀预期受控</span>'}。`
+    + `二者组合指向:当前是<b>粘性(供给/服务侧)而非需求再加速</b>型通胀——利率高位封顶需求,残余压力主要来自服务粘性与财政脉冲。`;
+  $('#decnote').innerHTML=note;
+}
+
+function drawRows(s){
+  const rows=[
+    ['10Y 名义收益率', s.y10.toFixed(2)+'%', null],
+    ['10Y 实际利率 real', s.real10.toFixed(2)+'%', null],
+    ['10Y 盈亏平衡 BEI', s.bei10.toFixed(2)+'%', null],
+    ['3M 短端', s.y3m.toFixed(2)+'%', null],
+    ['原油 WTI', '$'+s.wti.toFixed(1), s.wtiChg],
+    ['原油 Brent', '$'+s.brent.toFixed(1), null],
+  ];
+  $('#rows').innerHTML=rows.map(r=>{
+    if(r[2]===null) return `<div class="rrow"><span class="k">${r[0]}</span><span class="v">${r[1]}</span></div>`;
+    const c=clsOf(r[2]);
+    return `<div class="rrow"><span class="k">${r[0]}</span><span class="v">${r[1]}<small class="${c}">${r[2]>0?'+':''}${r[2].toFixed(2)}%</small></span></div>`;
+  }).join('');
+}
+
+function drawRegime(S){
+  $('#rword').textContent=REGIME_WORD.label;
+  $('#rworden').textContent=REGIME_WORD.en+' · mean_reverting';
+  const s=S.snap;
+  const fE=S.facs.find(f=>f.id==='E'), fD=S.facs.find(f=>f.id==='D');
+  const oilDir = s.wtiChg<-0.5?'<b class="g">油价回落</b>为总体通胀降温':s.wtiChg>0.5?'<b class="r">油价反弹</b>推升商品通胀':'油价横盘';
+  const p=`本期 IPS 综合 <b>${S.composite}/100</b>,落入「<b>${S.zone}</b>」区间。价格分项(核心CPI 3.8%,权重 25%)仍是最大压力来源,`
+    +`服务与住房的粘性尚未打破;实时侧,10Y 盈亏平衡 <b>${s.bei10.toFixed(2)}%</b> 显示长端预期${s.bei10<2.4?'<b class="g">锚定良好</b>':'边际上移'}(E 分 ${fE.score}),`
+    +`${oilDir}(D 分 ${fD.score})。财政赤字 ~6.3% 构成的暗刺激(F 分 72)与 Fed 偏鹰叙事(N 分 62)共同把综合分锚在<b>粘性区</b>,短期难见快速回落。`
+    +`收益率拆解印证这一判断:10Y ${s.y10.toFixed(2)}% = 实际利率 ${s.real10.toFixed(2)}% + 盈亏平衡 ${s.bei10.toFixed(2)}%——`
+    +`<b>实际利率高位</b>说明政策仍在压制需求侧,残余压力来自服务粘性而非需求过热。结论:<b>反通胀未完成,再加速也未启动</b>,维持粘性体制,盯防油价与长端预期这两条实时线的边际变化。`;
+  $('#rsumm').innerHTML=p;
+}
+
+/* ===========================================================
+   boot — fetch oracle macro feed, fall back to embedded snapshot
+   override endpoint with ?api=…
+   =========================================================== */
+const API = new URLSearchParams(location.search).get('api')
+  || (location.protocol.indexOf('http')===0 ? '/api/oracle/macro'
+      : 'https://zhihuiti-oracle.zeabur.app/api/oracle/macro');
+
+function normalize(feed){
+  const s = feed && feed.snapshot ? feed.snapshot : feed;
+  if(!s) return null;
+  const num=(v,d)=> (v==null||isNaN(+v))?d:+v;
+  return {
+    refreshed_at: feed.refreshed_at || s.refreshed_at || feed.asof || SNAP.refreshed_at,
+    bei10: num(s.bei10, SNAP.bei10),
+    real10: num(s.real10, SNAP.real10),
+    y10: num(s.y10, SNAP.y10),
+    y3m: num(s.y3m!=null?s.y3m:(s.curve&&s.curve.cur?s.curve.cur['3M']:null), SNAP.y3m),
+    wti: num(s.wti, SNAP.wti),
+    brent: num(s.brent, SNAP.brent),
+    wtiChg: num(s.wtiChg, SNAP.wtiChg),
+    live_fields: Array.isArray(s.live_fields)?s.live_fields:(Array.isArray(feed.live_fields)?feed.live_fields:[])
+  };
+}
+
+async function boot(){
+  render(buildState(SNAP, false));            // paint embedded snapshot immediately
+  try{
+    const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),4000);
+    const r=await fetch(API,{signal:ctrl.signal}); clearTimeout(t);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const feed=await r.json();
+    const s=normalize(feed);
+    if(!s || s.bei10==null || s.wti==null) throw new Error('bad payload');
+    render(buildState(s, true));              // upgrade to live
+  }catch(e){ /* stay on embedded snapshot */ }
+}
+if (typeof document!=='undefined' && document.getElementById('cards')) boot();
+</script>
+</body>
+</html>

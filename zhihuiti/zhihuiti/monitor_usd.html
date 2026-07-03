@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>zhihuiti 美元深度看板 · US Dollar Deep-Dive Board</title>
+<style>
+  :root{
+    --bg:#0a0e14; --bg2:#0d121b; --panel:#111824; --panel2:#0f1520;
+    --bd:#1e2734; --bd2:#283242;
+    --tx:#cdd7e4; --mut:#788396; --dim:#566072;
+    --cy:#38bdf8; --am:#fbbf24; --gn:#34d399; --rd:#f87171; --gold:#e0b53c; --vi:#a78bfa;
+    --mono:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:
+     radial-gradient(1200px 600px at 82% -10%,rgba(52,211,153,.07),transparent 60%),
+     radial-gradient(900px 500px at 0% 110%,rgba(224,181,60,.05),transparent 55%),
+     var(--bg);
+     color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+     -webkit-font-smoothing:antialiased;line-height:1.5;}
+  a{color:inherit}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px 64px}
+  .mono{font-family:var(--mono)}
+
+  header.top{position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);
+     background:linear-gradient(180deg,rgba(10,14,20,.92),rgba(10,14,20,.72));
+     border-bottom:1px solid var(--bd)}
+  .top .wrap{display:flex;align-items:center;gap:16px;padding-top:12px;padding-bottom:12px}
+  .brand{display:flex;flex-direction:column;gap:2px}
+  .brand b{font-size:15px;letter-spacing:.3px}
+  .brand b .zh{color:var(--gn)}
+  .brand .sub{font-size:11px;color:var(--mut);font-family:var(--mono);letter-spacing:.2px}
+  .nav{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+  .nav a{font-size:12px;color:var(--mut);text-decoration:none;padding:5px 10px;border:1px solid var(--bd);border-radius:999px}
+  .nav a:hover{color:var(--tx);border-color:var(--bd2)}
+  .nav a.back{color:var(--gn);border-color:rgba(52,211,153,.35)}
+  .head-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+  .srcpill{font-size:10px;font-family:var(--mono);padding:3px 9px;border-radius:999px;border:1px solid var(--bd2);color:var(--mut);white-space:nowrap}
+  .srcpill.live{color:var(--gn);border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.07)}
+  .srcpill.snap{color:var(--am);border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.05)}
+  .snap{font-size:11px;color:var(--dim);font-family:var(--mono);white-space:nowrap}
+
+  h2.sec{font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:var(--mut);
+     margin:38px 0 14px;display:flex;align-items:center;gap:10px;font-weight:600}
+  h2.sec::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--gn);box-shadow:0 0 8px var(--gn)}
+  h2.sec span{color:var(--dim);font-weight:400;letter-spacing:.5px;text-transform:none}
+
+  .hero{margin-top:22px;border:1px solid var(--bd);border-radius:16px;overflow:hidden;
+     background:linear-gradient(135deg,var(--panel),var(--panel2))}
+  .hero-top{padding:22px 24px 18px;border-bottom:1px solid var(--bd);display:grid;grid-template-columns:1fr auto;gap:20px;align-items:start}
+  .regime-eyebrow{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gn);font-family:var(--mono)}
+  .dxy-line{display:flex;align-items:baseline;gap:14px;margin:10px 0 2px}
+  .dxy-big{font-size:46px;font-weight:800;font-family:var(--mono);line-height:1;letter-spacing:.5px}
+  .dxy-chg{font-size:18px;font-family:var(--mono);font-weight:700}
+  .dxy-sub{font-size:12px;color:var(--mut);font-family:var(--mono)}
+  .dir-badge{align-self:start;text-align:right}
+  .dir-word{font-size:22px;font-weight:800;letter-spacing:1px}
+  .dir-en{font-size:11px;color:var(--mut);font-family:var(--mono);margin-top:3px}
+  .regime-read{grid-column:1/-1;font-size:13.5px;color:var(--tx);max-width:820px;margin-top:6px;line-height:1.65}
+  .regime-read b{color:var(--gn);font-weight:600}
+  .regime-read .g{color:var(--gold)}
+  .regime-read .r{color:var(--rd)}
+  .hero-gauges{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--bd)}
+  .gauge{padding:18px 24px;background:var(--panel2)}
+  .gauge .lab{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--mut)}
+  .gauge .lab b{font-size:22px;color:var(--tx);font-family:var(--mono);font-weight:700}
+  .gauge .lab b small{font-size:12px;color:var(--dim);font-weight:400}
+  .track{height:8px;border-radius:6px;margin-top:11px;position:relative;
+     background:linear-gradient(90deg,#2a4a7a,#3a6f7a,#3a7a3a,#1c5e4a)}
+  .track.mom{background:linear-gradient(90deg,#7a3a2a,#7a6f2a,#3a7a3a)}
+  .track .pin{position:absolute;top:-4px;width:3px;height:16px;border-radius:2px;background:#fff;box-shadow:0 0 6px rgba(255,255,255,.6);transform:translateX(-1.5px)}
+  .gauge .ends{display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-top:5px;font-family:var(--mono)}
+
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .mon{border:1px solid var(--bd);border-radius:14px;background:var(--panel);padding:16px 16px 14px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+  .mon::after{content:"";position:absolute;left:0;top:0;width:100%;height:2px;background:var(--accent,var(--gn));opacity:.85}
+  .mon .mt{font-size:13px;font-weight:700}
+  .mon .mt .en{display:block;font-size:10px;color:var(--dim);font-family:var(--mono);font-weight:400;margin-top:2px;letter-spacing:.3px}
+  .mon .formula{font-size:9.5px;color:var(--dim);font-family:var(--mono);margin-top:7px}
+  .mon .reg{font-size:9px;font-family:var(--mono);color:var(--dim);margin-top:4px;letter-spacing:.3px}
+  .score{display:flex;align-items:baseline;gap:6px;margin:11px 0 2px}
+  .score b{font-size:34px;font-weight:800;font-family:var(--mono);line-height:1;color:var(--accent,var(--gn))}
+  .score s{font-size:12px;color:var(--dim);text-decoration:none;font-family:var(--mono)}
+  .score .wt{margin-left:auto;font-size:9px;font-family:var(--mono);color:var(--dim);align-self:flex-end}
+  .pill{align-self:flex-start;font-size:11px;padding:3px 9px;border-radius:999px;font-weight:600;margin-top:2px}
+  .bar{height:6px;border-radius:4px;background:#161d29;margin:11px 0 12px;position:relative;overflow:hidden}
+  .bar i{position:absolute;top:0;left:0;height:100%;border-radius:4px;background:var(--accent,var(--gn));opacity:.85}
+  .rows{display:flex;flex-direction:column;gap:6px;margin-top:2px}
+  .drow{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:11px;color:var(--mut)}
+  .drow b{color:var(--tx);font-family:var(--mono);font-weight:600}
+  .drow b small{font-size:9.5px;margin-left:4px;font-weight:400}
+  .flag{margin-top:9px;font-size:9.5px;font-family:var(--mono);border-radius:6px;padding:5px 8px;letter-spacing:.2px;border:1px solid var(--bd2);color:var(--mut)}
+  .flag.on{color:var(--gold);border-color:rgba(224,181,60,.4);background:rgba(224,181,60,.06)}
+  .tag{font-size:10px;color:var(--dim);font-family:var(--mono);margin-top:9px;letter-spacing:.2px;line-height:1.5}
+  .up{color:var(--gn)} .dn{color:var(--rd)} .fl{color:var(--mut)}
+
+  .comp{border:1px solid var(--bd);border-radius:16px;background:linear-gradient(135deg,var(--panel),var(--panel2));overflow:hidden}
+  .comp-top{display:grid;grid-template-columns:auto 1fr;gap:24px;padding:20px 24px;align-items:center}
+  .comp-score{text-align:center;border:1px solid var(--bd2);border-radius:14px;padding:16px 22px;background:var(--panel2)}
+  .comp-score .n{font-size:52px;font-weight:800;font-family:var(--mono);line-height:1;color:var(--gn)}
+  .comp-score .d{font-size:11px;color:var(--dim);font-family:var(--mono);margin-top:4px}
+  .comp-score .rg{margin-top:10px;font-size:13px;font-weight:700;letter-spacing:.5px}
+  .comp-score .rgen{font-size:9.5px;color:var(--mut);font-family:var(--mono);margin-top:2px}
+  .comp-read{font-size:13.5px;color:var(--tx);line-height:1.7}
+  .comp-read b{color:var(--gn);font-weight:600}
+  .comp-read .g{color:var(--gold)}
+  .comp-read .r{color:var(--rd)}
+  .comp-weights{display:flex;flex-wrap:wrap;gap:8px;border-top:1px solid var(--bd);padding:14px 24px;background:rgba(0,0,0,.12)}
+  .wchip{font-size:10px;font-family:var(--mono);color:var(--mut);border:1px solid var(--bd);border-radius:999px;padding:4px 10px}
+  .wchip b{color:var(--tx);font-weight:600}
+  .wchip i{font-style:normal;color:var(--dim)}
+
+  .panel{border:1px solid var(--bd);border-radius:14px;background:var(--panel);padding:16px 18px}
+  .panel h3{margin:0 0 8px;font-size:12px;letter-spacing:.5px}
+  .panel h3 .en{color:var(--dim);font-family:var(--mono);font-weight:400;font-size:10px;margin-left:6px}
+  .ticks{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px 22px}
+  .tick{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--bd);padding-bottom:7px}
+  .tick .k{font-size:11.5px;color:var(--mut)}
+  .tick .v{font-family:var(--mono);font-size:13px;font-weight:600}
+  .tick .v small{font-size:10px;margin-left:5px;font-weight:400}
+
+  footer{margin-top:40px;border-top:1px solid var(--bd);padding-top:18px;font-size:11px;color:var(--dim);line-height:1.7}
+  footer .intg{border:1px solid rgba(52,211,153,.22);background:rgba(52,211,153,.04);border-radius:10px;padding:11px 14px;color:var(--mut);margin-bottom:14px;font-size:11.5px}
+  footer .intg b{color:var(--gn)}
+  footer code{font-family:var(--mono);color:var(--mut);background:#10161f;padding:1px 5px;border-radius:4px}
+  .disc{color:#5a6473}
+  @media(max-width:880px){
+    .grid4{grid-template-columns:1fr 1fr}
+    .hero-gauges{grid-template-columns:1fr}
+    .hero-top{grid-template-columns:1fr}
+    .comp-top{grid-template-columns:1fr}
+    .ticks{grid-template-columns:1fr 1fr}
+    .nav{display:none}
+  }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="brand">
+    <b><span class="zh">zhihuiti</span> 美元深度看板 · US Dollar Deep-Dive Board</b>
+    <span class="sub">γ<sub>USD</sub> = 利差动能 · 避险需求 · 去美元化暗线 · 动量 → regime</span>
+  </div>
+  <nav class="nav">
+    <a class="back" href="/macro-cockpit">← 驾驶舱</a>
+    <a href="#hero">摘要</a><a href="#factors">四因子</a><a href="#composite">综合</a><a href="#read">关键读数</a>
+  </nav>
+  <div class="head-meta">
+    <span class="srcpill snap" id="srcpill">○ 连接中…</span>
+    <span class="snap mono" id="snapdate"></span>
+  </div>
+</div></header>
+
+<div class="wrap">
+
+  <section id="hero" class="hero">
+    <div class="hero-top">
+      <div>
+        <div class="regime-eyebrow">美元指数 · U.S. Dollar Index (DXY)</div>
+        <div class="dxy-line">
+          <span class="dxy-big mono" id="dxyBig">—</span>
+          <span class="dxy-chg mono" id="dxyChg">—</span>
+        </div>
+        <div class="dxy-sub" id="dxySub">—</div>
+      </div>
+      <div class="dir-badge">
+        <div class="dir-word" id="dirWord">—</div>
+        <div class="dir-en" id="dirEn">—</div>
+      </div>
+      <p class="regime-read" id="heroRead"></p>
+    </div>
+    <div class="hero-gauges">
+      <div class="gauge">
+        <div class="lab"><span>美元综合强度 · γ Composite</span><b id="gCompV">—<small>/100</small></b></div>
+        <div class="track" id="gCompTrack"><div class="pin" id="gCompPin"></div></div>
+        <div class="ends"><span>弱美元</span><span>中性</span><span>强美元</span></div>
+      </div>
+      <div class="gauge">
+        <div class="lab"><span>价格动量 · Momentum</span><b id="gMomV">—<small>/100</small></b></div>
+        <div class="track mom" id="gMomTrack"><div class="pin" id="gMomPin"></div></div>
+        <div class="ends"><span>下行</span><span>走平</span><span>上行</span></div>
+      </div>
+    </div>
+  </section>
+
+  <h2 class="sec" id="factors">四因子分解 <span>· 驾驶舱 γ 框架逐项展开 → 实时读数 + 0-100 分</span></h2>
+  <div class="grid4" id="facCards"></div>
+
+  <h2 class="sec" id="composite">综合评分 <span>· 加权 γ → oracle regime 词表</span></h2>
+  <section class="comp" id="compBox"></section>
+
+  <h2 class="sec" id="read">关键读数 <span>· Live Snapshot</span></h2>
+  <div class="panel">
+    <h3>美元相关跨市场 <span class="en">USD-Relevant Cross-Market</span></h3>
+    <div class="ticks" id="ticks"></div>
+  </div>
+
+  <footer id="src">
+    <div class="intg">⚙ <b>已接入 zhihuiti oracle</b> · 本看板启动时拉取 <code>GET /api/oracle/macro</code>(单一事实源);失败回退内嵌快照。四因子分与驾驶舱 <code>usd</code> 监控同源标定,综合 γ 映射到 oracle regime 词表(<code>trending_up/down · mean_reverting · quiet · volatile · crisis</code>)。</div>
+    <div><b style="color:var(--mut)">因子输入</b> · 利差动能: 前端收益率 2Y/3M(carry proxy)· 避险需求: VIX 及其日变· 去美元化暗线: 黄金 / BTC 相对 DXY 的背离· 动量: DXY 日内 %变动。分值为 clamped 线性传递,权重 0.35 / 0.25 / 0.25 / 0.15。</div>
+    <div class="disc" style="margin-top:10px">⚠ 教育演示用途。所有指标、评分、regime 均为研究框架示意,基于历史样本与线性近似,不构成任何买入/卖出/仓位建议;历史表现不预示未来。</div>
+  </footer>
+</div>
+
+<script>
+/* ===========================================================
+   EMBEDDED FALLBACK — used when /api/oracle/macro is unreachable
+   (mirrors the cockpit's usd monitor snapshot)
+   =========================================================== */
+const SNAP = {
+  date:'2026-06-29', refreshed_at:'2026-06-29 16:00 ET',
+  dxy:100.94, dxyChg:-0.42, y2:4.07, y3m:3.83, y10:4.38, real10:2.03,
+  vix:18.3, vixChg:-0.76, gold:4036, goldChg:-1.46, btc:59253, btcChg:-0.41, spxChg:0.62
+};
+
+/* ===========================================================
+   helpers
+   =========================================================== */
+const $=s=>document.querySelector(s);
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const num=(v,d)=> (v==null||isNaN(v)) ? d : +v;
+/* clamped linear transfer x∈[x0,x1] → y∈[y0,y1] */
+const lin=(x,x0,x1,y0,y1)=>{const t=clamp((x-x0)/(x1-x0),0,1);return y0+t*(y1-y0);};
+const clsOf=x=> x>0?'up':x<0?'dn':'fl';
+const chgTxt=v=>{const c=clsOf(v);return `<small class="${c}">${(v>0?'+':'')+(+v).toFixed(2)}%</small>`;};
+const ZONES=['弱','偏弱','中性','强'];
+const stanceOf=sc=> ZONES[Math.min(3,Math.floor(sc/25))];
+const scoreColor=sc=> sc<42?'var(--rd)':sc>60?'var(--gn)':'var(--am)';
+
+/* regime word from composite + momentum + haven, using oracle vocabulary */
+const REGIME_ZH={trending_up:'强美元趋势',trending_down:'弱美元趋势',mean_reverting:'区间回归',quiet:'低波盘整',volatile:'波动放大',crisis:'避险抢美元'};
+function regimeOf(comp,mom,haven){
+  if(haven>=70) return 'crisis';            // panic haven bid → USD squeeze
+  if(haven>=60) return 'volatile';
+  if(mom<=32 && comp<46) return 'trending_down';
+  if(mom>=68 && comp>58) return 'trending_up';
+  if(Math.abs(mom-50)<18) return 'quiet';   // mild drift, low vol
+  return 'mean_reverting';
+}
+
+/* ===========================================================
+   derive(snap) — the whole analytical engine
+   =========================================================== */
+function derive(s){
+  const dxy=num(s.dxy,SNAP.dxy), dxyChg=num(s.dxyChg,SNAP.dxyChg);
+  const y2=num(s.y2,SNAP.y2), y3m=num(s.y3m, num(s.y3m,SNAP.y3m));
+  const vix=num(s.vix,SNAP.vix), vixChg=num(s.vixChg,SNAP.vixChg);
+  const gold=num(s.gold,SNAP.gold), goldChg=num(s.goldChg,SNAP.goldChg);
+  const btc=num(s.btc,SNAP.btc), btcChg=num(s.btcChg,SNAP.btcChg);
+  const real10=num(s.real10,SNAP.real10), y10=num(s.y10,SNAP.y10);
+
+  /* 1 · 利差动能 — front-end carry proxy from 2Y & 3M */
+  const carry=(y2+y3m)/2;
+  const s1=Math.round(clamp(lin(carry,2.4,5.0,30,84),0,100));
+
+  /* 2 · 避险需求 — VIX level (+ its daily move) */
+  const s2=Math.round(clamp(lin(vix,12,34,24,82)+clamp(vixChg,-6,6)*0.9,0,100));
+
+  /* 3 · 去美元化暗线 — gold level as inverse convenience yield, w/ divergence flag */
+  const diverge=(goldChg>0||btcChg>0)&&dxyChg<0;   // hard assets bid while USD sags
+  const s3=Math.round(clamp(lin(gold,2700,4300,68,36)-(diverge?5:0),0,100));
+
+  /* 4 · 动量 — DXY daily % change */
+  const s4=Math.round(clamp(lin(dxyChg,-1.0,1.0,20,80),0,100));
+
+  const W=[0.35,0.25,0.25,0.15];
+  const comp=Math.round(s1*W[0]+s2*W[1]+s3*W[2]+s4*W[3]);
+  const regime=regimeOf(comp,s4,s2);
+
+  const dir = dxyChg<-0.15 ? {w:'软美元',en:'Soft Dollar',c:'var(--rd)'}
+            : dxyChg> 0.15 ? {w:'强美元',en:'Firm Dollar',c:'var(--gn)'}
+            : {w:'走平',en:'Flat',c:'var(--am)'};
+
+  const factors=[
+    {id:'carry',name:'利差动能',en:'Carry / Rate Differential',accent:'var(--cy)',score:s1,weight:W[0],
+      formula:'carry = avg(2Y, 3M) → 支撑',
+      rows:[['2Y 前端',y2.toFixed(2)+'%'],['3M 前端',y3m.toFixed(2)+'%'],['10Y 参照',y10.toFixed(2)+'%']],
+      tag: s1>60?'前端利差仍宽,美元的硬支撑仍在。':'前端 carry 中性,支撑力度边际转弱。'},
+    {id:'haven',name:'避险需求',en:'Haven Demand',accent:'var(--vi)',score:s2,weight:W[1],
+      formula:'haven = f(VIX 水平, 日变)',
+      rows:[['VIX 股波',vix.toFixed(1)+(vixChg?` (${(vixChg>0?'+':'')+vixChg.toFixed(2)}%)`:'')],['实际利率 10Y',real10.toFixed(2)+'%']],
+      tag: s2>58?'恐慌升温,避险买盘回流美元。':'VIX 低位,几乎没有避险买盘托底美元。'},
+    {id:'dedollar',name:'去美元化暗线',en:'De-Dollarization Undercurrent',accent:'var(--gold)',score:s3,weight:W[2],
+      formula:'cy = 硬资产强度 vs DXY(逆向)',
+      rows:[['黄金 XAU','$'+gold.toLocaleString()],['比特币 BTC','$'+(btc/1000).toFixed(1)+'k'],['DXY 日内',(dxyChg>0?'+':'')+dxyChg.toFixed(2)+'%']],
+      diverge, tag: s3<45?'黄金高悬,便利收益被侵蚀——结构性拖累美元。':'硬资产未见抢跑,去美元化压力暂缓。'},
+    {id:'mom',name:'动量',en:'Price Momentum',accent:'var(--gn)',score:s4,weight:W[3],
+      formula:'mom = f(DXY 日内 %变动)',
+      rows:[['DXY',dxy.toFixed(2)],['日内变动',(dxyChg>0?'+':'')+dxyChg.toFixed(2)+'%']],
+      tag: s4<40?'动量偏下行,软美元惯性延续。':s4>60?'动量向上,美元短线转强。':'动量走平,方向待定。'}
+  ];
+
+  return {dxy,dxyChg,dir,y2,y3m,y10,real10,vix,vixChg,gold,goldChg,btc,btcChg,
+    factors,comp,regime,
+    live:!!s.__live, source:s.__source||'内嵌快照 (oracle 不可达)', asof:s.date||SNAP.date, refreshed:s.refreshed_at||SNAP.refreshed_at};
+}
+
+/* ===========================================================
+   copy generators (auto 中文, template-driven)
+   =========================================================== */
+function heroRead(D){
+  const dirB = D.dxyChg<0 ? `<b>DXY ${D.dxy.toFixed(2)}(${D.dxyChg.toFixed(2)}%)</b>贬值,${D.dir.w}`
+                          : `<b>DXY ${D.dxy.toFixed(2)}(+${D.dxyChg.toFixed(2)}%)</b>企稳,${D.dir.w}`;
+  const carry=D.factors[0].score, haven=D.factors[1].score, dedol=D.factors[2].score;
+  const support = carry>58 ? `利差动能(2Y ${D.y2.toFixed(2)}%)仍是唯一的硬支撑` : `连利差动能都在边际收敛`;
+  const shadow = dedol<45 ? `<span class="g">黄金 $${D.gold.toLocaleString()} 高悬</span>形成一条去美元化暗线` : `硬资产暂未抢跑`;
+  const havenTxt = haven<45 ? `避险买盘缺席(VIX ${D.vix.toFixed(1)} 低位)` : `避险需求升温(VIX ${D.vix.toFixed(1)})`;
+  return `${dirB}。${support},但${havenTxt}、${shadow}——综合 γ=<b>${D.comp}/100</b>,落在 <b>${REGIME_ZH[D.regime]}</b>。这是一个支撑单一、韧性不足的美元:方向不急,但一旦避险因子被点燃,四条线会同向反转。`;
+}
+function compRead(D){
+  const [c,h,d,m]=D.factors.map(f=>f.score);
+  return `综合 γ 由四条线加权而成:<b>利差动能 ${c}</b>(权重 35%)提供了绝大部分支撑,而 <b>避险需求 ${h}</b> 与 <span class="g">去美元化暗线 ${d}</span>(各 25%)双双压低分值,<b>动量 ${m}</b>(15%)${m<40?'偏下行':'走平'}给出方向。四线合成 <b>${D.comp}/100</b> → <b>${REGIME_ZH[D.regime]}</b>(<span class="mono">${D.regime}</span>)。${D.comp<48?'读数偏中性偏弱:美元靠 carry 撑着,却缺乏避险与结构性买盘,属于"顺风时嫌贵、逆风时抢手"的两难位置。':'读数偏中性偏强:利差支撑叠加避险回流,美元短线占优。'}`;
+}
+
+/* ===========================================================
+   render
+   =========================================================== */
+function setSrc(D){
+  const p=$('#srcpill');
+  if(D.live){ p.className='srcpill live'; p.textContent='● LIVE · /api/oracle/macro'; }
+  else { p.className='srcpill snap'; p.textContent='○ 内嵌快照'; }
+  $('#snapdate').textContent='快照 · '+(D.refreshed||D.asof);
+}
+
+function render(D){
+  setSrc(D);
+  /* hero */
+  $('#dxyBig').textContent=D.dxy.toFixed(2);
+  $('#dxyChg').innerHTML=`<span class="${clsOf(D.dxyChg)}">${(D.dxyChg>0?'+':'')+D.dxyChg.toFixed(2)}%</span>`;
+  $('#dxySub').textContent='DXY · 一揽子加权美元 · 日内 %';
+  $('#dirWord').textContent=D.dir.w; $('#dirWord').style.color=D.dir.c;
+  $('#dirEn').textContent=D.dir.en;
+  $('#heroRead').innerHTML=heroRead(D);
+
+  $('#gCompV').innerHTML=D.comp+'<small>/100</small>';
+  $('#gCompPin').style.left=D.comp+'%';
+  const mom=D.factors[3].score;
+  $('#gMomV').innerHTML=mom+'<small>/100</small>';
+  $('#gMomPin').style.left=mom+'%';
+
+  /* factor cards */
+  $('#facCards').innerHTML=D.factors.map(f=>{
+    const col=scoreColor(f.score);
+    const rows=f.rows.map(r=>`<div class="drow"><span>${r[0]}</span><b>${r[1]}</b></div>`).join('');
+    const flag = f.id==='dedollar'
+      ? `<div class="flag ${f.diverge?'on':''}">${f.diverge?'⚑ 背离触发 · 硬资产升 + 美元跌':'○ 无背离 · 硬资产未与美元背向'}</div>`
+      : '';
+    return `<div class="mon" style="--accent:${f.accent}">
+      <div class="mt">${f.name}<span class="en">${f.en}</span></div>
+      <div class="formula">${f.formula}</div>
+      <div class="reg">weight → ${(f.weight*100).toFixed(0)}%</div>
+      <div class="score"><b style="color:${col}">${f.score}</b><s>/100</s><span class="wt">w ${f.weight.toFixed(2)}</span></div>
+      <span class="pill" style="background:${col}1f;color:${col}">${stanceOf(f.score)}</span>
+      <div class="bar"><i style="width:${f.score}%;background:${f.accent}"></i></div>
+      <div class="rows">${rows}</div>${flag}
+      <div class="tag">${f.tag}</div></div>`;
+  }).join('');
+
+  /* composite */
+  const weights=D.factors.map(f=>`<span class="wchip"><b>${f.name}</b> <i>${(f.weight*100).toFixed(0)}%</i> · ${f.score}</span>`).join('');
+  $('#compBox').innerHTML=`
+    <div class="comp-top">
+      <div class="comp-score">
+        <div class="n">${D.comp}</div><div class="d">γ / 100</div>
+        <div class="rg">${REGIME_ZH[D.regime]}</div><div class="rgen mono">${D.regime}</div>
+      </div>
+      <div class="comp-read">${compRead(D)}</div>
+    </div>
+    <div class="comp-weights">${weights}</div>`;
+
+  /* key readings */
+  const T=[
+    ['美元指数 DXY',D.dxy.toFixed(2),D.dxyChg],
+    ['2Y 前端',D.y2.toFixed(2)+'%',null],
+    ['3M 前端',D.y3m.toFixed(2)+'%',null],
+    ['10Y 收益率',D.y10.toFixed(2)+'%',null],
+    ['实际利率 10Y',D.real10.toFixed(2)+'%',null],
+    ['VIX 股波',D.vix.toFixed(1),D.vixChg],
+    ['黄金 XAU','$'+D.gold.toLocaleString(),D.goldChg],
+    ['比特币 BTC','$'+(D.btc/1000).toFixed(1)+'k',D.btcChg],
+  ];
+  $('#ticks').innerHTML=T.map(r=>{
+    const v = r[2]==null ? r[1] : r[1]+chgTxt(r[2]);
+    return `<div class="tick"><span class="k">${r[0]}</span><span class="v">${v}</span></div>`;
+  }).join('');
+}
+
+/* ===========================================================
+   boot — same-origin oracle, file:// falls back to zeabur, then embed
+   =========================================================== */
+const API = location.protocol.indexOf('http')===0
+  ? '/api/oracle/macro'
+  : 'https://zhihuiti-oracle.zeabur.app/api/oracle/macro';
+
+function normalize(feed){
+  const s=feed.snapshot||feed;
+  return {__live:true, __source:feed.source||'oracle',
+    date:s.asof||feed.asof||s.date, refreshed_at:feed.refreshed_at||s.refreshed_at||s.asof,
+    dxy:s.dxy, dxyChg:s.dxyChg, y2:s.y2, y3m:(s.y3m!=null?s.y3m:(s.curve&&s.curve.cur?s.curve.cur['3M']:undefined)),
+    y10:s.y10, real10:s.real10, vix:s.vix, vixChg:s.vixChg,
+    gold:s.gold, goldChg:s.goldChg, btc:s.btc, btcChg:s.btcChg, spxChg:s.spxChg};
+}
+
+async function boot(){
+  render(derive(SNAP));                          // paint embedded immediately
+  try{
+    const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),4000);
+    const r=await fetch(API,{signal:ctrl.signal}); clearTimeout(t);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const feed=await r.json();
+    const s=normalize(feed);
+    if(s.dxy==null||isNaN(s.dxy)) throw new Error('bad payload');
+    render(derive(s));                            // upgrade to live
+  }catch(e){ /* stay on embedded snapshot */ }
+}
+if (typeof document!=='undefined' && document.getElementById('facCards')) boot();
+</script>
+</body>
+</html>
