@@ -325,6 +325,15 @@ def _refresh_macro_snapshot():
     setf("gvzChg", lambda: _yahoo_chg_pct("%5EGVZ"), "Yahoo")
     setf("btcChg", lambda: _yahoo_chg_pct("BTC-USD"), "Yahoo")
 
+    # core CPI YoY from the monthly index level (latest vs 12 rows back)
+    def _core_cpi_yoy():
+        cur, ago = _fred_series("CPILFESL"), _fred_series("CPILFESL", days_back=12)
+        return round((cur / ago - 1) * 100, 2) if cur and ago else None
+    setf("coreCpiYoY", _core_cpi_yoy, "FRED")
+    # foreign 10Y (monthly OECD series) → US rate differential for the USD board
+    setf("de10", lambda: _fred_series("IRLTLT01DEM156N"), "FRED")
+    setf("jp10", lambda: _fred_series("IRLTLT01JPM156N"), "FRED")
+
     # derive real rate if BEI came through but TIPS didn't
     if s.get("bei10") is not None and s["curve"]["cur"].get("10Y") is not None and "real10" not in src:
         s["real10"] = round(s["curve"]["cur"]["10Y"] - s["bei10"], 3)
@@ -336,7 +345,45 @@ def _refresh_macro_snapshot():
     _MACRO_META["errors"] = errs[:15]
     _MACRO_META["live_fields"] = len(src)
     _MACRO_SNAPSHOT = s
+    _macro_history_save(s, _MACRO_META)
     return _MACRO_META
+
+
+def _macro_db_path():
+    return os.environ.get("ZHIHUITI_DB", "/app/data/zhihuiti.db")
+
+
+def _macro_history_save(snapshot, meta):
+    """Append the refreshed snapshot to SQLite. Never breaks the refresh."""
+    import sqlite3
+    try:
+        con = sqlite3.connect(_macro_db_path(), timeout=5)
+        con.execute("""CREATE TABLE IF NOT EXISTS macro_history (
+            ts TEXT PRIMARY KEY, live_fields INTEGER, snapshot TEXT)""")
+        con.execute("INSERT OR REPLACE INTO macro_history VALUES (?,?,?)",
+                    (meta["refreshed_at"], meta["live_fields"], json.dumps(snapshot)))
+        con.commit()
+        con.close()
+    except Exception:
+        pass
+
+
+def _macro_history_query(hours=168, fields=None, limit=2000):
+    import sqlite3, datetime as _dt
+    since = (_dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(hours=hours)).isoformat(timespec="seconds")
+    con = sqlite3.connect(_macro_db_path(), timeout=5)
+    rows = con.execute(
+        "SELECT ts, live_fields, snapshot FROM macro_history WHERE ts >= ? ORDER BY ts LIMIT ?",
+        (since, limit)).fetchall()
+    con.close()
+    out = []
+    for ts, lf, snap in rows:
+        s = json.loads(snap)
+        row = {"ts": ts, "live_fields": lf}
+        for f in (fields or ["y10", "y2", "dxy", "gold", "vix", "bei10", "real10", "spx", "wti"]):
+            row[f] = s.get(f)
+        out.append(row)
+    return out
 
 
 def _refresh_loop(interval):
@@ -561,6 +608,14 @@ class OracleHandler(BaseHTTPRequestHandler):
             self._handle_summary()
         elif path == "/api/oracle/macro":
             self._handle_macro(qs)
+        elif path == "/api/oracle/macro/history":
+            try:
+                hours = int(qs.get("hours", ["168"])[0])
+                fields = qs.get("fields", [None])[0]
+                fields = [f.strip() for f in fields.split(",")] if fields else None
+                _json_response(self, {"rows": _macro_history_query(hours=hours, fields=fields)})
+            except Exception as e:
+                _json_response(self, {"error": str(e)}, 500)
         # ── New: equities, forex, indices ──
         elif path == "/api/oracle/scan/equities":
             self._handle_scan_equities(qs)
