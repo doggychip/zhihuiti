@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from enum import Enum
 from typing import Any
 
@@ -62,11 +62,28 @@ class FeeSchedule:
     exponent: Decimal = Decimal("1")
     taker_only: bool = True
 
+    def __post_init__(self) -> None:
+        if (
+            not self.rate.is_finite()
+            or not self.exponent.is_finite()
+            or self.rate < ZERO
+            or self.exponent < ZERO
+        ):
+            raise ValueError("fee rate and exponent must be finite and non-negative")
+
     def fee(self, shares: Decimal, price: Decimal) -> Decimal:
         """Return the current V2 taker fee for one execution level."""
+        if not price.is_finite() or not ZERO <= price <= Decimal("1"):
+            raise ValueError("fee price must be between 0 and 1")
         if self.rate <= ZERO or shares <= ZERO:
             return ZERO
-        return shares * self.rate * (price * (Decimal("1") - price)) ** self.exponent
+        raw = shares * self.rate * (
+            price * (Decimal("1") - price)
+        ) ** self.exponent
+        precision = Decimal("0.00001")
+        if raw < precision:
+            return ZERO
+        return raw.quantize(precision, rounding=ROUND_HALF_UP)
 
 
 @dataclass(frozen=True)
@@ -119,6 +136,24 @@ class SimulatedFill:
     @property
     def partial(self) -> bool:
         return ZERO < self.filled_size < self.requested_size
+
+    @property
+    def position_size(self) -> Decimal:
+        """Net outcome shares received or removed after protocol fees."""
+        if self.side is Side.SELL:
+            return self.filled_size
+        fee_shares = sum(
+            (
+                level.fee / level.price
+                for level in self.levels
+                if level.price > ZERO
+            ),
+            ZERO,
+        )
+        # Manually constructed fills may not carry level detail.
+        if not self.levels and self.average_price > ZERO:
+            fee_shares = self.fee / self.average_price
+        return max(ZERO, self.filled_size - fee_shares)
 
 
 @dataclass(frozen=True)

@@ -262,11 +262,13 @@ class PaperLedger:
         position_realized = Decimal(row[2]) if row else ZERO
 
         if fill.side is Side.BUY:
-            debit = fill.notional + fill.fee
+            # CLOB V2 collects BUY fees in outcome shares. Cash pays only the
+            # matched notional and the position receives the net share amount.
+            debit = fill.notional
             if debit > cash:
                 raise ValueError("simulated fill exceeds available cash")
             cash -= debit
-            shares += fill.filled_size
+            shares += fill.position_size
             basis += debit
         else:
             if fill.filled_size > shares:

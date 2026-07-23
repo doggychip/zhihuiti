@@ -81,6 +81,31 @@ def test_client_paginates_and_requests_maker_fills():
     assert (first_params["start"], first_params["end"]) == (100, 200)
 
 
+def test_client_subdivides_ranges_at_offset_cap():
+    def response(payload):
+        item = MagicMock(text="")
+        item.json.return_value = payload
+        item.raise_for_status.return_value = None
+        return item
+
+    full_page = [{"row": index} for index in range(10000)]
+    fake = MagicMock()
+    fake.request.side_effect = [
+        response(full_page),
+        response(full_page),
+        response([{"bucket": "left"}]),
+        response([{"bucket": "right"}]),
+    ]
+    client = PolymarketClient(client=fake, retries=0)
+    rows = client.fetch_trades(WALLET, start=100, end=200, page_size=10000)
+    assert rows == [{"bucket": "left"}, {"bucket": "right"}]
+    ranges = [
+        (call.kwargs["params"]["start"], call.kwargs["params"]["end"])
+        for call in fake.request.call_args_list
+    ]
+    assert ranges == [(100, 200), (100, 200), (100, 150), (151, 200)]
+
+
 def test_client_does_not_retry_non_retryable_http_error():
     request = httpx.Request("GET", "https://example.test")
     response = httpx.Response(400, request=request)
@@ -135,6 +160,26 @@ def test_book_walk_sorts_levels_and_partially_fills_with_fee():
     )
     assert partial.filled_size == Decimal("101")
     assert partial.partial
+
+
+def test_fee_precision_and_buy_fee_share_deduction():
+    schedule = FeeSchedule(rate=Decimal("0.05"))
+    assert schedule.fee(Decimal("0.0004"), Decimal("0.5")) == 0
+    assert schedule.fee(Decimal("0.001"), Decimal("0.5")) == Decimal("0.00001")
+
+    fixture = load_fixture()
+    trade = normalize_trades(fixture["trades"][:1])[0]
+    book = parse_book_payload(fixture["books"]["yes-token"], "yes-token")
+    fill = OrderBookFillSimulator().simulate(
+        trade,
+        Decimal("1"),
+        book,
+        max_slippage=Decimal("0"),
+        fee_schedule=schedule,
+    )
+    assert fill.filled_size == Decimal("1")
+    assert fill.fee == Decimal("0.01250")
+    assert fill.position_size == Decimal("0.975")
 
 
 def test_risk_rejections_for_staleness_inventory_and_exposure():
@@ -204,23 +249,24 @@ def test_buy_sell_accounting_fees_restart_and_settlement(tmp_path):
         assert ledger.apply(buy, accepted(buy, "10"), make_fill(buy, Side.BUY, "10", "0.5", "0.1"))
         assert not ledger.apply(buy, accepted(buy, "10"), make_fill(buy, Side.BUY, "10", "0.5", "0.1"))
         snapshot = ledger.snapshot()
-        assert snapshot.cash == Decimal("94.9")
-        assert snapshot.positions[0].cost_basis == Decimal("5.1")
+        assert snapshot.cash == Decimal("95")
+        assert snapshot.positions[0].shares == Decimal("9.8")
+        assert snapshot.positions[0].cost_basis == Decimal("5")
 
     sell_payload = {**load_fixture()["trades"][0], "side": "SELL", "transactionHash": "0xbbb", "timestamp": 1700000001}
     sell = normalize_trades([sell_payload])[0]
     with PaperLedger(db, Decimal("999")) as ledger:
-        assert ledger.snapshot().cash == Decimal("94.9")
+        assert ledger.snapshot().cash == Decimal("95")
         ledger.apply(sell, accepted(sell, "4"), make_fill(sell, Side.SELL, "4", "0.6", "0.05"))
         snapshot = ledger.snapshot()
-        assert snapshot.cash == Decimal("97.25")
-        assert snapshot.positions[0].shares == Decimal("6")
-        assert snapshot.positions[0].cost_basis == Decimal("3.06")
-        assert snapshot.realized_pnl == Decimal("0.31")
+        assert snapshot.cash == Decimal("97.35")
+        assert snapshot.positions[0].shares == Decimal("5.8")
+        assert snapshot.positions[0].cost_basis.quantize(Decimal("0.00001")) == Decimal("2.95918")
+        assert snapshot.realized_pnl.quantize(Decimal("0.00001")) == Decimal("0.30918")
         assert ledger.settle_market("condition-1", {"yes-token"}) == 1
         settled = ledger.snapshot()
-        assert settled.cash == Decimal("103.25")
-        assert settled.realized_pnl == Decimal("3.25")
+        assert settled.cash == Decimal("103.15")
+        assert settled.realized_pnl == Decimal("3.15")
         assert ledger.settle_market("condition-1", {"yes-token"}) == 0
 
 
@@ -294,7 +340,7 @@ def test_poll_cycle_overlaps_cursor_and_advances_after_processing(tmp_path):
     assert client.fetch_trades.call_args.kwargs["end"] == 1700000010
 
 
-def test_runner_limits_buy_for_current_fees(tmp_path):
+def test_runner_limits_buy_to_available_cash(tmp_path):
     fixture = load_fixture()
     trade = normalize_trades(fixture["trades"][:1])[0]
     book = parse_book_payload(fixture["books"]["yes-token"], "yes-token")

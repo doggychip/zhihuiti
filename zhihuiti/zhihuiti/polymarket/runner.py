@@ -115,17 +115,15 @@ class LeaderTradePoller:
                             Decimal("1"),
                             trade.price * (Decimal("1") + self.config.max_slippage),
                         )
-                        fee_per_share = market.fee.fee(Decimal("1"), worst_price)
-                        total_per_share = worst_price + fee_per_share
                         remaining_exposure = max(
                             Decimal("0"),
                             self.config.max_market_exposure - exposure,
                         )
                         approved = min(
                             decision.approved_size,
-                            cash / total_per_share,
+                            cash / worst_price,
                             self.config.max_trade_notional / worst_price,
-                            remaining_exposure / total_per_share,
+                            remaining_exposure / worst_price,
                         )
                         if approved < decision.approved_size:
                             approved = max(Decimal("0"), approved).quantize(
@@ -135,7 +133,7 @@ class LeaderTradePoller:
                                 decision = replace(
                                     decision,
                                     status=DecisionStatus.REJECTED,
-                                    reason="insufficient_cash_with_fees",
+                                    reason="insufficient_execution_capacity",
                                     approved_size=Decimal("0"),
                                 )
                             else:
