@@ -95,7 +95,7 @@ class LeaderTradePoller:
             fill = None
             if decision.status is DecisionStatus.ACCEPTED:
                 market = market_lookup(trade.condition_id)
-                if market.closed or not market.accepting_orders:
+                if not market.active or market.closed or not market.accepting_orders:
                     decision = replace(
                         decision,
                         status=DecisionStatus.REJECTED,
@@ -116,9 +116,19 @@ class LeaderTradePoller:
                             trade.price * (Decimal("1") + self.config.max_slippage),
                         )
                         fee_per_share = market.fee.fee(Decimal("1"), worst_price)
-                        affordable = cash / (worst_price + fee_per_share)
-                        if affordable < decision.approved_size:
-                            approved = max(Decimal("0"), affordable).quantize(
+                        total_per_share = worst_price + fee_per_share
+                        remaining_exposure = max(
+                            Decimal("0"),
+                            self.config.max_market_exposure - exposure,
+                        )
+                        approved = min(
+                            decision.approved_size,
+                            cash / total_per_share,
+                            self.config.max_trade_notional / worst_price,
+                            remaining_exposure / total_per_share,
+                        )
+                        if approved < decision.approved_size:
+                            approved = max(Decimal("0"), approved).quantize(
                                 Decimal("0.000001"), rounding=ROUND_DOWN
                             )
                             if approved <= 0:
@@ -131,7 +141,7 @@ class LeaderTradePoller:
                             else:
                                 decision = replace(
                                     decision,
-                                    reason="accepted_cash_and_fee_limited",
+                                    reason="accepted_execution_risk_limited",
                                     approved_size=approved,
                                 )
                     if decision.status is DecisionStatus.REJECTED:
@@ -141,8 +151,26 @@ class LeaderTradePoller:
                     arrival_wait = decision.arrival_timestamp_ms / 1000 - self.clock()
                     if arrival_wait > 0:
                         self.sleep(arrival_wait)
-                    book = book_lookup(trade.token_id)
-                    if book.timestamp_ms and (
+                    if int(self.clock()) - trade.timestamp > self.config.stale_after_seconds:
+                        decision = replace(
+                            decision,
+                            status=DecisionStatus.REJECTED,
+                            reason="stale_source_trade_at_arrival",
+                            approved_size=Decimal("0"),
+                        )
+                    else:
+                        book = book_lookup(trade.token_id)
+                    if decision.status is DecisionStatus.ACCEPTED and (
+                        book.condition_id
+                        and book.condition_id != trade.condition_id
+                    ):
+                        decision = replace(
+                            decision,
+                            status=DecisionStatus.REJECTED,
+                            reason="mismatched_order_book",
+                            approved_size=Decimal("0"),
+                        )
+                    elif decision.status is DecisionStatus.ACCEPTED and book.timestamp_ms and (
                         decision.arrival_timestamp_ms - book.timestamp_ms
                         > self.config.stale_after_seconds * 1000
                     ):
@@ -152,7 +180,7 @@ class LeaderTradePoller:
                             reason="stale_order_book",
                             approved_size=Decimal("0"),
                         )
-                    else:
+                    elif decision.status is DecisionStatus.ACCEPTED:
                         fill = self.simulator.simulate(
                             trade,
                             decision.approved_size,

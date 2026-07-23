@@ -27,6 +27,8 @@ class OrderBookFillSimulator:
     ) -> SimulatedFill:
         if book.token_id != trade.token_id:
             raise ValueError("book token does not match source trade")
+        if book.condition_id and book.condition_id != trade.condition_id:
+            raise ValueError("book market does not match source trade")
         if requested_size <= ZERO:
             raise ValueError("requested size must be positive")
         if book.minimum_order_size and requested_size < book.minimum_order_size:

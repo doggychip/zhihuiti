@@ -29,8 +29,8 @@ def _identity(payload: dict[str, Any], wallet: str) -> tuple[str, ...]:
         str(payload.get("asset", "")),
         str(payload.get("conditionId", "")),
         str(payload.get("side", "")).upper(),
-        str(_required_decimal(payload, "size")),
-        str(_required_decimal(payload, "price")),
+        format(_required_decimal(payload, "size").normalize(), "f"),
+        format(_required_decimal(payload, "price").normalize(), "f"),
         str(int(payload["timestamp"])),
     )
 

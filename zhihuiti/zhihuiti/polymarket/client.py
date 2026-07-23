@@ -48,6 +48,9 @@ def parse_market_payload(data: dict[str, Any], condition_id: str = "") -> Market
         if item.get("winner") is True:
             winners.add(token_id)
     fee_data = data.get("fd") or {}
+    winning_asset = data.get("winning_asset_id")
+    if winning_asset:
+        winners.add(str(winning_asset))
     fee = FeeSchedule(
         rate=Decimal(str(fee_data.get("r", "0"))),
         exponent=Decimal(str(fee_data.get("e", "1"))),
@@ -127,8 +130,19 @@ class PolymarketClient:
         page_size: int = 500,
     ) -> list[dict[str, Any]]:
         """Fetch all available pages for a wallet, including maker observations."""
+        effective_start = 1 if start is None else start
+        return self._fetch_trade_range(wallet, effective_start, end, page_size)
+
+    def _fetch_trade_range(
+        self,
+        wallet: str,
+        start: int,
+        end: int | None,
+        page_size: int,
+    ) -> list[dict[str, Any]]:
         trades: list[dict[str, Any]] = []
         offset = 0
+        saturated = False
         while offset <= 10000:
             params: dict[str, str | int] = {
                 "user": wallet,
@@ -136,8 +150,7 @@ class PolymarketClient:
                 "limit": page_size,
                 "offset": offset,
             }
-            if start is not None:
-                params["start"] = start
+            params["start"] = start
             if end is not None:
                 params["end"] = end
             page = self._request("GET", f"{self.data_api_url}/trades", params=params)
@@ -146,7 +159,21 @@ class PolymarketClient:
             trades.extend(item for item in page if isinstance(item, dict))
             if len(page) < page_size:
                 break
+            if offset == 10000:
+                saturated = True
+                break
             offset += page_size
+        if saturated:
+            if end is None:
+                raise RuntimeError("trade range exceeded pagination cap without an end time")
+            if start >= end:
+                raise RuntimeError(
+                    f"more than 10,000 trade rows share second {start}; cannot ingest safely"
+                )
+            midpoint = (start + end) // 2
+            return self._fetch_trade_range(
+                wallet, start, midpoint, page_size
+            ) + self._fetch_trade_range(wallet, midpoint + 1, end, page_size)
         return trades
 
     def fetch_book(self, token_id: str) -> OrderBook:
@@ -163,4 +190,25 @@ class PolymarketClient:
         data = self._request("GET", f"{self.clob_api_url}/clob-markets/{condition_id}")
         if not isinstance(data, dict):
             raise ValueError("CLOB market response must be an object")
-        return parse_market_payload(data, condition_id)
+        market = parse_market_payload(data, condition_id)
+        if market.closed and not market.winners:
+            try:
+                legacy = self._request(
+                    "GET", f"{self.clob_api_url}/markets/{condition_id}"
+                )
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code != 404:
+                    raise
+                legacy = None
+            if isinstance(legacy, dict):
+                resolved = parse_market_payload(legacy, condition_id)
+                market = MarketMetadata(
+                    condition_id=market.condition_id,
+                    tokens=market.tokens or resolved.tokens,
+                    active=market.active,
+                    closed=market.closed,
+                    accepting_orders=market.accepting_orders,
+                    winners=resolved.winners,
+                    fee=market.fee,
+                )
+        return market
