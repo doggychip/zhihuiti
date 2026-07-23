@@ -1,0 +1,60 @@
+{
+  "replay_timestamp": 1700000010,
+  "trades": [
+    {
+      "proxyWallet": "0x1111111111111111111111111111111111111111",
+      "side": "BUY",
+      "asset": "yes-token",
+      "conditionId": "condition-1",
+      "size": 10,
+      "price": 0.50,
+      "timestamp": 1700000000,
+      "transactionHash": "0xaaa",
+      "outcome": "Yes",
+      "title": "Fixture market"
+    },
+    {
+      "proxyWallet": "0x1111111111111111111111111111111111111111",
+      "side": "BUY",
+      "asset": "yes-token",
+      "conditionId": "condition-1",
+      "size": 10,
+      "price": 0.50,
+      "timestamp": 1700000000,
+      "transactionHash": "0xaaa",
+      "outcome": "Yes",
+      "title": "Fixture market"
+    }
+  ],
+  "books": {
+    "yes-token": {
+      "market": "condition-1",
+      "asset_id": "yes-token",
+      "timestamp": "1700000001000",
+      "hash": "fixture-book",
+      "bids": [
+        {"price": "0.48", "size": "100"}
+      ],
+      "asks": [
+        {"price": "0.60", "size": "100"},
+        {"price": "0.50", "size": "1"},
+        {"price": "0.51", "size": "100"}
+      ],
+      "min_order_size": "0.1",
+      "tick_size": "0.01"
+    }
+  },
+  "markets": {
+    "condition-1": {
+      "condition_id": "condition-1",
+      "t": [
+        {"t": "yes-token", "o": "Yes"},
+        {"t": "no-token", "o": "No"}
+      ],
+      "active": true,
+      "closed": false,
+      "accepting_orders": true,
+      "fd": {"r": 0.05, "e": 1, "to": true}
+    }
+  }
+}
