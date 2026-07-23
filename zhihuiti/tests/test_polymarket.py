@@ -247,3 +247,56 @@ def test_runner_replay_is_deterministic_and_idempotent(tmp_path):
     assert first == {"observed": 2, "processed": 2, "duplicates": 0}
     assert second == {"observed": 2, "processed": 0, "duplicates": 2}
     assert before == after
+
+
+def test_poll_cycle_overlaps_cursor_and_advances_after_processing(tmp_path):
+    fixture = load_fixture()
+    client = MagicMock()
+    client.fetch_trades.return_value = fixture["trades"][:1]
+    client.fetch_book.return_value = parse_book_payload(
+        fixture["books"]["yes-token"], "yes-token"
+    )
+    client.fetch_market.return_value = MarketMetadata(
+        condition_id="condition-1",
+        tokens={"yes-token": "Yes"},
+    )
+    cfg = config(database_path=tmp_path / "cursor.db", polling_overlap_seconds=7)
+    with PaperLedger(cfg.database_path, cfg.starting_cash) as ledger:
+        ledger.advance_cursor(WALLET, 1699999995)
+        runner = LeaderTradePoller(
+            cfg, client, ledger, clock=lambda: 1700000010.0, sleep=lambda _: None
+        )
+        result = runner.run_cycle()
+        assert ledger.get_cursor(WALLET) == 1700000000
+    assert result["processed"] == 1
+    assert client.fetch_trades.call_args.kwargs["start"] == 1699999988
+    assert client.fetch_trades.call_args.kwargs["end"] == 1700000010
+
+
+def test_runner_limits_buy_for_current_fees(tmp_path):
+    fixture = load_fixture()
+    trade = normalize_trades(fixture["trades"][:1])[0]
+    book = parse_book_payload(fixture["books"]["yes-token"], "yes-token")
+    market = MarketMetadata(
+        condition_id="condition-1",
+        tokens={"yes-token": "Yes"},
+        fee=FeeSchedule(rate=Decimal("1")),
+    )
+    cfg = config(
+        database_path=tmp_path / "fees.db",
+        starting_cash=Decimal("5"),
+        max_slippage=Decimal("0.03"),
+    )
+    with PaperLedger(cfg.database_path, cfg.starting_cash) as ledger:
+        runner = LeaderTradePoller(
+            cfg, MagicMock(), ledger, clock=lambda: 1700000010.0, sleep=lambda _: None
+        )
+        runner.process_trades(
+            [trade],
+            now_timestamp=1700000010,
+            book_lookup=lambda _: book,
+            market_lookup=lambda _: market,
+        )
+        snapshot = ledger.snapshot()
+    assert snapshot.cash >= 0
+    assert snapshot.positions[0].shares < Decimal("10")
