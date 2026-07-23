@@ -560,8 +560,11 @@ def _handle_request(msg: dict) -> dict | None:
         return None  # No response for notifications
 
     elif method == "tools/list":
-        from zhihuiti.criticai_bridge import CRITICAI_MCP_TOOLS
-        all_tools = TOOLS + CRITICAI_MCP_TOOLS
+        all_tools = list(TOOLS)
+        if os.environ.get("CRITICAI_URL"):
+            from zhihuiti.criticai_bridge import CRITICAI_MCP_TOOLS
+
+            all_tools.extend(CRITICAI_MCP_TOOLS)
         return {
             "jsonrpc": JSONRPC_VERSION,
             "id": msg_id,

@@ -575,7 +575,7 @@ class OracleHandler(BaseHTTPRequestHandler):
             mode = "full" if _has_llm_key() else "oracle-only"
             _json_response(self, {
                 "status": "ok",
-                "service": "zhihuiti",
+                "service": "zhihuiti-oracle",
                 "mode": mode,
                 "agents_enabled": _has_llm_key(),
             })
