@@ -115,7 +115,46 @@ zhihuiti purge GENE_ID          # 诛七族 — purge gene + descendants
 zhihuiti realms                 # Three Realms status
 zhihuiti inspection             # 3-layer inspection stats
 zhihuiti dashboard              # Launch web dashboard
+zhihuiti polymarket watch       # Paper-copy configured leader wallets
+zhihuiti polymarket status      # Show virtual portfolio and audit counts
+zhihuiti polymarket replay FILE # Deterministically replay a JSON fixture
 ```
+
+### Polymarket paper copy trader
+
+This subsystem is deterministic and isolated from the orchestrator, agents,
+AlphaArena, and all model calls. It uses only Polymarket's public Data and CLOB
+APIs. It has no private-key, authentication, or live-order configuration.
+
+Set `POLYMARKET_LEADER_WALLETS` to comma-separated proxy wallet addresses, then:
+
+```bash
+export POLYMARKET_LEADER_WALLETS=0x0123456789abcdef0123456789abcdef01234567
+export POLYMARKET_DB=polymarket-paper.db
+zhihuiti polymarket watch --copy-ratio 0.10 --slippage 0.03
+zhihuiti polymarket status
+```
+
+CLI flags override the `POLYMARKET_*` settings documented in `.env.example`.
+Each source observation, acceptance or rejection, book snapshot fill, fee,
+cash movement, position, cursor, and settlement is persisted in the dedicated
+SQLite ledger. `replay` consumes a recorded object with `trades`, `books`, and
+`markets` maps and performs no network requests.
+
+Paper results have important limitations:
+
+- The public trade feed has second-level timestamps and no fill/log ID. The
+  copier overlaps polling windows and fingerprints observations, but truly
+  identical same-second trades are only distinguishable by occurrence order.
+- The follower sees a current book after polling plus configured simulated
+  latency. It cannot reconstruct the historical depth or reproduce the
+  leader's reported fill price.
+- Public books expose aggregated depth, not queue priority. The simulator
+  assumes an immediate taker, sorts levels itself, applies the current public
+  fee schedule, and records conservative partial fills within the slippage cap.
+- API indexing lag, polling latency, closed books, and later market resolution
+  can all differ from live execution. This is an auditable simulation, not a
+  profitability claim or an order-routing system.
 
 ### Options
 
