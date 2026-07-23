@@ -56,10 +56,15 @@ def parse_market_payload(data: dict[str, Any], condition_id: str = "") -> Market
         exponent=Decimal(str(fee_data.get("e", "1"))),
         taker_only=bool(fee_data.get("to", True)),
     )
-    closed = bool(data.get("closed", data.get("c", False)))
+    closed = bool(data.get("closed", False))
     accepting = bool(data.get("accepting_orders", data.get("ao", not closed)))
     return MarketMetadata(
-        condition_id=str(data.get("condition_id", data.get("conditionId", condition_id))),
+        condition_id=str(
+            data.get(
+                "condition_id",
+                data.get("conditionId", data.get("c", condition_id)),
+            )
+        ),
         tokens=tokens,
         active=bool(data.get("active", True)),
         closed=closed,
@@ -191,7 +196,7 @@ class PolymarketClient:
         if not isinstance(data, dict):
             raise ValueError("CLOB market response must be an object")
         market = parse_market_payload(data, condition_id)
-        if market.closed and not market.winners:
+        if (market.closed or not market.accepting_orders) and not market.winners:
             try:
                 legacy = self._request(
                     "GET", f"{self.clob_api_url}/markets/{condition_id}"

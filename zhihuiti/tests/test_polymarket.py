@@ -10,7 +10,11 @@ from unittest.mock import MagicMock
 import httpx
 import pytest
 
-from zhihuiti.polymarket.client import PolymarketClient, parse_book_payload
+from zhihuiti.polymarket.client import (
+    PolymarketClient,
+    parse_book_payload,
+    parse_market_payload,
+)
 from zhihuiti.polymarket.config import PolymarketConfig
 from zhihuiti.polymarket.copy_engine import DeterministicCopyEngine
 from zhihuiti.polymarket.models import (
@@ -160,6 +164,19 @@ def test_book_walk_sorts_levels_and_partially_fills_with_fee():
     )
     assert partial.filled_size == Decimal("101")
     assert partial.partial
+
+
+def test_compact_clob_condition_id_is_not_a_closed_flag():
+    market = parse_market_payload(
+        {
+            "c": "condition-compact",
+            "ao": True,
+            "t": [{"t": "yes-token", "o": "Yes"}],
+        }
+    )
+    assert market.condition_id == "condition-compact"
+    assert market.accepting_orders
+    assert not market.closed
 
 
 def test_fee_precision_and_buy_fee_share_deduction():
