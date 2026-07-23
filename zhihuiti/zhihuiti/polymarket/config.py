@@ -55,8 +55,8 @@ class PolymarketConfig:
     clob_api_url: str = "https://clob.polymarket.com"
 
     def __post_init__(self) -> None:
-        if not self.leader_wallets:
-            raise ValueError("at least one leader wallet is required")
+        normalized_wallets = _wallets(",".join(self.leader_wallets))
+        object.__setattr__(self, "leader_wallets", normalized_wallets)
         if self.starting_cash < 0:
             raise ValueError("starting_cash cannot be negative")
         for name in ("copy_ratio", "polling_interval_seconds", "max_trade_notional", "max_market_exposure"):

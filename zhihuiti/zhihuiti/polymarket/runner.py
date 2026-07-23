@@ -6,7 +6,7 @@ import signal
 import threading
 import time
 from dataclasses import replace
-from decimal import Decimal
+from decimal import Decimal, ROUND_DOWN
 from typing import Callable, Iterable
 
 from zhihuiti.polymarket.client import PolymarketClient
@@ -110,6 +110,34 @@ class LeaderTradePoller:
                         approved_size=Decimal("0"),
                     )
                 else:
+                    if trade.side.value == "BUY":
+                        worst_price = min(
+                            Decimal("1"),
+                            trade.price * (Decimal("1") + self.config.max_slippage),
+                        )
+                        fee_per_share = market.fee.fee(Decimal("1"), worst_price)
+                        affordable = cash / (worst_price + fee_per_share)
+                        if affordable < decision.approved_size:
+                            approved = max(Decimal("0"), affordable).quantize(
+                                Decimal("0.000001"), rounding=ROUND_DOWN
+                            )
+                            if approved <= 0:
+                                decision = replace(
+                                    decision,
+                                    status=DecisionStatus.REJECTED,
+                                    reason="insufficient_cash_with_fees",
+                                    approved_size=Decimal("0"),
+                                )
+                            else:
+                                decision = replace(
+                                    decision,
+                                    reason="accepted_cash_and_fee_limited",
+                                    approved_size=approved,
+                                )
+                    if decision.status is DecisionStatus.REJECTED:
+                        self.ledger.apply(trade, decision)
+                        counts["processed"] += 1
+                        continue
                     arrival_wait = decision.arrival_timestamp_ms / 1000 - self.clock()
                     if arrival_wait > 0:
                         self.sleep(arrival_wait)

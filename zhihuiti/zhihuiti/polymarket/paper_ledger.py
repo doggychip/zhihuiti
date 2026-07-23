@@ -290,6 +290,11 @@ class PaperLedger:
         """Settle each still-open outcome at $1 or $0, idempotently."""
         count = 0
         with self._lock, self.conn:
+            account = self.conn.execute(
+                "SELECT cash,realized_pnl FROM paper_account WHERE id=1"
+            ).fetchone()
+            cash = Decimal(account["cash"])
+            account_realized = Decimal(account["realized_pnl"])
             rows = self.conn.execute(
                 "SELECT token_id,shares,cost_basis,realized_pnl FROM paper_positions "
                 "WHERE condition_id=? AND CAST(shares AS REAL)>0",
@@ -306,6 +311,8 @@ class PaperLedger:
                 payout_per_share = Decimal("1") if row["token_id"] in winning_token_ids else ZERO
                 payout = shares * payout_per_share
                 realized = payout - basis
+                cash += payout
+                account_realized += realized
                 self.conn.execute(
                     "INSERT INTO settlements(token_id,condition_id,shares,payout_per_share,payout,"
                     "realized_pnl) VALUES (?,?,?,?,?,?)",
@@ -319,9 +326,8 @@ class PaperLedger:
                     ),
                 )
                 self.conn.execute(
-                    "UPDATE paper_account SET cash=CAST(cash AS REAL)+?, "
-                    "realized_pnl=CAST(realized_pnl AS REAL)+? WHERE id=1",
-                    (str(payout), str(realized)),
+                    "UPDATE paper_account SET cash=?, realized_pnl=? WHERE id=1",
+                    (str(cash), str(account_realized)),
                 )
                 self.conn.execute(
                     "UPDATE paper_positions SET shares='0',cost_basis='0',"
