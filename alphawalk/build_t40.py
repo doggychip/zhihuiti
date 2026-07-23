@@ -11,7 +11,7 @@ import json
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 MODEL = "claude-sonnet-4-6"
 
 
@@ -254,7 +254,8 @@ COMMAND_ENGINE_CODE = r'''def main():
                               "bars": len(rows), "reason": "need at least 25 valid bars"})
                 continue
             closes = [r[2] for r in rows]
-            e21 = ema(closes, 21)[-1]
+            ema21_series = ema(closes, 21)
+            e21 = ema21_series[-1]
             trs = []
             for i in range(1, len(rows)):
                 h, l, _, _ = rows[i]
@@ -265,6 +266,8 @@ COMMAND_ENGINE_CODE = r'''def main():
             d5 = pct_change(closes, 5)
             d20 = pct_change(closes, 20)
             above = closes[-1] > e21
+            ema_slope_10_pct = ((e21 / ema21_series[-11] - 1.0) * 100.0
+                                if len(ema21_series) >= 11 and ema21_series[-11] else 0.0)
             if above and (d5 or 0) > 0:
                 structural = "strengthening"
             elif not above and (d5 or 0) < 0:
@@ -280,11 +283,12 @@ COMMAND_ENGINE_CODE = r'''def main():
                 "change_5d_pct": round(d5, 2),
                 "change_20d_pct": round(d20, 2),
                 "distance_ema21_pct": round(distance, 2),
+                "ema21_slope_10_pct": round(ema_slope_10_pct, 2),
                 "atr14_pct": round(atr14 / closes[-1] * 100.0, 2) if closes[-1] else None,
                 "volume_vs_20d": round(rows[-1][3] / (sum(r[3] for r in rows[-20:]) / 20.0), 2)
                                    if sum(r[3] for r in rows[-20:]) > 0 else None,
-                "basis": "close %.2f is %+.2f%% vs EMA21; 5d %+.2f%%; 20d %+.2f%%; ATR14 %.2f%%" %
-                         (closes[-1], distance, d5, d20,
+                "basis": "close %.2f is %+.2f%% vs EMA21; EMA21 10d slope %+.2f%%; 5d %+.2f%%; 20d %+.2f%%; ATR14 %.2f%%" %
+                         (closes[-1], distance, ema_slope_10_pct, d5, d20,
                           atr14 / closes[-1] * 100.0 if closes[-1] else 0.0),
             })
 
@@ -325,7 +329,7 @@ COMMAND_ENGINE_CODE = r'''def main():
         key=lambda r: (abs(r["distance_ema21_pct"]), r["symbol"]),
     )[:4]
 
-    # Deterministic priority queue; no recommendation semantics.
+    # Deterministic priority queue.
     priorities = []
     high_events = [e for e in calendar.get("events", []) if e.get("impact") == "high"]
     for event in high_events[:2]:
@@ -357,8 +361,55 @@ COMMAND_ENGINE_CODE = r'''def main():
     }
     healthy = sum(1 for value in lane_health.values() if value == "ok")
     overall = "ok" if healthy == 4 else ("failed" if healthy == 0 else "partial")
+
+    # Tier-B structured recommendations. The narrator cannot modify this payload.
+    # Buy/Sell only, never Strong; capped at three; market+watchlist must both be healthy.
+    try:
+        enabled_raw = node.workflow_param("recommendations_enabled", default=True)
+    except Exception:
+        enabled_raw = True
+    recommendations_enabled = str(enabled_raw).strip().lower() not in (
+        "false", "0", "no", "off", "none", "")
+    recommendations = []
+    suppression_reason = None
+    if not recommendations_enabled:
+        suppression_reason = "disabled_by_workflow_parameter"
+    elif lane_health["market"] != "ok" or lane_health["watchlist"] != "ok":
+        suppression_reason = "market_or_watchlist_data_degraded"
+    elif regime not in ("constructive", "defensive"):
+        suppression_reason = "market_regime_not_directional"
+    else:
+        candidates = []
+        for row in valid_watch:
+            distance = row.get("distance_ema21_pct")
+            slope = row.get("ema21_slope_10_pct")
+            d20 = row.get("change_20d_pct")
+            if not all(isinstance(v, (int, float)) for v in (distance, slope, d20)):
+                continue
+            if (regime == "constructive" and row.get("status") == "strengthening"
+                    and slope > 0 and d20 > 0 and 0 < distance <= 5.0):
+                candidates.append((abs(distance), row["symbol"], "Buy", row))
+            elif (regime == "defensive" and row.get("status") == "weakening"
+                    and slope < 0 and d20 < 0 and -5.0 <= distance < 0):
+                candidates.append((abs(distance), row["symbol"], "Sell", row))
+        for _, symbol, action, row in sorted(candidates)[:3]:
+            rationale = ("Structural screen lead (verify): %s; market regime %s. "
+                         "Fixed rule: EMA21 slope and 20d return agree, close within 5%% of EMA21.") % (
+                             row["basis"], regime)
+            if len(rationale) > 200:
+                rationale = rationale[:197] + "..."
+            recommendations.append({
+                "symbol": symbol,
+                "market": "us_stock",
+                "action": action,
+                "rationale": rationale,
+            })
+        if not recommendations:
+            suppression_reason = "no_name_met_fixed_structure_rule"
+
+    node.output("recommendations", recommendations)
     node.output("command_read", {
-        "schema_version": "1.0.0",
+        "schema_version": "1.1.0",
         "as_of": market.get("as_of") or datetime.now(timezone.utc).isoformat(),
         "overall_status": overall,
         "lane_health": lane_health,
@@ -370,6 +421,15 @@ COMMAND_ENGINE_CODE = r'''def main():
         "overnight_items": overnight.get("items", [])[:6],
         "calendar_events": calendar.get("events", [])[:10],
         "priorities": priorities,
+        "recommendation_panel": {
+            "enabled": recommendations_enabled,
+            "count": len(recommendations),
+            "recommendations": recommendations,
+            "suppression_reason": suppression_reason,
+            "policy": ("Tier B deterministic Buy/Sell only; never Strong; cap 3; market and watchlist "
+                       "lanes must be healthy; constructive permits Buy rules, defensive permits Sell "
+                       "rules; mixed/unavailable suppresses all."),
+        },
         "coverage": {
             "watchlist_resolved": len(valid_watch),
             "watchlist_total": len(set(watch_a.get("assigned", []) + watch_b.get("assigned", []))),
@@ -380,7 +440,10 @@ COMMAND_ENGINE_CODE = r'''def main():
                    "otherwise mixed; <2 resolved proxies is unavailable. Watchlist strengthening means "
                    "close>EMA21 and 5-session return>0; weakening is the inverse; otherwise mixed. "
                    "Priority order is high-impact dated calendar, weakening portfolio structure, then "
-                   "absolute latest-session move >=3%. These are observations, not recommendations."),
+                   "absolute latest-session move >=3%. Recommendation rule: Buy only in constructive "
+                   "regime when strengthening, EMA21 slope>0, 20d return>0 and close is 0-5% above EMA21; "
+                   "Sell is the symmetric rule in defensive regime; cap 3; never Strong; degraded, mixed "
+                   "or unavailable market/watchlist data suppresses all."),
     })
 
 main()
@@ -398,7 +461,9 @@ Required markdown sections:
 4. `## Today's Calendar` — dated events; state explicitly when empty/unavailable.
 5. `## Overnight Context` — sourced items with source and source_date.
 6. `## Monitor Queue` — priorities and near_ema21 as observations.
-7. `## Data Quality & Method` — exact lane statuses, coverage, and method.
+7. `## Recommendation Panel` — copy the deterministic action/rationale payload
+   exactly, or state its suppression_reason. Never create, remove, or alter an action.
+8. `## Data Quality & Method` — exact lane statuses, coverage, and method.
 
 The first line must be:
 `📋 Data: {overall_status} · market {market}/watchlist {watchlist}/overnight {overnight}/calendar {calendar} · as of {as_of}`
@@ -408,16 +473,19 @@ failed, emit only the data line, an unavailability explanation, section 7, and
 
 Raw enums and internal field names must not appear. Translate constructive to
 "constructive", defensive to "defensive", mixed to "mixed", unavailable to
-"unavailable". Do not use buy, sell, recommendation, position-sizing, target,
-stop-loss, certainty, or imperative language. End with the literal token
+"unavailable". Buy/Sell words are allowed only when copying the deterministic
+recommendation payload. Never use Strong, position-sizing, targets, stop-loss,
+certainty, or imperative language. End with the literal token
 [DISCLAIMER_PLACEHOLDER]. Call publish_outputs exactly once with `brief_body`."""
 
 
 COMPLIANCE_CODE = r'''def main():
     import re
-    disclaimer = ("Disclaimer: This is an observational morning information brief, not investment "
-                  "advice or a recommendation. Data may be delayed, incomplete, or change after "
-                  "publication. Verify source data and consider your circumstances and professional advice.")
+    disclaimer = ("Disclaimer: This morning information brief may include deterministic Tier-B Buy/Sell "
+                  "screening leads. They are fixed-rule verification candidates, not personalized investment "
+                  "advice, execution instructions, or assurances of performance. Data may be delayed, "
+                  "incomplete, or change after publication. Verify source data and consider your circumstances "
+                  "and professional advice.")
     try:
         body = node.input("brief_body")
     except Exception:
@@ -464,7 +532,7 @@ VERIFIER_CODE = r'''def main():
     issues = []
     required = ["## Executive Read", "## Market Dashboard", "## Watchlist Changes",
                 "## Today's Calendar", "## Overnight Context", "## Monitor Queue",
-                "## Data Quality & Method"]
+                "## Recommendation Panel", "## Data Quality & Method"]
     if read.get("overall_status") != "failed":
         for heading in required:
             if heading not in body:
@@ -477,6 +545,15 @@ VERIFIER_CODE = r'''def main():
     for row in (read.get("top_changes") or []):
         if row.get("symbol") not in body:
             issues.append("top-change symbol omitted: " + str(row.get("symbol")))
+    panel = read.get("recommendation_panel") or {}
+    for recommendation in panel.get("recommendations") or []:
+        symbol = str(recommendation.get("symbol") or "")
+        action = str(recommendation.get("action") or "")
+        if symbol not in body or action not in body:
+            issues.append("recommendation omitted or altered: " + symbol + " " + action)
+    if panel.get("count") == 0 and panel.get("suppression_reason"):
+        if str(panel["suppression_reason"]) not in body:
+            issues.append("recommendation suppression reason omitted")
     if re.search(r"\{[A-Za-z_][^}]*\}", body):
         issues.append("unresolved placeholder")
     leaked = ["command_read", "lane_health", "top_changes", "near_ema21"]
@@ -537,7 +614,9 @@ nodes = [
              {"name": "overnight_context", "type": "object", "optional": True},
              {"name": "today_calendar", "type": "object", "optional": True}],
             [{"name": "command_read", "type": "object",
-              "description": "Deterministic market/watchlist classifications, health and priorities"}],
+              "description": "Deterministic market/watchlist classifications, health and priorities"},
+             {"name": "recommendations", "type": "array", "optional": True,
+              "description": "Tier-B structured Buy/Sell leads; deterministic, capped at 3, never Strong"}],
             500, 360, fail="abort_workflow"),
     agent("brief_writer", SYNTH_PROMPT, [], "brief_body",
           "Narration of command_read with fixed sections and no new calculations", 860, 360,
@@ -611,7 +690,9 @@ edges = [
      "to": "composer_card", "to_slot": "command_read"},
     {"id": "e12", "from": "composer_card", "from_slot": "final_message",
      "to": "notifier", "to_slot": "message"},
-    {"id": "e13", "from": "notifier", "from_slot": "status",
+    {"id": "e13", "from": "command_engine", "from_slot": "recommendations",
+     "to": "notifier", "to_slot": "recommendations"},
+    {"id": "e14", "from": "notifier", "from_slot": "status",
      "to": "delivery_gate", "to_slot": "delivery_status_in"},
 ]
 
@@ -623,8 +704,9 @@ template = {
         "description": ("Flagship US-equity morning command center: six-proxy market regime, six-name "
                         "watchlist structure, sourced overnight developments, today's dated calendar, "
                         "portfolio-aware change ranking, deterministic priority queue, explicit lane "
-                        "health, compliance filtering, and narration verification. All classifications "
-                        "are computed before narration. Observational only; no structured recommendations."),
+                        "health, compliance filtering, narration verification, and deterministic Tier-B "
+                        "Buy/Sell recommendation leads. Recommendations are capped at three, never Strong, "
+                        "and suppressed on degraded or non-directional market/watchlist states."),
         "tags": ["morning-brief", "command-center", "market-regime", "watchlist",
                  "calendar", "portfolio", "deterministic", "verified", "observational"],
         "cover_image_url": "",
@@ -640,6 +722,12 @@ template = {
             "type": "multiline",
             "label": "Optional portfolio — TICKER WEIGHT per line (decimal or percent)",
             "default": "AAPL 20%\nMSFT 20%\nNVDA 15%",
+        },
+        "recommendations_enabled": {
+            "type": "boolean",
+            "label": "Enable deterministic Tier-B Buy/Sell recommendation panel",
+            "default": True,
+            "description": "When disabled, notifier recommendations are always [].",
         },
     },
     "default_trigger": {

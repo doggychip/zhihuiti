@@ -6,7 +6,7 @@ import os
 import random
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PATH = os.path.join(HERE, "T40---AlphaWalk-Morning-Command-Center-v1.0.0.json")
+PATH = os.path.join(HERE, "T40---AlphaWalk-Morning-Command-Center-v1.1.0.json")
 with open(PATH, encoding="utf-8") as handle:
     template = json.load(handle)
 
@@ -73,10 +73,10 @@ check("unique node ids", len(node_ids) == len(set(node_ids)))
 check("unique edge ids", len(edge_ids) == len(set(edge_ids)))
 check("cron weekday 07:00 ET", template["default_trigger"] == {
     "kind": "cron", "cron_expr": "0 7 * * 1-5", "timezone": "America/New_York"})
-check("no recommendation output or edge",
-      all(e.get("from_slot") != "recommendations" for e in template["dag_definition"]["edges"])
-      and all("recommendations" not in n["config"].get("output_schema", {})
-              for n in template["dag_definition"]["nodes"]))
+check("recommendations wired directly to notifier",
+      any(e.get("from") == "command_engine" and e.get("from_slot") == "recommendations"
+          and e.get("to") == "notifier" and e.get("to_slot") == "recommendations"
+          for e in template["dag_definition"]["edges"]))
 check("brief output has string contract",
       nodes["brief_writer"]["config"]["output_schema"]["brief_body"]["type"] == "string")
 python_parses = True
@@ -118,33 +118,67 @@ check("calendar has first priority", result["priorities"][0]["type"] == "calenda
 check("healthy run status", result["overall_status"] == "ok")
 check("watchlist coverage", result["coverage"]["watchlist_resolved"] == 1
       and result["coverage"]["watchlist_total"] == 1)
+check("constructive structure emits capped Tier-B Buy",
+      len(result["recommendation_panel"]["recommendations"]) == 1
+      and result["recommendation_panel"]["recommendations"][0]["action"] == "Buy"
+      and len(result["recommendation_panel"]["recommendations"][0]["rationale"]) <= 200)
 
-# Defensive market and degraded non-market lanes remain explicit.
+# Defensive market emits Sell under the symmetric fixed rule.
 defensive_inputs = dict(base_inputs)
 defensive_inputs["market_bars"] = {
     "names": [{"symbol": symbol, "closes": closes(-0.002, seed=i)}
-              for i, symbol in enumerate(("SPY", "QQQ", "IWM"), 20)],
-    "as_of": "2026-07-23T11:00:00Z", "data_source_status": "partial"}
+              for i, symbol in enumerate(("SPY", "QQQ", "IWM", "TLT", "GLD", "USO"), 20)],
+    "as_of": "2026-07-23T11:00:00Z", "data_source_status": "ok"}
 defensive_inputs["watch_a"] = {
     "names": [{"symbol": "AAA", "hlcv": hlcv(-0.003, seed=11)}],
     "assigned": ["AAA"], "skipped": [], "data_source_status": "ok"}
-defensive_inputs["overnight_context"] = {"items": [], "data_source_status": "failed"}
-degraded = run_utility("command_engine", defensive_inputs, {"portfolio": "AAA 0.25"})["command_read"]
-check("defensive regime", degraded["market_regime"] == "defensive")
-check("weakening classification", degraded["watchlist"][0]["status"] == "weakening")
-check("degraded run remains partial", degraded["overall_status"] == "partial")
+defensive = run_utility("command_engine", defensive_inputs, {"portfolio": "AAA 0.25"})["command_read"]
+check("defensive regime", defensive["market_regime"] == "defensive")
+check("weakening classification", defensive["watchlist"][0]["status"] == "weakening")
 check("weakening portfolio priority", any(p["type"] == "portfolio_structure"
-                                          for p in degraded["priorities"]))
+                                          for p in defensive["priorities"]))
+check("defensive structure emits Tier-B Sell",
+      defensive["recommendation_panel"]["recommendations"][0]["action"] == "Sell")
+
+# Degraded core data and explicit toggle both suppress recommendations.
+degraded_inputs = dict(base_inputs)
+degraded_inputs["market_bars"] = dict(base_inputs["market_bars"], data_source_status="partial")
+degraded = run_utility("command_engine", degraded_inputs, {"portfolio": "AAA 25%"})["command_read"]
+disabled = run_utility("command_engine", base_inputs, {
+    "portfolio": "AAA 25%", "recommendations_enabled": False})["command_read"]
+check("degraded core lane suppresses recommendations",
+      degraded["recommendation_panel"]["count"] == 0
+      and degraded["recommendation_panel"]["suppression_reason"] ==
+      "market_or_watchlist_data_degraded")
+check("workflow toggle suppresses recommendations",
+      disabled["recommendation_panel"]["count"] == 0
+      and disabled["recommendation_panel"]["suppression_reason"] ==
+      "disabled_by_workflow_parameter")
+
+# Cap and dedupe hold across both watchlist shards.
+many_inputs = dict(base_inputs)
+many_inputs["watch_a"] = {
+    "names": [{"symbol": symbol, "hlcv": hlcv(0.003, seed=i)}
+              for i, symbol in enumerate(("AAA", "BBB", "CCC"), 30)],
+    "assigned": ["AAA", "BBB", "CCC"], "skipped": [], "data_source_status": "ok"}
+many_inputs["watch_b"] = {
+    "names": [{"symbol": symbol, "hlcv": hlcv(0.003, seed=i)}
+              for i, symbol in enumerate(("DDD", "EEE", "FFF"), 40)],
+    "assigned": ["DDD", "EEE", "FFF"], "skipped": [], "data_source_status": "ok"}
+many = run_utility("command_engine", many_inputs)["command_read"]
+many_recs = many["recommendation_panel"]["recommendations"]
+check("recommendations capped at three and deduplicated",
+      len(many_recs) == 3 and len({r["symbol"] for r in many_recs}) == 3)
 
 # Narration verifier passes anchored output and loudly marks omissions.
 headings = [
     "## Executive Read", "## Market Dashboard", "## Watchlist Changes",
     "## Today's Calendar", "## Overnight Context", "## Monitor Queue",
-    "## Data Quality & Method",
+    "## Recommendation Panel", "## Data Quality & Method",
 ]
 good_body = ("📋 Data: ok · market ok/watchlist ok/overnight ok/calendar ok\n\n" +
-             "\n\n".join(headings) + "\nAAA\n" +
-             "Disclaimer: observational morning information brief")
+             "\n\n".join(headings) + "\nAAA Buy\n" +
+             "Disclaimer: deterministic screening leads")
 verified = run_utility("report_verifier", {
     "filtered_body": good_body, "command_read": result})
 check("verifier accepts anchored report", verified["verification_status"] == "pass")
