@@ -11,13 +11,15 @@ weekday US-equity morning brief.
 - Labels portfolio holdings without changing the analytical rules.
 - Computes market regime, watchlist classifications, source health, and the
   monitor queue in deterministic Python before narration.
+- Emits deterministic Tier-B Buy/Sell screening leads when the market and
+  watchlist lanes are healthy and directionally aligned. Leads are capped at
+  three, never use Strong, and can be disabled with a workflow toggle.
 - Filters prohibited directive language and visibly verifies the final report.
-- Emits no structured recommendations.
 
 ## Files
 
 - `build_t40.py` — canonical, self-contained source.
-- `T40---AlphaWalk-Morning-Command-Center-v1.0.0.json` — generated import file.
+- `T40---AlphaWalk-Morning-Command-Center-v1.1.0.json` — generated import file.
 - `test_t40.py` — offline structure, engine, degradation, and verifier goldens.
 
 ## Build and test
