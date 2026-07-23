@@ -301,6 +301,28 @@ def test_ledger_rejects_inconsistent_fill():
             ledger.apply(trade, rejected, fill)
 
 
+def test_zero_depth_attempt_is_not_reported_as_executed_fill():
+    trade = normalize_trades(load_fixture()["trades"][:1])[0]
+    empty = SimulatedFill(
+        source_fingerprint=trade.fingerprint,
+        side=Side.BUY,
+        token_id=trade.token_id,
+        condition_id=trade.condition_id,
+        requested_size=Decimal("10"),
+        filled_size=Decimal("0"),
+        average_price=Decimal("0"),
+        notional=Decimal("0"),
+        fee=Decimal("0"),
+        book_timestamp_ms=trade.timestamp * 1000,
+        book_hash="empty",
+    )
+    with PaperLedger(":memory:", Decimal("100")) as ledger:
+        ledger.apply(trade, accepted(trade, "10"), empty)
+        counts = ledger.counts()
+    assert counts["fill_attempts"] == 1
+    assert counts["simulated_fills"] == 0
+
+
 def test_runner_replay_is_deterministic_and_idempotent(tmp_path):
     fixture = load_fixture()
     trades = normalize_trades(fixture["trades"], expected_wallet=WALLET)

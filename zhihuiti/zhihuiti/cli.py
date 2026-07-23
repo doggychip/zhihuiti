@@ -979,7 +979,8 @@ def polymarket_status(db: str | None):
         f"Open positions: {sum(position.shares > 0 for position in snapshot.positions)}\n"
         f"Observations: {counts['source_observations']}\n"
         f"Decisions: {counts['copy_decisions']}\n"
-        f"Fills: {counts['simulated_fills']}\n"
+        f"Executed fills: {counts['simulated_fills']}\n"
+        f"Book fill attempts: {counts['fill_attempts']}\n"
         f"Settlements: {counts['settlements']}",
         title="Polymarket Paper Portfolio",
     ))
