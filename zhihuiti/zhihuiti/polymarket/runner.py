@@ -47,7 +47,11 @@ class LeaderTradePoller:
         end = int(self.clock())
         for wallet in self.config.leader_wallets:
             cursor = self.ledger.get_cursor(wallet)
-            start = max(0, cursor - self.config.polling_overlap_seconds) if cursor else None
+            start = (
+                max(0, cursor - self.config.polling_overlap_seconds)
+                if cursor is not None
+                else max(0, end - self.config.initial_lookback_seconds)
+            )
             payloads = self.client.fetch_trades(
                 wallet,
                 start=start,

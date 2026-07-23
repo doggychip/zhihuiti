@@ -340,6 +340,26 @@ def test_poll_cycle_overlaps_cursor_and_advances_after_processing(tmp_path):
     assert client.fetch_trades.call_args.kwargs["end"] == 1700000010
 
 
+def test_first_poll_uses_bounded_initial_lookback(tmp_path):
+    client = MagicMock()
+    client.fetch_trades.return_value = []
+    cfg = config(
+        database_path=tmp_path / "first-poll.db",
+        initial_lookback_seconds=90,
+    )
+    with PaperLedger(cfg.database_path, cfg.starting_cash) as ledger:
+        runner = LeaderTradePoller(
+            cfg, client, ledger, clock=lambda: 1700000010.0, sleep=lambda _: None
+        )
+        assert runner.run_cycle() == {
+            "observed": 0,
+            "processed": 0,
+            "duplicates": 0,
+        }
+    assert client.fetch_trades.call_args.kwargs["start"] == 1699999920
+    assert client.fetch_trades.call_args.kwargs["end"] == 1700000010
+
+
 def test_runner_limits_buy_to_available_cash(tmp_path):
     fixture = load_fixture()
     trade = normalize_trades(fixture["trades"][:1])[0]

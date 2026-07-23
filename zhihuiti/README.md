@@ -142,6 +142,11 @@ SQLite ledger. `replay` consumes a recorded object with `trades`, `books`, and
 `markets` maps plus an optional `resolutions` map of condition IDs to winning
 token IDs, and performs no network requests.
 
+On a new database, `watch` ingests only the latest 120 seconds by default
+(`--initial-lookback` / `POLYMARKET_INITIAL_LOOKBACK`). This prevents an active
+wallet's entire history from blocking startup. Use recorded `replay` fixtures
+for intentional historical backfills.
+
 Paper results have important limitations:
 
 - The public trade feed has second-level timestamps and no fill/log ID. The
