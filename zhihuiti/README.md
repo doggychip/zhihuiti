@@ -153,6 +153,8 @@ Paper results have important limitations:
 - Public books expose aggregated depth, not queue priority. The simulator
   assumes an immediate taker, sorts levels itself, applies the current public
   fee schedule, and records conservative partial fills within the slippage cap.
+  Platform fees are rounded to five decimals; BUY fees reduce received outcome
+  shares while SELL fees reduce cash proceeds, matching current CLOB V2 rules.
 - API indexing lag, polling latency, closed books, and later market resolution
   can all differ from live execution. This is an auditable simulation, not a
   profitability claim or an order-routing system.

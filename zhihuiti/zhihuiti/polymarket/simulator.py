@@ -46,7 +46,12 @@ class OrderBookFillSimulator:
         remaining = requested_size
         fills: list[FillLevel] = []
         for level in levels:
-            if remaining <= ZERO or level.size <= ZERO:
+            if (
+                remaining <= ZERO
+                or level.size <= ZERO
+                or level.price <= ZERO
+                or level.price > Decimal("1")
+            ):
                 continue
             if not executable(level.price):
                 break
