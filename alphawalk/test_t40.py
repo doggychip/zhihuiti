@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Offline structural and deterministic golden tests for T40."""
 import ast
+import datetime
 import json
 import os
 import random
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PATH = os.path.join(HERE, "T40---AlphaWalk-Morning-Command-Center-v1.1.0.json")
+PATH = os.path.join(HERE, "T40---AlphaWalk-Morning-Command-Center-v1.2.0.json")
 with open(PATH, encoding="utf-8") as handle:
     template = json.load(handle)
 
@@ -48,9 +49,10 @@ def closes(drift, count=70, seed=1):
     random.seed(seed)
     price = 100.0
     values = []
-    for _ in range(count):
+    start = datetime.date(2026, 7, 23) - datetime.timedelta(days=count - 1)
+    for index in range(count):
         price *= 1.0 + drift + random.gauss(0, 0.001)
-        values.append("%.2f" % price)
+        values.append("%s,%.2f" % ((start + datetime.timedelta(days=index)).isoformat(), price))
     return "\n".join(values)
 
 
@@ -58,10 +60,13 @@ def hlcv(drift, count=60, seed=1):
     random.seed(seed)
     price = 100.0
     rows = []
-    for _ in range(count):
+    start = datetime.date(2026, 7, 23) - datetime.timedelta(days=count - 1)
+    for index in range(count):
         price *= 1.0 + drift + random.gauss(0, 0.001)
-        rows.append("%.2f,%.2f,%.2f,%d" %
-                    (price * 1.01, price * 0.99, price, 1_000_000 + random.randint(0, 100_000)))
+        rows.append("%s,%.2f,%.2f,%.2f,%d" %
+                    ((start + datetime.timedelta(days=index)).isoformat(),
+                     price * 1.01, price * 0.99, price,
+                     1_000_000 + random.randint(0, 100_000)))
     return "\n".join(rows)
 
 
@@ -74,7 +79,7 @@ check("unique edge ids", len(edge_ids) == len(set(edge_ids)))
 check("cron weekday 07:00 ET", template["default_trigger"] == {
     "kind": "cron", "cron_expr": "0 7 * * 1-5", "timezone": "America/New_York"})
 check("recommendations wired directly to notifier",
-      any(e.get("from") == "command_engine" and e.get("from_slot") == "recommendations"
+      any(e.get("from") == "publication_gate" and e.get("from_slot") == "approved_recommendations"
           and e.get("to") == "notifier" and e.get("to_slot") == "recommendations"
           for e in template["dag_definition"]["edges"]))
 check("brief output has string contract",
@@ -90,14 +95,27 @@ check("all utility Python parses", python_parses)
 
 # Constructive market, strengthening watchlist, high-impact calendar.
 market_names = [
-    {"symbol": symbol, "closes": closes(0.002, seed=i)}
+    {"symbol": symbol, "dated_closes": closes(0.002, seed=i),
+     "exchange_timezone": "America/New_York", "session": "regular"}
     for i, symbol in enumerate(("SPY", "QQQ", "IWM", "TLT", "GLD", "USO"), 1)
 ]
+def watch_name(symbol, drift, seed):
+    return {
+        "symbol": symbol,
+        "issuer_id": "issuer-" + symbol.lower(),
+        "legal_company_name": symbol + " Corporation",
+        "exchange": "NASDAQ",
+        "exchange_timezone": "America/New_York",
+        "session": "regular",
+        "dated_hlcv": hlcv(drift, seed=seed),
+    }
+
+
 base_inputs = {
     "market_bars": {
         "names": market_names, "as_of": "2026-07-23T11:00:00Z", "data_source_status": "ok"},
     "watch_a": {
-        "names": [{"symbol": "AAA", "hlcv": hlcv(0.003, seed=10)}],
+        "names": [watch_name("AAA", 0.003, 10)],
         "assigned": ["AAA"], "skipped": [], "data_source_status": "ok"},
     "watch_b": {
         "names": [], "assigned": [], "skipped": [], "data_source_status": "ok"},
@@ -106,6 +124,7 @@ base_inputs = {
                    "source": "Example", "source_date": "2026-07-23"}],
         "data_source_status": "ok"},
     "today_calendar": {
+        "date": "2026-07-23",
         "events": [{"time_et": "08:30", "kind": "macro", "title": "CPI",
                     "impact": "high", "source": "BLS"}],
         "data_source_status": "ok"},
@@ -116,6 +135,10 @@ check("strengthening classification", result["watchlist"][0]["status"] == "stren
 check("portfolio weight normalized", result["watchlist"][0]["portfolio_weight_pct"] == 25.0)
 check("calendar has first priority", result["priorities"][0]["type"] == "calendar")
 check("healthy run status", result["overall_status"] == "ok")
+check("complete creation contract is verified",
+      result["prepublication_state"] == "verified"
+      and result["coverage"]["coverage_ratio"] == 1.0
+      and result["creation_contract"]["minimum_coverage_threshold"] == 0.8)
 check("watchlist coverage", result["coverage"]["watchlist_resolved"] == 1
       and result["coverage"]["watchlist_total"] == 1)
 check("constructive structure emits capped Tier-B Buy",
@@ -126,11 +149,12 @@ check("constructive structure emits capped Tier-B Buy",
 # Defensive market emits Sell under the symmetric fixed rule.
 defensive_inputs = dict(base_inputs)
 defensive_inputs["market_bars"] = {
-    "names": [{"symbol": symbol, "closes": closes(-0.002, seed=i)}
+    "names": [{"symbol": symbol, "dated_closes": closes(-0.002, seed=i),
+               "exchange_timezone": "America/New_York", "session": "regular"}
               for i, symbol in enumerate(("SPY", "QQQ", "IWM", "TLT", "GLD", "USO"), 20)],
     "as_of": "2026-07-23T11:00:00Z", "data_source_status": "ok"}
 defensive_inputs["watch_a"] = {
-    "names": [{"symbol": "AAA", "hlcv": hlcv(-0.003, seed=11)}],
+    "names": [watch_name("AAA", -0.003, 11)],
     "assigned": ["AAA"], "skipped": [], "data_source_status": "ok"}
 defensive = run_utility("command_engine", defensive_inputs, {"portfolio": "AAA 0.25"})["command_read"]
 check("defensive regime", defensive["market_regime"] == "defensive")
@@ -149,20 +173,29 @@ disabled = run_utility("command_engine", base_inputs, {
 check("degraded core lane suppresses recommendations",
       degraded["recommendation_panel"]["count"] == 0
       and degraded["recommendation_panel"]["suppression_reason"] ==
-      "market_or_watchlist_data_degraded")
+      "publication_contract_not_verified")
 check("workflow toggle suppresses recommendations",
       disabled["recommendation_panel"]["count"] == 0
       and disabled["recommendation_panel"]["suppression_reason"] ==
       "disabled_by_workflow_parameter")
+missing_identity_inputs = dict(base_inputs)
+bad_name = watch_name("AAA", 0.003, 10)
+bad_name["issuer_id"] = None
+missing_identity_inputs["watch_a"] = {
+    "names": [bad_name], "assigned": ["AAA"], "skipped": [], "data_source_status": "ok"}
+missing_identity = run_utility("command_engine", missing_identity_inputs)["command_read"]
+check("missing issuer identity creates data exception",
+      missing_identity["prepublication_state"] == "data_exception"
+      and missing_identity["watchlist"][0]["entity_validity"] == "missing")
 
 # Cap and dedupe hold across both watchlist shards.
 many_inputs = dict(base_inputs)
 many_inputs["watch_a"] = {
-    "names": [{"symbol": symbol, "hlcv": hlcv(0.003, seed=i)}
+    "names": [watch_name(symbol, 0.003, i)
               for i, symbol in enumerate(("AAA", "BBB", "CCC"), 30)],
     "assigned": ["AAA", "BBB", "CCC"], "skipped": [], "data_source_status": "ok"}
 many_inputs["watch_b"] = {
-    "names": [{"symbol": symbol, "hlcv": hlcv(0.003, seed=i)}
+    "names": [watch_name(symbol, 0.003, i)
               for i, symbol in enumerate(("DDD", "EEE", "FFF"), 40)],
     "assigned": ["DDD", "EEE", "FFF"], "skipped": [], "data_source_status": "ok"}
 many = run_utility("command_engine", many_inputs)["command_read"]
@@ -178,6 +211,7 @@ headings = [
 ]
 good_body = ("📋 Data: ok · market ok/watchlist ok/overnight ok/calendar ok\n\n" +
              "\n\n".join(headings) + "\nAAA Buy\n" +
+             result["recommendation_panel"]["recommendations"][0]["rationale"] + "\n" +
              "Disclaimer: deterministic screening leads")
 verified = run_utility("report_verifier", {
     "filtered_body": good_body, "command_read": result})
@@ -186,6 +220,29 @@ bad = run_utility("report_verifier", {
     "filtered_body": "short report", "command_read": result})
 check("verifier loudly marks drift",
       bad["verification_status"] == "review" and "🔧 Verification: REVIEW" in bad["verified_body"])
+invented_number = run_utility("report_verifier", {
+    "filtered_body": good_body + "\nInvented metric 987654.321", "command_read": result})
+check("verifier rejects unreproducible number",
+      invented_number["verification_status"] == "review"
+      and any("unreproducible rendered numbers" in issue
+              for issue in invented_number["verification_issues"]))
+published = run_utility("publication_gate", {
+    "verified_body": verified["verified_body"],
+    "verification_status": "pass",
+    "compliance_status": "ok",
+    "command_read": result,
+})
+blocked = run_utility("publication_gate", {
+    "verified_body": bad["verified_body"],
+    "verification_status": "review",
+    "compliance_status": "ok",
+    "command_read": result,
+})
+check("publication gate approves verified recommendations only",
+      published["publication_state"] == "verified"
+      and len(published["approved_recommendations"]) == 1
+      and blocked["publication_state"] == "blocked"
+      and blocked["approved_recommendations"] == [])
 delivery_ok = run_utility("delivery_gate", {"delivery_status_in": "sent"})
 delivery_bad = run_utility("delivery_gate", {"delivery_status_in": "failed"})
 check("delivery gate distinguishes success and failure",
