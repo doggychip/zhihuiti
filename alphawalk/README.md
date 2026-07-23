@@ -12,14 +12,20 @@ weekday US-equity morning brief.
 - Computes market regime, watchlist classifications, source health, and the
   monitor queue in deterministic Python before narration.
 - Emits deterministic Tier-B Buy/Sell screening leads when the market and
-  watchlist lanes are healthy and directionally aligned. Leads are capped at
-  three, never use Strong, and can be disabled with a workflow toggle.
+  complete publication contract is verified and directionally aligned. Leads
+  are capped at three, never use Strong, and can be disabled with a workflow toggle.
+- Validates issuer identity, source dates, time zone, market session, freshness,
+  and minimum watchlist coverage before conclusions are publishable.
+- Assigns `verified`, `partial`, `data_exception`, or `blocked`; only `verified`
+  reports can send notifier recommendations.
+- Rejects narration that changes deterministic evidence, introduces unsupported
+  conclusions, or displays numbers absent from the structured payload.
 - Filters prohibited directive language and visibly verifies the final report.
 
 ## Files
 
 - `build_t40.py` — canonical, self-contained source.
-- `T40---AlphaWalk-Morning-Command-Center-v1.1.0.json` — generated import file.
+- `T40---AlphaWalk-Morning-Command-Center-v1.2.0.json` — generated import file.
 - `test_t40.py` — offline structure, engine, degradation, and verifier goldens.
 
 ## Build and test
