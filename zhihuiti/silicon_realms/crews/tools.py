@@ -2,7 +2,35 @@
 
 from __future__ import annotations
 
-from crewai.tools import tool
+from collections.abc import Callable
+from functools import update_wrapper
+from typing import Any
+
+try:
+    from crewai.tools import tool
+except ImportError:
+    class _LocalTool:
+        """Small compatible wrapper for running economy tools without CrewAI."""
+
+        def __init__(self, name: str, function: Callable[..., str]) -> None:
+            self.name = name
+            self.description = function.__doc__ or ""
+            self._function = function
+            update_wrapper(self, function)
+
+        def run(self, *args: Any, **kwargs: Any) -> str:
+            return self._function(*args, **kwargs)
+
+        def __call__(self, *args: Any, **kwargs: Any) -> str:
+            return self.run(*args, **kwargs)
+
+    def tool(name: str):
+        """Fallback for CrewAI's decorator when the optional package is absent."""
+
+        def decorate(function: Callable[..., str]) -> _LocalTool:
+            return _LocalTool(name, function)
+
+        return decorate
 
 # Shared ledger — a simple in-memory store that tracks balances and transactions.
 # In production you'd swap this for a database.
