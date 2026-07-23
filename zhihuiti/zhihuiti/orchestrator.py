@@ -281,8 +281,13 @@ class Orchestrator:
             # Context engine: assemble rich context from multiple sources
             with completed_lock:
                 sibling_snap = dict(completed_outputs)
-            ctx_text = self.context_engine.build_context(
-                agent, task, sibling_outputs=sibling_snap, goal_id=goal_id,
+            context_engine = getattr(self, "context_engine", None)
+            ctx_text = (
+                context_engine.build_context(
+                    agent, task, sibling_outputs=sibling_snap, goal_id=goal_id,
+                )
+                if context_engine is not None
+                else ""
             )
             if ctx_text:
                 task.description = f"{task.description}\n\n{ctx_text}"
@@ -343,8 +348,8 @@ class Orchestrator:
             self.prediction.resolve(prediction, actual_score=score, actual_outcome=output[:200])
 
             # Context engine: extract learnings from high-scoring tasks
-            if score >= 0.7:
-                self.context_engine.extract_learnings(task, agent, score)
+            if score >= 0.7 and context_engine is not None:
+                context_engine.extract_learnings(task, agent, score)
 
             # ── Phase 5 (locked): penalties, realm, reward, checkpoint ──
             with _lock:

@@ -867,6 +867,193 @@ def alphaarena_register_sql(url: str | None):
 
 
 @main.group()
+def polymarket():
+    """Deterministic Polymarket copy trading (paper mode only)."""
+
+
+def _polymarket_config(
+    leaders: tuple[str, ...],
+    db: str | None,
+    starting_cash: str | None,
+    copy_ratio: str | None,
+    interval: str | None,
+    overlap: int | None,
+    initial_lookback: int | None,
+    latency_ms: int | None,
+    slippage: str | None,
+    trade_cap: str | None,
+    market_cap: str | None,
+    stale_after: int | None,
+):
+    from decimal import Decimal
+    from zhihuiti.polymarket.config import PolymarketConfig
+
+    overrides = {
+        "leader_wallets": leaders or None,
+        "database_path": db,
+        "starting_cash": Decimal(starting_cash) if starting_cash else None,
+        "copy_ratio": Decimal(copy_ratio) if copy_ratio else None,
+        "polling_interval_seconds": Decimal(interval) if interval else None,
+        "polling_overlap_seconds": overlap,
+        "initial_lookback_seconds": initial_lookback,
+        "simulated_latency_ms": latency_ms,
+        "max_slippage": Decimal(slippage) if slippage else None,
+        "max_trade_notional": Decimal(trade_cap) if trade_cap else None,
+        "max_market_exposure": Decimal(market_cap) if market_cap else None,
+        "stale_after_seconds": stale_after,
+    }
+    return PolymarketConfig.from_env(**overrides)
+
+
+def _polymarket_options(function):
+    options = [
+        click.option("--leader", "leaders", multiple=True, help="Leader wallet (repeatable)"),
+        click.option("--db", default=None, help="Dedicated paper SQLite database"),
+        click.option("--starting-cash", default=None, help="Initial virtual USDC"),
+        click.option("--copy-ratio", default=None, help="Fraction of leader shares to mirror"),
+        click.option("--interval", default=None, help="Polling interval in seconds"),
+        click.option("--overlap", type=int, default=None, help="Polling overlap in seconds"),
+        click.option(
+            "--initial-lookback",
+            type=int,
+            default=None,
+            help="Seconds to ingest on first startup",
+        ),
+        click.option("--latency-ms", type=int, default=None, help="Simulated follower latency"),
+        click.option("--slippage", default=None, help="Maximum relative slippage"),
+        click.option("--trade-cap", default=None, help="Maximum notional per source trade"),
+        click.option("--market-cap", default=None, help="Maximum open cost per market"),
+        click.option("--stale-after", type=int, default=None, help="Reject data older than seconds"),
+    ]
+    for option in reversed(options):
+        function = option(function)
+    return function
+
+
+@polymarket.command("watch")
+@_polymarket_options
+def polymarket_watch(**kwargs):
+    """Continuously poll leaders and simulate immediate paper fills."""
+    from zhihuiti.polymarket.client import PolymarketClient
+    from zhihuiti.polymarket.paper_ledger import PaperLedger
+    from zhihuiti.polymarket.runner import LeaderTradePoller
+
+    config = _polymarket_config(**kwargs)
+    ledger = PaperLedger(config.database_path, config.starting_cash)
+    client = PolymarketClient(
+        data_api_url=config.data_api_url,
+        clob_api_url=config.clob_api_url,
+        timeout=float(config.request_timeout_seconds),
+        retries=config.request_retries,
+    )
+    runner = LeaderTradePoller(config, client, ledger)
+    console.print("[bold cyan]Polymarket paper mode[/bold cyan] — no orders can be submitted")
+    try:
+        runner.watch(
+            lambda result: console.print(
+                f"observed={result['observed']} processed={result['processed']} "
+                f"duplicates={result['duplicates']}"
+            )
+        )
+    finally:
+        client.close()
+        ledger.close()
+
+
+@polymarket.command("status")
+@click.option("--db", default=None, help="Dedicated paper SQLite database")
+def polymarket_status(db: str | None):
+    """Show virtual cash, positions, P&L, and audit row counts."""
+    from decimal import Decimal
+    from zhihuiti.polymarket.paper_ledger import PaperLedger
+
+    database = db or os.environ.get("POLYMARKET_DB", "polymarket-paper.db")
+    starting = Decimal(os.environ.get("POLYMARKET_STARTING_CASH", "10000"))
+    with PaperLedger(database, starting) as ledger:
+        snapshot = ledger.snapshot()
+        counts = ledger.counts()
+    console.print(Panel(
+        f"Cash: {snapshot.cash}\n"
+        f"Realized P&L: {snapshot.realized_pnl}\n"
+        f"Unrealized P&L (unpriced positions excluded): {snapshot.unrealized_pnl}\n"
+        f"Open positions: {sum(position.shares > 0 for position in snapshot.positions)}\n"
+        f"Observations: {counts['source_observations']}\n"
+        f"Decisions: {counts['copy_decisions']}\n"
+        f"Executed fills: {counts['simulated_fills']}\n"
+        f"Book fill attempts: {counts['fill_attempts']}\n"
+        f"Settlements: {counts['settlements']}",
+        title="Polymarket Paper Portfolio",
+    ))
+
+
+@polymarket.command("replay")
+@click.argument("fixture", type=click.Path(exists=True, dir_okay=False))
+@_polymarket_options
+def polymarket_replay(fixture: str, **kwargs):
+    """Replay a recorded JSON fixture deterministically without network access."""
+    import json
+    from decimal import Decimal
+    from zhihuiti.polymarket.client import (
+        PolymarketClient,
+        parse_book_payload,
+        parse_market_payload,
+    )
+    from zhihuiti.polymarket.normalize import normalize_trades
+    from zhihuiti.polymarket.paper_ledger import PaperLedger
+    from zhihuiti.polymarket.runner import LeaderTradePoller
+
+    data = json.loads(Path(fixture).read_text(), parse_float=Decimal)
+    payloads = data.get("trades", [])
+    inferred = tuple(
+        sorted({str(item.get("proxyWallet", "")).lower() for item in payloads if item.get("proxyWallet")})
+    )
+    if not kwargs["leaders"]:
+        kwargs["leaders"] = inferred
+    config = _polymarket_config(**kwargs)
+    books = {
+        token: parse_book_payload(payload, token)
+        for token, payload in data.get("books", {}).items()
+    }
+    markets = {
+        condition: parse_market_payload(payload, condition)
+        for condition, payload in data.get("markets", {}).items()
+    }
+    trades = []
+    for wallet in config.leader_wallets:
+        trades.extend(normalize_trades(payloads, expected_wallet=wallet))
+    now = int(data.get("replay_timestamp", max((trade.timestamp for trade in trades), default=0)))
+    client = PolymarketClient(retries=0)
+    with PaperLedger(config.database_path, config.starting_cash) as ledger:
+        runner = LeaderTradePoller(config, client, ledger, clock=lambda: float(now), sleep=lambda _: None)
+        result = runner.process_trades(
+            trades,
+            now_timestamp=now,
+            book_lookup=lambda token: books[token],
+            market_lookup=lambda condition: markets[condition],
+        )
+        resolutions = {
+            condition: set(token_ids)
+            for condition, token_ids in data.get("resolutions", {}).items()
+        }
+        for condition, market in markets.items():
+            if market.resolved:
+                resolutions.setdefault(condition, set(market.winners))
+        for condition, winners in resolutions.items():
+            ledger.settle_market(condition, winners)
+        for wallet in config.leader_wallets:
+            wallet_times = [trade.timestamp for trade in trades if trade.wallet == wallet]
+            if wallet_times:
+                ledger.advance_cursor(wallet, max(wallet_times))
+        snapshot = ledger.snapshot()
+    client.close()
+    console.print(
+        f"Replay complete: observed={result['observed']} processed={result['processed']} "
+        f"duplicates={result['duplicates']} cash={snapshot.cash} "
+        f"realized_pnl={snapshot.realized_pnl}"
+    )
+
+
+@main.group()
 def heartai():
     """❤️ HeartAI Bridge — monitor Stella agent and BaZi readings."""
     pass
