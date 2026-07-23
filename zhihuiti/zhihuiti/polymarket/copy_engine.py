@@ -30,7 +30,9 @@ class DeterministicCopyEngine:
         requested = (trade.size * self.config.copy_ratio).quantize(
             Decimal("0.000001"), rounding=ROUND_DOWN
         )
-        arrival = trade.timestamp * 1000 + self.config.simulated_latency_ms
+        # The follower can only react after this polling observation, not at
+        # the leader's historical execution timestamp.
+        arrival = now_timestamp * 1000 + self.config.simulated_latency_ms
 
         def reject(reason: str) -> CopyDecision:
             return CopyDecision(

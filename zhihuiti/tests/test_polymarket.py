@@ -103,6 +103,13 @@ def test_normalization_preserves_identical_same_second_occurrences():
     assert all(trade.price == Decimal("0.5") for trade in trades)
     assert all(trade.raw for trade in trades)
 
+    equivalent = [
+        {**payloads[0], "size": "10.00", "price": "0.500"},
+        {**payloads[0], "size": 10, "price": Decimal("0.5")},
+    ]
+    normalized = normalize_trades(equivalent)
+    assert {trade.occurrence for trade in normalized} == {0, 1}
+
 
 def test_book_walk_sorts_levels_and_partially_fills_with_fee():
     fixture = load_fixture()
@@ -215,6 +222,20 @@ def test_buy_sell_accounting_fees_restart_and_settlement(tmp_path):
         assert settled.cash == Decimal("103.25")
         assert settled.realized_pnl == Decimal("3.25")
         assert ledger.settle_market("condition-1", {"yes-token"}) == 0
+
+
+def test_ledger_rejects_inconsistent_fill():
+    trade = normalize_trades(load_fixture()["trades"][:1])[0]
+    fill = make_fill(trade, Side.BUY, "10", "0.5")
+    with PaperLedger(":memory:", Decimal("100")) as ledger:
+        rejected = CopyDecision(
+            source_fingerprint=trade.fingerprint,
+            status=DecisionStatus.REJECTED,
+            reason="risk",
+            requested_size=Decimal("10"),
+        )
+        with pytest.raises(ValueError, match="rejected decisions"):
+            ledger.apply(trade, rejected, fill)
 
 
 def test_runner_replay_is_deterministic_and_idempotent(tmp_path):

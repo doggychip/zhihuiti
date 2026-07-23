@@ -1022,6 +1022,15 @@ def polymarket_replay(fixture: str, **kwargs):
             book_lookup=lambda token: books[token],
             market_lookup=lambda condition: markets[condition],
         )
+        resolutions = {
+            condition: set(token_ids)
+            for condition, token_ids in data.get("resolutions", {}).items()
+        }
+        for condition, market in markets.items():
+            if market.resolved:
+                resolutions.setdefault(condition, set(market.winners))
+        for condition, winners in resolutions.items():
+            ledger.settle_market(condition, winners)
         for wallet in config.leader_wallets:
             wallet_times = [trade.timestamp for trade in trades if trade.wallet == wallet]
             if wallet_times:

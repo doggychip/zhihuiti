@@ -139,7 +139,8 @@ CLI flags override the `POLYMARKET_*` settings documented in `.env.example`.
 Each source observation, acceptance or rejection, book snapshot fill, fee,
 cash movement, position, cursor, and settlement is persisted in the dedicated
 SQLite ledger. `replay` consumes a recorded object with `trades`, `books`, and
-`markets` maps and performs no network requests.
+`markets` maps plus an optional `resolutions` map of condition IDs to winning
+token IDs, and performs no network requests.
 
 Paper results have important limitations:
 

@@ -170,6 +170,18 @@ class PaperLedger:
             raise ValueError("decision does not belong to source trade")
         if fill and fill.source_fingerprint != trade.fingerprint:
             raise ValueError("fill does not belong to source trade")
+        if fill is not None:
+            if decision.status.value != "accepted":
+                raise ValueError("rejected decisions cannot have fills")
+            if (
+                fill.side is not trade.side
+                or fill.token_id != trade.token_id
+                or fill.condition_id != trade.condition_id
+                or fill.requested_size != decision.approved_size
+                or fill.filled_size > fill.requested_size
+                or fill.filled_size < ZERO
+            ):
+                raise ValueError("fill conflicts with source trade or decision")
         with self._lock, self.conn:
             self._insert_observation(trade)
             inserted = self.conn.execute(
@@ -297,10 +309,12 @@ class PaperLedger:
             account_realized = Decimal(account["realized_pnl"])
             rows = self.conn.execute(
                 "SELECT token_id,shares,cost_basis,realized_pnl FROM paper_positions "
-                "WHERE condition_id=? AND CAST(shares AS REAL)>0",
+                "WHERE condition_id=?",
                 (condition_id,),
             ).fetchall()
             for row in rows:
+                if Decimal(row["shares"]) <= ZERO:
+                    continue
                 existing = self.conn.execute(
                     "SELECT 1 FROM settlements WHERE token_id=?", (row["token_id"],)
                 ).fetchone()
