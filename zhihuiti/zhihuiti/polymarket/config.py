@@ -43,6 +43,7 @@ class PolymarketConfig:
     copy_ratio: Decimal = Decimal("0.10")
     polling_interval_seconds: Decimal = Decimal("10")
     polling_overlap_seconds: int = 30
+    initial_lookback_seconds: int = 120
     simulated_latency_ms: int = 1000
     max_slippage: Decimal = Decimal("0.03")
     max_trade_notional: Decimal = Decimal("250")
@@ -64,9 +65,16 @@ class PolymarketConfig:
                 raise ValueError(f"{name} must be positive")
         if not ZERO <= self.max_slippage <= Decimal("1"):
             raise ValueError("max_slippage must be between 0 and 1")
-        for name in ("polling_overlap_seconds", "simulated_latency_ms", "stale_after_seconds"):
+        for name in (
+            "polling_overlap_seconds",
+            "initial_lookback_seconds",
+            "simulated_latency_ms",
+            "stale_after_seconds",
+        ):
             if getattr(self, name) < 0:
                 raise ValueError(f"{name} cannot be negative")
+        if self.initial_lookback_seconds == 0:
+            raise ValueError("initial_lookback_seconds must be positive")
         if not 1 <= self.page_size <= 10000:
             raise ValueError("page_size must be between 1 and 10000")
         if self.request_retries < 0:
@@ -86,6 +94,9 @@ class PolymarketConfig:
             "copy_ratio": _decimal(env.get("POLYMARKET_COPY_RATIO", "0.10"), "copy ratio"),
             "polling_interval_seconds": _decimal(env.get("POLYMARKET_POLL_INTERVAL", "10"), "poll interval"),
             "polling_overlap_seconds": int(env.get("POLYMARKET_POLL_OVERLAP", "30")),
+            "initial_lookback_seconds": int(
+                env.get("POLYMARKET_INITIAL_LOOKBACK", "120")
+            ),
             "simulated_latency_ms": int(env.get("POLYMARKET_SIMULATED_LATENCY_MS", "1000")),
             "max_slippage": _decimal(env.get("POLYMARKET_MAX_SLIPPAGE", "0.03"), "max slippage"),
             "max_trade_notional": _decimal(env.get("POLYMARKET_MAX_TRADE_NOTIONAL", "250"), "trade cap"),
