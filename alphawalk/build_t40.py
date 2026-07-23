@@ -11,7 +11,7 @@ import json
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 MODEL = "claude-sonnet-4-6"
 
 
@@ -89,8 +89,9 @@ Preserve source dates; never infer them.
 
 Call publish_outputs exactly once with `{output}`:
 {{
-  "names": [{{"symbol":"...","issuer_id":"<provider identifier|null>",
-              "legal_company_name":"<provider value|null>","exchange":"<provider value|null>",
+  "names": [{{"symbol":"...",
+              "price_identity":{{"symbol":"...","legal_company_name":"...","exchange":"...","currency":"USD"}},
+              "fundamental_identity":{{"symbol":"...","issuer_id":"...","legal_company_name":"...","exchange":"...","currency":"USD"}},
               "exchange_timezone":"America/New_York","session":"regular",
               "dated_hlcv":"YYYY-MM-DD,h,l,c,v per line"}}],
   "skipped": ["symbol: reason"],
@@ -100,8 +101,10 @@ Call publish_outputs exactly once with `{output}`:
   "data_source_status": "ok|partial|failed"
 }}
 
-An empty assigned shard is valid with names/assigned/skipped empty and status ok.
-Never fabricate. The final response must begin with publish_outputs."""
+Identity fields must be copied from provider responses, never model memory. If a
+provider omits a field, use null. An empty assigned shard is valid with
+names/assigned/skipped empty and status ok. Never fabricate. The final response
+must begin with publish_outputs."""
 
 
 OVERNIGHT_PROMPT = r"""You collect dated overnight context for a US-equity morning brief.
@@ -157,7 +160,8 @@ COMMAND_ENGINE_CODE = r'''def main():
     import json
     import math
     import re
-    from datetime import date, datetime, timezone
+    from datetime import date, datetime, timedelta, timezone
+    from zoneinfo import ZoneInfo
 
     def get_input(name):
         try:
@@ -207,13 +211,60 @@ COMMAND_ENGINE_CODE = r'''def main():
                 rows.append((h, l, c, v))
         return dates, rows
 
-    def freshness_state(last_date, as_of_date):
+    def easter_sunday(year):
+        a = year % 19; b = year // 100; c = year % 100
+        d = b // 4; e = b % 4; f = (b + 8) // 25; g = (b - f + 1) // 3
+        h = (19*a + b - d - g + 15) % 30; i = c // 4; k = c % 4
+        l = (32 + 2*e + 2*i - h - k) % 7; m = (a + 11*h + 22*l) // 451
+        month = (h + l - 7*m + 114) // 31
+        day = ((h + l - 7*m + 114) % 31) + 1
+        return date(year, month, day)
+
+    def nth_weekday(year, month, weekday, n):
+        first = date(year, month, 1)
+        return first + timedelta(days=(weekday-first.weekday()) % 7 + 7*(n-1))
+
+    def last_weekday(year, month, weekday):
+        probe = date(year + (month == 12), 1 if month == 12 else month + 1, 1) - timedelta(days=1)
+        return probe - timedelta(days=(probe.weekday()-weekday) % 7)
+
+    def observed_fixed(year, month, day):
+        actual = date(year, month, day)
+        if actual.weekday() == 5:
+            return actual - timedelta(days=1)
+        if actual.weekday() == 6:
+            return actual + timedelta(days=1)
+        return actual
+
+    def market_holidays(year):
+        return {
+            observed_fixed(year, 1, 1),
+            nth_weekday(year, 1, 0, 3),       # MLK
+            nth_weekday(year, 2, 0, 3),       # Presidents
+            easter_sunday(year) - timedelta(days=2),
+            last_weekday(year, 5, 0),         # Memorial
+            observed_fixed(year, 6, 19),
+            observed_fixed(year, 7, 4),
+            nth_weekday(year, 9, 0, 1),       # Labor
+            nth_weekday(year, 11, 3, 4),      # Thanksgiving
+            observed_fixed(year, 12, 25),
+        }
+
+    def is_market_day(value):
+        return value.weekday() < 5 and value not in market_holidays(value.year)
+
+    def previous_market_day(value):
+        probe = value - timedelta(days=1)
+        while not is_market_day(probe):
+            probe -= timedelta(days=1)
+        return probe
+
+    def freshness_state(last_date, expected_session):
         if not isinstance(last_date, date):
             return "missing"
-        age = (as_of_date - last_date).days
-        if age < 0:
+        if last_date > expected_session:
             return "missing"
-        return "verified" if age <= 4 else "stale"
+        return "verified" if last_date == expected_session else "stale"
 
     def ema(values, period):
         if not values:
@@ -229,6 +280,43 @@ COMMAND_ENGINE_CODE = r'''def main():
             return None
         return (values[-1] / values[-1-bars] - 1.0) * 100.0
 
+    def normalized_name(value):
+        text = re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
+        for suffix in ("INCORPORATED", "CORPORATION", "COMPANY", "LIMITED", "HOLDINGS", "INC", "CORP", "LTD"):
+            if text.endswith(suffix) and len(text) > len(suffix):
+                text = text[:-len(suffix)]
+                break
+        return text
+
+    def normalized_exchange(value):
+        text = re.sub(r"[^A-Z]", "", str(value or "").upper())
+        aliases = {"NASDAQGS": "NASDAQ", "NASDAQGM": "NASDAQ", "NASDAQCM": "NASDAQ",
+                   "NYSEARCA": "NYSE", "NEWYORKSTOCKEXCHANGE": "NYSE"}
+        return aliases.get(text, text)
+
+    def identity_concordance(item, symbol):
+        price = item.get("price_identity") if isinstance(item.get("price_identity"), dict) else {}
+        fundamental = (item.get("fundamental_identity")
+                       if isinstance(item.get("fundamental_identity"), dict) else {})
+        required_price = (price.get("symbol"), price.get("legal_company_name"),
+                          price.get("exchange"), price.get("currency"))
+        required_fundamental = (fundamental.get("symbol"), fundamental.get("issuer_id"),
+                                fundamental.get("legal_company_name"),
+                                fundamental.get("exchange"), fundamental.get("currency"))
+        if not all(str(value or "").strip() for value in required_price + required_fundamental):
+            return "missing", "required cross-source identity field absent"
+        checks = [
+            str(price["symbol"]).upper() == symbol,
+            str(fundamental["symbol"]).upper() == symbol,
+            normalized_name(price["legal_company_name"]) ==
+                normalized_name(fundamental["legal_company_name"]),
+            normalized_exchange(price["exchange"]) ==
+                normalized_exchange(fundamental["exchange"]),
+            str(price["currency"]).upper() == str(fundamental["currency"]).upper() == "USD",
+        ]
+        return ("verified", "price/fundamental identity concordant") if all(checks) else (
+            "missing", "cross-source identity mismatch")
+
     market = get_input("market_bars")
     watch_a = get_input("watch_a")
     watch_b = get_input("watch_b")
@@ -238,17 +326,21 @@ COMMAND_ENGINE_CODE = r'''def main():
     try:
         report_as_of = datetime.fromisoformat(
             str(market.get("as_of") or "").replace("Z", "+00:00"))
-        report_as_of_date = report_as_of.date()
+        report_as_of_ny = report_as_of.astimezone(ZoneInfo("America/New_York"))
     except Exception:
         report_as_of = datetime.now(timezone.utc)
-        report_as_of_date = report_as_of.date()
+        report_as_of_ny = report_as_of.astimezone(ZoneInfo("America/New_York"))
+    report_as_of_date = report_as_of_ny.date()
+    expected_session = (report_as_of_date if is_market_day(report_as_of_date)
+                        and (report_as_of_ny.hour, report_as_of_ny.minute) >= (16, 15)
+                        else previous_market_day(report_as_of_date))
 
     # Market regime: three independent equity proxies; other assets remain context.
     market_rows = {}
     for item in market.get("names", []):
         symbol = str(item.get("symbol", "")).upper()
         dates, series = parse_dated_closes(item.get("dated_closes"))
-        validity = freshness_state(dates[-1] if dates else None, report_as_of_date)
+        validity = freshness_state(dates[-1] if dates else None, expected_session)
         timezone_value = str(item.get("exchange_timezone") or "")
         session_value = str(item.get("session") or "")
         if timezone_value != "America/New_York" or session_value != "regular":
@@ -289,17 +381,18 @@ COMMAND_ENGINE_CODE = r'''def main():
                 continue
             seen.add(symbol)
             dates, rows = parse_hlcv(item.get("dated_hlcv"))
-            identity_complete = all(str(item.get(field) or "").strip()
-                                    for field in ("issuer_id", "legal_company_name", "exchange"))
-            price_validity = freshness_state(dates[-1] if dates else None, report_as_of_date)
+            entity_validity, entity_reason = identity_concordance(item, symbol)
+            fundamental_identity = (item.get("fundamental_identity")
+                                    if isinstance(item.get("fundamental_identity"), dict) else {})
+            price_validity = freshness_state(dates[-1] if dates else None, expected_session)
             if (str(item.get("exchange_timezone") or "") != "America/New_York"
                     or str(item.get("session") or "") != "regular"):
                 price_validity = "missing"
-            entity_validity = "verified" if identity_complete else "missing"
             if len(rows) < 25:
                 watch.append({"symbol": symbol, "status": "insufficient_data",
                               "bars": len(rows), "price_validity": price_validity,
                               "entity_validity": entity_validity,
+                              "entity_reason": entity_reason,
                               "reason": "need at least 25 valid dated bars"})
                 continue
             closes = [r[2] for r in rows]
@@ -326,14 +419,16 @@ COMMAND_ENGINE_CODE = r'''def main():
             distance = (closes[-1] / e21 - 1.0) * 100.0 if e21 else 0.0
             watch.append({
                 "symbol": symbol,
-                "issuer_id": item.get("issuer_id"),
-                "legal_company_name": item.get("legal_company_name"),
-                "exchange": item.get("exchange"),
+                "issuer_id": fundamental_identity.get("issuer_id"),
+                "legal_company_name": fundamental_identity.get("legal_company_name"),
+                "exchange": fundamental_identity.get("exchange"),
+                "currency": fundamental_identity.get("currency"),
                 "price_date": dates[-1].isoformat(),
                 "price_timezone": item.get("exchange_timezone"),
                 "price_session": item.get("session"),
                 "price_validity": price_validity,
                 "entity_validity": entity_validity,
+                "entity_reason": entity_reason,
                 "status": structural,
                 "close": round(closes[-1], 4),
                 "change_1d_pct": round(d1, 2),
@@ -392,7 +487,8 @@ COMMAND_ENGINE_CODE = r'''def main():
             continue
         try:
             source_date = date.fromisoformat(str(item.get("source_date") or ""))
-            validity = freshness_state(source_date, report_as_of_date)
+            validity = ("verified" if expected_session <= source_date <= report_as_of_date
+                        else "missing" if source_date > report_as_of_date else "stale")
         except Exception:
             validity = "missing"
         normalized = dict(item)
@@ -486,11 +582,25 @@ COMMAND_ENGINE_CODE = r'''def main():
         enabled_raw = node.workflow_param("recommendations_enabled", default=True)
     except Exception:
         enabled_raw = True
+    try:
+        recommendation_mode = str(node.workflow_param(
+            "recommendation_mode", default="shadow") or "shadow").strip().lower()
+    except Exception:
+        recommendation_mode = "shadow"
+    if recommendation_mode not in ("shadow", "live", "off"):
+        recommendation_mode = "off"
+    try:
+        kill_switch = str(node.workflow_param(
+            "emergency_kill_switch", default=False)).strip().lower() in ("true", "1", "yes", "on")
+    except Exception:
+        kill_switch = True
     recommendations_enabled = str(enabled_raw).strip().lower() not in (
         "false", "0", "no", "off", "none", "")
     recommendations = []
     suppression_reason = None
-    if not recommendations_enabled:
+    if kill_switch:
+        suppression_reason = "emergency_kill_switch_active"
+    elif not recommendations_enabled or recommendation_mode == "off":
         suppression_reason = "disabled_by_workflow_parameter"
     elif prepublication_state != "verified":
         suppression_reason = "publication_contract_not_verified"
@@ -529,6 +639,7 @@ COMMAND_ENGINE_CODE = r'''def main():
         "schema_version": "1.2.0",
         "as_of": market.get("as_of") or datetime.now(timezone.utc).isoformat(),
         "report_timezone": "America/New_York",
+        "expected_latest_session": expected_session.isoformat(),
         "prepublication_state": prepublication_state,
         "overall_status": overall,
         "lane_health": lane_health,
@@ -542,12 +653,15 @@ COMMAND_ENGINE_CODE = r'''def main():
         "priorities": priorities,
         "recommendation_panel": {
             "enabled": recommendations_enabled,
+            "mode": recommendation_mode,
+            "emergency_kill_switch": kill_switch,
             "count": len(recommendations),
             "recommendations": recommendations,
             "suppression_reason": suppression_reason,
             "policy": ("Tier B deterministic Buy/Sell only; never Strong; cap 3; market and watchlist "
                        "lanes and the full publication contract must be verified; constructive permits "
-                       "Buy rules, defensive permits Sell rules; mixed/unavailable suppresses all."),
+                       "Buy rules, defensive permits Sell rules; mixed/unavailable suppresses all. "
+                       "Shadow computes but withholds notifier actions; live may publish after final gate."),
         },
         "coverage": {
             "watchlist_resolved": len(valid_watch),
@@ -580,6 +694,7 @@ COMMAND_ENGINE_CODE = r'''def main():
                                       "institutional intent without institutional data",
                                       "personalized advice", "Strong recommendation"],
             "publication_states": ["verified", "partial", "data_exception", "blocked"],
+            "recommendation_modes": ["shadow", "live", "off"],
         },
         "method": ("Market regime uses SPY/QQQ/IWM: constructive when >=2 are above EMA21 with positive "
                    "5-session return; defensive when >=2 are below EMA21 with negative 5-session return; "
@@ -777,13 +892,35 @@ PUBLICATION_GATE_CODE = r'''def main():
     else:
         state, reason = pre_state, "creation_contract_" + pre_state
     panel = read.get("recommendation_panel") or {}
-    approved = list(panel.get("recommendations") or []) if state == "verified" else []
+    mode = str(panel.get("mode") or "shadow")
+    approved = (list(panel.get("recommendations") or [])
+                if state == "verified" and mode == "live"
+                and not panel.get("emergency_kill_switch") else [])
+    recommendation_gate = ("approved" if approved else "shadow_withheld"
+                           if state == "verified" and mode == "shadow" else "withheld")
     banner = ("\n\n🛂 Publication: %s — %s. Notifier recommendations: %s." %
-              (state, reason, "approved" if approved else "withheld"))
+              (state, reason, recommendation_gate))
+    audit = {
+        "schema_version": "1.0.0",
+        "template_version": "1.3.0",
+        "recommendation_rule_version": "t40-structure-v1",
+        "as_of": read.get("as_of"),
+        "expected_latest_session": read.get("expected_latest_session"),
+        "publication_state": state,
+        "publication_reason": reason,
+        "recommendation_mode": mode,
+        "candidate_count": len(panel.get("recommendations") or []),
+        "approved_count": len(approved),
+        "approved": [{"symbol": item.get("symbol"), "action": item.get("action")}
+                     for item in approved],
+        "coverage": read.get("coverage"),
+        "lane_health": read.get("lane_health"),
+    }
     node.output("publishable_body", str(body) + banner)
     node.output("publication_state", state)
     node.output("publication_reason", reason)
     node.output("approved_recommendations", approved)
+    node.output("audit_record", audit)
 
 main()
 '''
@@ -811,6 +948,20 @@ COMPOSER_CODE = r'''def main():
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     node.output("final_message", "# 🌅 AlphaWalk Morning Command Center [" +
                 publication_state.upper() + "] (" + stamp + ")\n\n" + str(body) + banner)
+
+main()
+'''
+
+AUDIT_SINK_CODE = r'''def main():
+    try:
+        record = node.input("audit_record")
+    except Exception:
+        record = {}
+    if not isinstance(record, dict):
+        record = {"publication_state": "blocked", "error": "invalid audit record"}
+    node.output("run_audit", record)
+    node.output("monitoring_status", "attention" if record.get("publication_state") in
+                ("blocked", "data_exception") else "ok")
 
 main()
 '''
@@ -863,7 +1014,8 @@ nodes = [
             [{"name": "publishable_body", "type": "string"},
              {"name": "publication_state", "type": "string"},
              {"name": "publication_reason", "type": "string"},
-             {"name": "approved_recommendations", "type": "array", "optional": True}],
+             {"name": "approved_recommendations", "type": "array", "optional": True},
+             {"name": "audit_record", "type": "object"}],
             1940, 360, fail="abort_workflow"),
     utility("composer_card", COMPOSER_CODE,
             [{"name": "publishable_body", "type": "string"},
@@ -894,6 +1046,11 @@ main()
             [{"name": "delivery_status", "type": "string"},
              {"name": "delivery_note", "type": "string"}],
             3020, 360),
+    utility("audit_sink", AUDIT_SINK_CODE,
+            [{"name": "audit_record", "type": "object"}],
+            [{"name": "run_audit", "type": "object"},
+             {"name": "monitoring_status", "type": "string"}],
+            2660, 560),
 ]
 
 edges = [
@@ -935,6 +1092,8 @@ edges = [
      "to": "notifier", "to_slot": "recommendations"},
     {"id": "e19", "from": "notifier", "from_slot": "status",
      "to": "delivery_gate", "to_slot": "delivery_status_in"},
+    {"id": "e20", "from": "publication_gate", "from_slot": "audit_record",
+     "to": "audit_sink", "to_slot": "audit_record"},
 ]
 
 template = {
@@ -948,7 +1107,8 @@ template = {
                         "health, typed metric validity, issuer/time/session checks, compliance filtering, "
                         "numeric/conclusion verification, a four-state publication gate, and deterministic "
                         "Tier-B Buy/Sell leads. Recommendations are capped at three, never Strong, and only "
-                        "reach the notifier after the complete publication contract is verified."),
+                        "reach the notifier in live mode after the complete publication contract is verified. "
+                        "Default shadow mode computes candidates but withholds notifier actions."),
         "tags": ["morning-brief", "command-center", "market-regime", "watchlist",
                  "calendar", "portfolio", "deterministic", "verified", "observational"],
         "cover_image_url": "",
@@ -970,6 +1130,18 @@ template = {
             "label": "Enable deterministic Tier-B Buy/Sell recommendation panel",
             "default": True,
             "description": "When disabled, notifier recommendations are always [].",
+        },
+        "recommendation_mode": {
+            "type": "string",
+            "label": "Recommendation mode: shadow / live / off",
+            "default": "shadow",
+            "description": "Shadow computes candidates but sends [] to notifier. Use live only after release gates pass.",
+        },
+        "emergency_kill_switch": {
+            "type": "boolean",
+            "label": "Emergency recommendation kill switch",
+            "default": False,
+            "description": "When true, suppresses every recommendation regardless of other settings.",
         },
     },
     "default_trigger": {
