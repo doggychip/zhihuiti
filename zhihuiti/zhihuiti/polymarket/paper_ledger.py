@@ -389,7 +389,15 @@ class PaperLedger:
 
     def counts(self) -> dict[str, int]:
         with self._lock:
-            return {
+            counts = {
                 table: int(self.conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0])
-                for table in ("source_observations", "copy_decisions", "simulated_fills", "settlements")
+                for table in ("source_observations", "copy_decisions", "settlements")
             }
+            fill_sizes = self.conn.execute(
+                "SELECT filled_size FROM simulated_fills"
+            ).fetchall()
+        counts["fill_attempts"] = len(fill_sizes)
+        counts["simulated_fills"] = sum(
+            Decimal(row["filled_size"]) > ZERO for row in fill_sizes
+        )
+        return counts
