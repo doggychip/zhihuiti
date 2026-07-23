@@ -16,14 +16,15 @@ MODEL = "claude-sonnet-4-6"
 
 
 def agent(nid, prompt, tools, output, description, x, y, *, inputs=None,
-          fail="continue_with_error", iterations=12, max_tokens=None):
+          fail="continue_with_error", iterations=12, max_tokens=None,
+          output_type="object"):
     config = {
         "model": MODEL,
         "fail_mode": fail,
         "task_prompt": prompt,
         "display_name": nid,
         "input_schema": inputs or {},
-        "output_schema": {output: {"type": "object", "description": description}},
+        "output_schema": {output: {"type": output_type, "description": description}},
         "tool_bindings": tools,
         "max_iterations": iterations,
     }
@@ -541,7 +542,7 @@ nodes = [
     agent("brief_writer", SYNTH_PROMPT, [], "brief_body",
           "Narration of command_read with fixed sections and no new calculations", 860, 360,
           inputs={"command_read": {"type": "object"}}, fail="abort_workflow",
-          iterations=4, max_tokens=16000),
+          iterations=4, max_tokens=16000, output_type="string"),
     utility("compliance_wrap", COMPLIANCE_CODE,
             [{"name": "brief_body", "type": "string"}],
             [{"name": "filtered_body", "type": "string"},
@@ -563,9 +564,25 @@ nodes = [
     {"id": "notifier", "kind": "utility", "position": {"x": 2300, "y": 360},
      "config": {"utility_kind": "notifier", "fail_mode": "continue_with_error", "param_schema": {}}},
     utility("delivery_gate",
-            'def main():\n    status = node.input("delivery_status_in")\n    node.output("delivered", bool(status))\n\nmain()\n',
-            [{"name": "delivery_status_in", "type": "object", "optional": True}],
-            [{"name": "delivered", "type": "boolean"}],
+            '''def main():
+    try:
+        raw = node.input("delivery_status_in")
+    except Exception:
+        raw = None
+    if isinstance(raw, dict):
+        value = str(raw.get("status") or raw.get("delivery_status") or "").lower()
+    else:
+        value = str(raw or "").lower()
+    delivered = value in ("ok", "sent", "delivered", "success", "done", "true")
+    node.output("delivery_status", "delivered" if delivered else "degraded_agent_profile_only")
+    node.output("delivery_note", "Notifier confirmed delivery." if delivered else
+                "Notifier did not confirm delivery; inspect the saved agent profile.")
+
+main()
+''',
+            [{"name": "delivery_status_in", "type": "string", "optional": True}],
+            [{"name": "delivery_status", "type": "string"},
+             {"name": "delivery_note", "type": "string"}],
             2660, 360),
 ]
 
