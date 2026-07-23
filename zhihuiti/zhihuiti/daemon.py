@@ -72,11 +72,6 @@ class Daemon:
         if str(db_dir) and str(db_dir) != ".":
             db_dir.mkdir(parents=True, exist_ok=True)
 
-        # Create state file if missing
-        state_path = Path(_STATE_FILE)
-        if not state_path.exists():
-            state_path.write_text("{}")
-
     # ------------------------------------------------------------------
     # Core loop
     # ------------------------------------------------------------------
