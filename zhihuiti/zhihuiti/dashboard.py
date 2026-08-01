@@ -346,6 +346,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
         # Add CORS to all GET responses
         if self.path == "/api/data":
             agent_routes.handle_data(self, self.orchestrator)
+        elif self.path == "/api/harness":
+            agent_routes.handle_harness(self, self.orchestrator)
         elif self.path == "/api/theories":
             oracle_routes.handle_theories(self)
         elif self.path.startswith("/api/job/"):
