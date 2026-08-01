@@ -336,6 +336,62 @@ def test_first_spawn_freezes_baseline_before_dynamic_prompt_evolution(tmp_path):
     assert harness.get_status()["config_counts"] == {"active": 1}
 
 
+def test_orchestrator_bootstraps_restored_role_baselines_once(tmp_path):
+    db_path = tmp_path / "restored.db"
+    memory = Memory(str(db_path))
+    memory.save_agent("research-high", "researcher", 100, 0, 0.9, True)
+    memory.save_agent("research-low", "researcher", 100, 0, 0.6, True)
+    memory.save_agent("coder-high", "coder", 100, 0, 0.8, True)
+    memory.close()
+
+    first = Orchestrator(db_path=str(db_path))
+    first.close()
+    second = Orchestrator(db_path=str(db_path))
+    try:
+        status = second.harness.get_status()
+    finally:
+        second.close()
+
+    assert status["config_counts"] == {"active": 2}
+    assert [role["role"] for role in status["roles"]] == ["coder", "researcher"]
+    assert [event["event_type"] for event in status["recent_events"]] == [
+        "baseline_frozen",
+        "baseline_frozen",
+    ]
+
+
+def test_restored_agents_receive_promoted_harness_config(tmp_path):
+    db_path = tmp_path / "restored-promoted.db"
+    memory = Memory(str(db_path))
+    memory.save_agent("research-agent", "researcher", 100, 0, 0.9, True)
+    memory.close()
+
+    first = Orchestrator(db_path=str(db_path))
+    candidate_id = _propose(first.harness)
+
+    def runner(config, _case):
+        score = 0.9 if config.system_prompt == "candidate prompt" else 0.7
+        return HarnessObservation(score=score, cost=1.0)
+
+    assert first.harness.run_shadow_suite(candidate_id, runner).passed
+    first.harness.start_canary(candidate_id)
+    for i in range(5):
+        first.harness.record_canary_observation(
+            candidate_id,
+            HarnessObservation(score=0.9, cost=1.0),
+            HarnessObservation(score=0.7, cost=1.0),
+            case_id=f"canary-{i}",
+        )
+    first.close()
+
+    second = Orchestrator(db_path=str(db_path))
+    try:
+        restored = second.agent_manager.agents["research-agent"]
+        assert restored.config.system_prompt == "candidate prompt"
+    finally:
+        second.close()
+
+
 def test_orchestrator_turns_adaptation_into_non_active_candidate(tmp_path):
     orchestrator = Orchestrator(db_path=str(tmp_path / "orchestrator.db"))
 
