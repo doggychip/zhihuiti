@@ -32,6 +32,8 @@ def _gather_data(orch) -> dict:
     from zhihuiti.routes.agent_routes import gather_core_data
     from zhihuiti.routes.heartai_routes import gather_external_data
     data = gather_core_data(orch)
+    if orch and hasattr(orch, "harness"):
+        data["harness"] = orch.harness.get_status()
     if orch and hasattr(orch, "economy"):
         data.update(gather_external_data())
     return data
@@ -94,6 +96,21 @@ function renderCard(icon, title, content) {
 }
 
 let html = '';
+
+// Guarded self-improvement harness
+if (DATA.harness) {
+  let h = DATA.harness;
+  let canaries = (h.roles||[]).filter(r => r.canary_config_id).length;
+  let active = (h.roles||[]).filter(r => r.active_config_id).length;
+  html += renderCard('🛡️', 'Improvement Harness', [
+    m('Mode', h.mode, 'green'),
+    m('Frozen Suite', h.suite ? h.suite.id : '—'),
+    m('Governed Roles', active),
+    m('Live Canaries', canaries, canaries ? 'yellow' : ''),
+    m('Autonomous Production', h.autonomous_production_evolution ? 'ON' : 'OFF',
+      h.autonomous_production_evolution ? 'red' : 'green'),
+  ].join(''));
+}
 
 // Economy
 let e = DATA.economy;

@@ -5,14 +5,13 @@ from __future__ import annotations
 import json
 import re
 import uuid
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from rich.console import Console
 from rich.tree import Tree
 
 from zhihuiti.models import AgentConfig, AgentRole, AgentState, Task, TaskStatus
 from zhihuiti.prompts import SYNTHESIS_INSTRUCTIONS, TOOL_INSTRUCTIONS, get_prompt
-from zhihuiti.hermes_backend import get_hermes_backend
 
 if TYPE_CHECKING:
     from zhihuiti.bloodline import Bloodline
@@ -150,6 +149,29 @@ class AgentManager:
         self.realm_manager = realm_manager
         self.tool_executor = tool_executor
         self.agents: dict[str, AgentState] = {}
+        self.adaptation_provider: Any | None = None
+        self.improvement_harness: Any | None = None
+
+    def set_adaptation_provider(self, provider: Any) -> None:
+        """Attach the judge's prompt and mutation feedback loop."""
+        self.adaptation_provider = provider
+
+    def set_improvement_harness(self, harness: Any) -> None:
+        """Attach the guarded config selector used for active/canary versions."""
+        self.improvement_harness = harness
+
+    def _apply_runtime_learning(self, config: AgentConfig, selection_key: str) -> None:
+        # Once a role is governed by the harness, its exact evaluated version
+        # wins. The first config becomes a frozen incumbent; prompt evolution
+        # then enters production only through an evaluated candidate.
+        if self.improvement_harness:
+            self.improvement_harness.ensure_baseline(config)
+            self.improvement_harness.apply_selected_config(config, selection_key)
+            return
+        if self.adaptation_provider:
+            config.system_prompt = self.adaptation_provider.get_evolved_prompt(
+                config.system_prompt, config.role.value,
+            )
 
     def spawn(
         self,
@@ -171,12 +193,16 @@ class AgentManager:
                 gene_id=uuid.uuid4().hex[:12],
             )
 
+        agent_id = uuid.uuid4().hex[:12]
+        self._apply_runtime_learning(config, agent_id)
+
         # Fund from treasury if economy is active
         if self.economy:
             if not self.economy.fund_spawn(budget):
                 raise ValueError("Treasury cannot fund agent spawn")
 
         agent = AgentState(
+            id=agent_id,
             config=config,
             budget=budget,
             depth=depth,
@@ -260,8 +286,17 @@ class AgentManager:
         prompt = f"Task: {task.description}{context}{depth_note}"
 
         # ── Try Hermes backend first (if enabled) ──────────────
-        hermes = get_hermes_backend()
-        if hermes.available:
+        # Hermes is optional and lives outside the installable package in some
+        # deployments, so it must not prevent the core runtime from starting.
+        try:
+            from zhihuiti.hermes_backend import get_hermes_backend
+        except ModuleNotFoundError:
+            try:
+                from hermes_backend import get_hermes_backend
+            except ModuleNotFoundError:
+                get_hermes_backend = None
+        hermes = get_hermes_backend() if get_hermes_backend else None
+        if hermes and hermes.available:
             hermes_result = hermes.execute_task(
                 agent=agent,
                 task=task,
@@ -566,9 +601,18 @@ class AgentManager:
 
     def get_best_config(self, role: AgentRole) -> AgentConfig | None:
         """Get the best config for a role — tries breeding first, falls back to gene pool."""
+        if self.improvement_harness:
+            active = self.improvement_harness.get_active_config(role.value)
+            if active:
+                return active
+
+        mutation_rate = None
+        if self.adaptation_provider:
+            mutation_rate = self.adaptation_provider.get_mutation_rate(role.value)
+
         # Try breeding from bloodline (needs 2+ parents)
         if self.bloodline:
-            bred = self.bloodline.breed_from_pool(role)
+            bred = self.bloodline.breed_from_pool(role, mutation_rate=mutation_rate)
             if bred:
                 return bred
 
@@ -585,7 +629,9 @@ class AgentManager:
             gene_id=best["gene_id"],
             model=best.get("model"),  # inherit model tier from gene
         )
-        return config.mutate("inherited from gene pool")
+        return config.mutate(
+            "inherited from gene pool", mutation_rate=mutation_rate,
+        )
 
     def get_alive_agents(self) -> list[AgentState]:
         return [a for a in self.agents.values() if a.alive]

@@ -84,11 +84,13 @@ class AgentConfig:
     # Tool access — agents with tools can execute whitelisted shell commands
     tools_enabled: bool = False
 
-    def mutate(self, mutation_notes: str = "") -> AgentConfig:
+    def mutate(self, mutation_notes: str = "",
+               mutation_rate: float | None = None) -> AgentConfig:
         """Create a slightly mutated copy of this config."""
         import random
 
-        new_temp = max(0.1, min(1.0, self.temperature + random.uniform(-0.1, 0.1)))
+        max_delta = 0.1 if mutation_rate is None else max(0.02, min(0.2, mutation_rate * 0.2))
+        new_temp = max(0.1, min(1.0, self.temperature + random.uniform(-max_delta, max_delta)))
         return AgentConfig(
             role=self.role,
             system_prompt=self.system_prompt,
