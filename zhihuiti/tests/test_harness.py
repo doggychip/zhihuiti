@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from zhihuiti.agents import AgentManager
-from zhihuiti.dashboard import _gather_data
+from zhihuiti.dashboard import DashboardHandler, _gather_data
 from zhihuiti.harness import (
     DEFAULT_EVAL_CASES,
     HarnessObservation,
@@ -361,6 +361,37 @@ def test_dashboard_data_includes_harness_status(monkeypatch):
     data = _gather_data(orchestrator)
 
     assert data["harness"] == expected
+
+
+def test_dashboard_endpoints_include_harness_status(monkeypatch):
+    expected = {"mode": "guarded", "roles": []}
+    fake_orchestrator = SimpleNamespace(
+        harness=SimpleNamespace(get_status=lambda: expected),
+    )
+    monkeypatch.setattr(
+        "zhihuiti.routes.agent_routes.gather_core_data", lambda _orch: {"agents": []},
+    )
+    DashboardHandler.orchestrator = fake_orchestrator
+    server = HTTPServer(("127.0.0.1", 0), DashboardHandler)
+    port = server.server_address[1]
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        responses = {}
+        for path in ("/api/data", "/api/harness"):
+            connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+            connection.request("GET", path)
+            response = connection.getresponse()
+            responses[path] = (response.status, json.loads(response.read()))
+            connection.close()
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+        DashboardHandler.orchestrator = None
+
+    assert responses["/api/data"] == (200, {"agents": [], "harness": expected})
+    assert responses["/api/harness"] == (200, expected)
 
 
 def test_harness_status_endpoint(tmp_path):
