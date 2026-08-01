@@ -126,17 +126,20 @@ export default function EvolutionDashboard() {
   );
 
   return (
-    <div className="min-h-screen" style={{ background: "#0a0a1a", color: "#e0e7ff" }}>
+    <main className="min-h-screen" style={{ background: "#0a0a1a", color: "#e0e7ff" }}>
       {/* Header */}
-      <div className="px-6 pt-5 pb-3 flex items-center justify-between">
+      <header className="px-6 pt-5 pb-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="text-2xl">🧬</span>
           <div>
             <h1 className="text-lg font-bold tracking-tight" style={{ color: "#e0e7ff" }}>
               Evolution Dashboard
             </h1>
-            <div className="text-[10px] uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.25)" }}>
-              Darwinian Agent Simulation · Phase 2 Economy Layer
+            <div className="text-xs uppercase tracking-widest flex flex-wrap items-center gap-2" style={{ color: "rgba(255,255,255,0.55)" }}>
+              <span>Darwinian Agent Simulation · Phase 2 Economy Layer</span>
+              <span className="px-2 py-0.5 rounded font-semibold" style={{ color: "#fbbf24", background: "rgba(234,179,8,0.1)", border: "1px solid rgba(234,179,8,0.25)" }}>
+                Demo data
+              </span>
             </div>
           </div>
         </div>
@@ -145,24 +148,28 @@ export default function EvolutionDashboard() {
           style={{ background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.08)" }}>
           ← Back to HUD
         </Link>
-      </div>
+      </header>
+
+      <p className="mx-6 mb-4 px-3 py-2 rounded-lg text-xs" style={{ color: "#fcd34d", background: "rgba(234,179,8,0.06)", border: "1px solid rgba(234,179,8,0.15)" }}>
+        These values are a deterministic simulation fixture for interface testing; they are not live production metrics.
+      </p>
 
       {/* Stats Bar */}
-      <div className="px-6 pb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <section aria-label="Evolution summary" className="px-6 pb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard label="Epochs" value={summary.totalEpochs} sub={`Latest: ${summary.latestEpoch}`} />
         <StatCard label="Population" value={summary.population} />
         <StatCard label="Avg Fitness" value={summary.avgFitness.toFixed(3)} />
         <StatCard label="Gini Coefficient" value={summary.gini.toFixed(4)} />
-      </div>
+      </section>
 
       {/* Charts Row */}
-      <div className="px-6 pb-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <section aria-label="Evolution charts" className="px-6 pb-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Fitness Chart */}
         <div className="rounded-xl p-4"
           style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <div className="text-[10px] uppercase tracking-widest mb-3" style={{ color: "rgba(255,255,255,0.3)" }}>
+          <h2 className="text-xs uppercase tracking-widest mb-3" style={{ color: "rgba(255,255,255,0.6)" }}>
             📈 Avg Fitness Over Epochs
-          </div>
+          </h2>
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={epochs}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -187,9 +194,9 @@ export default function EvolutionDashboard() {
         {/* Archetype Distribution */}
         <div className="rounded-xl p-4"
           style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <div className="text-[10px] uppercase tracking-widest mb-3" style={{ color: "rgba(255,255,255,0.3)" }}>
+          <h2 className="text-xs uppercase tracking-widest mb-3" style={{ color: "rgba(255,255,255,0.6)" }}>
             🧩 Archetype Distribution
-          </div>
+          </h2>
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={stackedData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -219,15 +226,15 @@ export default function EvolutionDashboard() {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </section>
 
       {/* Agent Leaderboard */}
-      <div className="px-6 pb-8">
+      <section aria-labelledby="evolution-leaderboard-heading" className="px-6 pb-8">
         <div className="rounded-xl p-4"
           style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <div className="text-[10px] uppercase tracking-widest mb-3" style={{ color: "rgba(255,255,255,0.3)" }}>
+          <h2 id="evolution-leaderboard-heading" className="text-xs uppercase tracking-widest mb-3" style={{ color: "rgba(255,255,255,0.6)" }}>
             🏆 Top Agents by Fitness
-          </div>
+          </h2>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -274,7 +281,7 @@ export default function EvolutionDashboard() {
             </table>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

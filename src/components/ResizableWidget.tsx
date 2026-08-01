@@ -72,7 +72,7 @@ export function ResizableWidget({
   return (
     <div
       ref={containerRef}
-      className={`relative ${className}`}
+      className={`resizable-widget relative ${className}`}
       style={{
         ...style,
         ...(height !== undefined ? { height, overflow: "auto" } : {}),
@@ -83,6 +83,8 @@ export function ResizableWidget({
       {/* Bottom resize handle */}
       {resizeY && (
         <div
+          aria-hidden="true"
+          className="resize-handle"
           onMouseDown={e => startDrag(e, "y")}
           style={{ position: "sticky", bottom: 0, left: 0, right: 0, height: 7, cursor: "row-resize", background: "transparent", zIndex: 5, display: "flex", alignItems: "center", justifyContent: "center" }}
           onMouseEnter={e => { e.currentTarget.style.background = "rgba(167,139,250,0.25)"; e.currentTarget.querySelector<HTMLElement>(".grip")!.style.opacity = "1"; }}
@@ -94,6 +96,8 @@ export function ResizableWidget({
       {/* Right resize handle */}
       {resizeX && (
         <div
+          aria-hidden="true"
+          className="resize-handle"
           onMouseDown={e => startDrag(e, "x")}
           style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 7, cursor: "col-resize", background: "transparent", zIndex: 5, display: "flex", alignItems: "center", justifyContent: "center" }}
           onMouseEnter={e => { e.currentTarget.style.background = "rgba(167,139,250,0.25)"; e.currentTarget.querySelector<HTMLElement>(".grip")!.style.opacity = "1"; }}
@@ -105,6 +109,8 @@ export function ResizableWidget({
       {/* Corner resize handle */}
       {resizeX && resizeY && (
         <div
+          aria-hidden="true"
+          className="resize-handle"
           onMouseDown={e => startDrag(e, "xy")}
           style={{ position: "absolute", bottom: 0, right: 0, width: 12, height: 12, cursor: "nwse-resize", zIndex: 6 }}
           onMouseEnter={e => { e.currentTarget.style.background = "rgba(167,139,250,0.35)"; }}

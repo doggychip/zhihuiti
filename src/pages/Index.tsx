@@ -5,6 +5,8 @@ import { ResizableWidget } from "@/components/ResizableWidget";
 import { createPortal } from "react-dom";
 import * as THREE from "three";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { DashboardApiError, fetchDashboardData, fetchDashboardJob, fetchDashboardJobs, runDashboardGoal } from "@/lib/dashboard-api";
+import { clampRatio, filterAgentList, formatBudgetStatus, formatFreshness } from "@/lib/dashboard-view";
 
 // ── Realm & Relationship Colors ─────────────────────────────────
 const REALM_COLORS: Record<string, string> = { research: "#3b82f6", execution: "#f97316", central: "#a855f7" };
@@ -56,6 +58,17 @@ interface TaskEvent {
   targetAgentId?: string;
   timestamp: number;
 }
+
+interface DashboardJob {
+  id?: string;
+  status?: string;
+  goal?: string;
+  task?: string;
+  name?: string;
+  [key: string]: unknown;
+}
+
+type DashboardJobsMap = Record<string, DashboardJob>;
 
 // ── Demo data ───────────────────────────────────────────────────
 const DEMO_DATA = {
@@ -612,12 +625,12 @@ function TaskFeed({ events, onSelectAgent }: {events: TaskEvent[];onSelectAgent:
   const feedRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="w-64 flex flex-col overflow-hidden" style={{ borderLeft: "1px solid rgba(255,255,255,0.05)" }}>
+    <aside aria-label="System event stream" className="dashboard-event-feed w-64 flex flex-col overflow-hidden" style={{ borderLeft: "1px solid rgba(255,255,255,0.05)" }}>
       <div className="px-4 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-        <div className="text-xs uppercase tracking-widest flex items-center gap-2" style={{ color: "rgba(255,255,255,0.4)" }}>
+        <h2 className="text-xs uppercase tracking-widest flex items-center gap-2" style={{ color: "rgba(255,255,255,0.6)" }}>
           <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#22c55e" }} />
-          Live Task Feed
-        </div>
+          System Event Stream
+        </h2>
       </div>
       <div ref={feedRef} className="flex-1 overflow-y-auto p-2 space-y-1">
         {events.map((ev, idx) =>
@@ -654,17 +667,17 @@ function TaskFeed({ events, onSelectAgent }: {events: TaskEvent[];onSelectAgent:
           </button>
         )}
       </div>
-    </div>);
+    </aside>);
 
 }
 
 // ── Results Panel ───────────────────────────────────────────────
-function ResultsPanel({ jobId, result, loading, onClose
+function ResultsPanel({ jobId, result, loading, error, onClose
 
 
 
 
-}: {jobId: string;result: any;loading: boolean;onClose: () => void;}) {
+}: {jobId: string;result: any;loading: boolean;error: string | null;onClose: () => void;}) {
   if (!jobId) return null;
 
   const isDone = result?.status === "done" || result?.status === "completed";
@@ -675,15 +688,20 @@ function ResultsPanel({ jobId, result, loading, onClose
   const stats = jobData?.stats || {};
 
   return (
-    <div className="w-80 flex flex-col overflow-hidden" style={{ borderLeft: "1px solid rgba(255,255,255,0.05)" }}>
+    <aside aria-label="Goal job results" className="dashboard-results-panel w-80 flex flex-col overflow-hidden" style={{ borderLeft: "1px solid rgba(255,255,255,0.05)" }}>
       <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
         <div className="text-xs uppercase tracking-widest flex items-center gap-2" style={{ color: "rgba(255,255,255,0.4)" }}>
           <span>📋 Job Results</span>
         </div>
-        <button onClick={onClose} className="text-white opacity-40 hover:opacity-100 cursor-pointer text-sm">✕</button>
+        <button onClick={onClose} aria-label="Close job results" className="text-white opacity-60 hover:opacity-100 cursor-pointer text-sm">✕</button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ scrollbarWidth: "thin" }}>
+        {error && (
+          <div role="status" className="p-2 rounded text-xs" style={{ color: "#fbbf24", background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)" }}>
+            Live refresh failed. Showing the last known result while retrying.
+          </div>
+        )}
         {/* Loading state */}
         {(loading || !isDone) && !result ?
         <div className="flex flex-col items-center justify-center py-12 gap-3">
@@ -839,7 +857,7 @@ function ResultsPanel({ jobId, result, loading, onClose
           </>
         }
       </div>
-    </div>);
+    </aside>);
 
 }
 
@@ -847,13 +865,15 @@ function ResultsPanel({ jobId, result, loading, onClose
 function RealmHealthBars({ realms, agents }: {realms: typeof DEMO_DATA["realms"]; agents: Agent[];}) {
   const realmEntries = Object.entries(realms) as [string, typeof realms["research"]][];
   return (
-    <div className="flex gap-4 px-6 py-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.01)" }}>
+    <section aria-label="Realm health" className="realm-health-bars flex gap-4 px-6 py-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.01)" }}>
       {realmEntries.map(([key, r]) => {
         const color = REALM_COLORS[key] || "#888";
-        const energy = r.budget_allocated > 0 ? r.budget_remaining / r.budget_allocated : 0;
+        const rawEnergy = r.budget_allocated > 0 ? r.budget_remaining / r.budget_allocated : 0;
+        const energy = clampRatio(rawEnergy);
         const activeCount = agents.filter(a => a.realm === key && a.life_state === 'active').length;
         const agentHealth = activeCount / Math.max(activeCount + r.agents_frozen + r.agents_bankrupt, 1);
-        const combined = energy * 0.6 + agentHealth * 0.2 + r.avg_score * 0.2;
+        const combined = clampRatio(energy * 0.6 + agentHealth * 0.2 + r.avg_score * 0.2);
+        const isOverBudget = r.budget_remaining < 0;
         return (
           <div key={key} className="flex-1">
             <div className="flex items-center justify-between mb-1">
@@ -861,7 +881,7 @@ function RealmHealthBars({ realms, agents }: {realms: typeof DEMO_DATA["realms"]
                 {REALM_LABELS[key]?.split(" ").slice(0, 2).join(" ")}
               </span>
               <span className="text-[10px] font-mono" style={{ color: "rgba(255,255,255,0.4)" }}>
-                {(combined * 100).toFixed(0)}%
+                {isOverBudget ? "OVER BUDGET" : `${(combined * 100).toFixed(0)}%`}
               </span>
             </div>
             <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
@@ -872,8 +892,8 @@ function RealmHealthBars({ realms, agents }: {realms: typeof DEMO_DATA["realms"]
               }} />
             </div>
             <div className="flex justify-between mt-0.5">
-              <span className="text-[9px]" style={{ color: "rgba(255,255,255,0.25)" }}>
-                ⚡ {r.budget_remaining.toLocaleString()}/{r.budget_allocated.toLocaleString()} ◆
+              <span className="text-[9px]" style={{ color: isOverBudget ? "#f87171" : "rgba(255,255,255,0.4)" }}>
+                ⚡ {formatBudgetStatus(r.budget_remaining, r.budget_allocated)}
               </span>
               <span className="text-[9px]" style={{ color: "rgba(255,255,255,0.25)" }}>
                 {agents.filter(a => a.realm === key && a.life_state === 'active').length} active · {r.tasks_completed} tasks
@@ -882,7 +902,7 @@ function RealmHealthBars({ realms, agents }: {realms: typeof DEMO_DATA["realms"]
           </div>);
 
       })}
-    </div>);
+    </section>);
 
 }
 
@@ -1260,7 +1280,7 @@ function AgentDetail({ agent, connections, agents, onClose, onSelect
 }: {agent: Agent;connections: Connection[];agents: Agent[];onClose: () => void;onSelect: (id: string) => void;}) {
   const color = REALM_COLORS[agent.realm];
   return (
-    <div className="absolute top-4 right-4 w-80 rounded-xl p-5 z-20 max-h-[calc(100%-2rem)] overflow-y-auto" style={{
+    <div role="dialog" aria-label={`Agent details for ${agent.role}`} className="agent-detail-panel absolute top-4 right-4 w-80 rounded-xl p-5 z-20 max-h-[calc(100%-2rem)] overflow-y-auto" style={{
       background: "rgba(10,10,20,0.95)", border: `1px solid ${color}40`, boxShadow: `0 0 40px ${color}20`,
       backdropFilter: "blur(10px)"
     }}>
@@ -1269,7 +1289,7 @@ function AgentDetail({ agent, connections, agents, onClose, onSelect
           <div className="text-lg font-bold" style={{ color }}>{ROLE_ICONS[agent.role] || "🤖"} {agent.role}</div>
           <div className="text-xs font-mono" style={{ color: "rgba(255,255,255,0.4)" }}>{agent.id}</div>
         </div>
-        <button onClick={onClose} className="text-white opacity-40 hover:opacity-100 text-lg cursor-pointer">✕</button>
+        <button onClick={onClose} aria-label="Close agent details" className="text-white opacity-60 hover:opacity-100 text-lg cursor-pointer">✕</button>
       </div>
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
@@ -1432,7 +1452,7 @@ export default function ZhihuiTiDashboard() {
   const [showCollision, setShowCollision] = useState(false);
   const [graphFullscreen, setGraphFullscreen] = useState(false);
   const [lodCount, setLodCount] = useState(20);
-  const [booted, setBooted] = useState(false);
+  const [booted, setBooted] = useState(() => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   const handleBootComplete = useCallback(() => setBooted(true), []);
   const [showZhihuiti, setShowZhihuiti] = useState(true);
   const [showHedgeFund, setShowHedgeFund] = useState(true);
@@ -1440,113 +1460,177 @@ export default function ZhihuiTiDashboard() {
   // Run Goal state
   const [goalInput, setGoalInput] = useState("");
   const [goalRunning, setGoalRunning] = useState(false);
+  const [goalNotice, setGoalNotice] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
   // Live jobs feed — store as Record<jobId, jobData>
-  const [jobsMap, setJobsMap] = useState<Record<string, any>>({});
+  const [jobsMap, setJobsMap] = useState<DashboardJobsMap>({});
+  const jobsMapRef = useRef<DashboardJobsMap>({});
+  const [jobsError, setJobsError] = useState<string | null>(null);
 
   // Results panel state
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [jobResult, setJobResult] = useState<any>(null);
   const [jobResultLoading, setJobResultLoading] = useState(false);
+  const [jobResultError, setJobResultError] = useState<string | null>(null);
 
   const handleSelect = useCallback((id: string) => setSelected((prev) => prev === id ? null : id), []);
 
   const [allAgentsRaw, setAllAgentsRaw] = useState<any[]>([]);
-  const [agentSource, setAgentSource] = useState<"zhihuiti" | "localhost" | "fallback" | "loading">("loading");
+  const [agentSource, setAgentSource] = useState<"live" | "stale" | "demo" | "loading">("loading");
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
+  const [freshnessNow, setFreshnessNow] = useState(() => Date.now());
+  const [dataError, setDataError] = useState<string | null>(null);
+  const hasLiveDataRef = useRef(false);
+  const [agentQuery, setAgentQuery] = useState("");
+  const [agentRealm, setAgentRealm] = useState("all");
+  const [showAllAgents, setShowAllAgents] = useState(false);
 
-  const fetchData = useCallback(() => {
-    // Fetch dashboard metadata + agents from /api/data
-    fetch("https://zhihuiti.zeabur.app/api/data")
-      .then((r) => r.json())
-      .then((d) => {
-        setData(d);
-        setLive(true);
-        // Use agents from /api/data response directly
-        if (d?.agents && Array.isArray(d.agents)) {
-          setAllAgentsRaw(d.agents);
-          setAgentSource("zhihuiti");
-        }
-      })
-      .catch(() => { setData(DEMO_DATA); setLive(false); setAgentSource("fallback"); });
+  const fetchData = useCallback(async () => {
+    try {
+      const dashboard = await fetchDashboardData<typeof DEMO_DATA>();
+      if (!dashboard || !Array.isArray(dashboard.agents)) {
+        throw new DashboardApiError("The dashboard response did not include a valid agent list.");
+      }
+      hasLiveDataRef.current = true;
+      setData(dashboard);
+      setAllAgentsRaw(dashboard.agents);
+      setLive(true);
+      setAgentSource("live");
+      setLastUpdatedAt(Date.now());
+      setFreshnessNow(Date.now());
+      setDataError(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "The dashboard API is unavailable.";
+      setLive(false);
+      setDataError(message);
+      if (hasLiveDataRef.current) {
+        setAgentSource("stale");
+      } else {
+        setData(DEMO_DATA);
+        setAllAgentsRaw([]);
+        setAgentSource("demo");
+      }
+    }
   }, []);
 
   // Poll jobs every 5s
   useEffect(() => {
-    const fetchJobs = () => {
-      fetch("https://zhihuiti.zeabur.app/api/jobs").
-      then((r) => r.json()).
-      then((d) => {
-        if (d && typeof d === "object" && !Array.isArray(d)) {
-          setJobsMap(d);
+    let interval: number | undefined;
+    const fetchJobs = async () => {
+      try {
+        const nextJobs = await fetchDashboardJobs<DashboardJobsMap>();
+        if (!nextJobs || typeof nextJobs !== "object" || Array.isArray(nextJobs)) {
+          throw new DashboardApiError("The jobs response was not valid.");
         }
-      }).
-      catch(() => {});
+        jobsMapRef.current = nextJobs;
+        setJobsMap(nextJobs);
+        setJobsError(null);
+      } catch (error) {
+        setJobsError(error instanceof Error ? error.message : "The job queue is unavailable.");
+      }
     };
-    fetchJobs();
-    const interval = setInterval(fetchJobs, 5000);
-    return () => clearInterval(interval);
+
+    const schedule = () => {
+      if (interval) window.clearInterval(interval);
+      if (!document.hidden) {
+        void fetchJobs();
+        interval = window.setInterval(fetchJobs, 5000);
+      }
+    };
+
+    schedule();
+    document.addEventListener("visibilitychange", schedule);
+    return () => {
+      if (interval) window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", schedule);
+    };
   }, []);
 
   // Poll selected job result until done
   useEffect(() => {
-    if (!selectedJobId) {setJobResult(null);return;}
+    if (!selectedJobId) {
+      setJobResult(null);
+      setJobResultError(null);
+      return;
+    }
     let cancelled = false;
-    const poll = () => {
+    let timeout: number | undefined;
+    const poll = async () => {
       setJobResultLoading(true);
-      fetch(`https://zhihuiti.zeabur.app/api/job/${selectedJobId}`).
-      then((r) => r.json()).
-      then((d) => {
+      try {
+        const nextResult = await fetchDashboardJob<DashboardJob>(selectedJobId);
         if (cancelled) return;
-        setJobResult(d);
+        setJobResult(nextResult);
+        setJobResultError(null);
         setJobResultLoading(false);
-        if (d?.status === "done" || d?.status === "completed") {
-
-          // done, stop polling
-        } else {// keep polling
-          setTimeout(() => {if (!cancelled) poll();}, 5000);
+        if (nextResult?.status !== "done" && nextResult?.status !== "completed") {
+          timeout = window.setTimeout(poll, 5000);
         }
-      }).
-      catch(() => {
+      } catch (error) {
         if (cancelled) return;
-        // fallback: use data from jobsMap
-        const fromMap = jobsMap[selectedJobId];
+        const fromMap = jobsMapRef.current[selectedJobId];
         if (fromMap) setJobResult(fromMap);
+        setJobResultError(error instanceof Error ? error.message : "The job result is unavailable.");
         setJobResultLoading(false);
-      });
+        timeout = window.setTimeout(poll, 5000);
+      }
     };
-    poll();
-    return () => {cancelled = true;};
+    void poll();
+    return () => {
+      cancelled = true;
+      if (timeout) window.clearTimeout(timeout);
+    };
   }, [selectedJobId]);
 
   // Derive jobs array for sidebar feed
   const jobs = useMemo(() =>
-  Object.entries(jobsMap).map(([id, job]) => ({ id, ...job })),
+  Object.entries(jobsMap).map(([id, job]) => ({ ...job, id: job.id ?? id })),
   [jobsMap]
   );
 
   const handleRunGoal = useCallback(async () => {
     if (!goalInput.trim() || goalRunning) return;
+    const goal = goalInput.trim();
     setGoalRunning(true);
+    setGoalNotice(null);
     try {
-      await fetch("https://zhihuiti.zeabur.app/api/run", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ goal: goalInput.trim() })
-      });
+      const { jobId } = await runDashboardGoal(goal);
       setGoalInput("");
-      fetchData();
-    } catch (e) {
-      console.error("Run goal failed:", e);
+      setGoalNotice({ kind: "success", message: jobId ? `Goal queued as ${jobId}.` : "Goal queued successfully." });
+      if (jobId) setSelectedJobId(jobId);
+      void fetchData();
+    } catch (error) {
+      setGoalNotice({
+        kind: "error",
+        message: error instanceof Error ? error.message : "The goal could not be queued.",
+      });
     } finally {
       setGoalRunning(false);
     }
   }, [goalInput, goalRunning, fetchData]);
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
+    let interval: number | undefined;
+    const schedule = () => {
+      if (interval) window.clearInterval(interval);
+      if (!document.hidden) {
+        void fetchData();
+        interval = window.setInterval(fetchData, 10000);
+      }
+    };
+
+    schedule();
+    document.addEventListener("visibilitychange", schedule);
+    return () => {
+      if (interval) window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", schedule);
+    };
   }, [fetchData]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setFreshnessNow(Date.now()), 15000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   // Map agents from zhihuiti API to dashboard Agent interface
   const agents: Agent[] = useMemo(() => {
@@ -1567,6 +1651,11 @@ export default function ZhihuiTiDashboard() {
     // Fallback to old data.agents if new API not available
     return data?.agents || [];
   }, [allAgentsRaw, data]);
+  const matchingSidebarAgents = useMemo(
+    () => filterAgentList(agents, { query: agentQuery, realm: agentRealm }),
+    [agents, agentQuery, agentRealm],
+  );
+  const sidebarAgents = showAllAgents ? matchingSidebarAgents : matchingSidebarAgents.slice(0, 20);
   const events = useSimulatedFeed(agents);
 
   // Build sparse economy graph: each agent connects to 2-3 peers (same realm, nearest by score)
@@ -1622,8 +1711,15 @@ export default function ZhihuiTiDashboard() {
     taxed: (econ.total_taxes_collected || 10) / 15 * (0.6 + Math.random() * 0.8)
   }));
 
+  const sourceMeta = {
+    live: { label: "zhihuiti API", color: "#22c55e", background: "rgba(34,197,94,0.15)" },
+    stale: { label: "stale API data", color: "#eab308", background: "rgba(234,179,8,0.15)" },
+    demo: { label: "demo data", color: "#ef4444", background: "rgba(239,68,68,0.15)" },
+    loading: { label: "connecting…", color: "#94a3b8", background: "rgba(148,163,184,0.12)" },
+  }[agentSource];
+
   return (
-    <div className="min-h-screen text-white relative" style={{
+    <main className="dashboard-root min-h-screen text-white relative" style={{
       background: "linear-gradient(135deg, #0a0a14 0%, #0d0d1a 50%, #0a0f18 100%)",
       fontFamily: "'Inter', system-ui, sans-serif"
     }}>
@@ -1739,30 +1835,31 @@ export default function ZhihuiTiDashboard() {
       </div>
 
       {/* Header */}
-      <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-        <div className="flex items-center gap-3">
+      <header className="dashboard-header px-6 py-4 flex items-center justify-between gap-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+        <div className="flex items-center gap-3 min-w-0">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl font-bold"
           style={{ background: "linear-gradient(135deg, #6366f1, #a855f7)" }}>慧</div>
-          <div>
-            <div className="text-sm font-bold tracking-wide">智慧体 ZHIHUITI</div>
-            <div className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
-              Autonomous Multi-Agent Ecosystem · {agents.filter(a => a.alive && a.group === "zhihuiti").length} core + {agents.filter(a => a.alive && a.group === "hedge_fund").length} evolved + {(data as any)?.heartai?.total || 0} HeartAI agents
-              {!live && <span className="ml-2" style={{ color: "#eab308" }}>(demo mode)</span>}
+          <div className="min-w-0">
+            <h1 className="text-sm font-bold tracking-wide">智慧体 ZHIHUITI</h1>
+            <div className="dashboard-subtitle text-xs flex flex-wrap items-center gap-2" style={{ color: "rgba(255,255,255,0.55)" }}>
+              <span>Autonomous Multi-Agent Ecosystem · {agents.filter(a => a.alive && a.group === "zhihuiti").length} core + {agents.filter(a => a.alive && a.group === "hedge_fund").length} evolved + {(data as any)?.heartai?.total || 0} HeartAI agents</span>
               <span
-                className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono"
+                role="status"
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono"
+                title={dataError || undefined}
                 style={{
-                  background: agentSource === "zhihuiti" ? "rgba(34,197,94,0.15)" : agentSource === "localhost" ? "rgba(234,179,8,0.15)" : agentSource === "fallback" ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.06)",
-                   color: agentSource === "zhihuiti" ? "#22c55e" : agentSource === "localhost" ? "#eab308" : agentSource === "fallback" ? "#ef4444" : "rgba(255,255,255,0.3)",
-                   border: `1px solid ${agentSource === "zhihuiti" ? "rgba(34,197,94,0.3)" : agentSource === "localhost" ? "rgba(234,179,8,0.3)" : agentSource === "fallback" ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.08)"}`,
+                  background: sourceMeta.background,
+                  color: sourceMeta.color,
+                  border: `1px solid ${sourceMeta.color}55`,
                 }}
               >
-                <span style={{ width: 5, height: 5, borderRadius: "50%", background: agentSource === "zhihuiti" ? "#22c55e" : agentSource === "localhost" ? "#eab308" : agentSource === "fallback" ? "#ef4444" : "#666", display: "inline-block" }} />
-                {agentSource === "zhihuiti" ? "zhihuiti API" : agentSource === "localhost" ? "localhost:5050" : agentSource === "fallback" ? "fallback data" : "connecting…"}
+                <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: sourceMeta.color, display: "inline-block" }} />
+                {sourceMeta.label} · {formatFreshness(lastUpdatedAt, freshnessNow)}
               </span>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <nav aria-label="Dashboard views and realm totals" className="dashboard-header-actions flex items-center gap-2">
           <Link to="/evolution"
             className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
             style={{ background: "rgba(99,102,241,0.1)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.2)" }}>
@@ -1773,25 +1870,25 @@ export default function ZhihuiTiDashboard() {
               {REALM_LABELS[r]?.split(" ")[0]} · {agents.filter((a) => a.realm === r).length}
             </span>
           )}
-        </div>
-      </div>
+        </nav>
+      </header>
 
       {/* Realm Health Bars */}
-      <RealmHealthBars realms={data.realms || {} as any} agents={data.agents || []} />
+      <RealmHealthBars realms={data.realms || {} as any} agents={agents} />
 
-      <div className="flex" style={{ height: "calc(100vh - 97px)" }}>
+      <div className="dashboard-shell flex" style={{ height: "calc(100vh - 97px)" }}>
         {/* Left sidebar */}
-        <div className="w-72 p-4 space-y-3 overflow-y-auto" style={{ borderRight: "1px solid rgba(255,255,255,0.05)" }}>
+        <aside aria-label="System controls and metrics" className="dashboard-sidebar w-72 p-4 space-y-3 overflow-y-auto" style={{ borderRight: "1px solid rgba(255,255,255,0.05)" }}>
         {/* Run Goal */}
           <div className="pb-3 mb-1" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <div className="text-xs uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>🎯 Run Goal</div>
-            <div className="flex gap-1.5">
+            <h2 className="text-xs uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.55)" }}>🎯 Run Goal</h2>
+            <form className="flex gap-1.5" onSubmit={(event) => { event.preventDefault(); void handleRunGoal(); }}>
               <input
                 type="text"
                 value={goalInput}
                 onChange={(e) => setGoalInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleRunGoal()}
                 placeholder="Enter a goal..."
+                aria-label="Goal to run"
                 disabled={goalRunning}
                 className="flex-1 px-2 py-1.5 rounded text-xs font-mono outline-none"
                 style={{
@@ -1801,7 +1898,7 @@ export default function ZhihuiTiDashboard() {
                 }} />
               
               <button
-                onClick={handleRunGoal}
+                type="submit"
                 disabled={goalRunning || !goalInput.trim()}
                 className="px-2.5 py-1.5 rounded text-xs font-bold tracking-wide transition-all"
                 style={{
@@ -1813,21 +1910,31 @@ export default function ZhihuiTiDashboard() {
                 
                 {goalRunning ? "Running..." : "▶ RUN"}
               </button>
-            </div>
+            </form>
+            {goalNotice && (
+              <div
+                role={goalNotice.kind === "error" ? "alert" : "status"}
+                className="mt-2 text-xs leading-snug"
+                style={{ color: goalNotice.kind === "error" ? "#f87171" : "#4ade80" }}
+              >
+                {goalNotice.message}
+              </div>
+            )}
           </div>
 
           {/* Live Task Feed */}
-          <ResizableWidget defaultHeight={180} minHeight={60} maxHeight={400}>
+          <ResizableWidget className="mobile-primary" defaultHeight={180} minHeight={60} maxHeight={400}>
           <div className="pb-3 mb-1" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <div className="text-xs uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>
-              📡 Live Task Feed
+            <h2 className="text-xs uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.55)" }}>
+              📡 Goal Job Queue
               <span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full" style={{ background: "#22c55e", boxShadow: "0 0 6px #22c55e", animation: "bootCursor 1.5s ease-in-out infinite" }} />
-            </div>
+            </h2>
             <div className="space-y-1 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
-              {jobs.length === 0 ?
-              <div className="text-xs py-2 text-center" style={{ color: "rgba(255,255,255,0.2)" }}>No active jobs</div> :
+              {jobsError ?
+              <div role="status" className="text-xs py-2 text-center" style={{ color: "#f87171" }}>Queue unavailable · showing last known state</div> : jobs.length === 0 ?
+              <div className="text-xs py-2 text-center" style={{ color: "rgba(255,255,255,0.5)" }}>No queued or active goals</div> :
 
-              jobs.slice(0, 10).map((job: any, i: number) => {
+              jobs.slice(0, 10).map((job, i: number) => {
                 const status = job.status || "unknown";
                 const isRunning = status === "running" || status === "pending";
                 const statusColor = isRunning ? "#eab308" : status === "completed" || status === "done" ? "#22c55e" : "#ef4444";
@@ -1859,16 +1966,16 @@ export default function ZhihuiTiDashboard() {
           </div>
           </ResizableWidget>
 
-          <ResizableWidget minHeight={50} maxHeight={300}>
+          <ResizableWidget className="mobile-primary" minHeight={50} maxHeight={300}>
             <Stat label="Money Supply" value={`${(econ.money_supply || 0).toLocaleString()} ◆`} sub={`Treasury: ${(econ.treasury_balance || 0).toLocaleString()}`} color="#eab308" />
           </ResizableWidget>
-          <ResizableWidget minHeight={50} maxHeight={300}>
+          <ResizableWidget className="mobile-primary" minHeight={50} maxHeight={300}>
             <Stat label="Tasks Completed" value={mem.total_tasks || 0} sub={`Avg score: ${(mem.avg_task_score || 0).toFixed(2)}`} color="#22c55e" />
           </ResizableWidget>
-          <ResizableWidget minHeight={50} maxHeight={300}>
+          <ResizableWidget className="mobile-primary" minHeight={50} maxHeight={300}>
             <Stat label="Gene Pool" value={mem.gene_pool_size || 0} sub={`${bl.alive_genes || 0} alive · Gen ${bl.max_generation || 0}`} color="#a855f7" />
           </ResizableWidget>
-          <ResizableWidget minHeight={50} maxHeight={300}>
+          <ResizableWidget className="mobile-primary" minHeight={50} maxHeight={300}>
             <Stat label="Auctions Won" value={au.total_auctions || 0} sub={`Saved ${(au.total_savings || 0).toFixed(0)} ◆`} color="#3b82f6" />
           </ResizableWidget>
 
@@ -1967,7 +2074,7 @@ export default function ZhihuiTiDashboard() {
           }
 
           {/* Connection legend */}
-          <div className="pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="dashboard-relationship-legend pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
             <div className="text-xs uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>Relationship Types</div>
             {Object.entries(CONN_COLORS).map(([type, color]) =>
             <div key={type} className="flex items-center gap-2 text-xs py-0.5">
@@ -1979,33 +2086,78 @@ export default function ZhihuiTiDashboard() {
 
           {/* Agent list */}
           <div className="pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-            <div className="text-xs uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>Agents</div>
-            {[...agents].sort((a, b) => b.budget - a.budget).map((a) =>
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <h2 className="text-xs uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.55)" }}>Agent Explorer</h2>
+              <span className="text-xs font-mono" style={{ color: "rgba(255,255,255,0.45)" }}>
+                {matchingSidebarAgents.length}/{agents.length}
+              </span>
+            </div>
+            <div className="grid grid-cols-[1fr_auto] gap-2 mb-2">
+              <input
+                type="search"
+                value={agentQuery}
+                onChange={(event) => { setAgentQuery(event.target.value); setShowAllAgents(false); }}
+                placeholder="Search role or ID"
+                aria-label="Search agents"
+                className="min-w-0 px-2 py-1.5 rounded text-xs outline-none"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff" }}
+              />
+              <select
+                value={agentRealm}
+                onChange={(event) => { setAgentRealm(event.target.value); setShowAllAgents(false); }}
+                aria-label="Filter agents by realm"
+                className="px-2 py-1.5 rounded text-xs outline-none"
+                style={{ background: "#151522", border: "1px solid rgba(255,255,255,0.1)", color: "#fff" }}
+              >
+                <option value="all">All realms</option>
+                <option value="research">Research</option>
+                <option value="execution">Execution</option>
+                <option value="central">Central</option>
+              </select>
+            </div>
+            <div className="agent-list max-h-80 overflow-y-auto pr-1" style={{ scrollbarWidth: "thin" }}>
+            {sidebarAgents.map((a) =>
             <button key={a.id} onClick={() => handleSelect(a.id)}
             className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs text-left hover:bg-white/5 transition-colors cursor-pointer"
+            aria-label={`${a.role}, ${a.realm}, budget ${a.budget.toFixed(0)}`}
             style={{ background: selected === a.id ? "rgba(255,255,255,0.08)" : "transparent" }}>
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: a.alive ? REALM_COLORS[a.realm] : "#555" }} />
                 <span className="flex-1 truncate text-white">{ROLE_ICONS[a.role] || "🤖"} {a.role}</span>
-                <span className="font-mono text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>{a.budget.toFixed(0)}◆</span>
+                <span className="font-mono text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>{a.budget.toFixed(0)}◆</span>
+              </button>
+            )}
+            {sidebarAgents.length === 0 && (
+              <div className="text-xs py-4 text-center" style={{ color: "rgba(255,255,255,0.5)" }}>No agents match these filters.</div>
+            )}
+            </div>
+            {matchingSidebarAgents.length > 20 && (
+              <button
+                type="button"
+                onClick={() => setShowAllAgents((current) => !current)}
+                className="mt-2 w-full px-2 py-1.5 rounded text-xs font-medium"
+                style={{ color: "#a78bfa", border: "1px solid rgba(167,139,250,0.25)", background: "rgba(167,139,250,0.08)" }}
+              >
+                {showAllAgents ? "Show top 20" : `View all ${matchingSidebarAgents.length}`}
               </button>
             )}
           </div>
-        </div>
+        </aside>
 
         {/* Center — 3D Graph */}
         {(() => {
           const graphContent =
-          <div className={`flex-1 flex flex-col relative`}
+          <section aria-label="Agent network and analytics" className={`dashboard-center flex-1 flex flex-col relative`}
           style={{
             ...(graphFullscreen
               ? { position: "fixed" as const, inset: 0, zIndex: 9999, background: "#08080f", animation: "graph-fullscreen-in 0.35s cubic-bezier(0.4,0,0.2,1) forwards" }
               : { overflowY: "auto" as const }),
           }}>
-              <ResizableWidget defaultHeight={graphFullscreen ? undefined : 400} minHeight={150} maxHeight={graphFullscreen ? 99999 : 800} className="relative" style={graphFullscreen ? { flex: 1, height: "100%" } : { flexShrink: 0 }}>
+              <ResizableWidget defaultHeight={graphFullscreen ? undefined : 400} minHeight={150} maxHeight={graphFullscreen ? 99999 : 800} className="dashboard-graph-widget relative" style={graphFullscreen ? { flex: 1, height: "100%" } : { flexShrink: 0 }}>
                 <ThreeGraph agents={agents} connections={connections} onSelect={handleSelect} selectedId={selected} events={events} showZhihuiti={showZhihuiti} showHedgeFund={showHedgeFund} lodCount={lodCount} />
                 {/* Fullscreen toggle */}
                 <button
                 onClick={() => setGraphFullscreen((f) => !f)}
+                aria-label={graphFullscreen ? "Exit graph fullscreen" : "Open graph fullscreen"}
                 className="absolute top-3 right-3 z-20 w-8 h-8 flex items-center justify-center rounded-md text-sm cursor-pointer transition-all hover:scale-105 active:scale-95"
                 style={{
                   background: "rgba(255,255,255,0.06)",
@@ -2017,7 +2169,7 @@ export default function ZhihuiTiDashboard() {
                 
                   {graphFullscreen ? "✕" : "⛶"}
                 </button>
-                <div className="absolute bottom-4 left-4 flex items-center gap-3 z-10">
+                <div className="graph-controls absolute bottom-4 left-4 flex items-center gap-3 z-10">
                   <span className="text-xs" style={{ color: "rgba(255,255,255,0.15)" }}>drag to rotate · click node for details</span>
                   <button
                     onClick={() => setShowZhihuiti(s => !s)}
@@ -2070,7 +2222,7 @@ export default function ZhihuiTiDashboard() {
               }
                 <CollisionEngine show={showCollision} onClose={() => setShowCollision(false)} />
                 {/* Minimap */}
-                <div className="absolute top-3 left-3 z-10 rounded-lg overflow-hidden" style={{
+                <div className="graph-minimap absolute top-3 left-3 z-10 rounded-lg overflow-hidden" style={{
                 width: 120, height: 120,
                 background: "rgba(5,5,15,0.85)",
                 border: "1px solid rgba(99,102,241,0.2)",
@@ -2113,7 +2265,7 @@ export default function ZhihuiTiDashboard() {
               {/* Bottom charts — hidden in fullscreen */}
               {!graphFullscreen &&
             <ResizableWidget defaultHeight={176} minHeight={80} maxHeight={500}>
-            <div className="flex gap-4 px-4 pb-3 h-full" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+            <div className="dashboard-economy-row flex gap-4 px-4 pb-3 h-full" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
                   <div className="flex-1 pt-3">
                     <div className="text-xs uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>Token Economy</div>
                     <ResponsiveContainer width="100%" height="85%">
@@ -2165,9 +2317,8 @@ export default function ZhihuiTiDashboard() {
               {!graphFullscreen &&
               <div className="px-4 py-3" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
                 <div className="text-xs uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>🌐 Cross-Project</div>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="cross-project-grid grid grid-cols-3 gap-2">
                   {[
-                     { name: "AgentsCity", icon: "⚔️", alive: agents.length > 0, agents: agents.filter(a => a.alive).length, tasks: 0, score: agents.length > 0 ? (agents.reduce((s, a) => s + a.avg_score, 0) / agents.length).toFixed(2) : "—", color: "#a855f7", offline: agents.length === 0 },
                      { name: "CriticAI", icon: "🧠", alive: false, agents: 0, tasks: 0, score: "—", color: "#3b82f6", offline: true },
                      { name: "HeartAI", icon: "❤️", alive: !!(data as any)?.heartai?.online, agents: (data as any)?.heartai?.total || 0, tasks: 0, score: (data as any)?.heartai?.agents?.length > 0 ? ((data as any).heartai.agents.reduce((s: number, a: any) => s + (a.avg_score || 0), 0) / (data as any).heartai.agents.length).toFixed(2) : "—", color: "#ef4444", offline: !(data as any)?.heartai?.online },
                      { name: "zhihuiti", icon: "🧬", alive: live, agents: agents.filter(a => a.alive && a.group === "zhihuiti").length, tasks: mem.total_tasks || 0, score: (ins.avg_score || 0).toFixed(2), color: "#eab308", offline: !live },
@@ -2212,18 +2363,18 @@ export default function ZhihuiTiDashboard() {
                 </div>
             </ResizableWidget>
             }
-            </div>;
+            </section>;
 
           return graphFullscreen ? createPortal(graphContent, document.body) : graphContent;
         })()}
 
         {/* Right — Results Panel or Live Task Feed */}
         {selectedJobId ?
-        <ResultsPanel jobId={selectedJobId} result={jobResult} loading={jobResultLoading} onClose={() => setSelectedJobId(null)} /> :
+        <ResultsPanel jobId={selectedJobId} result={jobResult} loading={jobResultLoading} error={jobResultError} onClose={() => setSelectedJobId(null)} /> :
 
         <TaskFeed events={events} onSelectAgent={handleSelect} />
         }
       </div>
-    </div>);
+    </main>);
 
 }

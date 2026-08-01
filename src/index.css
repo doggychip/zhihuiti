@@ -116,3 +116,129 @@ All colors MUST be HSL.
     border-radius: 0;
   }
 }
+
+.dashboard-root .text-\[9px\],
+.dashboard-root .text-\[10px\] {
+  font-size: 0.75rem;
+}
+
+@media (max-width: 1023px) {
+  .dashboard-header {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  .dashboard-header-actions {
+    max-width: 100%;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+    scrollbar-width: thin;
+  }
+
+  .realm-health-bars {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: 1fr;
+    padding: 0.75rem 1rem;
+  }
+
+  .dashboard-shell {
+    flex-direction: column;
+    height: auto !important;
+    min-height: 0;
+  }
+
+  .dashboard-sidebar,
+  .dashboard-center,
+  .dashboard-event-feed,
+  .dashboard-results-panel {
+    flex: none;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .dashboard-sidebar {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-right: 0 !important;
+    max-height: none;
+    overflow: visible;
+    padding: 1rem;
+  }
+
+  .dashboard-sidebar > .resizable-widget:not(.mobile-primary),
+  .dashboard-relationship-legend {
+    display: none;
+  }
+
+  .resizable-widget {
+    height: auto !important;
+    overflow: visible !important;
+    width: auto !important;
+  }
+
+  .resize-handle {
+    display: none !important;
+  }
+
+  .dashboard-graph-widget {
+    height: 420px !important;
+    overflow: hidden !important;
+  }
+
+  .graph-minimap {
+    display: none;
+  }
+
+  .graph-controls {
+    bottom: 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    left: 0.5rem;
+    right: 3rem;
+  }
+
+  .graph-controls > span:first-child {
+    display: none;
+  }
+
+  .agent-detail-panel {
+    left: 0.5rem;
+    max-height: calc(100% - 1rem);
+    right: 0.5rem;
+    top: 0.5rem;
+    width: auto;
+  }
+
+  .dashboard-economy-row {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .dashboard-economy-row > div {
+    min-height: 150px;
+    width: 100%;
+  }
+
+  .cross-project-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-event-feed,
+  .dashboard-results-panel {
+    border-left: 0 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    height: 360px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-root *,
+  .dashboard-root *::before,
+  .dashboard-root *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
