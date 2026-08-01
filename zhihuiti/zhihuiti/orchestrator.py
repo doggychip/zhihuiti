@@ -112,9 +112,14 @@ class Orchestrator:
         self.max_retries = 1
 
         # Restore surviving agents from prior sessions into agent_manager
+        restored_roles: set[AgentRole] = set()
         for agent in self.bidding.pool.get_all_alive():
             if agent.id not in self.agent_manager.agents:
                 self.agent_manager.agents[agent.id] = agent
+            if agent.config.role not in restored_roles:
+                self.harness.ensure_baseline(agent.config)
+                restored_roles.add(agent.config.role)
+            self.harness.apply_selected_config(agent.config, agent.id)
 
         # Allocate initial realm budgets from treasury
         self.realm_manager.allocate_budgets(self.economy.treasury.balance * 0.5)
