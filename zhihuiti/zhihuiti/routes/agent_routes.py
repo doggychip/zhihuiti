@@ -188,9 +188,19 @@ def handle_data(handler: BaseHTTPRequestHandler, orch) -> None:
     """GET /api/data — serve all system data as JSON."""
     from zhihuiti.routes.heartai_routes import gather_external_data
     data = gather_core_data(orch) if orch else {}
+    if orch and hasattr(orch, "harness"):
+        data["harness"] = orch.harness.get_status()
     if orch and hasattr(orch, "economy"):
         data.update(gather_external_data())
     _send_json(handler, data)
+
+
+def handle_harness(handler: BaseHTTPRequestHandler, orch) -> None:
+    """GET /api/harness — serve guarded improvement status as JSON."""
+    if not orch or not hasattr(orch, "harness"):
+        _send_json(handler, {"error": "improvement harness unavailable"}, 503)
+        return
+    _send_json(handler, orch.harness.get_status())
 
 
 def handle_debug(handler: BaseHTTPRequestHandler, orch) -> None:
