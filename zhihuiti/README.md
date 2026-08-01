@@ -29,6 +29,27 @@ zhihuiti run "analyze market trends for renewable energy"
 
 ## Architecture
 
+### Guarded self-improvement
+
+Agent configuration changes now pass through a persistent improvement harness:
+
+1. The first runtime configuration for each role is frozen as a versioned baseline.
+2. Judge feedback creates a candidate with an evolved prompt and adaptive mutation rate.
+3. Candidate and incumbent run as a paired comparison on the immutable `core-v1` suite.
+4. Statistical confidence, score improvement, cost, and safety gates must all pass.
+5. Passing candidates enter a deterministic canary and automatically roll back on regressions.
+
+Creating a candidate does not run tasks or change production:
+
+```python
+candidate_id = orchestrator.propose_improvement_candidate(AgentRole.RESEARCHER)
+decision = orchestrator.harness.run_shadow_suite(candidate_id, external_runner)
+if decision.passed:
+    orchestrator.harness.start_canary(candidate_id)
+```
+
+Harness status, frozen-suite identity, governed roles, canaries, and audit events are available in dashboard data and at `GET /api/harness`. The harness does not enable autonomous production evolution.
+
 ```
 Goal → Orchestrator → DAG Decomposition → Parallel Waves
                            ↓

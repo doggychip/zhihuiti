@@ -23,10 +23,11 @@ from zhihuiti.llm import LLM
 from zhihuiti.memory import Memory
 from zhihuiti.messaging import MessageBoard
 from zhihuiti.metacognition import MetacognitionEngine
-from zhihuiti.models import AgentRole, Task, TaskStatus
+from zhihuiti.models import AgentConfig, AgentRole, Task, TaskStatus
 from zhihuiti.arbitration import ArbitrationBureau
 from zhihuiti.factory import Factory
 from zhihuiti.futures import FuturesMarket
+from zhihuiti.harness import SelfImprovementHarness
 from zhihuiti.market import TradingMarket
 from zhihuiti.prediction import PredictionEngine
 from zhihuiti.prompts import get_prompt
@@ -63,6 +64,9 @@ class Orchestrator:
             tool_executor=tool_executor,
         )
         self.judge = Judge(self.llm, self.memory, self.agent_manager)
+        self.harness = SelfImprovementHarness(self.memory)
+        self.agent_manager.set_adaptation_provider(self.judge)
+        self.agent_manager.set_improvement_harness(self.harness)
         self.circuit_breaker = CircuitBreaker(self.memory, interactive=True)
         self.behavior = BehaviorDetector(self.memory, self.llm)
         self.rel_graph = RelationshipGraph(self.memory)
@@ -114,6 +118,28 @@ class Orchestrator:
 
         # Allocate initial realm budgets from treasury
         self.realm_manager.allocate_budgets(self.economy.treasury.balance * 0.5)
+
+    def propose_improvement_candidate(self, role: AgentRole) -> str:
+        """Turn current judge feedback into a gated, non-active candidate."""
+        incumbent = self.harness.get_active_config(role.value)
+        if incumbent is None:
+            incumbent = self.agent_manager.get_best_config(role)
+            if incumbent is None:
+                incumbent = AgentConfig(role=role, system_prompt=get_prompt(role.value))
+            self.harness.ensure_baseline(incumbent)
+        mutation_rate = self.judge.get_mutation_rate(role.value)
+        candidate = incumbent.mutate(
+            "adaptive candidate awaiting harness evaluation",
+            mutation_rate=mutation_rate,
+        )
+        candidate.system_prompt = self.judge.get_evolved_prompt(
+            incumbent.system_prompt, role.value,
+        )
+        return self.harness.propose_candidate(
+            candidate,
+            mutation_rate=mutation_rate,
+            metadata={"source": "judge_adaptation"},
+        )
 
     def decompose_goal(self, goal: str) -> list[Task]:
         """Use the LLM to break a goal into subtasks with optional dependencies.

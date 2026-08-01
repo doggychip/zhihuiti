@@ -661,6 +661,8 @@ class OracleHandler(BaseHTTPRequestHandler):
             self._handle_real_dashboard_data()
         elif path == "/api/evolution":
             self._handle_evolution_status()
+        elif path == "/api/harness":
+            self._handle_harness_status()
         # ── Backtest endpoints ──
         elif path == "/api/backtest/run":
             self._handle_backtest_run()
@@ -1590,6 +1592,16 @@ class OracleHandler(BaseHTTPRequestHandler):
             "failed": failed,
             "recent_goals": list(reversed(log_copy[-20:])),
         })
+
+    def _handle_harness_status(self):
+        """GET /api/harness — guarded improvement state and audit history."""
+        if not _has_llm_key():
+            _json_response(self, {"error": "No LLM key. Set OPENROUTER_API_KEY."}, 503)
+            return
+        try:
+            _json_response(self, _get_orchestrator().harness.get_status())
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
 
     def _handle_real_dashboard_data(self):
         """GET /api/data — full dashboard data (economy, agents, bloodline, etc.)."""
