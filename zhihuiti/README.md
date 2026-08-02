@@ -88,6 +88,10 @@ Do not share one database or tool-enabled process across unrelated projects.
 The current shell and HTTP allowlists are global and include project-specific
 integrations; replace them with a project-scoped adapter before enabling tools.
 
+Scheduled AlphaArena operation waits for its configured interval after a
+restart. Set `ALPHAARENA_RUN_ON_START=true` only when an immediate first cycle
+is intentional.
+
 ```
 Goal → Orchestrator → DAG Decomposition → Parallel Waves
                            ↓

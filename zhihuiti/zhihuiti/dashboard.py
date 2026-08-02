@@ -16,6 +16,8 @@ from typing import TYPE_CHECKING
 
 from rich.console import Console
 
+from zhihuiti.env import env_enabled
+
 if TYPE_CHECKING:
     from zhihuiti.orchestrator import Orchestrator
 
@@ -648,9 +650,12 @@ class DashboardHandler(BaseHTTPRequestHandler):
 class AutoScheduler:
     """Background scheduler that runs goals on an interval."""
 
-    def __init__(self, orch, interval_seconds: int = 7200):
+    def __init__(
+        self, orch, interval_seconds: int = 7200, *, run_immediately: bool = False,
+    ):
         self.orch = orch
         self.interval = interval_seconds
+        self.run_immediately = run_immediately
         self.running = False
         self.thread = None
         self.goals = []
@@ -671,9 +676,19 @@ class AutoScheduler:
     def stop(self):
         self.running = False
 
+    def _wait_for_interval(self) -> bool:
+        import time
+        for _ in range(self.interval):
+            if not self.running:
+                return False
+            time.sleep(1)
+        return self.running
+
     def _loop(self):
         import time
         import random
+        if not self.run_immediately and not self._wait_for_interval():
+            return
         while self.running:
             goals_per_cycle = int(os.environ.get("GOALS_PER_CYCLE", "5"))
             if not self.goals:
@@ -824,9 +839,13 @@ def start_dashboard(orch: Orchestrator, port: int = DEFAULT_PORT,
     )
 
     # Start auto-scheduler if requested or ALPHAARENA env vars are set
-    if auto_trade or os.environ.get("ALPHAARENA_AUTO_TRADE"):
+    if auto_trade or env_enabled("ALPHAARENA_AUTO_TRADE"):
         interval = int(os.environ.get("ALPHAARENA_TRADE_INTERVAL", str(trade_interval)))
-        scheduler = AutoScheduler(orch, interval_seconds=interval)
+        scheduler = AutoScheduler(
+            orch,
+            interval_seconds=interval,
+            run_immediately=env_enabled("ALPHAARENA_RUN_ON_START"),
+        )
 
         GOAL_POOL = [
             "Analyze the current crypto market. Which coins have strongest momentum? Compare BTC, ETH, SOL, AVAX, LINK. Identify the best entry points.",
