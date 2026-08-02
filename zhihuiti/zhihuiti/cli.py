@@ -46,6 +46,36 @@ def harness_commands():
     """Guarded, operator-triggered self-improvement workflows."""
 
 
+@harness_commands.command("preflight")
+@click.option(
+    "--role",
+    type=click.Choice(["researcher"]),
+    default="researcher",
+    show_default=True,
+)
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+@click.option("--model", default=None, help="Model name")
+@click.option(
+    "--probe",
+    is_flag=True,
+    help="Perform one minimal provider/model readiness call.",
+)
+def harness_preflight(role: str, db: str, model: str | None, probe: bool):
+    """Inspect shadow readiness; live access is checked only with --probe."""
+    from zhihuiti.orchestrator import Orchestrator
+    from zhihuiti.readiness import build_shadow_readiness
+
+    orch = None
+    try:
+        orch = Orchestrator(db_path=db, model=model, tools_enabled=False)
+        console.print_json(data=build_shadow_readiness(orch, role, probe=probe))
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    finally:
+        if orch is not None:
+            orch.close()
+
+
 @harness_commands.command("shadow")
 @click.option(
     "--role",
@@ -79,11 +109,15 @@ def harness_shadow(role: str, db: str, model: str | None, execute: bool):
 
     from zhihuiti.models import AgentRole
     from zhihuiti.orchestrator import Orchestrator
+    from zhihuiti.readiness import build_shadow_readiness
     from zhihuiti.shadow_eval import LLMShadowRunner
 
     orch = None
     try:
         orch = Orchestrator(db_path=db, model=model, tools_enabled=False)
+        preflight = build_shadow_readiness(orch, role, probe=True)
+        if preflight["status"] != "ready":
+            raise RuntimeError(preflight["message"])
         candidate_id = orch.propose_improvement_candidate(AgentRole(role))
         decision = orch.harness.run_shadow_suite(
             candidate_id,
@@ -93,6 +127,7 @@ def harness_shadow(role: str, db: str, model: str | None, execute: bool):
             "candidate_id": candidate_id,
             "role": role,
             "phase": "shadow",
+            "preflight": preflight,
             "decision": decision.to_dict(),
             "candidate_status": "shadow_passed" if decision.passed else "shadow_failed",
             "canary_started": False,

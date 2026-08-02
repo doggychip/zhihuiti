@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import json
+from types import SimpleNamespace
 
 from click.testing import CliRunner
 
 from zhihuiti.cli import main
-from zhihuiti.harness import EvalCase
+from zhihuiti.harness import EvalCase, SelfImprovementHarness
+from zhihuiti.llm import LLM, LLMError
+from zhihuiti.memory import Memory
 from zhihuiti.models import AgentConfig, AgentRole
+from zhihuiti.readiness import build_shadow_readiness
 from zhihuiti.shadow_eval import LLMShadowRunner
 
 
@@ -27,6 +31,26 @@ class _FakeLLM:
 
     def estimate_cost(self, input_tokens, output_tokens):
         return (input_tokens + output_tokens) / 1000
+
+    def provider_status(self):
+        return {
+            "provider": "fake",
+            "model": self.model,
+            "configured": True,
+            "probe_performed": False,
+            "ready": None,
+            "fallback_configured": False,
+            "fallback_active": False,
+            "message": "Provider is configured; live model access has not been checked.",
+        }
+
+    def probe_provider(self):
+        return {
+            **self.provider_status(),
+            "probe_performed": True,
+            "ready": True,
+            "message": "Provider and model completed the readiness probe.",
+        }
 
 
 def test_llm_shadow_runner_is_tool_free_and_auditable():
@@ -85,6 +109,68 @@ def test_harness_shadow_command_defaults_to_preview(tmp_path):
     assert not db_path.exists()
 
 
+def test_shadow_readiness_is_passive_until_explicit_probe(tmp_path):
+    memory = Memory(str(tmp_path / "readiness.db"))
+    harness = SelfImprovementHarness(memory)
+    harness.ensure_baseline(AgentConfig(
+        role=AgentRole.RESEARCHER,
+        system_prompt="Research carefully.",
+    ))
+    llm = _FakeLLM()
+    orch = SimpleNamespace(llm=llm, harness=harness)
+
+    passive = build_shadow_readiness(orch)
+    assert passive["status"] == "not_checked"
+    assert passive["probe_performed"] is False
+    assert passive["paired_cases"] == 8
+    assert passive["expected_llm_calls"] == 32
+    assert passive["estimated_max_cost_units"] > 0
+    assert harness.get_status()["config_counts"] == {"active": 1}
+
+    probed = build_shadow_readiness(orch, probe=True)
+    assert probed["status"] == "ready"
+    assert probed["probe_performed"] is True
+    assert harness.get_status()["config_counts"] == {"active": 1}
+    assert harness.get_latest_provider_preflight("researcher")["event_type"] == "provider_preflight_passed"
+
+    cached = build_shadow_readiness(orch)
+    assert cached["status"] == "ready"
+    assert cached["probe_fresh"] is True
+
+    llm.probe_provider = lambda: {
+        **llm.provider_status(),
+        "probe_performed": True,
+        "ready": False,
+        "message": "fake rejected the readiness probe (HTTP 402).",
+    }
+    blocked = build_shadow_readiness(orch, probe=True)
+    assert blocked["status"] == "blocked"
+    assert harness.get_status()["config_counts"] == {"active": 1}
+    assert build_shadow_readiness(orch)["status"] == "blocked"
+    memory.close()
+
+
+def test_provider_probe_failure_is_sanitized(monkeypatch):
+    for name in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "LLM_API_KEY", "LLM_BASE_URL"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "secret-test-key")
+    llm = LLM()
+    monkeypatch.setattr(
+        llm,
+        "chat",
+        lambda **_kwargs: (_ for _ in ()).throw(
+            LLMError("deepseek error 402: insufficient balance secret-test-key")
+        ),
+    )
+
+    result = llm.probe_provider()
+
+    assert result["ready"] is False
+    assert result["message"] == "deepseek rejected the readiness probe (HTTP 402)."
+    assert "secret-test-key" not in json.dumps(result)
+    llm.client.close()
+
+
 def test_harness_shadow_execute_stops_before_canary(monkeypatch, tmp_path):
     state = {"run": False, "closed": False, "tools_enabled": None}
 
@@ -124,6 +210,14 @@ def test_harness_shadow_execute_stops_before_canary(monkeypatch, tmp_path):
             state["closed"] = True
 
     monkeypatch.setattr("zhihuiti.orchestrator.Orchestrator", _Orchestrator)
+    monkeypatch.setattr(
+        "zhihuiti.readiness.build_shadow_readiness",
+        lambda *_args, **_kwargs: {
+            "status": "ready",
+            "ready": True,
+            "message": "Provider and model completed the readiness probe.",
+        },
+    )
     result = CliRunner().invoke(main, [
         "harness", "shadow",
         "--db", str(tmp_path / "shadow.db"),
@@ -134,3 +228,41 @@ def test_harness_shadow_execute_stops_before_canary(monkeypatch, tmp_path):
     assert state == {"run": True, "closed": True, "tools_enabled": False}
     assert '"canary_started": false' in result.output
     assert '"candidate_status": "shadow_passed"' in result.output
+
+
+def test_harness_shadow_preflight_failure_creates_no_candidate(monkeypatch, tmp_path):
+    state = {"proposed": False, "closed": False}
+
+    class _Orchestrator:
+        def __init__(self, **_kwargs):
+            self.llm = _FakeLLM()
+            self.harness = object()
+
+        @staticmethod
+        def propose_improvement_candidate(_role):
+            state["proposed"] = True
+            raise AssertionError("candidate must not be created after a failed preflight")
+
+        @staticmethod
+        def close():
+            state["closed"] = True
+
+    monkeypatch.setattr("zhihuiti.orchestrator.Orchestrator", _Orchestrator)
+    monkeypatch.setattr(
+        "zhihuiti.readiness.build_shadow_readiness",
+        lambda *_args, **_kwargs: {
+            "status": "blocked",
+            "ready": False,
+            "message": "deepseek rejected the readiness probe (HTTP 402).",
+        },
+    )
+
+    result = CliRunner().invoke(main, [
+        "harness", "shadow",
+        "--db", str(tmp_path / "blocked.db"),
+        "--execute",
+    ])
+
+    assert result.exit_code != 0
+    assert "HTTP 402" in result.output
+    assert state == {"proposed": False, "closed": True}

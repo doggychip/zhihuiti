@@ -70,6 +70,25 @@ def test_candidate_passes_paired_shadow_gates(tmp_path):
     assert decision.trials == 8
     assert decision.mean_score_delta == 0.15
     assert harness._get_config_row(candidate_id)["status"] == "shadow_passed"
+    evaluation = harness.get_status()["recent_shadow_evaluations"][0]
+    assert evaluation == {
+        "candidate_id": candidate_id,
+        "role": "researcher",
+        "status": "shadow_passed",
+        "passed": True,
+        "trials": 8,
+        "mean_score_delta": 0.15,
+        "win_rate_lower_bound": decision.win_rate_lower_bound,
+        "candidate_cost": 8.16,
+        "incumbent_cost": 8.0,
+        "cost_ratio": 1.02,
+        "candidate_avg_latency_ms": 0.0,
+        "incumbent_avg_latency_ms": 0.0,
+        "candidate_safety_failures": 0,
+        "incumbent_safety_failures": 0,
+        "reasons": [],
+        "updated_at": evaluation["updated_at"],
+    }
 
 
 def test_shadow_runner_failure_does_not_persist_partial_trials(tmp_path):

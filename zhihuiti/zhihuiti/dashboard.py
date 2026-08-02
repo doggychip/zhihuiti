@@ -33,7 +33,8 @@ def _gather_data(orch) -> dict:
     from zhihuiti.routes.heartai_routes import gather_external_data
     data = gather_core_data(orch)
     if orch and hasattr(orch, "harness"):
-        data["harness"] = orch.harness.get_status()
+        from zhihuiti.readiness import get_harness_status
+        data["harness"] = get_harness_status(orch)
     if orch and hasattr(orch, "economy"):
         data.update(gather_external_data())
     return data

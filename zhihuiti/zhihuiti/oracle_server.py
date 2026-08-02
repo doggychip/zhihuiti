@@ -1599,7 +1599,8 @@ class OracleHandler(BaseHTTPRequestHandler):
             _json_response(self, {"error": "No LLM key. Set OPENROUTER_API_KEY."}, 503)
             return
         try:
-            _json_response(self, _get_orchestrator().harness.get_status())
+            from zhihuiti.readiness import get_harness_status
+            _json_response(self, get_harness_status(_get_orchestrator()))
         except Exception as e:
             _json_response(self, {"error": str(e)}, 500)
 
