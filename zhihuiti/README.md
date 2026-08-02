@@ -50,6 +50,18 @@ if decision.passed:
 
 Harness status, frozen-suite identity, governed roles, canaries, and audit events are available in dashboard data and at `GET /api/harness`. The harness does not enable autonomous production evolution.
 
+The operator CLI previews safely by default and currently supports researcher
+shadow evaluation only:
+
+```bash
+zhihuiti harness shadow
+zhihuiti harness shadow --role researcher --execute
+```
+
+The execute form runs 8 paired frozen cases using tool-free LLM calls and an
+isolated rubric judge. It records a `shadow_passed` or `shadow_failed` decision,
+but never starts a canary or promotes a candidate.
+
 ```
 Goal → Orchestrator → DAG Decomposition → Parallel Waves
                            ↓

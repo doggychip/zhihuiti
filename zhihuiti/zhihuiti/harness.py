@@ -400,11 +400,15 @@ class SelfImprovementHarness:
         candidate = self._row_to_config(candidate_row)
         incumbent = self._row_to_config(self._get_config_row(incumbent_id))
 
+        observations = []
         for case in self.get_suite(suite_id):
             candidate_obs = runner(candidate, case)
             incumbent_obs = runner(incumbent, case)
+            observations.append((case.id, candidate_obs, incumbent_obs))
+
+        for case_id, candidate_obs, incumbent_obs in observations:
             self.record_trial(
-                candidate_id, incumbent_id, suite_id, case.id, "shadow",
+                candidate_id, incumbent_id, suite_id, case_id, "shadow",
                 candidate_obs, incumbent_obs,
             )
         return self.evaluate_candidate(candidate_id, phase="shadow")

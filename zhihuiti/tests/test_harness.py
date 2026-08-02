@@ -72,6 +72,30 @@ def test_candidate_passes_paired_shadow_gates(tmp_path):
     assert harness._get_config_row(candidate_id)["status"] == "shadow_passed"
 
 
+def test_shadow_runner_failure_does_not_persist_partial_trials(tmp_path):
+    harness = _harness(tmp_path)
+    candidate_id = _propose(harness)
+    calls = 0
+
+    def runner(_config, _case):
+        nonlocal calls
+        calls += 1
+        if calls == 4:
+            raise RuntimeError("provider unavailable")
+        return HarnessObservation(score=0.7, cost=1.0)
+
+    with patch("zhihuiti.harness.SelfImprovementHarness.record_trial") as record_trial:
+        try:
+            harness.run_shadow_suite(candidate_id, runner)
+        except RuntimeError as exc:
+            assert str(exc) == "provider unavailable"
+        else:
+            raise AssertionError("shadow evaluation should fail closed")
+
+    assert not record_trial.called
+    assert harness._get_config_row(candidate_id)["status"] == "candidate"
+
+
 def test_cost_regression_blocks_promotion(tmp_path):
     harness = _harness(tmp_path)
     candidate_id = _propose(harness)
