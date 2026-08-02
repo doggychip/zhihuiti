@@ -50,6 +50,11 @@ def _has_llm_key() -> bool:
     )
 
 
+def _env_enabled(name: str) -> bool:
+    """Return true only for explicit opt-in environment values."""
+    return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _get_orchestrator():
     """Lazy-initialize the full zhihuiti Orchestrator (LLM-powered agents)."""
     global _orchestrator
@@ -1938,7 +1943,7 @@ def serve(port: int | None = None):
             console.print(f"  [red]Real agent endpoints will retry on first request[/red]")
 
         # Optional: start background evolution with self-directed goals
-        if os.environ.get("ZHIHUITI_AUTO_EVOLVE"):
+        if _env_enabled("ZHIHUITI_AUTO_EVOLVE"):
             try:
                 orch = _get_orchestrator()
                 interval = int(os.environ.get("ZHIHUITI_EVOLVE_INTERVAL", "7200"))

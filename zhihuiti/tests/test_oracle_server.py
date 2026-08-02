@@ -10,7 +10,13 @@ from unittest.mock import patch
 
 import pytest
 
-from zhihuiti.oracle_server import OracleHandler, _json_response, _read_body, _parse_csv_values
+from zhihuiti.oracle_server import (
+    OracleHandler,
+    _env_enabled,
+    _json_response,
+    _parse_csv_values,
+    _read_body,
+)
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────
@@ -65,6 +71,18 @@ class TestHealthEndpoint:
         assert status == 200
         assert body["status"] == "ok"
         assert body["service"] == "zhihuiti-oracle"
+
+
+class TestEnvironmentFlags:
+    @pytest.mark.parametrize("value", ["1", "true", "TRUE", "yes", "on"])
+    def test_explicit_true_values_enable_flag(self, monkeypatch, value):
+        monkeypatch.setenv("TEST_FEATURE_FLAG", value)
+        assert _env_enabled("TEST_FEATURE_FLAG") is True
+
+    @pytest.mark.parametrize("value", ["", "0", "false", "FALSE", "no", "off", "disabled"])
+    def test_false_and_unknown_values_do_not_enable_flag(self, monkeypatch, value):
+        monkeypatch.setenv("TEST_FEATURE_FLAG", value)
+        assert _env_enabled("TEST_FEATURE_FLAG") is False
 
 
 # ── 404 handling ──────────────────────────────────────────────────────────
