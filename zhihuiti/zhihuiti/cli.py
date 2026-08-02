@@ -41,6 +41,70 @@ def main():
     """智慧体 (zhihuiti) — Autonomous multi-agent orchestration system."""
 
 
+@main.group("harness")
+def harness_commands():
+    """Guarded, operator-triggered self-improvement workflows."""
+
+
+@harness_commands.command("shadow")
+@click.option(
+    "--role",
+    type=click.Choice(["researcher"]),
+    default="researcher",
+    show_default=True,
+    help="Role supported by this milestone.",
+)
+@click.option("--db", default="zhihuiti.db", help="SQLite database path")
+@click.option("--model", default=None, help="Model name")
+@click.option(
+    "--execute",
+    is_flag=True,
+    help="Create one candidate and run the frozen shadow suite.",
+)
+def harness_shadow(role: str, db: str, model: str | None, execute: bool):
+    """Preview or run one shadow-only researcher evaluation."""
+    if not execute:
+        console.print(Panel(
+            "\n".join((
+                f"Role: {role}",
+                "Frozen suite: core-v1 (8 paired cases)",
+                "Expected LLM calls: 32 (response + isolated judge)",
+                "Production canary: disabled for this command",
+                "No candidate or trial records have been created.",
+                "\nRe-run with --execute to perform the shadow evaluation.",
+            )),
+            title="Guarded shadow evaluation preview",
+        ))
+        return
+
+    from zhihuiti.models import AgentRole
+    from zhihuiti.orchestrator import Orchestrator
+    from zhihuiti.shadow_eval import LLMShadowRunner
+
+    orch = None
+    try:
+        orch = Orchestrator(db_path=db, model=model, tools_enabled=False)
+        candidate_id = orch.propose_improvement_candidate(AgentRole(role))
+        decision = orch.harness.run_shadow_suite(
+            candidate_id,
+            LLMShadowRunner(orch.llm),
+        )
+        console.print_json(data={
+            "candidate_id": candidate_id,
+            "role": role,
+            "phase": "shadow",
+            "decision": decision.to_dict(),
+            "candidate_status": "shadow_passed" if decision.passed else "shadow_failed",
+            "canary_started": False,
+            "autonomous_production_evolution": False,
+        })
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    finally:
+        if orch is not None:
+            orch.close()
+
+
 @main.command()
 @click.argument("goal")
 @click.option("--db", default="zhihuiti.db", help="SQLite database path")
