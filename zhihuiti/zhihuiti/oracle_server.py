@@ -31,6 +31,8 @@ from urllib.parse import urlparse, parse_qs
 
 from rich.console import Console
 
+from zhihuiti.env import env_enabled
+
 console = Console()
 
 # ── Real Agent System (lazy-initialized when LLM key is present) ─────────
@@ -48,11 +50,6 @@ def _has_llm_key() -> bool:
         or os.environ.get("OPENAI_API_KEY")
         or os.environ.get("LLM_API_KEY")
     )
-
-
-def _env_enabled(name: str) -> bool:
-    """Return true only for explicit opt-in environment values."""
-    return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _get_orchestrator():
@@ -1943,7 +1940,7 @@ def serve(port: int | None = None):
             console.print(f"  [red]Real agent endpoints will retry on first request[/red]")
 
         # Optional: start background evolution with self-directed goals
-        if _env_enabled("ZHIHUITI_AUTO_EVOLVE"):
+        if env_enabled("ZHIHUITI_AUTO_EVOLVE"):
             try:
                 orch = _get_orchestrator()
                 interval = int(os.environ.get("ZHIHUITI_EVOLVE_INTERVAL", "7200"))
