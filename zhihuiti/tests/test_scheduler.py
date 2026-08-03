@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from zhihuiti.dashboard import AutoScheduler
 from zhihuiti.memory import Memory
 from zhihuiti.scheduler import MonitorScheduler, parse_interval
 
@@ -11,6 +12,26 @@ from zhihuiti.scheduler import MonitorScheduler, parse_interval
 def _make_scheduler() -> tuple[MonitorScheduler, Memory]:
     mem = Memory(":memory:")
     return MonitorScheduler(mem), mem
+
+
+def test_auto_scheduler_waits_before_first_cycle():
+    class _Orchestrator:
+        calls = 0
+
+        def execute_goal(self, _goal):
+            self.calls += 1
+            return {}
+
+    orchestrator = _Orchestrator()
+    scheduler = AutoScheduler(orchestrator, interval_seconds=7200)
+    scheduler.add_goal("should not run during startup")
+    scheduler.running = True
+    scheduler._wait_for_interval = lambda: False
+
+    scheduler._loop()
+
+    assert scheduler.run_immediately is False
+    assert orchestrator.calls == 0
 
 
 class TestParseInterval:

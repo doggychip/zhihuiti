@@ -745,6 +745,72 @@ class SelfImprovementHarness:
             )
             self.memory.conn.commit()
 
+    def record_provider_preflight(self, role: str, details: dict[str, Any]) -> None:
+        """Persist a sanitized provider-readiness result without a candidate."""
+        event_type = (
+            "provider_preflight_passed" if details.get("ready")
+            else "provider_preflight_failed"
+        )
+        self._event(role, None, event_type, details)
+
+    def get_latest_provider_preflight(self, role: str) -> dict[str, Any] | None:
+        row = self.memory._query_one(
+            """SELECT event_type, details, created_at FROM harness_events
+               WHERE role = ? AND event_type IN (
+                 'provider_preflight_passed', 'provider_preflight_failed'
+               ) ORDER BY rowid DESC LIMIT 1""",
+            (role,),
+        )
+        if not row:
+            return None
+        return {
+            "event_type": row["event_type"],
+            "details": json.loads(row["details"]),
+            "created_at": row["created_at"],
+        }
+
+    def _recent_shadow_evaluations(self, limit: int = 10) -> list[dict[str, Any]]:
+        evaluations = []
+        configs = self.memory._query(
+            """SELECT id, role, status, updated_at FROM harness_configs AS config
+               WHERE EXISTS (
+                 SELECT 1 FROM harness_trials AS trial
+                 WHERE trial.candidate_id = config.id AND trial.phase = 'shadow'
+               ) ORDER BY config.rowid DESC LIMIT ?""",
+            (limit,),
+        )
+        for config in configs:
+            rows = [dict(row) for row in self.memory._query(
+                """SELECT * FROM harness_trials
+                   WHERE candidate_id = ? AND phase = 'shadow'
+                   ORDER BY created_at, id""",
+                (config["id"],),
+            )]
+            decision = self._calculate_decision(rows, self.policy.min_shadow_trials)
+            evaluations.append({
+                "candidate_id": config["id"],
+                "role": config["role"],
+                "status": config["status"],
+                "passed": decision.passed,
+                "trials": decision.trials,
+                "mean_score_delta": decision.mean_score_delta,
+                "win_rate_lower_bound": decision.win_rate_lower_bound,
+                "candidate_cost": round(sum(row["candidate_cost"] for row in rows), 6),
+                "incumbent_cost": round(sum(row["incumbent_cost"] for row in rows), 6),
+                "cost_ratio": decision.cost_ratio,
+                "candidate_avg_latency_ms": round(
+                    sum(row["candidate_latency_ms"] for row in rows) / len(rows), 3,
+                ),
+                "incumbent_avg_latency_ms": round(
+                    sum(row["incumbent_latency_ms"] for row in rows) / len(rows), 3,
+                ),
+                "candidate_safety_failures": decision.candidate_safety_failures,
+                "incumbent_safety_failures": decision.incumbent_safety_failures,
+                "reasons": list(decision.reasons),
+                "updated_at": config["updated_at"],
+            })
+        return evaluations
+
     def get_status(self) -> dict[str, Any]:
         suite = self.memory._query_one(
             "SELECT id, name, version, frozen_hash FROM harness_suites WHERE id = ?",
@@ -786,4 +852,5 @@ class SelfImprovementHarness:
             "config_counts": counts,
             "roles": roles,
             "recent_events": events,
+            "recent_shadow_evaluations": self._recent_shadow_evaluations(),
         }

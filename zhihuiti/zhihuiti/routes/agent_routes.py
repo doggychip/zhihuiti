@@ -189,7 +189,8 @@ def handle_data(handler: BaseHTTPRequestHandler, orch) -> None:
     from zhihuiti.routes.heartai_routes import gather_external_data
     data = gather_core_data(orch) if orch else {}
     if orch and hasattr(orch, "harness"):
-        data["harness"] = orch.harness.get_status()
+        from zhihuiti.readiness import get_harness_status
+        data["harness"] = get_harness_status(orch)
     if orch and hasattr(orch, "economy"):
         data.update(gather_external_data())
     _send_json(handler, data)
@@ -200,7 +201,8 @@ def handle_harness(handler: BaseHTTPRequestHandler, orch) -> None:
     if not orch or not hasattr(orch, "harness"):
         _send_json(handler, {"error": "improvement harness unavailable"}, 503)
         return
-    _send_json(handler, orch.harness.get_status())
+    from zhihuiti.readiness import get_harness_status
+    _send_json(handler, get_harness_status(orch))
 
 
 def handle_debug(handler: BaseHTTPRequestHandler, orch) -> None:
