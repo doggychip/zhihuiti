@@ -70,7 +70,7 @@ class TestHealthEndpoint:
         status, body = _get(server, "/health")
         assert status == 200
         assert body["status"] == "ok"
-        assert body["service"] == "zhihuiti-oracle"
+        assert body["service"] == "zhihuiti"
 
 
 class TestEnvironmentFlags:
