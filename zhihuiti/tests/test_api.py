@@ -347,14 +347,15 @@ class TestMCPServer:
         assert resp["result"]["serverInfo"]["name"] == "zhihuiti"
 
     def test_handle_tools_list(self):
-        from zhihuiti.mcp_server import _handle_request
+        from zhihuiti.criticai_bridge import CRITICAI_MCP_TOOLS
+        from zhihuiti.mcp_server import TOOLS, _handle_request
         resp = _handle_request({
             "jsonrpc": "2.0",
             "id": 2,
             "method": "tools/list",
             "params": {},
         })
-        assert len(resp["result"]["tools"]) == 11
+        assert resp["result"]["tools"] == TOOLS + CRITICAI_MCP_TOOLS
 
     def test_handle_ping(self):
         from zhihuiti.mcp_server import _handle_request

@@ -1,5 +1,9 @@
 """Tests for the CrewAI economy tools (no API key needed)."""
 
+import pytest
+
+pytest.importorskip("crewai", reason="CrewAI is not part of the core install")
+
 from silicon_realms.crews.tools import (
     check_balance,
     transfer_tokens,
