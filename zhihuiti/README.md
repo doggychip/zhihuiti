@@ -58,9 +58,39 @@ zhihuiti harness shadow
 zhihuiti harness shadow --role researcher --execute
 ```
 
+Check the provider, frozen suite, expected calls, and estimated budget before
+creating a candidate:
+
+```bash
+zhihuiti harness preflight
+zhihuiti harness preflight --probe
+```
+
+The default preflight is passive. `--probe` makes one minimal model call and
+stores a sanitized audit event. `harness shadow --execute` always runs this
+probe before creating a candidate and stops without candidate or trial records
+if the provider or model is unavailable.
+
 The execute form runs 8 paired frozen cases using tool-free LLM calls and an
 isolated rubric judge. It records a `shadow_passed` or `shadow_failed` decision,
 but never starts a canary or promotes a candidate.
+
+### Using the agents with another project
+
+Zhihuiti can run beside another project through the Python CLI or MCP server,
+but the current runtime is single-project rather than multi-tenant. Use a
+separate service instance and `ZHIHUITI_DB` for each project, keep
+`ZHIHUITI_TOOLS` disabled, and provide only that project's model credentials.
+The agent roles, frozen evaluation harness, memory, and audit history are
+reusable without copying them into the target codebase.
+
+Do not share one database or tool-enabled process across unrelated projects.
+The current shell and HTTP allowlists are global and include project-specific
+integrations; replace them with a project-scoped adapter before enabling tools.
+
+Scheduled AlphaArena operation waits for its configured interval after a
+restart. Set `ALPHAARENA_RUN_ON_START=true` only when an immediate first cycle
+is intentional.
 
 ```
 Goal → Orchestrator → DAG Decomposition → Parallel Waves

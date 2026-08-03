@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import time
 
@@ -244,6 +245,86 @@ class LLM:
         if self._backend == "ollama":
             return 0.0
         return (input_tokens + output_tokens) / 1000
+
+    def provider_status(self) -> dict:
+        """Return a secret-free description of the configured provider."""
+        misconfigured_generic = bool(self._generic_key and not self._generic_url)
+        return {
+            "provider": self._backend,
+            "model": self.model,
+            "configured": not misconfigured_generic,
+            "probe_performed": False,
+            "ready": None,
+            "fallback_configured": self._fallback_available,
+            "fallback_active": self._using_fallback,
+            "message": (
+                "LLM_API_KEY is set but LLM_BASE_URL is missing."
+                if misconfigured_generic
+                else "Provider is configured; live model access has not been checked."
+            ),
+        }
+
+    @staticmethod
+    def _probe_failure_message(backend: str, exc: Exception) -> str:
+        match = re.search(r"\berror (\d{3})\b", str(exc), re.IGNORECASE)
+        if match:
+            return f"{backend} rejected the readiness probe (HTTP {match.group(1)})."
+        if backend == "ollama":
+            return "The local Ollama endpoint did not complete the readiness probe."
+        return f"{backend} did not complete the readiness probe."
+
+    def probe_provider(self) -> dict:
+        """Make one minimal model call, falling back once when configured."""
+        status = self.provider_status()
+        if not status["configured"]:
+            return {**status, "probe_performed": True, "ready": False}
+
+        primary_backend = self._backend
+        try:
+            output = self.chat(
+                system="Reply with exactly OK.",
+                user="Readiness check.",
+                temperature=0.0,
+                max_tokens=3,
+            )
+        except LLMError as primary_error:
+            if self._fallback_available and not self._using_fallback:
+                self._switch_to_fallback()
+                try:
+                    output = self.chat(
+                        system="Reply with exactly OK.",
+                        user="Readiness check.",
+                        temperature=0.0,
+                        max_tokens=3,
+                    )
+                except LLMError as fallback_error:
+                    return {
+                        **self.provider_status(),
+                        "probe_performed": True,
+                        "ready": False,
+                        "message": self._probe_failure_message(self._backend, fallback_error),
+                    }
+            else:
+                return {
+                    **status,
+                    "probe_performed": True,
+                    "ready": False,
+                    "message": self._probe_failure_message(primary_backend, primary_error),
+                }
+
+        if not isinstance(output, str) or not output.strip():
+            return {
+                **self.provider_status(),
+                "probe_performed": True,
+                "ready": False,
+                "message": "The readiness probe returned an empty response.",
+            }
+        return {
+            **self.provider_status(),
+            "probe_performed": True,
+            "ready": True,
+            "message": "Provider and model completed the readiness probe.",
+        }
 
     # ------------------------------------------------------------------
     # Ollama backend

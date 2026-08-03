@@ -31,6 +31,8 @@ from urllib.parse import urlparse, parse_qs
 
 from rich.console import Console
 
+from zhihuiti.env import env_enabled
+
 console = Console()
 
 # ── Real Agent System (lazy-initialized when LLM key is present) ─────────
@@ -1599,7 +1601,8 @@ class OracleHandler(BaseHTTPRequestHandler):
             _json_response(self, {"error": "No LLM key. Set OPENROUTER_API_KEY."}, 503)
             return
         try:
-            _json_response(self, _get_orchestrator().harness.get_status())
+            from zhihuiti.readiness import get_harness_status
+            _json_response(self, get_harness_status(_get_orchestrator()))
         except Exception as e:
             _json_response(self, {"error": str(e)}, 500)
 
@@ -1937,7 +1940,7 @@ def serve(port: int | None = None):
             console.print(f"  [red]Real agent endpoints will retry on first request[/red]")
 
         # Optional: start background evolution with self-directed goals
-        if os.environ.get("ZHIHUITI_AUTO_EVOLVE"):
+        if env_enabled("ZHIHUITI_AUTO_EVOLVE"):
             try:
                 orch = _get_orchestrator()
                 interval = int(os.environ.get("ZHIHUITI_EVOLVE_INTERVAL", "7200"))
