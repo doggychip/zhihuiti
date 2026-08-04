@@ -2,11 +2,11 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY setup.py pyproject.toml ./
-COPY zhihuiti/ zhihuiti/
+COPY zhihuiti/setup.py zhihuiti/pyproject.toml ./
+COPY zhihuiti/zhihuiti/ zhihuiti/
 RUN pip install --no-cache-dir -e .
 
-COPY client/src/data/ client/src/data/
+COPY zhihuiti/client/src/data/ client/src/data/
 
 VOLUME /app/data
 ENV HOME=/app/data
