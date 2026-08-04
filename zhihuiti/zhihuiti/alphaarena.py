@@ -6,7 +6,7 @@ Provides a Python interface to AlphaArena's REST API for:
 - Generating status reports for zhihuiti goals
 
 Environment variables:
-  ALPHAARENA_URL      — API base URL (default: https://alphaarena.zeabur.app)
+  ALPHAARENA_URL      — API base URL (required; no network default)
   ALPHAARENA_API_KEY  — API key for authenticated endpoints (trades)
   ALPHAARENA_AGENT_ID — Agent ID for portfolio/trade operations
 """
@@ -23,9 +23,6 @@ from rich.table import Table
 
 console = Console()
 
-DEFAULT_URL = "https://alphaarena.zeabur.app"
-
-
 class AlphaArenaBridge:
     """Interface between zhihuiti and AlphaArena."""
 
@@ -35,17 +32,21 @@ class AlphaArenaBridge:
         api_key: str | None = None,
         agent_id: str | None = None,
     ):
-        self.base_url = (base_url or os.environ.get("ALPHAARENA_URL", DEFAULT_URL)).rstrip("/")
+        self.base_url = (base_url or os.environ.get("ALPHAARENA_URL", "")).rstrip("/")
         self.api_key = api_key or os.environ.get("ALPHAARENA_API_KEY", "")
         self.agent_id = agent_id or os.environ.get("ALPHAARENA_AGENT_ID", "")
         self.client = httpx.Client(timeout=15)
 
     def _get(self, path: str) -> Any:
+        if not self.base_url:
+            raise RuntimeError("AlphaArena is not configured")
         resp = self.client.get(f"{self.base_url}{path}")
         resp.raise_for_status()
         return resp.json()
 
     def _post(self, path: str, data: dict) -> Any:
+        if not self.base_url or not self.api_key:
+            raise RuntimeError("AlphaArena write access is not configured")
         resp = self.client.post(
             f"{self.base_url}{path}",
             json=data,

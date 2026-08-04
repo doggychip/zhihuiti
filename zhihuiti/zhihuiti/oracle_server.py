@@ -12,7 +12,9 @@ Usage:
 
 Environment:
   PORT=8377              — port to listen on (overridden by --port)
-  CORS_ORIGIN=*          — CORS origin header
+  CORS_ORIGIN=https://zhihuiti.lovable.app — comma-separated browser origins
+  ZHIHUITI_API_TOKEN     — bearer token required by protected operator routes
+  MAX_REQUEST_BODY_BYTES — JSON request limit (default: 1 MiB)
   OPENROUTER_API_KEY     — enables full agent system via OpenRouter
   DEEPSEEK_API_KEY       — enables full agent system via DeepSeek
   ZHIHUITI_DB            — SQLite database path (default: /app/data/zhihuiti.db)
@@ -22,6 +24,7 @@ Environment:
 from __future__ import annotations
 
 import json
+import hmac
 import os
 import sys
 import threading
@@ -40,6 +43,9 @@ _orchestrator = None
 _orch_lock = threading.Lock()
 _orch_goals: dict[str, dict] = {}
 _orch_goals_lock = threading.Lock()
+
+DEFAULT_CORS_ORIGIN = "https://zhihuiti.lovable.app"
+DEFAULT_MAX_REQUEST_BODY_BYTES = 1024 * 1024
 
 
 def _has_llm_key() -> bool:
@@ -69,23 +75,97 @@ def _get_orchestrator():
     return _orchestrator
 
 
+def _configured_cors_origins() -> list[str]:
+    value = os.environ.get("CORS_ORIGIN", DEFAULT_CORS_ORIGIN)
+    return [origin.strip() for origin in value.split(",") if origin.strip()]
+
+
+def _allowed_cors_origin(handler: BaseHTTPRequestHandler) -> str | None:
+    request_origin = handler.headers.get("Origin", "").strip()
+    configured = _configured_cors_origins()
+    if "*" in configured:
+        return request_origin or "*"
+    if request_origin in configured:
+        return request_origin
+    return None
+
+
 def _json_response(handler: BaseHTTPRequestHandler, data: Any, status: int = 200):
+    if status == 500 and isinstance(data, dict) and "error" in data:
+        data = {**data, "error": "internal server error"}
+    body = json.dumps(data, default=str).encode()
     handler.send_response(status)
-    origin = os.environ.get("CORS_ORIGIN", "*")
     handler.send_header("Content-Type", "application/json")
-    handler.send_header("Access-Control-Allow-Origin", origin)
+    origin = _allowed_cors_origin(handler)
+    if origin:
+        handler.send_header("Access-Control-Allow-Origin", origin)
+        handler.send_header("Vary", "Origin")
     handler.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
     handler.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+    handler.send_header("X-Zhihuiti-Commit", os.environ.get("ZHIHUITI_COMMIT_SHA", "unknown"))
+    handler.send_header("Content-Length", str(len(body)))
     handler.end_headers()
-    handler.wfile.write(json.dumps(data, default=str).encode())
+    handler.wfile.write(body)
 
 
 def _read_body(handler: BaseHTTPRequestHandler) -> dict:
-    length = int(handler.headers.get("Content-Length", 0))
+    cached = getattr(handler, "_json_body", None)
+    if cached is not None:
+        return cached
+    try:
+        length = int(handler.headers.get("Content-Length", 0))
+        limit = int(os.environ.get("MAX_REQUEST_BODY_BYTES", DEFAULT_MAX_REQUEST_BODY_BYTES))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("invalid Content-Length") from exc
+    if length < 0:
+        raise ValueError("invalid Content-Length")
+    if length > max(1, limit):
+        raise OverflowError("request body too large")
     if length == 0:
-        return {}
+        handler._json_body = {}
+        return handler._json_body
     raw = handler.rfile.read(length)
-    return json.loads(raw)
+    try:
+        body = json.loads(raw)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("request body must be valid JSON") from exc
+    if not isinstance(body, dict):
+        raise ValueError("request body must be a JSON object")
+    handler._json_body = body
+    return body
+
+
+def _require_operator_auth(handler: BaseHTTPRequestHandler) -> bool:
+    expected = os.environ.get("ZHIHUITI_API_TOKEN", "").strip()
+    if not expected:
+        _json_response(handler, {"error": "operator API is not configured"}, 503)
+        return False
+    authorization = handler.headers.get("Authorization", "")
+    scheme, _, provided = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not hmac.compare_digest(provided.strip(), expected):
+        _json_response(handler, {"error": "operator authorization required"}, 401)
+        return False
+    return True
+
+
+def _runtime_status() -> dict[str, Any]:
+    provider = "none"
+    if os.environ.get("DEEPSEEK_API_KEY"):
+        provider = "deepseek"
+    elif os.environ.get("OPENROUTER_API_KEY"):
+        provider = "openrouter"
+    elif os.environ.get("OPENAI_API_KEY"):
+        provider = "openai"
+    elif os.environ.get("LLM_API_KEY"):
+        provider = "custom"
+    return {
+        "service": "zhihuiti",
+        "commit": os.environ.get("ZHIHUITI_COMMIT_SHA", "unknown"),
+        "provider": provider,
+        "llm_configured": _has_llm_key(),
+        "operator_api_configured": bool(os.environ.get("ZHIHUITI_API_TOKEN", "").strip()),
+        "autonomous_evolution": env_enabled("ZHIHUITI_AUTO_EVOLVE"),
+    }
 
 
 # Lazy-initialized history tracker
@@ -562,7 +642,25 @@ class OracleHandler(BaseHTTPRequestHandler):
         path = parsed.path.rstrip("/")
         qs = parse_qs(parsed.query)
 
-        if path in self._HTML_PAGES:
+        if path in {"/health", "/healthz"}:
+            runtime = _runtime_status()
+            _json_response(self, {
+                **runtime,
+                "status": "ok",
+                "mode": "full" if runtime["llm_configured"] else "oracle-only",
+                "agents_enabled": runtime["llm_configured"],
+            })
+
+        elif path == "/readyz":
+            runtime = _runtime_status()
+            ready = runtime["llm_configured"] and runtime["operator_api_configured"]
+            _json_response(self, {
+                **runtime,
+                "status": "ready" if ready else "not_ready",
+                "orchestrator_initialized": _orchestrator is not None,
+            }, 200 if ready else 503)
+
+        elif path in self._HTML_PAGES:
             try:
                 with open(os.path.join(os.path.dirname(__file__), self._HTML_PAGES[path]), "rb") as f:
                     body = f.read()
@@ -572,15 +670,6 @@ class OracleHandler(BaseHTTPRequestHandler):
                 self.wfile.write(body)
             except OSError:
                 _json_response(self, {"error": "page not bundled"}, 404)
-
-        elif path == "/health":
-            mode = "full" if _has_llm_key() else "oracle-only"
-            _json_response(self, {
-                "status": "ok",
-                "service": "zhihuiti",
-                "mode": mode,
-                "agents_enabled": _has_llm_key(),
-            })
 
         elif path == "/api/oracle/scan":
             self._handle_scan(qs)
@@ -657,6 +746,8 @@ class OracleHandler(BaseHTTPRequestHandler):
         elif path == "/api/status":
             self._handle_real_status()
         elif path.startswith("/api/goals/"):
+            if not _require_operator_auth(self):
+                return
             goal_id = path.split("/")[-1]
             self._handle_real_goal_get(goal_id)
         elif path == "/api/data":
@@ -686,6 +777,17 @@ class OracleHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/")
+
+        if not _require_operator_auth(self):
+            return
+        try:
+            _read_body(self)
+        except OverflowError:
+            _json_response(self, {"error": "request body too large"}, 413)
+            return
+        except ValueError as exc:
+            _json_response(self, {"error": str(exc)}, 400)
+            return
 
         if path == "/api/oracle/diagnose":
             self._handle_diagnose()
@@ -1582,7 +1684,7 @@ class OracleHandler(BaseHTTPRequestHandler):
             _json_response(self, {"error": str(e)}, 500)
 
     def _handle_evolution_status(self):
-        """GET /api/evolution — self-directed evolution loop status and goal log."""
+        """GET /api/evolution — aggregate self-directed evolution status."""
         with _self_loop_lock:
             log_copy = list(_self_loop_log)
         completed = sum(1 for g in log_copy if g.get("status") == "completed")
@@ -1592,13 +1694,13 @@ class OracleHandler(BaseHTTPRequestHandler):
             "total_goals_run": len(log_copy),
             "completed": completed,
             "failed": failed,
-            "recent_goals": list(reversed(log_copy[-20:])),
+            "autonomous_evolution": env_enabled("ZHIHUITI_AUTO_EVOLVE"),
         })
 
     def _handle_harness_status(self):
         """GET /api/harness — guarded improvement state and audit history."""
         if not _has_llm_key():
-            _json_response(self, {"error": "No LLM key. Set OPENROUTER_API_KEY."}, 503)
+            _json_response(self, {"error": "No LLM key configured."}, 503)
             return
         try:
             from zhihuiti.readiness import get_harness_status
@@ -1609,7 +1711,7 @@ class OracleHandler(BaseHTTPRequestHandler):
     def _handle_real_dashboard_data(self):
         """GET /api/data — full dashboard data (economy, agents, bloodline, etc.)."""
         if not _has_llm_key():
-            _json_response(self, {"error": "No LLM key. Set OPENROUTER_API_KEY."}, 503)
+            _json_response(self, {"error": "No LLM key configured."}, 503)
             return
         try:
             orch = _get_orchestrator()
@@ -1622,7 +1724,7 @@ class OracleHandler(BaseHTTPRequestHandler):
     def _handle_real_goal_create(self):
         """POST /api/goals — submit a goal for real multi-agent execution."""
         if not _has_llm_key():
-            _json_response(self, {"error": "No LLM key. Set OPENROUTER_API_KEY."}, 503)
+            _json_response(self, {"error": "No LLM key configured."}, 503)
             return
         try:
             import uuid
@@ -1678,7 +1780,7 @@ class OracleHandler(BaseHTTPRequestHandler):
     def _handle_real_single_task(self):
         """POST /api/tasks — execute a single task with a real agent."""
         if not _has_llm_key():
-            _json_response(self, {"error": "No LLM key. Set OPENROUTER_API_KEY."}, 503)
+            _json_response(self, {"error": "No LLM key configured."}, 503)
             return
         try:
             body = _read_body(self)

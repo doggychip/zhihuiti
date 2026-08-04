@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import threading
 from http.server import HTTPServer
 from unittest.mock import patch
@@ -42,12 +43,15 @@ def _get(port: int, path: str) -> tuple[int, dict]:
     return status, body
 
 
-def _post(port: int, path: str, data: dict) -> tuple[int, dict]:
+def _post(port: int, path: str, data: dict, token: str | None = "test-token") -> tuple[int, dict]:
     """Send a POST request with JSON body."""
     import http.client
     conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
     body = json.dumps(data).encode()
-    conn.request("POST", path, body=body, headers={"Content-Type": "application/json"})
+    headers = {"Content-Type": "application/json"}
+    if token is not None:
+        headers["Authorization"] = f"Bearer {token}"
+    conn.request("POST", path, body=body, headers=headers)
     resp = conn.getresponse()
     resp_body = json.loads(resp.read().decode())
     status = resp.status
@@ -58,9 +62,15 @@ def _post(port: int, path: str, data: dict) -> tuple[int, dict]:
 @pytest.fixture(scope="module")
 def server():
     """Module-scoped test server."""
+    previous_token = os.environ.get("ZHIHUITI_API_TOKEN")
+    os.environ["ZHIHUITI_API_TOKEN"] = "test-token"
     srv, port = _start_server()
     yield port
     srv.shutdown()
+    if previous_token is None:
+        os.environ.pop("ZHIHUITI_API_TOKEN", None)
+    else:
+        os.environ["ZHIHUITI_API_TOKEN"] = previous_token
 
 
 # ── Health endpoint ───────────────────────────────────────────────────────
@@ -71,6 +81,83 @@ class TestHealthEndpoint:
         assert status == 200
         assert body["status"] == "ok"
         assert body["service"] == "zhihuiti"
+
+    def test_healthz_reports_runtime_without_secrets(self, server, monkeypatch):
+        monkeypatch.setenv("ZHIHUITI_COMMIT_SHA", "abc123")
+        status, body = _get(server, "/healthz")
+        assert status == 200
+        assert body["commit"] == "abc123"
+        assert "api_key" not in body
+
+    def test_readyz_checks_configuration_without_model_call(self, server, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "configured-for-test")
+        status, body = _get(server, "/readyz")
+        assert status == 200
+        assert body["status"] == "ready"
+        assert body["provider"] == "deepseek"
+        assert body["operator_api_configured"] is True
+
+
+class TestOperatorProtection:
+    def test_post_requires_bearer_token(self, server):
+        status, body = _post(server, "/api/oracle/diagnose", {}, token=None)
+        assert status == 401
+        assert body["error"] == "operator authorization required"
+
+    def test_post_rejects_wrong_bearer_token(self, server):
+        status, _ = _post(server, "/api/oracle/diagnose", {}, token="wrong")
+        assert status == 401
+
+    def test_post_fails_closed_without_configured_token(self, server, monkeypatch):
+        monkeypatch.delenv("ZHIHUITI_API_TOKEN")
+        status, body = _post(server, "/api/oracle/diagnose", {})
+        assert status == 503
+        assert body["error"] == "operator API is not configured"
+
+    def test_rejects_oversized_body(self, server, monkeypatch):
+        monkeypatch.setenv("MAX_REQUEST_BODY_BYTES", "8")
+        status, body = _post(server, "/api/oracle/diagnose", {"values": [1, 2, 3]})
+        assert status == 413
+        assert body["error"] == "request body too large"
+
+    def test_goal_result_requires_bearer_token(self, server):
+        status, body = _get(server, "/api/goals/example")
+        assert status == 401
+        assert body["error"] == "operator authorization required"
+
+
+class TestCorsPolicy:
+    def test_allows_configured_frontend_origin(self, server):
+        import http.client
+        conn = http.client.HTTPConnection("127.0.0.1", server, timeout=5)
+        conn.request("GET", "/healthz", headers={"Origin": "https://zhihuiti.lovable.app"})
+        resp = conn.getresponse()
+        resp.read()
+        assert resp.getheader("Access-Control-Allow-Origin") == "https://zhihuiti.lovable.app"
+        conn.close()
+
+    def test_does_not_allow_unconfigured_origin(self, server):
+        import http.client
+        conn = http.client.HTTPConnection("127.0.0.1", server, timeout=5)
+        conn.request("GET", "/healthz", headers={"Origin": "https://example.invalid"})
+        resp = conn.getresponse()
+        resp.read()
+        assert resp.getheader("Access-Control-Allow-Origin") is None
+        conn.close()
+
+
+class TestPublicEvolutionStatus:
+    def test_exposes_aggregate_status_without_goal_content(self, server):
+        status, body = _get(server, "/api/evolution")
+        assert status == 200
+        assert set(body) == {
+            "running",
+            "total_goals_run",
+            "completed",
+            "failed",
+            "autonomous_evolution",
+        }
+        assert "recent_goals" not in body
 
 
 class TestEnvironmentFlags:
