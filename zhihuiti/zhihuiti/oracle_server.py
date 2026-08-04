@@ -253,7 +253,13 @@ _MACRO_SNAPSHOT = {
 # The seed above is the calibration baseline + offline fallback. A background
 # thread (below) refreshes it from keyless sources; failed fields keep their seed
 # value, so the endpoint never breaks. _MACRO_META records refresh provenance.
-_MACRO_META = {"refreshed_at": None, "sources": {}, "errors": [], "live_fields": 0}
+_MACRO_META = {
+    "last_attempt_at": None,
+    "refreshed_at": None,
+    "sources": {},
+    "errors": [],
+    "live_fields": 0,
+}
 _MACRO_REFRESHER_STARTED = False
 _MACRO_REFRESHER_LOCK = threading.Lock()
 
@@ -356,6 +362,8 @@ def _refresh_macro_snapshot():
     any failed field keeps its previous value; the endpoint never breaks."""
     import copy as _copy, datetime as _dt
     global _MACRO_SNAPSHOT
+    _MACRO_META["last_attempt_at"] = _dt.datetime.now(
+        _dt.timezone.utc).isoformat(timespec="seconds")
     s = _copy.deepcopy(_MACRO_SNAPSHOT)
     src, errs = {}, []
 
@@ -420,14 +428,16 @@ def _refresh_macro_snapshot():
     if s.get("bei10") is not None and s["curve"]["cur"].get("10Y") is not None and "real10" not in src:
         s["real10"] = round(s["curve"]["cur"]["10Y"] - s["bei10"], 3)
 
-    today = _dt.date.today().isoformat()
-    s["asof"], s["curveDate"] = today, today
-    _MACRO_META["refreshed_at"] = _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds")
     _MACRO_META["sources"] = src
     _MACRO_META["errors"] = errs[:15]
     _MACRO_META["live_fields"] = len(src)
-    _MACRO_SNAPSHOT = s
-    _macro_history_save(s, _MACRO_META)
+    if src:
+        today = _dt.date.today().isoformat()
+        s["asof"], s["curveDate"] = today, today
+        _MACRO_META["refreshed_at"] = _dt.datetime.now(
+            _dt.timezone.utc).isoformat(timespec="seconds")
+        _MACRO_SNAPSHOT = s
+        _macro_history_save(s, _MACRO_META)
     return _MACRO_META
 
 
@@ -452,12 +462,22 @@ def _macro_history_save(snapshot, meta):
 
 def _macro_history_query(hours=168, fields=None, limit=2000):
     import sqlite3, datetime as _dt
+    db_path = _macro_db_path()
+    if not os.path.exists(db_path):
+        return []
     since = (_dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(hours=hours)).isoformat(timespec="seconds")
-    con = sqlite3.connect(_macro_db_path(), timeout=5)
-    rows = con.execute(
-        "SELECT ts, live_fields, snapshot FROM macro_history WHERE ts >= ? ORDER BY ts LIMIT ?",
-        (since, limit)).fetchall()
-    con.close()
+    con = sqlite3.connect(db_path, timeout=5)
+    try:
+        table = con.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='macro_history'"
+        ).fetchone()
+        if table is None:
+            return []
+        rows = con.execute(
+            "SELECT ts, live_fields, snapshot FROM macro_history WHERE ts >= ? ORDER BY ts LIMIT ?",
+            (since, limit)).fetchall()
+    finally:
+        con.close()
     out = []
     for ts, lf, snap in rows:
         s = json.loads(snap)
@@ -473,8 +493,11 @@ def _refresh_loop(interval):
     while True:
         try:
             _refresh_macro_snapshot()
-        except Exception:
-            pass
+        except Exception as exc:
+            import datetime as _dt
+            _MACRO_META["last_attempt_at"] = _dt.datetime.now(
+                _dt.timezone.utc).isoformat(timespec="seconds")
+            _MACRO_META["errors"] = [f"refresh:{type(exc).__name__}"]
         _time.sleep(interval)
 
 
@@ -590,12 +613,27 @@ def _macro_feed():
     risk = int(_macro_clamp(round(0.55 * spx_score + 0.25 * (100 - vix_stress) + 0.20 * (100 - sc["usd"])), 0, 100))
     frag = int(_macro_clamp(round(0.40 * gvz_f + 0.30 * ovx_f + 0.30 * vix_calm), 0, 100))
 
+    live_fields = _MACRO_META.get("live_fields", 0)
+    refresh_errors = list(_MACRO_META.get("errors", []))
+    if live_fields:
+        refresh_status = "partial" if refresh_errors else "live"
+        data_mode = "live"
+        source_mode = "live FRED/Stooq/Yahoo data"
+    else:
+        refresh_status = "degraded" if _MACRO_META.get("last_attempt_at") else "pending"
+        data_mode = "fallback"
+        source_mode = "dated fallback snapshot"
+
     return {
         "asof": s["asof"],
+        "last_attempt_at": _MACRO_META.get("last_attempt_at"),
         "refreshed_at": _MACRO_META.get("refreshed_at"),
-        "live_fields": _MACRO_META.get("live_fields", 0),
+        "refresh_status": refresh_status,
+        "data_mode": data_mode,
+        "refresh_errors": refresh_errors,
+        "live_fields": live_fields,
         "sources": _MACRO_META.get("sources", {}),
-        "source": "zhihuiti macro cockpit · FRED/Stooq/Yahoo · score-based · auto-refresh(30m)",
+        "source": f"zhihuiti macro cockpit · {source_mode} · score-based · scheduled refresh(30m)",
         "regime_label": "软美元 · 风险偏好回升 · 黄金避险并存",
         "regime_en": "Soft-USD Risk-On with a Parallel Gold Hedge",
         "risk_appetite": risk, "fragility": frag,
@@ -2049,6 +2087,11 @@ def serve(port: int | None = None):
                 _start_self_directed_loop(orch, interval)
             except Exception as e:
                 console.print(f"  [red]Auto-evolve failed: {e}[/red]")
+
+    # Begin the first keyless macro refresh at process startup. Request traffic
+    # may be sparse or routed across instances, so a request-triggered daemon is
+    # not sufficient to keep the public feed current.
+    _ensure_refresher()
 
     console.print(f"\n  GET  /health")
     console.print()

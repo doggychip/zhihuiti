@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 import pytest
 
+import zhihuiti.oracle_server as oracle_server
 from zhihuiti.oracle_server import (
     OracleHandler,
     _json_response,
@@ -158,6 +159,72 @@ class TestPublicEvolutionStatus:
             "autonomous_evolution",
         }
         assert "recent_goals" not in body
+
+
+class TestMacroRefreshStatus:
+    def test_history_is_empty_before_first_refresh(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("ZHIHUITI_DB", str(tmp_path / "new.db"))
+
+        assert oracle_server._macro_history_query() == []
+
+    def test_pending_feed_is_explicitly_fallback_data(self, monkeypatch):
+        monkeypatch.setattr(oracle_server, "_ensure_refresher", lambda: None)
+        monkeypatch.setattr(oracle_server, "_MACRO_META", {
+            "last_attempt_at": None,
+            "refreshed_at": None,
+            "sources": {},
+            "errors": [],
+            "live_fields": 0,
+        })
+
+        feed = oracle_server._macro_feed()
+
+        assert feed["refresh_status"] == "pending"
+        assert feed["data_mode"] == "fallback"
+        assert "fallback" in feed["source"].lower()
+
+    def test_live_feed_reports_provenance(self, monkeypatch):
+        monkeypatch.setattr(oracle_server, "_ensure_refresher", lambda: None)
+        monkeypatch.setattr(oracle_server, "_MACRO_META", {
+            "last_attempt_at": "2026-08-04T02:00:00+00:00",
+            "refreshed_at": "2026-08-04T02:00:10+00:00",
+            "sources": {"y10": "FRED"},
+            "errors": ["gold:TimeoutError"],
+            "live_fields": 1,
+        })
+
+        feed = oracle_server._macro_feed()
+
+        assert feed["refresh_status"] == "partial"
+        assert feed["data_mode"] == "live"
+        assert feed["refresh_errors"] == ["gold:TimeoutError"]
+
+    def test_failed_refresh_does_not_redate_fallback_snapshot(self, tmp_path, monkeypatch):
+        snapshot = {
+            **oracle_server._MACRO_SNAPSHOT,
+            "asof": "2026-06-29",
+            "curveDate": "2026-06-26",
+        }
+        monkeypatch.setattr(oracle_server, "_MACRO_SNAPSHOT", snapshot)
+        monkeypatch.setattr(oracle_server, "_MACRO_META", {
+            "last_attempt_at": None,
+            "refreshed_at": None,
+            "sources": {},
+            "errors": [],
+            "live_fields": 0,
+        })
+        monkeypatch.setenv("ZHIHUITI_DB", str(tmp_path / "macro.db"))
+        monkeypatch.setattr(oracle_server, "_fred_series", lambda *args, **kwargs: None)
+        monkeypatch.setattr(oracle_server, "_stooq_close", lambda *args, **kwargs: None)
+        monkeypatch.setattr(oracle_server, "_yahoo_price", lambda *args, **kwargs: None)
+        monkeypatch.setattr(oracle_server, "_yahoo_chg_pct", lambda *args, **kwargs: None)
+
+        oracle_server._refresh_macro_snapshot()
+
+        assert oracle_server._MACRO_SNAPSHOT["asof"] == "2026-06-29"
+        assert oracle_server._MACRO_META["refreshed_at"] is None
+        assert oracle_server._MACRO_META["live_fields"] == 0
+        assert not (tmp_path / "macro.db").exists()
 
 
 class TestEnvironmentFlags:
