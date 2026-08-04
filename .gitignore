@@ -1,5 +1,7 @@
 node_modules/
 dist/
+.venv/
+.DS_Store
 .env
 .env.save
 *.db
