@@ -35,8 +35,8 @@ Agent configuration changes now pass through a persistent improvement harness:
 
 1. The first runtime configuration for each role is frozen as a versioned baseline.
 2. Durable judge and failed-shadow feedback creates a meaningfully changed candidate.
-3. Candidate and incumbent run through a blinded comparison on immutable `core-v2`; the original `core-v1` remains frozen for audit history.
-4. Statistical confidence, score improvement, cost, and safety gates must all pass.
+3. Candidate and incumbent run through a calibrated blinded comparison on immutable `core-v3`; `core-v1` and `core-v2` remain frozen for audit history.
+4. Statistical confidence, score improvement, cost, output length, and safety gates must all pass.
 5. Passing candidates enter a deterministic canary and automatically roll back on regressions.
 
 Creating a candidate does not run tasks or change production:
@@ -71,7 +71,7 @@ stores a sanitized audit event. `harness shadow --execute` always runs this
 probe before creating a candidate and stops without candidate or trial records
 if the provider or model is unavailable.
 
-The execute form uses 24 tool-free model calls for eight paired frozen cases:
+The execute form uses 36 tool-free model calls for twelve paired frozen cases:
 two answers and one shared blinded judge per case. It records a `shadow_passed`
 or `shadow_failed` decision, but never starts a canary or promotes a candidate.
 

@@ -97,8 +97,8 @@ def harness_shadow(role: str, db: str, model: str | None, execute: bool):
         console.print(Panel(
             "\n".join((
                 f"Role: {role}",
-                "Frozen suite: core-v2 (8 paired cases)",
-                "Expected LLM calls: 24 (two responses + blinded pairwise judge)",
+                "Frozen suite: core-v3 (12 paired cases)",
+                "Expected LLM calls: 36 (two responses + calibrated blinded judge)",
                 "Production canary: disabled for this command",
                 "No candidate or trial records have been created.",
                 "\nRe-run with --execute to perform the shadow evaluation.",
