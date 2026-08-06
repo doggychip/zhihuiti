@@ -10,6 +10,8 @@ from unittest.mock import patch
 from zhihuiti.agents import AgentManager
 from zhihuiti.dashboard import DashboardHandler, _gather_data
 from zhihuiti.harness import (
+    CORE_V1_EVAL_CASES,
+    CORE_V2_EVAL_CASES,
     DEFAULT_EVAL_CASES,
     HarnessObservation,
     HarnessPolicy,
@@ -51,6 +53,9 @@ def test_default_suite_is_frozen_and_persistent(tmp_path):
     second_status = second.get_status()
 
     assert len(first.get_suite()) == len(DEFAULT_EVAL_CASES) == 8
+    assert first.get_suite("core-v1") == list(CORE_V1_EVAL_CASES)
+    assert first.get_suite("core-v2") == list(CORE_V2_EVAL_CASES)
+    assert first_status["suite"]["id"] == "core-v2"
     assert first_status["suite"]["frozen_hash"] == second_status["suite"]["frozen_hash"]
     assert second_status["autonomous_production_evolution"] is False
 
@@ -113,6 +118,31 @@ def test_shadow_runner_failure_does_not_persist_partial_trials(tmp_path):
 
     assert not record_trial.called
     assert harness._get_config_row(candidate_id)["status"] == "candidate"
+
+
+def test_shadow_suite_prefers_shared_pairwise_runner(tmp_path):
+    harness = _harness(tmp_path)
+    candidate_id = _propose(harness)
+
+    class PairRunner:
+        calls = 0
+
+        @classmethod
+        def run_pair(cls, _candidate, _incumbent, _case):
+            cls.calls += 1
+            return (
+                HarnessObservation(score=0.9, cost=1.0),
+                HarnessObservation(score=0.7, cost=1.0),
+            )
+
+        def __call__(self, *_args):
+            raise AssertionError("separate judging should not run")
+
+    runner = PairRunner()
+    decision = harness.run_shadow_suite(candidate_id, runner)
+
+    assert decision.passed
+    assert runner.calls == 8
 
 
 def test_cost_regression_blocks_promotion(tmp_path):
@@ -435,17 +465,45 @@ def test_restored_agents_receive_promoted_harness_config(tmp_path):
         second.close()
 
 
-def test_orchestrator_turns_adaptation_into_non_active_candidate(tmp_path):
+def test_orchestrator_rejects_candidate_without_durable_feedback(tmp_path):
     orchestrator = Orchestrator(db_path=str(tmp_path / "orchestrator.db"))
 
-    candidate_id = orchestrator.propose_improvement_candidate(AgentRole.RESEARCHER)
+    try:
+        orchestrator.propose_improvement_candidate(AgentRole.RESEARCHER)
+    except ValueError as exc:
+        assert "no durable adaptation feedback" in str(exc)
+    else:
+        raise AssertionError("an unchanged candidate should be rejected")
 
-    candidate = orchestrator.harness._get_config_row(candidate_id)
     status = orchestrator.harness.get_status()
-    assert candidate["status"] == "candidate"
-    assert candidate["mutation_rate"] is not None
-    assert status["config_counts"] == {"active": 1, "candidate": 1}
+    assert status["config_counts"] == {"active": 1}
     assert status["autonomous_production_evolution"] is False
+    orchestrator.close()
+
+
+def test_orchestrator_generalizes_failed_shadow_feedback(tmp_path):
+    db_path = tmp_path / "orchestrator-feedback.db"
+    first = Orchestrator(db_path=str(db_path))
+    first.harness.ensure_baseline(_config("incumbent prompt"))
+    incumbent = first.harness.get_active_config("researcher")
+    previous_id = first.harness.propose_candidate(
+        _config("prior candidate"), incumbent=incumbent,
+    )
+    first.harness.run_shadow_suite(
+        previous_id,
+        lambda _config, _case: HarnessObservation(score=0.7, cost=1.0),
+    )
+    first.close()
+
+    second = Orchestrator(db_path=str(db_path))
+    try:
+        candidate_id = second.propose_improvement_candidate(AgentRole.RESEARCHER)
+        candidate = second.harness._get_config_row(candidate_id)
+        assert candidate["status"] == "candidate"
+        assert "Shadow Evaluation Improvement Directives" in candidate["system_prompt"]
+        assert candidate["system_prompt"] != incumbent.system_prompt
+    finally:
+        second.close()
 
 
 def test_dashboard_data_includes_harness_status(monkeypatch):
@@ -517,5 +575,5 @@ def test_harness_status_endpoint(tmp_path):
 
     assert response.status == 200
     assert body["mode"] == "guarded"
-    assert body["suite"]["id"] == "core-v1"
+    assert body["suite"]["id"] == "core-v2"
     assert body["autonomous_production_evolution"] is False

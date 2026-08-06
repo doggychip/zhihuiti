@@ -95,6 +95,19 @@ class Memory:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
+            CREATE TABLE IF NOT EXISTS adaptation_observations (
+                id TEXT PRIMARY KEY,
+                role TEXT NOT NULL,
+                final_score REAL NOT NULL,
+                layer_scores TEXT NOT NULL,
+                layer_thresholds TEXT NOT NULL,
+                source TEXT NOT NULL DEFAULT 'inspection',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_adaptation_observations_role
+                ON adaptation_observations(role, created_at);
+
             CREATE TABLE IF NOT EXISTS economy_state (
                 entity TEXT PRIMARY KEY,
                 state TEXT NOT NULL DEFAULT '{}',
@@ -472,6 +485,61 @@ class Memory:
             (role, limit),
         )
         return [dict(r) for r in rows]
+
+    def record_adaptation_observation(
+        self,
+        role: str,
+        final_score: float,
+        layer_scores: dict[str, float],
+        layer_thresholds: dict[str, float],
+        source: str = "inspection",
+    ) -> None:
+        """Persist one scored inspection so adaptation survives restarts."""
+        with self._lock:
+            self.conn.execute(
+                """INSERT INTO adaptation_observations
+                   (id, role, final_score, layer_scores, layer_thresholds, source)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (
+                    uuid.uuid4().hex[:16],
+                    role,
+                    final_score,
+                    json.dumps(layer_scores, sort_keys=True),
+                    json.dumps(layer_thresholds, sort_keys=True),
+                    source,
+                ),
+            )
+            self.conn.commit()
+
+    def get_adaptation_observations(
+        self, role: str | None = None, limit: int = 500,
+    ) -> list[dict]:
+        """Return oldest-first observations for deterministic state replay."""
+        if role is None:
+            rows = self._query(
+                """SELECT * FROM (
+                     SELECT rowid AS replay_rowid, * FROM adaptation_observations
+                     ORDER BY created_at DESC, rowid DESC LIMIT ?
+                   ) ORDER BY created_at, replay_rowid""",
+                (limit,),
+            )
+        else:
+            rows = self._query(
+                """SELECT * FROM (
+                     SELECT rowid AS replay_rowid, * FROM adaptation_observations
+                     WHERE role = ? ORDER BY created_at DESC, rowid DESC LIMIT ?
+                   ) ORDER BY created_at, replay_rowid""",
+                (role, limit),
+            )
+        observations = []
+        for row in rows:
+            observation = dict(row)
+            observation["layer_scores"] = json.loads(observation["layer_scores"])
+            observation["layer_thresholds"] = json.loads(
+                observation["layer_thresholds"]
+            )
+            observations.append(observation)
+        return observations
 
     # --- Relationship methods ---
 

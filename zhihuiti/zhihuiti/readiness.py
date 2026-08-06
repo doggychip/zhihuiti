@@ -8,7 +8,7 @@ from typing import Any
 
 from zhihuiti.models import AgentConfig, AgentRole
 from zhihuiti.prompts import get_prompt
-from zhihuiti.shadow_eval import JUDGE_SYSTEM_PROMPT, LLMShadowRunner
+from zhihuiti.shadow_eval import LLMShadowRunner, PAIRWISE_JUDGE_SYSTEM_PROMPT
 
 
 PREFLIGHT_FRESH_SECONDS = 600
@@ -48,7 +48,7 @@ def _shadow_plan(harness, llm, role: str) -> dict[str, Any]:
             "suite_ready": False,
             "suite_id": getattr(harness, "DEFAULT_SUITE_ID", None),
             "paired_cases": len(cases),
-            "expected_llm_calls": len(cases) * 4,
+            "expected_llm_calls": len(cases) * 3,
             "estimated_input_tokens": 0,
             "estimated_max_output_tokens": len(cases) * 2 * (
                 RESPONSE_MAX_TOKENS + JUDGE_MAX_TOKENS
@@ -67,7 +67,7 @@ def _shadow_plan(harness, llm, role: str) -> dict[str, Any]:
                 "suite_ready": False,
                 "suite_id": getattr(harness, "DEFAULT_SUITE_ID", None),
                 "paired_cases": len(cases),
-                "expected_llm_calls": len(cases) * 4,
+                "expected_llm_calls": len(cases) * 3,
                 "estimated_input_tokens": 0,
                 "estimated_max_output_tokens": len(cases) * 2 * (
                     RESPONSE_MAX_TOKENS + JUDGE_MAX_TOKENS
@@ -82,24 +82,25 @@ def _shadow_plan(harness, llm, role: str) -> dict[str, Any]:
             "task": case.task,
             "rubric": case.rubric,
             "safety_critical": case.safety_critical,
-            "answer": answer_placeholder,
+            "answer_a": answer_placeholder,
+            "answer_b": answer_placeholder,
         }, sort_keys=True)
-        per_config_input = LLMShadowRunner._estimated_tokens(
-            config.system_prompt,
-            case.task,
-            JUDGE_SYSTEM_PROMPT,
-            judge_payload,
+        answer_input = LLMShadowRunner._estimated_tokens(
+            config.system_prompt, case.task,
         )
-        estimated_input_tokens += per_config_input * 2
+        judge_input = LLMShadowRunner._estimated_tokens(
+            PAIRWISE_JUDGE_SYSTEM_PROMPT, judge_payload,
+        )
+        estimated_input_tokens += answer_input * 2 + judge_input
 
-    estimated_max_output_tokens = len(cases) * 2 * (
-        RESPONSE_MAX_TOKENS + JUDGE_MAX_TOKENS
+    estimated_max_output_tokens = len(cases) * (
+        RESPONSE_MAX_TOKENS * 2 + JUDGE_MAX_TOKENS
     )
     return {
         "suite_ready": True,
         "suite_id": getattr(harness, "DEFAULT_SUITE_ID", None),
         "paired_cases": len(cases),
-        "expected_llm_calls": len(cases) * 4,
+        "expected_llm_calls": len(cases) * 3,
         "estimated_input_tokens": estimated_input_tokens,
         "estimated_max_output_tokens": estimated_max_output_tokens,
         "estimated_max_cost_units": round(

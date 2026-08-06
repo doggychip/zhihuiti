@@ -34,8 +34,8 @@ zhihuiti run "analyze market trends for renewable energy"
 Agent configuration changes now pass through a persistent improvement harness:
 
 1. The first runtime configuration for each role is frozen as a versioned baseline.
-2. Judge feedback creates a candidate with an evolved prompt and adaptive mutation rate.
-3. Candidate and incumbent run as a paired comparison on the immutable `core-v1` suite.
+2. Durable judge and failed-shadow feedback creates a meaningfully changed candidate.
+3. Candidate and incumbent run through a blinded comparison on immutable `core-v2`; the original `core-v1` remains frozen for audit history.
 4. Statistical confidence, score improvement, cost, and safety gates must all pass.
 5. Passing candidates enter a deterministic canary and automatically roll back on regressions.
 
@@ -71,9 +71,9 @@ stores a sanitized audit event. `harness shadow --execute` always runs this
 probe before creating a candidate and stops without candidate or trial records
 if the provider or model is unavailable.
 
-The execute form runs 8 paired frozen cases using tool-free LLM calls and an
-isolated rubric judge. It records a `shadow_passed` or `shadow_failed` decision,
-but never starts a canary or promotes a candidate.
+The execute form uses 24 tool-free model calls for eight paired frozen cases:
+two answers and one shared blinded judge per case. It records a `shadow_passed`
+or `shadow_failed` decision, but never starts a canary or promotes a candidate.
 
 ### Using the agents with another project
 

@@ -188,6 +188,29 @@ class TestPromptEvolverIntegration:
         assert evolved == base  # No data → no change
         mem.close()
 
+    def test_adaptation_feedback_survives_restart(self, tmp_path):
+        db_path = tmp_path / "adaptation.db"
+        first = Memory(str(db_path))
+        for _ in range(3):
+            first.record_adaptation_observation(
+                "researcher",
+                0.3,
+                {"rigor": 0.2, "relevance": 0.8},
+                {"rigor": 0.5, "relevance": 0.4},
+            )
+        first.close()
+
+        second = Memory(str(db_path))
+        llm = make_stub_llm()
+        manager = AgentManager(llm=llm, memory=second, economy=Economy(second))
+        judge = Judge(llm=llm, memory=second, agent_manager=manager)
+
+        assert judge.performance_tracker.get_role_summary("researcher")["total_scores"] == 3
+        assert "Performance Improvement" in judge.get_evolved_prompt(
+            "You are a researcher.", "researcher",
+        )
+        second.close()
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Evaluate agent with adaptive thresholds

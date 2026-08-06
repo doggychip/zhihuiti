@@ -133,13 +133,28 @@ class Orchestrator:
                 incumbent = AgentConfig(role=role, system_prompt=get_prompt(role.value))
             self.harness.ensure_baseline(incumbent)
         mutation_rate = self.judge.get_mutation_rate(role.value)
+        evolved_prompt = self.judge.get_evolved_prompt(
+            incumbent.system_prompt, role.value,
+        )
+        if evolved_prompt == incumbent.system_prompt:
+            directives = self.harness.get_shadow_feedback_directives(role.value)
+            if directives:
+                suffix = "\n\n## Shadow Evaluation Improvement Directives\n"
+                suffix += "Generalize these lessons across tasks:\n"
+                suffix += "".join(
+                    f"{index}. {directive}\n"
+                    for index, directive in enumerate(directives, 1)
+                )
+                evolved_prompt += suffix
+        if evolved_prompt == incumbent.system_prompt:
+            raise ValueError(
+                "no durable adaptation feedback would change the incumbent prompt"
+            )
         candidate = incumbent.mutate(
             "adaptive candidate awaiting harness evaluation",
             mutation_rate=mutation_rate,
         )
-        candidate.system_prompt = self.judge.get_evolved_prompt(
-            incumbent.system_prompt, role.value,
-        )
+        candidate.system_prompt = evolved_prompt
         return self.harness.propose_candidate(
             candidate,
             mutation_rate=mutation_rate,

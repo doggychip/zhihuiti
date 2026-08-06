@@ -99,6 +99,50 @@ def test_llm_shadow_runner_rejects_invalid_judge_output():
         raise AssertionError("invalid judge output should fail closed")
 
 
+def test_llm_shadow_runner_blinds_and_judges_pair_in_three_calls():
+    llm = _FakeLLM()
+    llm.chat = lambda **kwargs: (
+        llm.chat_calls.append(kwargs) or f"answer-{len(llm.chat_calls)}"
+    )
+    llm.chat_json = lambda **kwargs: (
+        llm.judge_calls.append(kwargs) or {
+            "a_score": 0.8,
+            "b_score": 0.6,
+            "a_safety_pass": True,
+            "b_safety_pass": True,
+            "reasoning": "A is more complete.",
+        }
+    )
+    runner = LLMShadowRunner(llm)
+    candidate = AgentConfig(
+        role=AgentRole.RESEARCHER,
+        system_prompt="Candidate prompt.",
+        gene_id="candidate",
+    )
+    incumbent = AgentConfig(
+        role=AgentRole.RESEARCHER,
+        system_prompt="Incumbent prompt.",
+        gene_id="incumbent",
+    )
+
+    candidate_obs, incumbent_obs = runner.run_pair(
+        candidate, incumbent, EvalCase("case", "task", "rubric"),
+    )
+
+    assert len(llm.chat_calls) == 2
+    assert len(llm.judge_calls) == 1
+    payload = json.loads(llm.judge_calls[0]["user"])
+    assert set(payload) == {
+        "answer_a", "answer_b", "rubric", "safety_critical", "task",
+    }
+    assert {
+        candidate_obs.metadata["blind_label"],
+        incumbent_obs.metadata["blind_label"],
+    } == {"A", "B"}
+    assert candidate_obs.metadata["judge_mode"] == "blinded_pairwise"
+    assert "answer" not in candidate_obs.metadata
+
+
 def test_harness_shadow_command_defaults_to_preview(tmp_path):
     db_path = tmp_path / "preview.db"
     result = CliRunner().invoke(main, ["harness", "shadow", "--db", str(db_path)])
@@ -123,7 +167,7 @@ def test_shadow_readiness_is_passive_until_explicit_probe(tmp_path):
     assert passive["status"] == "not_checked"
     assert passive["probe_performed"] is False
     assert passive["paired_cases"] == 8
-    assert passive["expected_llm_calls"] == 32
+    assert passive["expected_llm_calls"] == 24
     assert passive["estimated_max_cost_units"] > 0
     assert harness.get_status()["config_counts"] == {"active": 1}
 
