@@ -59,6 +59,7 @@ def fetch_yahoo_candles(symbol: str, timeframe: str = "1d") -> list[dict]:
             return []
 
         quote = result[0].get("indicators", {}).get("quote", [{}])[0]
+        timestamps = result[0].get("timestamp", [])
         opens = quote.get("open", [])
         highs = quote.get("high", [])
         lows = quote.get("low", [])
@@ -70,6 +71,7 @@ def fetch_yahoo_candles(symbol: str, timeframe: str = "1d") -> list[dict]:
             if closes[i] is None:
                 continue
             candles.append({
+                "timestamp": timestamps[i] if i < len(timestamps) else i,
                 "open": opens[i] or closes[i],
                 "high": highs[i] or closes[i],
                 "low": lows[i] or closes[i],
@@ -92,6 +94,7 @@ def _downsample(candles: list[dict], factor: int) -> list[dict]:
     for i in range(0, len(candles) - factor + 1, factor):
         group = candles[i:i + factor]
         result.append({
+            "timestamp": group[-1].get("timestamp", i + factor - 1),
             "open": group[0]["open"],
             "high": max(c["high"] for c in group),
             "low": min(c["low"] for c in group),

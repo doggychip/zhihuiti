@@ -19,6 +19,8 @@ Environment:
   DEEPSEEK_API_KEY       — enables full agent system via DeepSeek
   ZHIHUITI_DB            — SQLite database path (default: /app/data/zhihuiti.db)
   ZHIHUITI_AUTO_EVOLVE=1 — enable background goal execution & evolution
+  ZHIHUITI_ORACLE_SCAN=0 — disable scheduled read-only market collection
+  ZHIHUITI_ORACLE_SCAN_INTERVAL — collection interval in seconds (default: 1800)
 """
 
 from __future__ import annotations
@@ -187,6 +189,22 @@ _alerts_lock = threading.Lock()
 _prev_snapshots: list = []
 _prev_lock = threading.Lock()
 
+_ORACLE_SCAN_META = {
+    "running": False,
+    "last_attempt_at": None,
+    "last_completed_at": None,
+    "interval_seconds": 1800,
+    "domains": {},
+    "instruments": 0,
+    "transitions": 0,
+    "agent_actions": 0,
+    "errors": [],
+    "backtest": {},
+}
+_oracle_scan_meta_lock = threading.Lock()
+_oracle_scan_start_lock = threading.Lock()
+_oracle_scan_thread = None
+
 
 def _get_history():
     global _history
@@ -203,7 +221,11 @@ def _fetch_crypto_candles(instrument: str, timeframe: str) -> list[dict]:
         import httpx
         resp = httpx.get(
             "https://api.crypto.com/exchange/v1/public/get-candlestick",
-            params={"instrument_name": instrument, "timeframe": timeframe},
+            params={
+                "instrument_name": instrument,
+                "timeframe": timeframe,
+                "count": 300,
+            },
             timeout=10,
         )
         resp.raise_for_status()
@@ -211,6 +233,7 @@ def _fetch_crypto_candles(instrument: str, timeframe: str) -> list[dict]:
         raw = data.get("result", {}).get("data", data.get("data", []))
         return [
             {
+                "timestamp": c.get("t", c.get("timestamp", 0)),
                 "open": c.get("o", c.get("open", 0)),
                 "high": c.get("h", c.get("high", 0)),
                 "low": c.get("l", c.get("low", 0)),
@@ -720,6 +743,8 @@ class OracleHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/oracle/scan":
             self._handle_scan(qs)
+        elif path == "/api/oracle/scan/status":
+            self._handle_scan_status()
         elif path.startswith("/api/oracle/crypto/"):
             instrument = path.split("/")[-1]
             self._handle_crypto(instrument, qs)
@@ -904,6 +929,19 @@ class OracleHandler(BaseHTTPRequestHandler):
             })
         except Exception as e:
             _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_scan_status(self):
+        with _oracle_scan_meta_lock:
+            data = json.loads(json.dumps(_ORACLE_SCAN_META))
+        if data["running"]:
+            status = "running"
+        elif data["last_completed_at"] and data["errors"]:
+            status = "partial"
+        elif data["last_completed_at"]:
+            status = "live"
+        else:
+            status = "pending"
+        _json_response(self, {"status": status, **data})
 
     def _handle_crypto(self, instrument, qs):
         try:
@@ -1356,13 +1394,17 @@ class OracleHandler(BaseHTTPRequestHandler):
     # ── Agent handlers ─────────────────────────────────────────
 
     _agent_manager = None
+    _agent_manager_lock = threading.Lock()
 
-    def _get_agent_manager(self):
-        if OracleHandler._agent_manager is None:
-            from zhihuiti.oracle_agents import AgentManager
-            OracleHandler._agent_manager = AgentManager()
-            OracleHandler._agent_manager.genesis()  # Auto-seed default agents
-        return OracleHandler._agent_manager
+    @classmethod
+    def _get_agent_manager(cls):
+        if cls._agent_manager is None:
+            with cls._agent_manager_lock:
+                if cls._agent_manager is None:
+                    from zhihuiti.oracle_agents import AgentManager
+                    cls._agent_manager = AgentManager()
+                    cls._agent_manager.genesis()  # Auto-seed default agents
+        return cls._agent_manager
 
     def _handle_agents_list(self):
         try:
@@ -1678,17 +1720,35 @@ class OracleHandler(BaseHTTPRequestHandler):
                 _json_response(self, {"error": "instrument query param required"}, 400)
                 return
 
-            from zhihuiti.backtest import run_backtest_historical
+            from zhihuiti.backtest import (
+                build_regime_history_from_candles,
+                run_backtest_historical,
+            )
             from zhihuiti.scanner import RegimeHistory
 
             history = RegimeHistory()
             hist = history.get_history(instrument, limit=500)
+            source = "forward_snapshots"
             if len(hist) < 10:
-                _json_response(self, {"error": f"Not enough history for {instrument} ({len(hist)} snapshots, need 10+)"}, 400)
+                if _guess_domain(instrument) == "crypto":
+                    candles = _fetch_crypto_candles(instrument, "4h")
+                else:
+                    from zhihuiti.market_fetcher import fetch_yahoo_candles
+                    candles = fetch_yahoo_candles(instrument, "1d")
+                hist = build_regime_history_from_candles(instrument, candles)
+                source = "historical_candles"
+            if len(hist) < 10:
+                _json_response(self, {
+                    "error": f"Not enough history for {instrument} ({len(hist)} snapshots, need 10+)",
+                }, 400)
                 return
 
             result = run_backtest_historical(instrument, hist)
-            _json_response(self, result.to_dict())
+            _json_response(self, {
+                **result.to_dict(),
+                "source": source,
+                "snapshot_count": len(hist),
+            })
         except Exception as e:
             _json_response(self, {"error": str(e)}, 500)
 
@@ -1719,6 +1779,8 @@ class OracleHandler(BaseHTTPRequestHandler):
                 recent = [p.to_dict() for p in sorted(_predictions, key=lambda x: x.timestamp, reverse=True)[:20]]
 
             _json_response(self, {
+                "status": "validated" if total >= 30 else "collecting",
+                "minimum_verified_predictions": 30,
                 "total_predictions": len(_predictions),
                 "verified": total,
                 "correct": correct,
@@ -1896,6 +1958,151 @@ def _guess_domain(instrument: str) -> str:
     return "equities"
 
 
+# ── Scheduled public-data collection ────────────────────────────────────
+
+def _utc_now_iso() -> str:
+    import datetime as dt
+    return dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+
+
+def _collect_oracle_scan_results() -> tuple[dict[str, list], list[str]]:
+    """Collect a small, representative read-only market set."""
+    from zhihuiti.market_fetcher import scan_equities, scan_forex, scan_indices
+    from zhihuiti.scanner import scan_instruments
+
+    collectors = {
+        "crypto": lambda: scan_instruments(
+            instruments=["BTC_USDT", "ETH_USDT", "SOL_USDT"],
+            fetch_fn=_fetch_crypto_candles,
+        ),
+        "equities": lambda: scan_equities(symbols=["AAPL", "MSFT", "NVDA"]),
+        "forex": lambda: scan_forex(symbols=["EURUSD=X", "GBPUSD=X", "USDJPY=X"]),
+        "indices": lambda: scan_indices(symbols=["^GSPC", "^N225", "^HSI"]),
+    }
+    results: dict[str, list] = {}
+    errors = []
+    for domain, collect in collectors.items():
+        try:
+            domain_results = collect()
+            results[domain] = domain_results
+            if not domain_results:
+                errors.append(f"{domain}:no_results")
+        except Exception as exc:
+            results[domain] = []
+            errors.append(f"{domain}:{type(exc).__name__}")
+    return results, errors
+
+
+def _run_oracle_scan_cycle() -> dict:
+    """Persist one public-data scan and evaluate observation-only agents."""
+    with _oracle_scan_meta_lock:
+        _ORACLE_SCAN_META["running"] = True
+        _ORACLE_SCAN_META["last_attempt_at"] = _utc_now_iso()
+
+    results_by_domain, errors = _collect_oracle_scan_results()
+    all_results = [
+        result
+        for domain_results in results_by_domain.values()
+        for result in domain_results
+    ]
+    history = _get_history()
+    previous = history.get_summary()
+    previous_regimes = {
+        instrument: values["regime"] for instrument, values in previous.items()
+    }
+    transitions = history.record_scan(all_results) if all_results else []
+
+    backtest_info = {}
+    try:
+        from zhihuiti.backtest import auto_record_and_verify
+        backtest_info = auto_record_and_verify(all_results, history=history)
+    except Exception as exc:
+        errors.append(f"backtest:{type(exc).__name__}")
+
+    action_count = 0
+    try:
+        manager = OracleHandler._get_agent_manager()
+        serialized = [result.to_dict() for result in all_results]
+        actions_by_agent = manager.run_all(serialized, previous_regimes)
+        actions = [
+            action
+            for agent_actions in actions_by_agent.values()
+            for action in agent_actions
+        ]
+        action_count = len(actions)
+        domain_by_instrument = {
+            result.instrument: domain
+            for domain, domain_results in results_by_domain.items()
+            for result in domain_results
+        }
+        public_alerts = [
+            {
+                **action,
+                "domain": domain_by_instrument.get(action["instrument"], "unknown"),
+                "source": "oracle_agent",
+                "execution": "observation_only",
+            }
+            for action in actions
+            if "alert" in action["action_type"]
+        ]
+        if public_alerts:
+            with _alerts_lock:
+                _alerts.extend(public_alerts)
+                if len(_alerts) > 200:
+                    _alerts[:] = _alerts[-200:]
+    except Exception as exc:
+        errors.append(f"agents:{type(exc).__name__}")
+
+    with _oracle_scan_meta_lock:
+        _ORACLE_SCAN_META.update({
+            "running": False,
+            "last_completed_at": _utc_now_iso(),
+            "domains": {
+                domain: len(results) for domain, results in results_by_domain.items()
+            },
+            "instruments": len(all_results),
+            "transitions": len(transitions),
+            "agent_actions": action_count,
+            "errors": errors,
+            "backtest": backtest_info,
+        })
+        return json.loads(json.dumps(_ORACLE_SCAN_META))
+
+
+def _start_oracle_scan_loop(interval: int = 1800):
+    """Start one idempotent background collector, running immediately."""
+    global _oracle_scan_thread
+    with _oracle_scan_start_lock:
+        if _oracle_scan_thread is not None and _oracle_scan_thread.is_alive():
+            return _oracle_scan_thread
+
+        interval = max(60, interval)
+        with _oracle_scan_meta_lock:
+            _ORACLE_SCAN_META["interval_seconds"] = interval
+
+        def _loop():
+            import time
+            while True:
+                try:
+                    _run_oracle_scan_cycle()
+                except Exception as exc:
+                    with _oracle_scan_meta_lock:
+                        _ORACLE_SCAN_META.update({
+                            "running": False,
+                            "last_completed_at": _utc_now_iso(),
+                            "errors": [f"cycle:{type(exc).__name__}"],
+                        })
+                time.sleep(interval)
+
+        _oracle_scan_thread = threading.Thread(
+            target=_loop,
+            daemon=True,
+            name="zhihuiti-oracle-scan",
+        )
+        _oracle_scan_thread.start()
+        return _oracle_scan_thread
+
+
 # ── Self-Directed Evolution Loop ─────────────────────────────────────────
 
 _self_loop_running = False
@@ -2061,6 +2268,7 @@ def serve(port: int | None = None):
     # Oracle endpoints (always available)
     console.print(f"\n  [dim]── Oracle endpoints ──[/dim]")
     console.print(f"  GET  /api/oracle/scan")
+    console.print(f"  GET  /api/oracle/scan/status")
     console.print(f"  GET  /api/oracle/crypto/:instrument")
     console.print(f"  GET  /api/oracle/scan/equities")
     console.print(f"  GET  /api/oracle/scan/forex")
@@ -2101,6 +2309,11 @@ def serve(port: int | None = None):
     # may be sparse or routed across instances, so a request-triggered daemon is
     # not sufficient to keep the public feed current.
     _ensure_refresher()
+
+    scan_enabled = os.environ.get("ZHIHUITI_ORACLE_SCAN", "1").strip().lower()
+    if scan_enabled not in {"0", "false", "no", "off", "disabled"}:
+        scan_interval = int(os.environ.get("ZHIHUITI_ORACLE_SCAN_INTERVAL", "1800"))
+        _start_oracle_scan_loop(scan_interval)
 
     console.print(f"\n  GET  /health")
     console.print()
