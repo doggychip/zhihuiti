@@ -171,6 +171,74 @@ class TestPublicEvolutionStatus:
         assert "recent_goals" not in body
 
 
+class TestOracleScanStatus:
+    def test_exposes_collection_state_without_triggering_a_scan(self, server, monkeypatch):
+        monkeypatch.setattr(oracle_server, "_ORACLE_SCAN_META", {
+            "running": False,
+            "last_attempt_at": "2026-08-07T00:00:00+00:00",
+            "last_completed_at": "2026-08-07T00:00:10+00:00",
+            "interval_seconds": 1800,
+            "domains": {"crypto": 3, "equities": 3},
+            "instruments": 6,
+            "transitions": 1,
+            "agent_actions": 2,
+            "errors": [],
+            "backtest": {"verified": 1, "new_predictions": 3, "total_stored": 8},
+        })
+
+        status, body = _get(server, "/api/oracle/scan/status")
+
+        assert status == 200
+        assert body["status"] == "live"
+        assert body["instruments"] == 6
+        assert body["backtest"]["new_predictions"] == 3
+
+    def test_reports_pending_before_first_completed_scan(self, server, monkeypatch):
+        monkeypatch.setattr(oracle_server, "_ORACLE_SCAN_META", {
+            "running": False,
+            "last_attempt_at": None,
+            "last_completed_at": None,
+            "interval_seconds": 1800,
+            "domains": {},
+            "instruments": 0,
+            "transitions": 0,
+            "agent_actions": 0,
+            "errors": [],
+            "backtest": {},
+        })
+
+        status, body = _get(server, "/api/oracle/scan/status")
+
+        assert status == 200
+        assert body["status"] == "pending"
+
+
+class TestHistoricalBacktestFallback:
+    def test_uses_candles_until_forward_history_is_large_enough(
+        self, server, tmp_path, monkeypatch,
+    ):
+        monkeypatch.setenv("ZHIHUITI_DATA", str(tmp_path))
+        candles = [
+            {
+                "timestamp": 1_700_000_000 + index * 3600,
+                "open": 100 + index,
+                "high": 102 + index,
+                "low": 99 + index,
+                "close": 101 + index,
+                "volume": 1_000,
+            }
+            for index in range(80)
+        ]
+        monkeypatch.setattr(oracle_server, "_fetch_crypto_candles", lambda *_: candles)
+
+        status, body = _get(server, "/api/backtest/results?instrument=BTC_USDT")
+
+        assert status == 200
+        assert body["source"] == "historical_candles"
+        assert body["snapshot_count"] >= 10
+        assert body["total_predictions"] > 0
+
+
 class TestMacroRefreshStatus:
     def test_history_is_empty_before_first_refresh(self, tmp_path, monkeypatch):
         monkeypatch.setenv("ZHIHUITI_DB", str(tmp_path / "new.db"))

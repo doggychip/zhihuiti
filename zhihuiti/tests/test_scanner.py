@@ -218,6 +218,14 @@ class TestRegimeHistory:
         history = h.get_history("BTC_USDT")
         assert len(history) == 5
 
+    def test_uses_configured_persistent_data_directory(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("ZHIHUITI_DATA", str(tmp_path))
+
+        history = RegimeHistory()
+        history.record(_scan_result("BTC_USDT"))
+
+        assert (tmp_path / "regime_history.jsonl").exists()
+
     def test_transition_to_dict(self):
         t = RegimeTransition(
             instrument="BTC_USDT", timestamp=1234567890.0,

@@ -10,6 +10,7 @@ History: persists diagnosis snapshots over time so regime transitions
 from __future__ import annotations
 
 import json
+import os
 import threading
 import time
 from dataclasses import dataclass, field
@@ -195,7 +196,12 @@ class RegimeHistory:
 
     def __init__(self, storage_path: str | Path | None = None, max_snapshots: int = 500):
         if storage_path is None:
-            self._path = Path.home() / ".zhihuiti" / "regime_history.jsonl"
+            data_dir = os.environ.get("ZHIHUITI_DATA", "").strip()
+            self._path = (
+                Path(data_dir) / "regime_history.jsonl"
+                if data_dir
+                else Path.home() / ".zhihuiti" / "regime_history.jsonl"
+            )
         else:
             self._path = Path(storage_path)
         self._path.parent.mkdir(parents=True, exist_ok=True)

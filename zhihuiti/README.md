@@ -204,6 +204,16 @@ zhihuiti dashboard              # Launch web dashboard
 | `OLLAMA_MODEL` | Default Ollama model (default: `llama3`) |
 | `LLM_MODEL` | Override model for any backend |
 | `LLM_PREMIUM_MODEL` | Premium model for promoted agents |
+| `ZHIHUITI_API_TOKEN` | Bearer token required for all operator/write routes |
+| `ZHIHUITI_DATA` | Persistent directory for oracle history and prediction evidence |
+| `ZHIHUITI_ORACLE_SCAN` | Set to `0` to disable scheduled read-only market collection |
+| `ZHIHUITI_ORACLE_SCAN_INTERVAL` | Read-only collection interval in seconds (default: `1800`) |
+
+The production oracle collects a representative crypto, equity, forex, and
+index set on startup and every 30 minutes. `GET /api/oracle/scan/status`
+reports collection freshness, errors, agent actions, and forward-validation
+progress. Historical-candle backtests are labeled separately from forward
+predictions; they are never presented as live prediction accuracy.
 
 ## Web Dashboard
 

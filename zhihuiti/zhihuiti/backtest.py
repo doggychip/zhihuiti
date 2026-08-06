@@ -176,6 +176,51 @@ def _rewrite_store():
 
 # ── Backtesting Engine ───────────────────────────────────────────────────
 
+def build_regime_history_from_candles(
+    instrument: str,
+    candles: list[dict],
+    min_window: int = 30,
+    max_snapshots: int = 60,
+) -> list[dict]:
+    """Build a chronological, no-lookahead regime series from OHLCV candles.
+
+    Each snapshot diagnoses only candles available at that point. This provides
+    immediate historical validation without pretending repeated current scans
+    are independent observations.
+    """
+    if len(candles) < min_window + 10:
+        return []
+
+    from zhihuiti.crypto_oracle import diagnose_market
+
+    available = len(candles) - min_window + 1
+    step = max(1, available // max(1, max_snapshots))
+    endpoints = list(range(min_window, len(candles) + 1, step))
+    if endpoints[-1] != len(candles):
+        endpoints.append(len(candles))
+    endpoints = endpoints[-max_snapshots:]
+
+    snapshots = []
+    for end in endpoints:
+        visible = candles[:end]
+        diagnosis = diagnose_market(visible, instrument=instrument)
+        top_pattern = diagnosis.patterns[0] if diagnosis.patterns else None
+        candle_timestamp = visible[-1].get("timestamp", end)
+        if isinstance(candle_timestamp, (int, float)) and candle_timestamp > 10_000_000_000:
+            candle_timestamp /= 1000
+        snapshots.append({
+            "instrument": instrument,
+            "timestamp": float(candle_timestamp),
+            "regime": diagnosis.regime,
+            "price": diagnosis.price,
+            "change_pct": diagnosis.change_pct,
+            "pattern_count": len(diagnosis.patterns),
+            "top_pattern": top_pattern.name if top_pattern else "",
+            "top_pattern_strength": top_pattern.strength if top_pattern else 0.0,
+            "signal_score": 0.0,
+        })
+    return snapshots
+
 def run_backtest_historical(instrument: str, history: list[dict]) -> BacktestResult:
     """Run a backtest using historical regime data.
 
@@ -367,7 +412,7 @@ def get_overall_accuracy(results: list[BacktestResult]) -> OverallAccuracy:
 
 # ── Auto-verify on scan ─────────────────────────────────────────────────
 
-def auto_record_and_verify(scan_results: list) -> dict:
+def auto_record_and_verify(scan_results: list, history=None) -> dict:
     """Called after each scan to:
     1. Verify old predictions against new data
     2. Record new predictions for future verification
@@ -377,7 +422,7 @@ def auto_record_and_verify(scan_results: list) -> dict:
     from zhihuiti.oracle_intelligence import predict_regime
     from zhihuiti.scanner import RegimeHistory
 
-    history = RegimeHistory()
+    history = history or RegimeHistory()
     verified_count = 0
     new_predictions = 0
 
