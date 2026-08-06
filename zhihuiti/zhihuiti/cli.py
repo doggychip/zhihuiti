@@ -91,9 +91,22 @@ def harness_preflight(role: str, db: str, model: str | None, probe: bool):
     is_flag=True,
     help="Create one candidate and run the frozen shadow suite.",
 )
-def harness_shadow(role: str, db: str, model: str | None, execute: bool):
+@click.option(
+    "--candidate-id",
+    default=None,
+    help="Resume an existing unevaluated candidate instead of creating one.",
+)
+def harness_shadow(
+    role: str,
+    db: str,
+    model: str | None,
+    execute: bool,
+    candidate_id: str | None,
+):
     """Preview or run one shadow-only researcher evaluation."""
     if not execute:
+        if candidate_id:
+            raise click.ClickException("--candidate-id requires --execute")
         console.print(Panel(
             "\n".join((
                 f"Role: {role}",
@@ -118,7 +131,9 @@ def harness_shadow(role: str, db: str, model: str | None, execute: bool):
         preflight = build_shadow_readiness(orch, role, probe=True)
         if preflight["status"] != "ready":
             raise RuntimeError(preflight["message"])
-        candidate_id = orch.propose_improvement_candidate(AgentRole(role))
+        candidate_id = candidate_id or orch.propose_improvement_candidate(
+            AgentRole(role),
+        )
         decision = orch.harness.run_shadow_suite(
             candidate_id,
             LLMShadowRunner(orch.llm),
