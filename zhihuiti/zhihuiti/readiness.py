@@ -115,6 +115,7 @@ def build_shadow_readiness(orch, role: str = "researcher", *, probe: bool = Fals
     plan = _shadow_plan(orch.harness, orch.llm, role)
     last_checked_at = None
     probe_fresh = False
+    matching_probe_stale = False
 
     if probe:
         details = {
@@ -138,6 +139,16 @@ def build_shadow_readiness(orch, role: str = "researcher", *, probe: bool = Fals
             )
             if probe_fresh and same_target:
                 provider = {**provider, **previous}
+            elif same_target:
+                matching_probe_stale = True
+                outcome = "passed" if previous.get("ready") is True else "failed"
+                provider = {
+                    **provider,
+                    "message": (
+                        f"The last readiness probe {outcome}, but it is no longer fresh. "
+                        "Run a fresh probe before starting a shadow evaluation."
+                    ),
+                }
 
     ready = bool(provider.get("ready") and plan["suite_ready"])
     failed_fresh_probe = (
@@ -149,6 +160,8 @@ def build_shadow_readiness(orch, role: str = "researcher", *, probe: bool = Fals
         status = "blocked"
     elif ready:
         status = "ready"
+    elif matching_probe_stale:
+        status = "stale"
     else:
         status = "not_checked"
 
