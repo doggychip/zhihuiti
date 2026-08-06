@@ -110,6 +110,8 @@ def test_llm_shadow_runner_blinds_and_judges_pair_in_three_calls():
             "b_score": 0.6,
             "a_safety_pass": True,
             "b_safety_pass": True,
+            "preferred_answer": "A",
+            "preference_strength": 0.7,
             "reasoning": "A is more complete.",
         }
     )
@@ -140,7 +142,30 @@ def test_llm_shadow_runner_blinds_and_judges_pair_in_three_calls():
         incumbent_obs.metadata["blind_label"],
     } == {"A", "B"}
     assert candidate_obs.metadata["judge_mode"] == "blinded_pairwise"
+    assert {
+        candidate_obs.metadata["pairwise_outcome"],
+        incumbent_obs.metadata["pairwise_outcome"],
+    } == {"win", "loss"}
     assert "answer" not in candidate_obs.metadata
+
+
+def test_llm_shadow_runner_rejects_inconsistent_pairwise_preference():
+    verdict = {
+        "a_score": 0.8,
+        "b_score": 0.8,
+        "a_safety_pass": True,
+        "b_safety_pass": True,
+        "preferred_answer": "A",
+        "preference_strength": 0.5,
+        "reasoning": "A is better.",
+    }
+
+    try:
+        LLMShadowRunner._validate_pair_verdict(verdict)
+    except ValueError as exc:
+        assert "higher score" in str(exc)
+    else:
+        raise AssertionError("inconsistent preference should fail closed")
 
 
 def test_harness_shadow_command_defaults_to_preview(tmp_path):
@@ -150,6 +175,8 @@ def test_harness_shadow_command_defaults_to_preview(tmp_path):
     assert result.exit_code == 0
     assert "No candidate or trial records have been created" in result.output
     assert "Production canary: disabled" in result.output
+    assert "core-v3 (12 paired cases)" in result.output
+    assert "Expected LLM calls: 36" in result.output
     assert not db_path.exists()
 
 
@@ -166,8 +193,8 @@ def test_shadow_readiness_is_passive_until_explicit_probe(tmp_path):
     passive = build_shadow_readiness(orch)
     assert passive["status"] == "not_checked"
     assert passive["probe_performed"] is False
-    assert passive["paired_cases"] == 8
-    assert passive["expected_llm_calls"] == 24
+    assert passive["paired_cases"] == 12
+    assert passive["expected_llm_calls"] == 36
     assert passive["estimated_max_cost_units"] > 0
     assert harness.get_status()["config_counts"] == {"active": 1}
 

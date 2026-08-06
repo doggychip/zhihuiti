@@ -12,6 +12,7 @@ from zhihuiti.dashboard import DashboardHandler, _gather_data
 from zhihuiti.harness import (
     CORE_V1_EVAL_CASES,
     CORE_V2_EVAL_CASES,
+    CORE_V3_EVAL_CASES,
     DEFAULT_EVAL_CASES,
     HarnessObservation,
     HarnessPolicy,
@@ -52,12 +53,38 @@ def test_default_suite_is_frozen_and_persistent(tmp_path):
     second = SelfImprovementHarness(Memory(str(db_path)))
     second_status = second.get_status()
 
-    assert len(first.get_suite()) == len(DEFAULT_EVAL_CASES) == 8
+    assert len(first.get_suite()) == len(DEFAULT_EVAL_CASES) == 12
     assert first.get_suite("core-v1") == list(CORE_V1_EVAL_CASES)
     assert first.get_suite("core-v2") == list(CORE_V2_EVAL_CASES)
-    assert first_status["suite"]["id"] == "core-v2"
+    assert first.get_suite("core-v3") == list(CORE_V3_EVAL_CASES)
+    assert first_status["suite"]["id"] == "core-v3"
     assert first_status["suite"]["frozen_hash"] == second_status["suite"]["frozen_hash"]
     assert second_status["autonomous_production_evolution"] is False
+
+
+def test_historical_shadow_decision_is_not_regraded_by_new_suite_policy(tmp_path):
+    db_path = tmp_path / "historical.db"
+    first = SelfImprovementHarness(
+        Memory(str(db_path)), HarnessPolicy(min_shadow_trials=8),
+    )
+    candidate_id = _propose(first)
+
+    def runner(config, _case):
+        score = 0.9 if config.system_prompt == "candidate prompt" else 0.7
+        return HarnessObservation(score=score, cost=1.0)
+
+    assert first.run_shadow_suite(
+        candidate_id, runner, suite_id="core-v2",
+    ).passed
+    first.memory.close()
+
+    second = SelfImprovementHarness(Memory(str(db_path)))
+    evaluation = second.get_status()["recent_shadow_evaluations"][0]
+
+    assert evaluation["passed"] is True
+    assert evaluation["trials"] == 8
+    assert evaluation["reasons"] == []
+    second.memory.close()
 
 
 def test_candidate_passes_paired_shadow_gates(tmp_path):
@@ -72,7 +99,7 @@ def test_candidate_passes_paired_shadow_gates(tmp_path):
     decision = harness.run_shadow_suite(candidate_id, runner)
 
     assert decision.passed
-    assert decision.trials == 8
+    assert decision.trials == 12
     assert decision.mean_score_delta == 0.15
     assert harness._get_config_row(candidate_id)["status"] == "shadow_passed"
     evaluation = harness.get_status()["recent_shadow_evaluations"][0]
@@ -81,12 +108,13 @@ def test_candidate_passes_paired_shadow_gates(tmp_path):
         "role": "researcher",
         "status": "shadow_passed",
         "passed": True,
-        "trials": 8,
+        "trials": 12,
         "mean_score_delta": 0.15,
         "win_rate_lower_bound": decision.win_rate_lower_bound,
-        "candidate_cost": 8.16,
-        "incumbent_cost": 8.0,
+        "candidate_cost": 12.24,
+        "incumbent_cost": 12.0,
         "cost_ratio": 1.02,
+        "output_length_ratio": 1.0,
         "candidate_avg_latency_ms": 0.0,
         "incumbent_avg_latency_ms": 0.0,
         "candidate_safety_failures": 0,
@@ -142,7 +170,33 @@ def test_shadow_suite_prefers_shared_pairwise_runner(tmp_path):
     decision = harness.run_shadow_suite(candidate_id, runner)
 
     assert decision.passed
-    assert runner.calls == 8
+    assert runner.calls == 12
+
+
+def test_pairwise_preference_drives_win_rate_without_faking_score_delta(tmp_path):
+    harness = _harness(tmp_path)
+    candidate_id = _propose(harness)
+
+    class PairRunner:
+        @staticmethod
+        def run_pair(_candidate, _incumbent, _case):
+            return (
+                HarnessObservation(
+                    score=0.8, cost=1.0,
+                    metadata={"pairwise_outcome": "win"},
+                ),
+                HarnessObservation(
+                    score=0.8, cost=1.0,
+                    metadata={"pairwise_outcome": "loss"},
+                ),
+            )
+
+    decision = harness.run_shadow_suite(candidate_id, PairRunner())
+
+    assert decision.win_rate == 1.0
+    assert decision.mean_score_delta == 0.0
+    assert not decision.passed
+    assert "mean score improvement is below the promotion floor" in decision.reasons
 
 
 def test_cost_regression_blocks_promotion(tmp_path):
@@ -160,6 +214,26 @@ def test_cost_regression_blocks_promotion(tmp_path):
     assert "cost regression exceeds the allowed ratio" in decision.reasons
 
 
+def test_output_length_regression_blocks_promotion(tmp_path):
+    harness = _harness(tmp_path)
+    candidate_id = _propose(harness)
+
+    def runner(config, _case):
+        if config.system_prompt == "candidate prompt":
+            return HarnessObservation(
+                score=0.9, cost=1.0, metadata={"output_chars": 110},
+            )
+        return HarnessObservation(
+            score=0.7, cost=1.0, metadata={"output_chars": 100},
+        )
+
+    decision = harness.run_shadow_suite(candidate_id, runner)
+
+    assert not decision.passed
+    assert decision.output_length_ratio == 1.1
+    assert "output length regression exceeds the allowed ratio" in decision.reasons
+
+
 def test_safety_regression_blocks_promotion(tmp_path):
     harness = _harness(tmp_path)
     candidate_id = _propose(harness)
@@ -169,7 +243,7 @@ def test_safety_regression_blocks_promotion(tmp_path):
             return HarnessObservation(
                 score=0.90,
                 cost=1.0,
-                safety_pass=case.id != "unsafe_request",
+                safety_pass=case.id != "secret_redaction",
             )
         return HarnessObservation(score=0.70, cost=1.0, safety_pass=True)
 
@@ -506,6 +580,26 @@ def test_orchestrator_generalizes_failed_shadow_feedback(tmp_path):
         second.close()
 
 
+def test_failed_shadow_feedback_prioritizes_efficiency(tmp_path):
+    harness = _harness(tmp_path)
+    candidate_id = _propose(harness)
+
+    def runner(config, _case):
+        if config.system_prompt == "candidate prompt":
+            return HarnessObservation(
+                score=0.7, cost=1.1, metadata={"output_chars": 120},
+            )
+        return HarnessObservation(
+            score=0.7, cost=1.0, metadata={"output_chars": 100},
+        )
+
+    harness.run_shadow_suite(candidate_id, runner)
+
+    directives = harness.get_shadow_feedback_directives("researcher")
+    assert directives[0].startswith("Prefer concise, decision-ready answers")
+    assert harness.has_seen_prompt("researcher", "candidate prompt")
+
+
 def test_dashboard_data_includes_harness_status(monkeypatch):
     expected = {"mode": "guarded", "roles": []}
     orchestrator = SimpleNamespace(
@@ -575,5 +669,5 @@ def test_harness_status_endpoint(tmp_path):
 
     assert response.status == 200
     assert body["mode"] == "guarded"
-    assert body["suite"]["id"] == "core-v2"
+    assert body["suite"]["id"] == "core-v3"
     assert body["autonomous_production_evolution"] is False

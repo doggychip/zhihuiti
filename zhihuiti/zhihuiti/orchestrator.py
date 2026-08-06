@@ -138,6 +138,10 @@ class Orchestrator:
         )
         if evolved_prompt == incumbent.system_prompt:
             directives = self.harness.get_shadow_feedback_directives(role.value)
+            directives = [
+                directive for directive in directives
+                if directive not in incumbent.system_prompt
+            ]
             if directives:
                 suffix = "\n\n## Shadow Evaluation Improvement Directives\n"
                 suffix += "Generalize these lessons across tasks:\n"
@@ -149,6 +153,10 @@ class Orchestrator:
         if evolved_prompt == incumbent.system_prompt:
             raise ValueError(
                 "no durable adaptation feedback would change the incumbent prompt"
+            )
+        if self.harness.has_seen_prompt(role.value, evolved_prompt):
+            raise ValueError(
+                "adaptation feedback would repeat a previously evaluated prompt"
             )
         candidate = incumbent.mutate(
             "adaptive candidate awaiting harness evaluation",
