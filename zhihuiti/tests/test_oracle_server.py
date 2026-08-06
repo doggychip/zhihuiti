@@ -84,11 +84,21 @@ class TestHealthEndpoint:
         assert body["service"] == "zhihuiti"
 
     def test_healthz_reports_runtime_without_secrets(self, server, monkeypatch):
+        monkeypatch.delenv("ZEABUR_GIT_COMMIT_SHA", raising=False)
         monkeypatch.setenv("ZHIHUITI_COMMIT_SHA", "abc123")
         status, body = _get(server, "/healthz")
         assert status == 200
         assert body["commit"] == "abc123"
         assert "api_key" not in body
+
+    def test_healthz_prefers_zeabur_deployment_commit(self, server, monkeypatch):
+        monkeypatch.setenv("ZHIHUITI_COMMIT_SHA", "stale-manual-value")
+        monkeypatch.setenv("ZEABUR_GIT_COMMIT_SHA", "current-deployment")
+
+        status, body = _get(server, "/healthz")
+
+        assert status == 200
+        assert body["commit"] == "current-deployment"
 
     def test_readyz_checks_configuration_without_model_call(self, server, monkeypatch):
         monkeypatch.setenv("DEEPSEEK_API_KEY", "configured-for-test")
