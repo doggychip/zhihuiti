@@ -56,6 +56,7 @@ shadow evaluation only:
 ```bash
 zhihuiti harness shadow
 zhihuiti harness shadow --role researcher --execute
+zhihuiti harness shadow --execute --candidate-id researcher-v4-example
 ```
 
 Check the provider, frozen suite, expected calls, and estimated budget before

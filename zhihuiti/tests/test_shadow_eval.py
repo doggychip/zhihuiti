@@ -329,6 +329,58 @@ def test_harness_shadow_execute_stops_before_canary(monkeypatch, tmp_path):
     assert '"candidate_status": "shadow_passed"' in result.output
 
 
+def test_harness_shadow_can_resume_existing_candidate(monkeypatch, tmp_path):
+    state = {"proposed": False, "run": False}
+
+    class _Decision:
+        passed = False
+
+        @staticmethod
+        def to_dict():
+            return {"passed": False, "trials": 12}
+
+    class _Harness:
+        @staticmethod
+        def run_shadow_suite(candidate_id, _runner):
+            assert candidate_id == "researcher-v4-resume"
+            state["run"] = True
+            return _Decision()
+
+    class _Orchestrator:
+        def __init__(self, **_kwargs):
+            self.llm = _FakeLLM()
+            self.harness = _Harness()
+
+        @staticmethod
+        def propose_improvement_candidate(_role):
+            state["proposed"] = True
+            raise AssertionError("resume must not create another candidate")
+
+        @staticmethod
+        def close():
+            pass
+
+    monkeypatch.setattr("zhihuiti.orchestrator.Orchestrator", _Orchestrator)
+    monkeypatch.setattr(
+        "zhihuiti.readiness.build_shadow_readiness",
+        lambda *_args, **_kwargs: {
+            "status": "ready",
+            "ready": True,
+            "message": "ready",
+        },
+    )
+
+    result = CliRunner().invoke(main, [
+        "harness", "shadow", "--execute",
+        "--candidate-id", "researcher-v4-resume",
+        "--db", str(tmp_path / "resume.db"),
+    ])
+
+    assert result.exit_code == 0
+    assert state == {"proposed": False, "run": True}
+    assert '"candidate_id": "researcher-v4-resume"' in result.output
+
+
 def test_harness_shadow_preflight_failure_creates_no_candidate(monkeypatch, tmp_path):
     state = {"proposed": False, "closed": False}
 
