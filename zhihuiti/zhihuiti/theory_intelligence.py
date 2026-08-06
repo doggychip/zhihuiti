@@ -15,10 +15,61 @@ import threading
 from pathlib import Path
 from typing import Any
 
-_DATA_DIR = Path(__file__).resolve().parent.parent / "client" / "src" / "data"
+_BUNDLED_DATA_DIR = Path(__file__).resolve().parent.parent / "client" / "src" / "data"
+_DATA_FILES = {
+    "theories.json": dict,
+    "collisions.json": list,
+    "skeletons.json": list,
+    "historical.json": list,
+}
+_DATA_REVISION = "d91abeb749828c446b0ad2d2944fbeab48766852"
+_RAW_DATA_BASE = (
+    "https://raw.githubusercontent.com/doggychip/zhihuiti/"
+    f"{_DATA_REVISION}/zhihuiti/client/src/data"
+)
 
 _instance: "TheoryGraph | None" = None
 _lock = threading.Lock()
+
+
+def _valid_data_dir(path: Path) -> bool:
+    return all((path / name).is_file() for name in _DATA_FILES)
+
+
+def _resolve_data_dir() -> Path:
+    """Use bundled theory data or fetch a pinned copy into persistent storage."""
+    if _valid_data_dir(_BUNDLED_DATA_DIR):
+        return _BUNDLED_DATA_DIR
+
+    data_root = os.environ.get("ZHIHUITI_DATA", "").strip()
+    cache_dir = (
+        Path(data_root) / "theory_graph"
+        if data_root
+        else Path.home() / ".zhihuiti" / "theory_graph"
+    )
+    if _valid_data_dir(cache_dir):
+        return cache_dir
+
+    import httpx
+
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    for filename, expected_type in _DATA_FILES.items():
+        response = httpx.get(
+            f"{_RAW_DATA_BASE}/{filename}",
+            headers={"User-Agent": "zhihuiti-theory-loader/1.0"},
+            timeout=30,
+        )
+        response.raise_for_status()
+        if len(response.content) > 5_000_000:
+            raise ValueError(f"theory data file is unexpectedly large: {filename}")
+        payload = response.json()
+        if not isinstance(payload, expected_type):
+            raise ValueError(f"invalid theory data shape: {filename}")
+        temporary = cache_dir / f".{filename}.tmp"
+        with open(temporary, "wb") as output:
+            output.write(response.content)
+        os.replace(temporary, cache_dir / filename)
+    return cache_dir
 
 
 def get_graph() -> "TheoryGraph":
@@ -35,7 +86,7 @@ class TheoryGraph:
     """In-memory theory knowledge graph with fast lookup indexes."""
 
     def __init__(self, data_dir: str | Path | None = None):
-        data_dir = Path(data_dir) if data_dir else _DATA_DIR
+        data_dir = Path(data_dir) if data_dir else _resolve_data_dir()
 
         with open(data_dir / "theories.json") as f:
             self.theories: dict[str, dict] = json.load(f)
