@@ -150,6 +150,34 @@ def test_shadow_readiness_is_passive_until_explicit_probe(tmp_path):
     memory.close()
 
 
+def test_shadow_readiness_distinguishes_expired_probe_from_never_checked(
+    monkeypatch,
+    tmp_path,
+):
+    memory = Memory(str(tmp_path / "stale-readiness.db"))
+    harness = SelfImprovementHarness(memory)
+    harness.ensure_baseline(AgentConfig(
+        role=AgentRole.RESEARCHER,
+        system_prompt="Research carefully.",
+    ))
+    orch = SimpleNamespace(llm=_FakeLLM(), harness=harness)
+
+    assert build_shadow_readiness(orch, probe=True)["status"] == "ready"
+    monkeypatch.setattr("zhihuiti.readiness.PREFLIGHT_FRESH_SECONDS", -1)
+
+    stale = build_shadow_readiness(orch)
+
+    assert stale["status"] == "stale"
+    assert stale["ready"] is None
+    assert stale["probe_fresh"] is False
+    assert stale["last_checked_at"] is not None
+    assert stale["message"] == (
+        "The last readiness probe passed, but it is no longer fresh. "
+        "Run a fresh probe before starting a shadow evaluation."
+    )
+    memory.close()
+
+
 def test_provider_probe_failure_is_sanitized(monkeypatch):
     for name in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "LLM_API_KEY", "LLM_BASE_URL"):
         monkeypatch.delenv(name, raising=False)
