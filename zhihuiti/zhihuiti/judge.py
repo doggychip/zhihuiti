@@ -51,6 +51,19 @@ class Judge:
         self.adaptive_thresholds = AdaptiveThresholds()
         self.prompt_evolver = PromptEvolver()
         self.performance_tracker = PerformanceTracker()
+        self._restore_adaptation_state()
+
+    def _restore_adaptation_state(self) -> None:
+        """Rebuild deterministic adaptation state from durable observations."""
+        for observation in self.memory.get_adaptation_observations():
+            role = observation["role"]
+            layer_scores = observation["layer_scores"]
+            self.performance_tracker.record(
+                role, float(observation["final_score"]), layer_scores,
+            )
+            self.prompt_evolver.record_inspection(
+                role, layer_scores, observation["layer_thresholds"],
+            )
 
     @property
     def cull_threshold(self) -> float:
@@ -97,6 +110,9 @@ class Judge:
         # 2. Record inspection pattern for prompt evolution
         layer_thresh = {layer.value: thresh for layer, thresh in LAYER_THRESHOLDS.items()}
         self.prompt_evolver.record_inspection(role, layer_scores, layer_thresh)
+        self.memory.record_adaptation_observation(
+            role, score, layer_scores, layer_thresh,
+        )
 
         return score
 
