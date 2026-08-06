@@ -90,6 +90,15 @@ def _allowed_cors_origin(handler: BaseHTTPRequestHandler) -> str | None:
     return None
 
 
+def _runtime_commit() -> str:
+    """Prefer the deployment platform's immutable source revision."""
+    return (
+        os.environ.get("ZEABUR_GIT_COMMIT_SHA", "").strip()
+        or os.environ.get("ZHIHUITI_COMMIT_SHA", "").strip()
+        or "unknown"
+    )
+
+
 def _json_response(handler: BaseHTTPRequestHandler, data: Any, status: int = 200):
     if status == 500 and isinstance(data, dict) and "error" in data:
         data = {**data, "error": "internal server error"}
@@ -102,7 +111,7 @@ def _json_response(handler: BaseHTTPRequestHandler, data: Any, status: int = 200
         handler.send_header("Vary", "Origin")
     handler.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
     handler.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-    handler.send_header("X-Zhihuiti-Commit", os.environ.get("ZHIHUITI_COMMIT_SHA", "unknown"))
+    handler.send_header("X-Zhihuiti-Commit", _runtime_commit())
     handler.send_header("Content-Length", str(len(body)))
     handler.end_headers()
     handler.wfile.write(body)
@@ -160,7 +169,7 @@ def _runtime_status() -> dict[str, Any]:
         provider = "custom"
     return {
         "service": "zhihuiti",
-        "commit": os.environ.get("ZHIHUITI_COMMIT_SHA", "unknown"),
+        "commit": _runtime_commit(),
         "provider": provider,
         "llm_configured": _has_llm_key(),
         "operator_api_configured": bool(os.environ.get("ZHIHUITI_API_TOKEN", "").strip()),
