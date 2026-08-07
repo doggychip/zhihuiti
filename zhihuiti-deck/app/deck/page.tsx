@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import OntologyGraph from "@/components/OntologyGraph";
 import StatusBar from "@/components/StatusBar";
 import SlideShell from "@/components/SlideShell";
