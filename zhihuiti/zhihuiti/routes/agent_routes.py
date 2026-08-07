@@ -13,6 +13,13 @@ if TYPE_CHECKING:
     from zhihuiti.orchestrator import Orchestrator
 
 
+def _positive_env_int(name: str, default: int) -> int:
+    try:
+        return max(1, int(os.environ.get(name, str(default))))
+    except ValueError:
+        return default
+
+
 def gather_core_data(orch) -> dict:
     """Gather core system data: economy, realms, agents, inspection, etc."""
     data: dict = {}
@@ -78,6 +85,38 @@ def gather_core_data(orch) -> dict:
             "tasks": len(a.scores),
         })
     data["agents"] = agents
+
+    max_active = _positive_env_int("ZHIHUITI_MAX_ACTIVE_AGENTS", 36)
+    max_per_role = _positive_env_int("ZHIHUITI_MAX_AGENTS_PER_ROLE", 12)
+    retained_active = min(
+        max_active, _positive_env_int("ZHIHUITI_RETAIN_ACTIVE_AGENTS", 24),
+    )
+    active_count = sum(1 for agent in agents if agent["alive"])
+    auto_mint_enabled = os.environ.get(
+        "ZHIHUITI_ALLOW_AUTO_MINT", "0",
+    ).strip().lower() in {"1", "true", "yes", "on"}
+    autonomous_evolution = os.environ.get(
+        "ZHIHUITI_AUTO_EVOLVE", "0",
+    ).strip().lower() in {"1", "true", "yes", "on"}
+    warnings = []
+    if active_count >= max_active:
+        warnings.append(f"active agent cap reached: {active_count}/{max_active}")
+    for realm, state in realm_data.items():
+        if state["budget_remaining"] <= 0:
+            warnings.append(f"{realm} realm budget exhausted")
+    if auto_mint_enabled:
+        warnings.append("automatic minting is enabled")
+    data["governance"] = {
+        "status": "attention" if warnings else "healthy",
+        "autonomous_evolution": autonomous_evolution,
+        "auto_mint_enabled": auto_mint_enabled,
+        "active_agents": active_count,
+        "max_active_agents": max_active,
+        "max_agents_per_role": max_per_role,
+        "retained_active_agents": retained_active,
+        "pruned_on_startup": getattr(orch, "pruned_agents", 0),
+        "warnings": warnings,
+    }
 
     # Bloodline
     data["bloodline"] = orch.memory.get_lineage_stats()

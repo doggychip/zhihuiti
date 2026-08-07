@@ -91,3 +91,27 @@ def test_economy_full_cycle():
     assert report["total_minted"] > 0
     assert report["total_burned"] > 0
     mem.close()
+
+
+def test_spawn_does_not_auto_mint_by_default(monkeypatch):
+    monkeypatch.delenv("ZHIHUITI_ALLOW_AUTO_MINT", raising=False)
+    mem = Memory(":memory:")
+    econ = Economy(mem)
+    econ.treasury.balance = 0.0
+    before = econ.central_bank.total_minted
+
+    assert econ.fund_spawn(100.0) is False
+    assert econ.central_bank.total_minted == before
+    mem.close()
+
+
+def test_spawn_auto_mint_requires_explicit_opt_in(monkeypatch):
+    monkeypatch.setenv("ZHIHUITI_ALLOW_AUTO_MINT", "1")
+    mem = Memory(":memory:")
+    econ = Economy(mem)
+    econ.treasury.balance = 0.0
+    before = econ.central_bank.total_minted
+
+    assert econ.fund_spawn(100.0) is True
+    assert econ.central_bank.total_minted > before
+    mem.close()

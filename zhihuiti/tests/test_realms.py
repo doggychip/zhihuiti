@@ -25,6 +25,34 @@ def test_budget_allocation():
     mem.close()
 
 
+def test_reset_budget_starts_a_fresh_runtime_window():
+    mem = Memory(":memory:")
+    rm = RealmManager(mem)
+    rm.allocate_budgets(1000.0)
+    rm.realms[Realm.RESEARCH].budget_spent = 400.0
+    rm.allocate_budgets(1000.0, reset=True)
+
+    assert rm.realms[Realm.RESEARCH].budget_allocated == 500.0
+    assert rm.realms[Realm.RESEARCH].budget_spent == 0.0
+    assert rm.realms[Realm.RESEARCH].budget_remaining == 500.0
+    mem.close()
+
+
+def test_spawn_rejects_realm_budget_overrun():
+    mem = Memory(":memory:")
+    rm = RealmManager(mem)
+    rm.allocate_budgets(100.0, reset=True)
+    agent = AgentState(
+        config=AgentConfig(role=AgentRole.RESEARCHER, system_prompt="test"),
+        budget=60.0,
+    )
+
+    import pytest
+    with pytest.raises(ValueError, match="budget exhausted"):
+        rm.on_agent_spawn(agent)
+    mem.close()
+
+
 def test_agent_spawn_tracking():
     mem = Memory(":memory:")
     rm = RealmManager(mem)

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from zhihuiti.backtest import build_regime_history_from_candles
+import time
+
+from zhihuiti import backtest
+from zhihuiti.backtest import PredictionRecord, build_regime_history_from_candles
 
 
 def _candles(count: int = 80) -> list[dict]:
@@ -35,3 +38,59 @@ def test_requires_enough_candles_for_honest_validation():
     assert build_regime_history_from_candles(
         "TEST", _candles(35), min_window=30, max_snapshots=20,
     ) == []
+
+
+def _prediction(predicted: str, current: str, actual: str) -> PredictionRecord:
+    return PredictionRecord(
+        instrument="TEST",
+        timestamp=time.time() - 20_000,
+        predicted_regime=predicted,
+        current_regime=current,
+        confidence=0.8,
+        probabilities={
+            "trending_up": 0.8 if predicted == "trending_up" else 0.05,
+            "trending_down": 0.8 if predicted == "trending_down" else 0.05,
+            "mean_reverting": 0.8 if predicted == "mean_reverting" else 0.05,
+            "volatile": 0.8 if predicted == "volatile" else 0.05,
+            "quiet": 0.8 if predicted == "quiet" else 0.05,
+        },
+        patterns_at_prediction=[],
+        price_at_prediction=100.0,
+        baseline_regime=current,
+        actual_regime=actual,
+        actual_price=101.0,
+        verified_at=time.time(),
+        correct=predicted == actual,
+        baseline_correct=current == actual,
+    )
+
+
+def test_forward_summary_compares_against_persistence(monkeypatch):
+    predictions = [
+        _prediction("quiet", "quiet", "quiet"),
+        _prediction("trending_up", "quiet", "trending_up"),
+        _prediction("quiet", "quiet", "trending_down"),
+    ]
+    monkeypatch.setattr(backtest, "_predictions", predictions)
+
+    summary = backtest.get_forward_accuracy_summary(minimum_verified=1)
+
+    assert summary["accuracy"] == 2 / 3
+    assert summary["persistence_baseline_accuracy"] == 1 / 3
+    assert summary["skill_over_persistence"] == 1 / 3
+    assert summary["transition_predictions"] == 2
+    assert summary["transition_accuracy"] == 0.5
+    assert summary["status"] == "benchmarking"
+
+
+def test_prediction_verification_respects_configured_horizon(monkeypatch):
+    monkeypatch.setenv("ZHIHUITI_PREDICTION_HORIZON_SECONDS", "14400")
+    prediction = _prediction("quiet", "quiet", "")
+    prediction.timestamp = time.time() - 3601
+    prediction.verified_at = 0.0
+    monkeypatch.setattr(backtest, "_predictions", [prediction])
+    monkeypatch.setattr(backtest, "_rewrite_store", lambda: None)
+
+    assert backtest.verify_predictions("TEST", "quiet", 100.0) == 0
+    prediction.timestamp = time.time() - 14401
+    assert backtest.verify_predictions("TEST", "quiet", 100.0) == 1

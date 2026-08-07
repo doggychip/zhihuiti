@@ -334,6 +334,38 @@ class Memory:
             )
             self.conn.commit()
 
+    def prune_alive_agents(self, max_alive: int, max_per_role: int) -> int:
+        """Deactivate excess persisted agents while preserving top performers."""
+        max_alive = max(1, int(max_alive))
+        max_per_role = max(1, int(max_per_role))
+        rows = self._query(
+            """SELECT id, role FROM agents WHERE alive = 1
+               ORDER BY avg_score DESC, created_at DESC, id"""
+        )
+        keep: list[str] = []
+        role_counts: dict[str, int] = {}
+        for row in rows:
+            role = row["role"]
+            if len(keep) >= max_alive:
+                continue
+            if role_counts.get(role, 0) >= max_per_role:
+                continue
+            keep.append(row["id"])
+            role_counts[role] = role_counts.get(role, 0) + 1
+
+        keep_ids = set(keep)
+        excess = [row["id"] for row in rows if row["id"] not in keep_ids]
+        if not excess:
+            return 0
+        placeholders = ",".join("?" for _ in excess)
+        with self._lock:
+            self.conn.execute(
+                f"UPDATE agents SET alive = 0 WHERE id IN ({placeholders})",
+                excess,
+            )
+            self.conn.commit()
+        return len(excess)
+
     def save_to_gene_pool(self, gene_id: str, role: str, system_prompt: str,
                           temperature: float, avg_score: float,
                           parent_gene_id: str | None = None,
