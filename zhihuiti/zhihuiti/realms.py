@@ -168,7 +168,8 @@ class RealmManager:
     # ------------------------------------------------------------------
 
     def allocate_budgets(self, total_budget: float,
-                         attention: dict[str, float] | None = None) -> None:
+                         attention: dict[str, float] | None = None,
+                         reset: bool = False) -> None:
         """Distribute budget across realms according to ratios.
 
         Args:
@@ -188,7 +189,11 @@ class RealmManager:
 
         for realm, ratio in ratios.items():
             allocation = total_budget * ratio
-            self.realms[realm].budget_allocated += allocation
+            if reset:
+                self.realms[realm].budget_allocated = allocation
+                self.realms[realm].budget_spent = 0.0
+            else:
+                self.realms[realm].budget_allocated += allocation
             self._save_state(realm)
 
         console.print(
@@ -223,6 +228,14 @@ class RealmManager:
     def on_agent_spawn(self, agent: AgentState) -> None:
         """Register an agent spawn in its realm."""
         realm = self.assign_realm(agent.config.role)
+        if (
+            self.realms[realm].budget_allocated > 0
+            and self.realms[realm].budget_remaining < agent.budget
+        ):
+            raise ValueError(
+                f"{realm.value} realm budget exhausted: "
+                f"{self.realms[realm].budget_remaining:.1f} remaining"
+            )
         agent.realm = realm
         agent.life_state = AgentLifeState.ACTIVE
 

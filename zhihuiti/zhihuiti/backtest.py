@@ -34,11 +34,13 @@ class PredictionRecord:
     probabilities: dict[str, float]
     patterns_at_prediction: list[str]  # pattern names active at prediction time
     price_at_prediction: float
+    baseline_regime: str = ""
     # Filled in after verification
     actual_regime: str = ""
     actual_price: float = 0.0
     verified_at: float = 0.0
     correct: bool = False
+    baseline_correct: bool = False
     price_change_pct: float = 0.0
 
     def to_dict(self) -> dict:
@@ -87,6 +89,16 @@ _predictions_lock = threading.Lock()
 _store_path = Path(os.environ.get("ZHIHUITI_DATA", "/app/data")) / "predictions.jsonl"
 
 
+def prediction_horizon_seconds() -> int:
+    """Return the minimum forward-verification horizon (default: four hours)."""
+    try:
+        return max(3600, int(os.environ.get(
+            "ZHIHUITI_PREDICTION_HORIZON_SECONDS", "14400",
+        )))
+    except ValueError:
+        return 14400
+
+
 def _load_predictions():
     """Load saved predictions from disk."""
     global _predictions
@@ -129,6 +141,7 @@ def record_prediction(
         probabilities=probabilities,
         patterns_at_prediction=patterns,
         price_at_prediction=price,
+        baseline_regime=current_regime,
     )
     with _predictions_lock:
         _predictions.append(pred)
@@ -146,13 +159,15 @@ def verify_predictions(instrument: str, actual_regime: str, actual_price: float)
     with _predictions_lock:
         for pred in _predictions:
             if pred.instrument == instrument and not pred.verified_at:
-                # Only verify predictions that are at least 1 hour old
-                if now - pred.timestamp < 3600:
+                # Verify only after the configured forward horizon has elapsed.
+                if now - pred.timestamp < prediction_horizon_seconds():
                     continue
                 pred.actual_regime = actual_regime
                 pred.actual_price = actual_price
                 pred.verified_at = now
                 pred.correct = pred.predicted_regime == actual_regime
+                baseline = pred.baseline_regime or pred.current_regime
+                pred.baseline_correct = baseline == actual_regime
                 if pred.price_at_prediction > 0:
                     pred.price_change_pct = (
                         (actual_price - pred.price_at_prediction)
@@ -163,6 +178,96 @@ def verify_predictions(instrument: str, actual_regime: str, actual_price: float)
     if verified > 0:
         _rewrite_store()
     return verified
+
+
+def get_forward_accuracy_summary(minimum_verified: int = 30) -> dict:
+    """Measure forecast value relative to a naive regime-persistence baseline."""
+    from zhihuiti.oracle_intelligence import REGIMES
+
+    with _predictions_lock:
+        predictions = list(_predictions)
+    verified = [prediction for prediction in predictions if prediction.verified_at > 0]
+    total = len(verified)
+    correct = sum(1 for prediction in verified if prediction.correct)
+    baseline_correct = sum(
+        1 for prediction in verified
+        if (prediction.baseline_regime or prediction.current_regime)
+        == prediction.actual_regime
+    )
+
+    regime_stats: dict[str, dict] = {}
+    for prediction in verified:
+        actual = prediction.actual_regime or "unknown"
+        stats = regime_stats.setdefault(actual, {"total": 0, "correct": 0})
+        stats["total"] += 1
+        if prediction.correct:
+            stats["correct"] += 1
+    for stats in regime_stats.values():
+        stats["accuracy"] = stats["correct"] / stats["total"]
+
+    transition_predictions = [
+        prediction for prediction in verified
+        if prediction.actual_regime
+        != (prediction.baseline_regime or prediction.current_regime)
+    ]
+    transition_correct = sum(
+        1 for prediction in transition_predictions if prediction.correct
+    )
+
+    brier_values = []
+    for prediction in verified:
+        if prediction.actual_regime not in REGIMES:
+            continue
+        brier_values.append(sum(
+            (
+                float(prediction.probabilities.get(regime, 0.0))
+                - (1.0 if regime == prediction.actual_regime else 0.0)
+            ) ** 2
+            for regime in REGIMES
+        ))
+
+    accuracy = correct / total if total else 0.0
+    baseline_accuracy = baseline_correct / total if total else 0.0
+    balanced_accuracy = (
+        sum(stats["accuracy"] for stats in regime_stats.values()) / len(regime_stats)
+        if regime_stats else 0.0
+    )
+    skill = accuracy - baseline_accuracy
+    enough_transitions = len(transition_predictions) >= 10
+    if total < minimum_verified:
+        status = "collecting"
+    elif skill <= 0 or not enough_transitions:
+        status = "benchmarking"
+    else:
+        status = "validated"
+
+    recent = [
+        prediction.to_dict()
+        for prediction in sorted(predictions, key=lambda item: item.timestamp, reverse=True)[:20]
+    ]
+    return {
+        "status": status,
+        "minimum_verified_predictions": minimum_verified,
+        "minimum_transition_predictions": 10,
+        "horizon_seconds": prediction_horizon_seconds(),
+        "total_predictions": len(predictions),
+        "verified": total,
+        "correct": correct,
+        "accuracy": accuracy,
+        "persistence_baseline_accuracy": baseline_accuracy,
+        "skill_over_persistence": skill,
+        "balanced_accuracy": balanced_accuracy,
+        "brier_score": sum(brier_values) / len(brier_values) if brier_values else None,
+        "transition_predictions": len(transition_predictions),
+        "transition_correct": transition_correct,
+        "transition_accuracy": (
+            transition_correct / len(transition_predictions)
+            if transition_predictions else None
+        ),
+        "unverified": len(predictions) - total,
+        "regime_accuracy": regime_stats,
+        "recent": recent,
+    }
 
 
 def _rewrite_store():

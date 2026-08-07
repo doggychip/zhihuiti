@@ -16,7 +16,10 @@ from zhihuiti.oracle_server import (
     OracleHandler,
     _json_response,
     _parse_csv_values,
+    _record_alerts,
     _read_body,
+    _scheduled_scan_watchlist,
+    _evolution_limits,
 )
 from zhihuiti.env import env_enabled
 
@@ -82,6 +85,8 @@ class TestHealthEndpoint:
         assert status == 200
         assert body["status"] == "ok"
         assert body["service"] == "zhihuiti"
+        assert body["max_active_agents"] > 0
+        assert body["auto_mint_enabled"] is False
 
     def test_healthz_reports_runtime_without_secrets(self, server, monkeypatch):
         monkeypatch.delenv("ZEABUR_GIT_COMMIT_SHA", raising=False)
@@ -107,6 +112,14 @@ class TestHealthEndpoint:
         assert body["status"] == "ready"
         assert body["provider"] == "deepseek"
         assert body["operator_api_configured"] is True
+
+    def test_operations_status_exposes_governance_and_forecast(self, server):
+        status, body = _get(server, "/api/operations/status")
+
+        assert status == 200
+        assert "warnings" in body
+        assert body["governance"]["auto_mint_enabled"] is False
+        assert "persistence_baseline_accuracy" in body["forecast"]
 
 
 class TestOperatorProtection:
@@ -135,6 +148,39 @@ class TestOperatorProtection:
         status, body = _get(server, "/api/goals/example")
         assert status == 401
         assert body["error"] == "operator authorization required"
+
+
+class TestAlertLifecycle:
+    def test_repeated_alerts_are_coalesced(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("ZHIHUITI_DATA", str(tmp_path))
+        monkeypatch.setattr(oracle_server, "_alerts", [])
+        alert = {
+            "instrument": "BTC_USDT",
+            "action_type": "alert",
+            "message": "BTC signal high",
+            "domain": "crypto",
+        }
+
+        assert _record_alerts([alert], now=1000) == {"created": 1, "updated": 0}
+        assert _record_alerts([alert], now=1100) == {"created": 0, "updated": 1}
+        assert len(oracle_server._alerts) == 1
+        assert oracle_server._alerts[0]["occurrences"] == 2
+
+    def test_operator_can_acknowledge_alert(self, server, tmp_path, monkeypatch):
+        monkeypatch.setenv("ZHIHUITI_DATA", str(tmp_path))
+        monkeypatch.setattr(oracle_server, "_alerts", [])
+        _record_alerts([{
+            "instrument": "ETH_USDT",
+            "action_type": "alert",
+            "message": "ETH signal high",
+            "domain": "crypto",
+        }], now=2000)
+        alert_id = oracle_server._alerts[0]["id"]
+
+        status, body = _post(server, "/api/oracle/alerts/ack", {"id": alert_id})
+
+        assert status == 200
+        assert body["status"] == "acknowledged"
 
 
 class TestCorsPolicy:
@@ -167,6 +213,8 @@ class TestPublicEvolutionStatus:
             "completed",
             "failed",
             "autonomous_evolution",
+            "limits",
+            "runtime",
         }
         assert "recent_goals" not in body
 
@@ -304,6 +352,44 @@ class TestMacroRefreshStatus:
         assert oracle_server._MACRO_META["live_fields"] == 0
         assert not (tmp_path / "macro.db").exists()
 
+    def test_macro_http_retries_transient_timeout(self, monkeypatch):
+        calls = []
+
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self):
+                return b"ok"
+
+        def urlopen(*args, **kwargs):
+            calls.append(1)
+            if len(calls) < 3:
+                raise TimeoutError("temporary")
+            return Response()
+
+        monkeypatch.setenv("ZHIHUITI_MACRO_HTTP_RETRIES", "3")
+        monkeypatch.setattr("urllib.request.urlopen", urlopen)
+        monkeypatch.setattr(oracle_server.time, "sleep", lambda *_: None)
+
+        assert oracle_server._macro_http_get("https://example.test") == "ok"
+        assert len(calls) == 3
+
+
+class TestScheduledWatchlist:
+    def test_watchlist_can_be_configured_without_duplicates(self, monkeypatch):
+        monkeypatch.setenv("ZHIHUITI_SCAN_CRYPTO", "BTC_USDT,ETH_USDT,BTC_USDT")
+        monkeypatch.setenv("ZHIHUITI_SCAN_EQUITIES", "TSLA")
+
+        watchlist = _scheduled_scan_watchlist()
+
+        assert watchlist["crypto"] == ["BTC_USDT", "ETH_USDT"]
+        assert watchlist["equities"] == ["TSLA"]
+        assert watchlist["forex"] == ["EURUSD=X", "GBPUSD=X", "USDJPY=X"]
+
 
 class TestEnvironmentFlags:
     @pytest.mark.parametrize("value", ["1", "true", "TRUE", "yes", "on"])
@@ -315,6 +401,17 @@ class TestEnvironmentFlags:
     def test_false_and_unknown_values_do_not_enable_flag(self, monkeypatch, value):
         monkeypatch.setenv("TEST_FEATURE_FLAG", value)
         assert env_enabled("TEST_FEATURE_FLAG") is False
+
+    def test_evolution_limits_are_bounded(self, monkeypatch):
+        monkeypatch.setenv("ZHIHUITI_EVOLVE_MAX_CYCLES", "999")
+        monkeypatch.setenv("ZHIHUITI_EVOLVE_MAX_GOALS", "0")
+        monkeypatch.setenv("ZHIHUITI_EVOLVE_MAX_TOKENS", "bad")
+
+        assert _evolution_limits() == {
+            "max_cycles": 100,
+            "max_goals": 1,
+            "max_tokens": 100000,
+        }
 
 
 # ── 404 handling ──────────────────────────────────────────────────────────

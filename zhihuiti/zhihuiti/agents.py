@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import uuid
 from typing import Any, TYPE_CHECKING
@@ -185,6 +186,17 @@ class AgentManager:
         if depth > MAX_DEPTH:
             raise ValueError(f"Cannot spawn agent: depth {depth} exceeds max {MAX_DEPTH}")
 
+        max_active = max(1, int(os.environ.get("ZHIHUITI_MAX_ACTIVE_AGENTS", "36")))
+        max_per_role = max(1, int(os.environ.get("ZHIHUITI_MAX_AGENTS_PER_ROLE", "12")))
+        alive = [agent for agent in self.agents.values() if agent.alive]
+        if len(alive) >= max_active:
+            raise ValueError(f"Cannot spawn agent: active-agent cap {max_active} reached")
+        role_alive = [agent for agent in alive if agent.config.role == role]
+        if len(role_alive) >= max_per_role:
+            raise ValueError(
+                f"Cannot spawn agent: {role.value} role cap {max_per_role} reached"
+            )
+
         if config is None:
             config = AgentConfig(
                 role=role,
@@ -195,6 +207,17 @@ class AgentManager:
 
         agent_id = uuid.uuid4().hex[:12]
         self._apply_runtime_learning(config, agent_id)
+
+        # Reject realm overruns before mutating treasury state.
+        if self.realm_manager:
+            realm = self.realm_manager.assign_realm(role)
+            realm_state = self.realm_manager.realms[realm]
+            remaining = realm_state.budget_remaining
+            if realm_state.budget_allocated > 0 and remaining < budget:
+                raise ValueError(
+                    f"Cannot spawn agent: {realm.value} realm budget exhausted "
+                    f"({remaining:.1f} remaining)"
+                )
 
         # Fund from treasury if economy is active
         if self.economy:

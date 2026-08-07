@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -47,6 +48,17 @@ class Orchestrator:
                  tools_enabled: bool = False):
         self.llm = LLM(model=model)
         self.memory = Memory(db_path=db_path)
+        max_active = max(1, int(os.environ.get("ZHIHUITI_MAX_ACTIVE_AGENTS", "36")))
+        retained = max(1, min(
+            max_active,
+            int(os.environ.get("ZHIHUITI_RETAIN_ACTIVE_AGENTS", "24")),
+        ))
+        retained_per_role = max(1, int(os.environ.get(
+            "ZHIHUITI_RETAIN_AGENTS_PER_ROLE", "6",
+        )))
+        self.pruned_agents = self.memory.prune_alive_agents(
+            retained, retained_per_role,
+        )
         self.economy = Economy(self.memory)
         self.bloodline = Bloodline(self.memory)
         self.realm_manager = RealmManager(self.memory)
@@ -122,7 +134,10 @@ class Orchestrator:
             self.harness.apply_selected_config(agent.config, agent.id)
 
         # Allocate initial realm budgets from treasury
-        self.realm_manager.allocate_budgets(self.economy.treasury.balance * 0.5)
+        self.realm_manager.allocate_budgets(
+            self.economy.treasury.balance * 0.5,
+            reset=True,
+        )
 
     def propose_improvement_candidate(self, role: AgentRole) -> str:
         """Turn current judge feedback into a gated, non-active candidate."""

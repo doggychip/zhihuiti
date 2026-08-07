@@ -21,6 +21,8 @@ Environment:
   ZHIHUITI_AUTO_EVOLVE=1 — enable background goal execution & evolution
   ZHIHUITI_ORACLE_SCAN=0 — disable scheduled read-only market collection
   ZHIHUITI_ORACLE_SCAN_INTERVAL — collection interval in seconds (default: 1800)
+  ZHIHUITI_SCAN_CRYPTO / _EQUITIES / _FOREX / _INDICES — CSV watchlists
+  ZHIHUITI_MACRO_HTTP_RETRIES — macro source attempts (default: 3)
 """
 
 from __future__ import annotations
@@ -30,7 +32,10 @@ import hmac
 import os
 import sys
 import threading
+import time
+import uuid
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse, parse_qs
 
@@ -169,6 +174,10 @@ def _runtime_status() -> dict[str, Any]:
         provider = "openai"
     elif os.environ.get("LLM_API_KEY"):
         provider = "custom"
+    try:
+        max_active_agents = max(1, int(os.environ.get("ZHIHUITI_MAX_ACTIVE_AGENTS", "36")))
+    except ValueError:
+        max_active_agents = 36
     return {
         "service": "zhihuiti",
         "commit": _runtime_commit(),
@@ -176,6 +185,8 @@ def _runtime_status() -> dict[str, Any]:
         "llm_configured": _has_llm_key(),
         "operator_api_configured": bool(os.environ.get("ZHIHUITI_API_TOKEN", "").strip()),
         "autonomous_evolution": env_enabled("ZHIHUITI_AUTO_EVOLVE"),
+        "max_active_agents": max_active_agents,
+        "auto_mint_enabled": env_enabled("ZHIHUITI_ALLOW_AUTO_MINT"),
     }
 
 
@@ -200,10 +211,95 @@ _ORACLE_SCAN_META = {
     "agent_actions": 0,
     "errors": [],
     "backtest": {},
+    "watchlist": {},
 }
 _oracle_scan_meta_lock = threading.Lock()
 _oracle_scan_start_lock = threading.Lock()
 _oracle_scan_thread = None
+
+
+def _alerts_path() -> Path:
+    return Path(os.environ.get("ZHIHUITI_DATA", "/app/data")) / "oracle_alerts.json"
+
+
+def _persist_alerts_locked() -> None:
+    """Persist alert lifecycle state; caller must hold ``_alerts_lock``."""
+    try:
+        path = _alerts_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.with_suffix(".tmp")
+        temporary.write_text(json.dumps(_alerts[-500:]))
+        os.replace(temporary, path)
+    except OSError:
+        pass
+
+
+def _load_alerts() -> None:
+    try:
+        payload = json.loads(_alerts_path().read_text())
+        if isinstance(payload, list):
+            _alerts.extend(item for item in payload[-500:] if isinstance(item, dict))
+    except (OSError, ValueError, TypeError):
+        pass
+
+
+def _record_alerts(alerts: list[dict], now: float | None = None) -> dict[str, int]:
+    """Create or coalesce alerts using a configurable cooldown and expiry."""
+    now = now or time.time()
+    cooldown = max(60, int(os.environ.get("ZHIHUITI_ALERT_COOLDOWN_SECONDS", "21600")))
+    ttl = max(cooldown, int(os.environ.get("ZHIHUITI_ALERT_TTL_SECONDS", "86400")))
+    created = 0
+    updated = 0
+    with _alerts_lock:
+        for existing in _alerts:
+            if existing.get("status", "active") == "active" and existing.get("expires_at", 0) <= now:
+                existing["status"] = "expired"
+
+        for raw in alerts:
+            alert = dict(raw)
+            identity = (
+                alert.get("instrument", ""),
+                alert.get("action_type", "alert"),
+                alert.get("message", ""),
+            )
+            duplicate = next((
+                existing for existing in reversed(_alerts)
+                if existing.get("status", "active") == "active"
+                and (
+                    existing.get("instrument", ""),
+                    existing.get("action_type", "alert"),
+                    existing.get("message", ""),
+                ) == identity
+                and now - existing.get("last_seen_at", existing.get("timestamp", 0)) < cooldown
+            ), None)
+            if duplicate:
+                duplicate["last_seen_at"] = now
+                duplicate["timestamp"] = now
+                duplicate["occurrences"] = int(duplicate.get("occurrences", 1)) + 1
+                duplicate["expires_at"] = now + ttl
+                duplicate["data"] = alert.get("data", duplicate.get("data", {}))
+                updated += 1
+                continue
+
+            alert.update({
+                "id": alert.get("id") or uuid.uuid4().hex[:16],
+                "timestamp": now,
+                "first_seen_at": now,
+                "last_seen_at": now,
+                "occurrences": 1,
+                "expires_at": now + ttl,
+                "status": "active",
+            })
+            _alerts.append(alert)
+            created += 1
+
+        if len(_alerts) > 500:
+            _alerts[:] = _alerts[-500:]
+        _persist_alerts_locked()
+    return {"created": created, "updated": updated}
+
+
+_load_alerts()
 
 
 def _get_history():
@@ -341,8 +437,18 @@ def _macro_http_get(url, timeout=6, ua="zhihuiti-macro/1.0"):
     import urllib.request
     # ua=None sends urllib's default User-Agent — FRED's WAF hangs on custom UAs
     req = urllib.request.Request(url, headers={"User-Agent": ua} if ua else {})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return r.read().decode("utf-8", "replace")
+    try:
+        attempts = max(1, min(5, int(os.environ.get("ZHIHUITI_MACRO_HTTP_RETRIES", "3"))))
+    except ValueError:
+        attempts = 3
+    for attempt in range(attempts):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return r.read().decode("utf-8", "replace")
+        except Exception:
+            if attempt + 1 >= attempts:
+                raise
+            time.sleep(0.2 * (2 ** attempt))
 
 
 def _fred_series(series_id, days_back=0):
@@ -828,6 +934,8 @@ class OracleHandler(BaseHTTPRequestHandler):
             self._handle_evolution_status()
         elif path == "/api/harness":
             self._handle_harness_status()
+        elif path == "/api/operations/status":
+            self._handle_operations_status()
         # ── Backtest endpoints ──
         elif path == "/api/backtest/run":
             self._handle_backtest_run()
@@ -869,6 +977,8 @@ class OracleHandler(BaseHTTPRequestHandler):
             self._handle_watchlist_post()
         elif path == "/api/oracle/scan/all":
             self._handle_scan_all()
+        elif path == "/api/oracle/alerts/ack":
+            self._handle_alert_ack()
         # ── Agent POST endpoints ──
         elif path == "/api/oracle/agents":
             self._handle_agent_create()
@@ -1162,16 +1272,51 @@ class OracleHandler(BaseHTTPRequestHandler):
     def _handle_alerts(self, qs):
         """GET /api/oracle/alerts — get recent alerts."""
         try:
-            limit = int(qs.get("limit", ["50"])[0])
+            limit = max(1, min(200, int(qs.get("limit", ["50"])[0])))
             domain = qs.get("domain", [None])[0]
+            include_inactive = qs.get("include_inactive", ["false"])[0].lower() == "true"
+            now = time.time()
 
             with _alerts_lock:
-                filtered = _alerts if not domain else [a for a in _alerts if a["domain"] == domain]
-                result = filtered[-limit:]
+                for alert in _alerts:
+                    if alert.get("status", "active") == "active" and alert.get("expires_at", 0) <= now:
+                        alert["status"] = "expired"
+                filtered = [
+                    alert for alert in _alerts
+                    if (not domain or alert.get("domain") == domain)
+                    and (include_inactive or alert.get("status", "active") == "active")
+                ]
+                result = sorted(
+                    filtered,
+                    key=lambda alert: alert.get("last_seen_at", alert.get("timestamp", 0)),
+                )[-limit:]
 
-            _json_response(self, {"alerts": list(reversed(result)), "count": len(result)})
+            _json_response(self, {
+                "alerts": list(reversed(result)),
+                "count": len(result),
+                "active_total": sum(
+                    1 for alert in _alerts if alert.get("status", "active") == "active"
+                ),
+            })
         except Exception as e:
             _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_alert_ack(self):
+        """POST /api/oracle/alerts/ack — acknowledge one alert by ID."""
+        alert_id = str(_read_body(self).get("id", "")).strip()
+        if not alert_id:
+            _json_response(self, {"error": "id is required"}, 400)
+            return
+        with _alerts_lock:
+            alert = next((item for item in _alerts if item.get("id") == alert_id), None)
+            if alert is None:
+                _json_response(self, {"error": "alert not found"}, 404)
+                return
+            alert["status"] = "acknowledged"
+            alert["acknowledged_at"] = time.time()
+            _persist_alerts_locked()
+            result = dict(alert)
+        _json_response(self, result)
 
     def _handle_cross_domain(self, qs):
         """GET /api/oracle/cross-domain — run cross-domain correlation on latest scans."""
@@ -1227,11 +1372,8 @@ class OracleHandler(BaseHTTPRequestHandler):
                 alerts = generate_alerts(snapshots, _prev_snapshots, correlations)
                 _prev_snapshots = snapshots
 
-            # Store alerts
-            with _alerts_lock:
-                _alerts.extend([a.to_dict() for a in alerts])
-                if len(_alerts) > 200:
-                    _alerts[:] = _alerts[-200:]
+            # Store alerts with lifecycle-aware deduplication.
+            _record_alerts([a.to_dict() for a in alerts])
 
             _json_response(self, {
                 "correlations": [c.to_dict() for c in correlations],
@@ -1632,6 +1774,7 @@ class OracleHandler(BaseHTTPRequestHandler):
                 "bloodline": data.get("bloodline", {}),
                 "inspection": data.get("inspection", {}),
                 "memory": data.get("memory", {}),
+                "governance": data.get("governance", {}),
             })
         except Exception as e:
             _json_response(self, {"error": str(e)}, 500)
@@ -1755,40 +1898,9 @@ class OracleHandler(BaseHTTPRequestHandler):
     def _handle_backtest_accuracy(self):
         """GET /api/backtest/accuracy — overall prediction accuracy stats."""
         try:
-            from zhihuiti.backtest import _predictions, _predictions_lock
+            from zhihuiti.backtest import get_forward_accuracy_summary
 
-            with _predictions_lock:
-                verified = [p for p in _predictions if p.verified_at > 0]
-                total = len(verified)
-                correct = sum(1 for p in verified if p.correct)
-
-                # Per-regime accuracy
-                regime_stats: dict[str, dict] = {}
-                for p in verified:
-                    r = p.current_regime
-                    if r not in regime_stats:
-                        regime_stats[r] = {"total": 0, "correct": 0}
-                    regime_stats[r]["total"] += 1
-                    if p.correct:
-                        regime_stats[r]["correct"] += 1
-
-                for stats in regime_stats.values():
-                    stats["accuracy"] = stats["correct"] / stats["total"] if stats["total"] > 0 else 0.0
-
-                # Recent predictions
-                recent = [p.to_dict() for p in sorted(_predictions, key=lambda x: x.timestamp, reverse=True)[:20]]
-
-            _json_response(self, {
-                "status": "validated" if total >= 30 else "collecting",
-                "minimum_verified_predictions": 30,
-                "total_predictions": len(_predictions),
-                "verified": total,
-                "correct": correct,
-                "accuracy": correct / total if total > 0 else 0.0,
-                "unverified": len(_predictions) - total,
-                "regime_accuracy": regime_stats,
-                "recent": recent,
-            })
+            _json_response(self, get_forward_accuracy_summary())
         except Exception as e:
             _json_response(self, {"error": str(e)}, 500)
 
@@ -1804,6 +1916,80 @@ class OracleHandler(BaseHTTPRequestHandler):
             "completed": completed,
             "failed": failed,
             "autonomous_evolution": env_enabled("ZHIHUITI_AUTO_EVOLVE"),
+            "limits": _evolution_limits(),
+            "runtime": dict(_self_loop_meta),
+        })
+
+    def _handle_operations_status(self):
+        """GET /api/operations/status — compact, alertable production health."""
+        import datetime as dt
+
+        with _oracle_scan_meta_lock:
+            scan = json.loads(json.dumps(_ORACLE_SCAN_META))
+        completed_at = scan.get("last_completed_at")
+        scan_age_seconds = None
+        if completed_at:
+            try:
+                completed = dt.datetime.fromisoformat(completed_at)
+                scan_age_seconds = max(
+                    0, int((dt.datetime.now(dt.timezone.utc) - completed).total_seconds())
+                )
+            except ValueError:
+                pass
+        stale_after = max(120, int(scan.get("interval_seconds", 1800)) * 2)
+
+        with _alerts_lock:
+            active_alerts = sum(
+                1 for alert in _alerts if alert.get("status", "active") == "active"
+            )
+
+        try:
+            from zhihuiti.backtest import get_forward_accuracy_summary
+            forecast = get_forward_accuracy_summary()
+            forecast = {key: value for key, value in forecast.items() if key != "recent"}
+        except Exception:
+            forecast = {"status": "unavailable"}
+
+        governance = {
+            "autonomous_evolution": env_enabled("ZHIHUITI_AUTO_EVOLVE"),
+            "auto_mint_enabled": env_enabled("ZHIHUITI_ALLOW_AUTO_MINT"),
+            "max_active_agents": max(
+                1, int(os.environ.get("ZHIHUITI_MAX_ACTIVE_AGENTS", "36"))
+            ),
+            "max_agents_per_role": max(
+                1, int(os.environ.get("ZHIHUITI_MAX_AGENTS_PER_ROLE", "12"))
+            ),
+        }
+        warnings = []
+        if scan.get("errors"):
+            warnings.append("scan_errors")
+        if scan_age_seconds is None or scan_age_seconds > stale_after:
+            warnings.append("scan_stale")
+        if _MACRO_META.get("errors"):
+            warnings.append("macro_partial")
+        if forecast.get("status") != "validated":
+            warnings.append("forecast_not_better_than_baseline")
+        if governance["auto_mint_enabled"]:
+            warnings.append("auto_mint_enabled")
+
+        _json_response(self, {
+            "status": "degraded" if warnings else "ok",
+            "commit": _runtime_commit(),
+            "warnings": warnings,
+            "scan": {
+                **scan,
+                "age_seconds": scan_age_seconds,
+                "stale_after_seconds": stale_after,
+            },
+            "macro": {
+                "last_attempt_at": _MACRO_META.get("last_attempt_at"),
+                "refreshed_at": _MACRO_META.get("refreshed_at"),
+                "live_fields": _MACRO_META.get("live_fields", 0),
+                "errors": list(_MACRO_META.get("errors", [])),
+            },
+            "alerts": {"active": active_alerts},
+            "forecast": forecast,
+            "governance": governance,
         })
 
     def _handle_harness_status(self):
@@ -1965,19 +2151,44 @@ def _utc_now_iso() -> str:
     return dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
 
 
+def _watchlist_value(name: str, defaults: list[str]) -> list[str]:
+    raw = os.environ.get(name, "").strip()
+    values = [value.strip() for value in raw.split(",") if value.strip()] if raw else defaults
+    return list(dict.fromkeys(values))[:50]
+
+
+def _scheduled_scan_watchlist() -> dict[str, list[str]]:
+    """Return the bounded, operator-configurable public scan universe."""
+    return {
+        "crypto": _watchlist_value(
+            "ZHIHUITI_SCAN_CRYPTO", ["BTC_USDT", "ETH_USDT", "SOL_USDT"],
+        ),
+        "equities": _watchlist_value(
+            "ZHIHUITI_SCAN_EQUITIES", ["AAPL", "MSFT", "NVDA"],
+        ),
+        "forex": _watchlist_value(
+            "ZHIHUITI_SCAN_FOREX", ["EURUSD=X", "GBPUSD=X", "USDJPY=X"],
+        ),
+        "indices": _watchlist_value(
+            "ZHIHUITI_SCAN_INDICES", ["^GSPC", "^N225", "^HSI"],
+        ),
+    }
+
+
 def _collect_oracle_scan_results() -> tuple[dict[str, list], list[str]]:
     """Collect a small, representative read-only market set."""
     from zhihuiti.market_fetcher import scan_equities, scan_forex, scan_indices
     from zhihuiti.scanner import scan_instruments
 
+    watchlist = _scheduled_scan_watchlist()
     collectors = {
         "crypto": lambda: scan_instruments(
-            instruments=["BTC_USDT", "ETH_USDT", "SOL_USDT"],
+            instruments=watchlist["crypto"],
             fetch_fn=_fetch_crypto_candles,
         ),
-        "equities": lambda: scan_equities(symbols=["AAPL", "MSFT", "NVDA"]),
-        "forex": lambda: scan_forex(symbols=["EURUSD=X", "GBPUSD=X", "USDJPY=X"]),
-        "indices": lambda: scan_indices(symbols=["^GSPC", "^N225", "^HSI"]),
+        "equities": lambda: scan_equities(symbols=watchlist["equities"]),
+        "forex": lambda: scan_forex(symbols=watchlist["forex"]),
+        "indices": lambda: scan_indices(symbols=watchlist["indices"]),
     }
     results: dict[str, list] = {}
     errors = []
@@ -2046,10 +2257,7 @@ def _run_oracle_scan_cycle() -> dict:
             if "alert" in action["action_type"]
         ]
         if public_alerts:
-            with _alerts_lock:
-                _alerts.extend(public_alerts)
-                if len(_alerts) > 200:
-                    _alerts[:] = _alerts[-200:]
+            _record_alerts(public_alerts)
     except Exception as exc:
         errors.append(f"agents:{type(exc).__name__}")
 
@@ -2065,6 +2273,7 @@ def _run_oracle_scan_cycle() -> dict:
             "agent_actions": action_count,
             "errors": errors,
             "backtest": backtest_info,
+            "watchlist": _scheduled_scan_watchlist(),
         })
         return json.loads(json.dumps(_ORACLE_SCAN_META))
 
@@ -2108,6 +2317,7 @@ def _start_oracle_scan_loop(interval: int = 1800):
 _self_loop_running = False
 _self_loop_log: list[dict] = []
 _self_loop_lock = threading.Lock()
+_self_loop_meta = {"cycles": 0, "goals_started": 0, "stop_reason": "disabled"}
 
 SEED_GOALS = [
     "Analyze the current crypto market. Which coins have strongest momentum? Compare BTC, ETH, SOL.",
@@ -2132,6 +2342,20 @@ SEED_GOALS = [
 ]
 
 
+def _evolution_limits() -> dict[str, int]:
+    def bounded(name: str, default: int, minimum: int, maximum: int) -> int:
+        try:
+            return max(minimum, min(maximum, int(os.environ.get(name, str(default)))))
+        except ValueError:
+            return default
+
+    return {
+        "max_cycles": bounded("ZHIHUITI_EVOLVE_MAX_CYCLES", 2, 1, 100),
+        "max_goals": bounded("ZHIHUITI_EVOLVE_MAX_GOALS", 10, 1, 500),
+        "max_tokens": bounded("ZHIHUITI_EVOLVE_MAX_TOKENS", 100000, 1000, 10_000_000),
+    }
+
+
 def _start_self_directed_loop(orch, interval: int):
     """Start the self-directed evolution loop.
 
@@ -2145,6 +2369,8 @@ def _start_self_directed_loop(orch, interval: int):
     """
     global _self_loop_running
     _self_loop_running = True
+    limits = _evolution_limits()
+    _self_loop_meta.update({"cycles": 0, "goals_started": 0, "stop_reason": "running"})
 
     def _generate_new_goals(orch, count: int = 5) -> list[str]:
         """Ask the LLM to generate new goals based on current system state."""
@@ -2205,10 +2431,16 @@ Return a JSON array of goal strings. Each goal should be 1-2 sentences.""",
     def _loop():
         import time
         import random
+        global _self_loop_running
 
         cycle = 0
         while _self_loop_running:
+            if cycle >= limits["max_cycles"]:
+                _self_loop_meta["stop_reason"] = "max_cycles_reached"
+                _self_loop_running = False
+                break
             cycle += 1
+            _self_loop_meta["cycles"] = cycle
             console.print(f"\n  [bold cyan]═══ Self-Directed Cycle {cycle} ═══[/bold cyan]")
 
             # Pick goals: seed goals for first 2 cycles, then self-generated
@@ -2226,7 +2458,16 @@ Return a JSON array of goal strings. Each goal should be 1-2 sentences.""",
             for goal in goals:
                 if not _self_loop_running:
                     break
+                if _self_loop_meta["goals_started"] >= limits["max_goals"]:
+                    _self_loop_meta["stop_reason"] = "max_goals_reached"
+                    _self_loop_running = False
+                    break
+                if getattr(orch.llm, "total_tokens", 0) >= limits["max_tokens"]:
+                    _self_loop_meta["stop_reason"] = "max_tokens_reached"
+                    _self_loop_running = False
+                    break
                 try:
+                    _self_loop_meta["goals_started"] += 1
                     console.print(f"  [cyan]Running:[/cyan] {goal[:80]}...")
                     result = orch.execute_goal(goal)
                     entry = {"goal": goal, "status": "completed", "cycle": cycle}
@@ -2242,6 +2483,8 @@ Return a JSON array of goal strings. Each goal should be 1-2 sentences.""",
                     console.print(f"  [red]Failed:[/red] {e}")
 
             # Sleep until next cycle
+            if not _self_loop_running:
+                break
             console.print(f"  [dim]Next cycle in {interval}s...[/dim]")
             for _ in range(interval):
                 if not _self_loop_running:

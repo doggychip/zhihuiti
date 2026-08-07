@@ -4,10 +4,11 @@ WORKDIR /app
 
 COPY zhihuiti/setup.py zhihuiti/pyproject.toml ./
 COPY zhihuiti/zhihuiti/ zhihuiti/
+RUN pip install --no-cache-dir -e .
+
 COPY zhihuiti/client/src/data/ client/src/data/
 RUN test -s client/src/data/theories.json \
-    && test -s client/src/data/collisions.json \
-    && pip install --no-cache-dir -e .
+    && test -s client/src/data/collisions.json
 
 VOLUME /app/data
 ENV HOME=/app/data
@@ -15,6 +16,19 @@ ENV ZHIHUITI_DB="/app/data/zhihuiti.db"
 ENV ZHIHUITI_DATA="/app/data"
 ENV ZHIHUITI_ORACLE_SCAN="1"
 ENV ZHIHUITI_ORACLE_SCAN_INTERVAL="1800"
+ENV ZHIHUITI_AUTO_EVOLVE="0"
+ENV ZHIHUITI_ALLOW_AUTO_MINT="0"
+ENV ZHIHUITI_MAX_ACTIVE_AGENTS="36"
+ENV ZHIHUITI_MAX_AGENTS_PER_ROLE="12"
+ENV ZHIHUITI_RETAIN_ACTIVE_AGENTS="24"
+ENV ZHIHUITI_RETAIN_AGENTS_PER_ROLE="6"
+ENV ZHIHUITI_EVOLVE_MAX_CYCLES="2"
+ENV ZHIHUITI_EVOLVE_MAX_GOALS="10"
+ENV ZHIHUITI_EVOLVE_MAX_TOKENS="100000"
+ENV ZHIHUITI_PREDICTION_HORIZON_SECONDS="14400"
+ENV ZHIHUITI_MACRO_HTTP_RETRIES="3"
+ENV ZHIHUITI_ALERT_COOLDOWN_SECONDS="21600"
+ENV ZHIHUITI_ALERT_TTL_SECONDS="86400"
 
 EXPOSE 8377
 ENV PORT=8377

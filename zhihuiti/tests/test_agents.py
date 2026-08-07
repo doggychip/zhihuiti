@@ -131,6 +131,21 @@ class TestSpawn:
         agent = mgr.spawn(role=AgentRole.ANALYST, config=config, budget=50.0)
         assert agent.config.system_prompt == "custom prompt"
 
+    def test_spawn_respects_global_active_cap(self, monkeypatch):
+        monkeypatch.setenv("ZHIHUITI_MAX_ACTIVE_AGENTS", "1")
+        mgr, _ = _setup()
+        _spawn(mgr)
+        with pytest.raises(ValueError, match="active-agent cap"):
+            _spawn(mgr, role=AgentRole.ANALYST)
+
+    def test_spawn_respects_role_cap(self, monkeypatch):
+        monkeypatch.setenv("ZHIHUITI_MAX_ACTIVE_AGENTS", "10")
+        monkeypatch.setenv("ZHIHUITI_MAX_AGENTS_PER_ROLE", "1")
+        mgr, _ = _setup()
+        _spawn(mgr)
+        with pytest.raises(ValueError, match="role cap"):
+            _spawn(mgr)
+
 
 # ---------------------------------------------------------------------------
 # AgentManager.execute_task

@@ -208,6 +208,20 @@ zhihuiti dashboard              # Launch web dashboard
 | `ZHIHUITI_DATA` | Persistent directory for oracle history and prediction evidence |
 | `ZHIHUITI_ORACLE_SCAN` | Set to `0` to disable scheduled read-only market collection |
 | `ZHIHUITI_ORACLE_SCAN_INTERVAL` | Read-only collection interval in seconds (default: `1800`) |
+| `ZHIHUITI_SCAN_CRYPTO`, `ZHIHUITI_SCAN_EQUITIES`, `ZHIHUITI_SCAN_FOREX`, `ZHIHUITI_SCAN_INDICES` | Optional comma-separated scheduled watchlists |
+| `ZHIHUITI_AUTO_EVOLVE` | Operator-controlled autonomous training loop; disabled by default |
+| `ZHIHUITI_ALLOW_AUTO_MINT` | Permit treasury replenishment for agent spawning; disabled by default |
+| `ZHIHUITI_MAX_ACTIVE_AGENTS` | Hard active-agent cap (default: `36`) |
+| `ZHIHUITI_MAX_AGENTS_PER_ROLE` | Hard per-role agent cap (default: `12`) |
+| `ZHIHUITI_RETAIN_ACTIVE_AGENTS` | Best persisted agents restored at startup (default: `24`) |
+| `ZHIHUITI_RETAIN_AGENTS_PER_ROLE` | Per-role startup retention cap (default: `6`) |
+| `ZHIHUITI_EVOLVE_MAX_CYCLES` | Maximum autonomous cycles per process start (default: `2`) |
+| `ZHIHUITI_EVOLVE_MAX_GOALS` | Maximum autonomous goals per process start (default: `10`) |
+| `ZHIHUITI_EVOLVE_MAX_TOKENS` | Maximum autonomous LLM tokens per process start (default: `100000`) |
+| `ZHIHUITI_PREDICTION_HORIZON_SECONDS` | Minimum forward verification horizon (default: `14400`, four hours) |
+| `ZHIHUITI_ALERT_COOLDOWN_SECONDS` | Duplicate-alert coalescing window (default: `21600`) |
+| `ZHIHUITI_ALERT_TTL_SECONDS` | Active alert lifetime (default: `86400`) |
+| `ZHIHUITI_MACRO_HTTP_RETRIES` | Bounded macro-source attempts (default: `3`) |
 
 The production oracle collects a representative crypto, equity, forex, and
 index set on startup and every 30 minutes. `GET /api/oracle/scan/status`

@@ -3,6 +3,32 @@
 from zhihuiti.memory import Memory
 
 
+def test_prune_alive_agents_keeps_top_agents_with_role_diversity():
+    mem = Memory(":memory:")
+    for index, (role, score) in enumerate((
+        ("researcher", 0.9),
+        ("researcher", 0.8),
+        ("researcher", 0.7),
+        ("analyst", 0.85),
+        ("analyst", 0.75),
+    )):
+        mem.save_agent(
+            agent_id=f"agent-{index}", role=role, budget=100.0,
+            depth=0, avg_score=score, alive=True,
+        )
+
+    assert mem.prune_alive_agents(max_alive=3, max_per_role=2) == 2
+    alive = mem._query(
+        "SELECT role, avg_score FROM agents WHERE alive = 1 ORDER BY avg_score DESC"
+    )
+    assert [(row["role"], row["avg_score"]) for row in alive] == [
+        ("researcher", 0.9),
+        ("analyst", 0.85),
+        ("researcher", 0.8),
+    ]
+    mem.close()
+
+
 def test_memory_init():
     mem = Memory(":memory:")
     stats = mem.get_stats()

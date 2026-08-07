@@ -9,6 +9,7 @@ Modeled after 如老师's governance architecture:
 
 from __future__ import annotations
 
+import os
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
@@ -343,7 +344,10 @@ class Economy:
     def fund_spawn(self, budget: float = AGENT_STARTING_BUDGET) -> bool:
         """Allocate budget from treasury for a new agent."""
         success = self.treasury.fund_agent_spawn(budget)
-        if not success:
+        allow_auto_mint = os.environ.get("ZHIHUITI_ALLOW_AUTO_MINT", "0").strip().lower() in {
+            "1", "true", "yes", "on",
+        }
+        if not success and allow_auto_mint:
             # Auto-mint if treasury is depleted
             self.central_bank.mint(budget * 2, "treasury", "Mint for agent spawn")
             self.treasury.balance += budget * 2
