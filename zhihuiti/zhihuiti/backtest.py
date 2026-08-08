@@ -35,6 +35,7 @@ class PredictionRecord:
     patterns_at_prediction: list[str]  # pattern names active at prediction time
     price_at_prediction: float
     baseline_regime: str = ""
+    model_version: str = "incumbent-v1"
     # Filled in after verification
     actual_regime: str = ""
     actual_price: float = 0.0
@@ -130,6 +131,7 @@ def record_prediction(
     probabilities: dict[str, float],
     patterns: list[str],
     price: float,
+    model_version: str = "incumbent-v1",
 ) -> PredictionRecord:
     """Record a prediction for future verification."""
     pred = PredictionRecord(
@@ -142,6 +144,7 @@ def record_prediction(
         patterns_at_prediction=patterns,
         price_at_prediction=price,
         baseline_regime=current_regime,
+        model_version=model_version,
     )
     with _predictions_lock:
         _predictions.append(pred)
@@ -180,12 +183,19 @@ def verify_predictions(instrument: str, actual_regime: str, actual_price: float)
     return verified
 
 
-def get_forward_accuracy_summary(minimum_verified: int = 30) -> dict:
+def get_forward_accuracy_summary(
+    minimum_verified: int = 30,
+    model_version: str = "incumbent-v1",
+) -> dict:
     """Measure forecast value relative to a naive regime-persistence baseline."""
     from zhihuiti.oracle_intelligence import REGIMES
 
     with _predictions_lock:
         predictions = list(_predictions)
+    predictions = [
+        prediction for prediction in predictions
+        if prediction.model_version == model_version
+    ]
     verified = [prediction for prediction in predictions if prediction.verified_at > 0]
     total = len(verified)
     correct = sum(1 for prediction in verified if prediction.correct)
@@ -256,6 +266,7 @@ def get_forward_accuracy_summary(minimum_verified: int = 30) -> dict:
         for prediction in sorted(predictions, key=lambda item: item.timestamp, reverse=True)[:20]
     ]
     return {
+        "model_version": model_version,
         "status": status,
         "minimum_verified_predictions": minimum_verified,
         "minimum_transition_predictions": 10,
@@ -287,6 +298,38 @@ def get_forward_accuracy_summary(minimum_verified: int = 30) -> dict:
         "unverified": len(predictions) - total,
         "regime_accuracy": regime_stats,
         "recent": recent,
+    }
+
+
+def get_forecast_scorecards() -> dict:
+    """Return isolated incumbent and shadow scorecards with a strict promotion gate."""
+    with _predictions_lock:
+        versions = sorted({prediction.model_version for prediction in _predictions})
+
+    incumbent = get_forward_accuracy_summary(model_version="incumbent-v1")
+    models = {"incumbent-v1": incumbent}
+    for version in versions:
+        if version != "incumbent-v1":
+            models[version] = get_forward_accuracy_summary(model_version=version)
+
+    candidate = models.get("transition-calibrated-v1")
+    promotion_ready = bool(
+        candidate
+        and candidate["verified"] >= candidate["minimum_verified_predictions"]
+        and candidate["transition_predictions"]
+        >= candidate["minimum_transition_predictions"]
+        and candidate["skill_over_persistence"] > 0
+        and candidate["brier_score"] is not None
+        and incumbent["brier_score"] is not None
+        and candidate["brier_score"] < incumbent["brier_score"]
+        and (candidate["transition_precision"] or 0) > 0
+        and (candidate["transition_recall"] or 0) > 0
+    )
+    return {
+        "production_model": "incumbent-v1",
+        "shadow_model": "transition-calibrated-v1",
+        "promotion_ready": promotion_ready,
+        "models": models,
     }
 
 
@@ -544,7 +587,10 @@ def auto_record_and_verify(scan_results: list, history=None) -> dict:
 
     Returns summary of verifications and new predictions.
     """
-    from zhihuiti.oracle_intelligence import predict_regime
+    from zhihuiti.oracle_intelligence import (
+        predict_regime,
+        predict_transition_calibrated,
+    )
     from zhihuiti.scanner import RegimeHistory
 
     history = history or RegimeHistory()
@@ -553,6 +599,7 @@ def auto_record_and_verify(scan_results: list, history=None) -> dict:
     eligible_instruments = 0
     warming_instruments = 0
     prediction_errors: list[dict[str, str]] = []
+    shadow_predictions = 0
 
     for result in scan_results:
         instrument = result.instrument if hasattr(result, 'instrument') else result.get("instrument", "")
@@ -589,6 +636,30 @@ def auto_record_and_verify(scan_results: list, history=None) -> dict:
                     price=price,
                 )
                 new_predictions += 1
+
+                with _predictions_lock:
+                    verified_history = [
+                        item.to_dict()
+                        for item in _predictions
+                        if item.verified_at > 0
+                        and item.model_version == "incumbent-v1"
+                    ]
+                shadow = predict_transition_calibrated(
+                    instrument=instrument,
+                    current_regime=regime,
+                    verified_history=verified_history,
+                )
+                record_prediction(
+                    instrument=instrument,
+                    predicted_regime=shadow.predicted_regime,
+                    current_regime=regime,
+                    confidence=shadow.confidence,
+                    probabilities=shadow.probabilities,
+                    patterns=[p["name"] for p in patterns],
+                    price=price,
+                    model_version="transition-calibrated-v1",
+                )
+                shadow_predictions += 1
             else:
                 warming_instruments += 1
         except Exception as exc:
@@ -601,6 +672,7 @@ def auto_record_and_verify(scan_results: list, history=None) -> dict:
         "status": "active" if eligible_instruments else "collecting",
         "verified": verified_count,
         "new_predictions": new_predictions,
+        "shadow_predictions": shadow_predictions,
         "total_stored": len(_predictions),
         "eligible_instruments": eligible_instruments,
         "warming_instruments": warming_instruments,

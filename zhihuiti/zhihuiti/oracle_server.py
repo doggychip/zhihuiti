@@ -2054,9 +2054,13 @@ class OracleHandler(BaseHTTPRequestHandler):
     def _handle_backtest_accuracy(self):
         """GET /api/backtest/accuracy — overall prediction accuracy stats."""
         try:
-            from zhihuiti.backtest import get_forward_accuracy_summary
+            from zhihuiti.backtest import get_forecast_scorecards
 
-            _json_response(self, get_forward_accuracy_summary())
+            scorecards = get_forecast_scorecards()
+            _json_response(self, {
+                **scorecards["models"][scorecards["production_model"]],
+                "scorecards": scorecards,
+            })
         except Exception as e:
             _json_response(self, {"error": str(e)}, 500)
 
@@ -2100,11 +2104,18 @@ class OracleHandler(BaseHTTPRequestHandler):
             )
 
         try:
-            from zhihuiti.backtest import get_forward_accuracy_summary
-            forecast = get_forward_accuracy_summary()
+            from zhihuiti.backtest import get_forecast_scorecards
+            scorecards = get_forecast_scorecards()
+            forecast = scorecards["models"][scorecards["production_model"]]
             forecast = {key: value for key, value in forecast.items() if key != "recent"}
         except Exception:
             forecast = {"status": "unavailable"}
+            scorecards = {
+                "production_model": "incumbent-v1",
+                "shadow_model": "transition-calibrated-v1",
+                "promotion_ready": False,
+                "models": {},
+            }
 
         governance = {
             "autonomous_evolution": env_enabled("ZHIHUITI_AUTO_EVOLVE"),
@@ -2141,6 +2152,22 @@ class OracleHandler(BaseHTTPRequestHandler):
         ):
             warnings.append("snapshot_retention_pending")
 
+        try:
+            llm_status = (
+                _orchestrator.llm.provider_status()
+                if _orchestrator is not None
+                else {"configured": False, "message": "Orchestrator is not initialized."}
+            )
+        except Exception:
+            llm_status = {"configured": False, "message": "LLM status is unavailable."}
+
+        external_alert_channel = os.environ.get(
+            "ZHIHUITI_EXTERNAL_ALERT_CHANNEL", "",
+        ).strip()
+        webhook_configured = bool(
+            os.environ.get("ZHIHUITI_ALERT_WEBHOOK_URL", "").strip()
+        )
+
         _json_response(self, {
             "status": "degraded" if warnings else "ok",
             "commit": _runtime_commit(),
@@ -2160,12 +2187,16 @@ class OracleHandler(BaseHTTPRequestHandler):
             },
             "alerts": {
                 "active": active_alerts,
-                "webhook_configured": bool(
-                    os.environ.get("ZHIHUITI_ALERT_WEBHOOK_URL", "").strip()
+                "delivery_configured": bool(
+                    webhook_configured or external_alert_channel
                 ),
+                "webhook_configured": webhook_configured,
+                "external_channel": external_alert_channel or None,
                 "delivery": dict(_ALERT_DELIVERY_META),
             },
+            "llm": llm_status,
             "forecast": forecast,
+            "forecast_scorecards": scorecards,
             "governance": governance,
             "storage": storage,
         })

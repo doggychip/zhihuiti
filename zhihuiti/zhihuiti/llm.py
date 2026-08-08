@@ -9,6 +9,7 @@ Backend selection (first match wins):
 
 Environment variables:
   DEEPSEEK_API_KEY     — use DeepSeek API
+  DEEPSEEK_FALLBACK_API_KEY — secondary DeepSeek credential for key-level failover
   OPENROUTER_API_KEY   — use OpenRouter
   OPENAI_API_KEY       — use OpenAI
   LLM_API_KEY          — generic API key (requires LLM_API_URL)
@@ -18,9 +19,9 @@ Environment variables:
   LLM_MODEL            — override model for whichever backend is active
   LLM_FALLBACK_MODEL   — model to use on OpenRouter fallback (default: anthropic/claude-sonnet-4)
 
-Fallback behavior (DeepSeek → OpenRouter):
-  When DEEPSEEK_API_KEY is the primary and OPENROUTER_API_KEY is also set,
-  3 consecutive DeepSeek failures trigger automatic failover to OpenRouter.
+Fallback behavior:
+  When DeepSeek is primary, 2 consecutive failures trigger failover to
+  OpenRouter when configured, otherwise to DEEPSEEK_FALLBACK_API_KEY.
   Every 10 minutes, a probe request checks if DeepSeek has recovered.
   All provider switches are logged to stderr.
 """
@@ -79,6 +80,9 @@ class LLM:
 
     def __init__(self, model: str | None = None):
         self._deepseek_key = os.environ.get("DEEPSEEK_API_KEY", "")
+        self._deepseek_fallback_key = os.environ.get(
+            "DEEPSEEK_FALLBACK_API_KEY", "",
+        )
         self._openrouter_key = os.environ.get("OPENROUTER_API_KEY", "")
         self._fallback_model = os.environ.get("LLM_FALLBACK_MODEL", OPENROUTER_DEFAULT_MODEL)
         self._generic_key = os.environ.get("LLM_API_KEY", "")
@@ -122,12 +126,33 @@ class LLM:
         self.total_retries = 0
         self.total_failures = 0
 
-        # Fallback state: only applies when primary is DeepSeek and OpenRouter key exists
+        # Prefer a different provider; otherwise use an independently scoped key.
         self._primary_backend = self._backend
         self._primary_api_key = self._api_key
         self._primary_api_url = self._api_url
         self._primary_model = self.model
-        self._fallback_available = (self._backend == "deepseek" and bool(self._openrouter_key))
+        self._provider_fallback_available = (
+            self._backend == "deepseek" and bool(self._openrouter_key)
+        )
+        self._credential_fallback_available = (
+            self._backend == "deepseek"
+            and bool(self._deepseek_fallback_key)
+            and self._deepseek_fallback_key != self._deepseek_key
+        )
+        self._fallback_available = (
+            self._provider_fallback_available
+            or self._credential_fallback_available
+        )
+        if self._provider_fallback_available:
+            self._fallback_backend = "openrouter"
+            self._fallback_api_key = self._openrouter_key
+            self._fallback_api_url = OPENROUTER_URL
+            self._effective_fallback_model = self._fallback_model
+        else:
+            self._fallback_backend = "deepseek"
+            self._fallback_api_key = self._deepseek_fallback_key
+            self._fallback_api_url = DEEPSEEK_URL
+            self._effective_fallback_model = self._primary_model
         self._consecutive_failures = 0
         self._using_fallback = False
         self._fallback_activated_at: float = 0.0
@@ -145,7 +170,10 @@ class LLM:
             from rich.console import Console
             Console().print(f"  [dim]LLM backend: {backend}[/dim]")
             if self._fallback_available:
-                Console().print(f"  [dim]LLM fallback: OpenRouter ({self._fallback_model})[/dim]")
+                Console().print(
+                    "  [dim]LLM fallback: "
+                    f"{self._fallback_backend} ({self._effective_fallback_model})[/dim]"
+                )
         except Exception:
             pass
 
@@ -154,21 +182,25 @@ class LLM:
     # ------------------------------------------------------------------
 
     def _switch_to_fallback(self) -> None:
-        """Switch from DeepSeek to OpenRouter fallback."""
+        """Switch from the primary DeepSeek credential to the best fallback."""
         self._using_fallback = True
         self._fallback_activated_at = time.monotonic()
-        self._backend = "openrouter"
-        self._api_key = self._openrouter_key
-        self._api_url = OPENROUTER_URL
-        self.model = self._fallback_model
+        self._backend = self._fallback_backend
+        self._api_key = self._fallback_api_key
+        self._api_url = self._fallback_api_url
+        self.model = self._effective_fallback_model
+        fallback_type = (
+            "provider" if self._provider_fallback_available else "credential"
+        )
         print(
-            f"[LLM FALLBACK] Switching to OpenRouter ({self._fallback_model}) "
+            f"[LLM FALLBACK] Switching to {self._fallback_backend} "
+            f"{fallback_type} fallback ({self._effective_fallback_model}) "
             f"after {FALLBACK_CONSECUTIVE_FAILURES} consecutive DeepSeek failures",
             file=sys.stderr,
         )
 
     def _switch_to_primary(self) -> None:
-        """Switch back from OpenRouter fallback to DeepSeek."""
+        """Switch back from fallback to the primary DeepSeek credential."""
         self._using_fallback = False
         self._consecutive_failures = 0
         self._fallback_activated_at = 0.0
@@ -257,6 +289,15 @@ class LLM:
             "ready": None,
             "fallback_configured": self._fallback_available,
             "fallback_active": self._using_fallback,
+            "provider_fallback_configured": self._provider_fallback_available,
+            "credential_fallback_configured": self._credential_fallback_available,
+            "fallback_type": (
+                "provider"
+                if self._provider_fallback_available
+                else "credential"
+                if self._credential_fallback_available
+                else "none"
+            ),
             "message": (
                 "LLM_API_KEY is set but LLM_BASE_URL is missing."
                 if misconfigured_generic
@@ -419,7 +460,8 @@ class LLM:
                 # Primary still down, reset timer and continue with fallback
                 self._fallback_activated_at = time.monotonic()
                 print(
-                    "[LLM FALLBACK] DeepSeek still unavailable, staying on OpenRouter",
+                    "[LLM FALLBACK] DeepSeek primary still unavailable, "
+                    f"staying on {self._fallback_backend} fallback",
                     file=sys.stderr,
                 )
 

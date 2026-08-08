@@ -153,6 +153,65 @@ def predict_regime(
     )
 
 
+def predict_transition_calibrated(
+    instrument: str,
+    current_regime: str,
+    verified_history: list[dict],
+) -> RegimePrediction:
+    """Estimate transition risk from prior forward-verified outcomes.
+
+    This conservative shadow model uses a Beta prior with a 4% transition
+    hazard and learns destination probabilities only from observations that
+    were already verified. It changes probability calibration without forcing
+    a regime switch on sparse evidence.
+    """
+    alternatives = [regime for regime in REGIMES if regime != current_regime]
+    comparable = [
+        item for item in verified_history
+        if item.get("current_regime") == current_regime
+        and item.get("actual_regime") in REGIMES
+    ]
+    transitions = [
+        item for item in comparable
+        if item.get("actual_regime") != current_regime
+    ]
+
+    transition_probability = (len(transitions) + 1.0) / (len(comparable) + 30.0)
+    destination_prior = 0.1
+    denominator = len(transitions) + destination_prior * len(alternatives)
+    destination_counts = {
+        regime: sum(
+            1 for item in transitions if item.get("actual_regime") == regime
+        )
+        for regime in alternatives
+    }
+    probabilities = {
+        regime: (
+            1.0 - transition_probability
+            if regime == current_regime
+            else transition_probability
+            * (destination_counts[regime] + destination_prior)
+            / denominator
+        )
+        for regime in REGIMES
+    }
+    predicted = max(probabilities, key=probabilities.get)
+    confidence = probabilities[predicted]
+    return RegimePrediction(
+        instrument=instrument,
+        current_regime=current_regime,
+        predicted_regime=predicted,
+        confidence=confidence,
+        probabilities=probabilities,
+        reasoning=(
+            "Shadow forecast calibrated from prior forward-verified transition "
+            f"outcomes (n={len(comparable)}, transition risk="
+            f"{transition_probability:.1%})."
+        ),
+        theory_support=["Bayesian transition-hazard calibration"],
+    )
+
+
 # ── Portfolio Risk Analysis ───────────────────────────────────────────────
 
 @dataclass

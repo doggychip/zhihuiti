@@ -32,9 +32,17 @@ def verify(
     scan = fetch_json(base_url, "/api/oracle/scan/status")
     accuracy = fetch_json(base_url, "/api/backtest/accuracy")
     alerts = fetch_json(base_url, "/api/oracle/alerts?limit=50")
+    operations = fetch_json(base_url, "/api/operations/status")
     governance = status.get("governance", {})
     realms = status.get("realms", {})
     storage = health.get("storage", {})
+    operation_warnings = set(operations.get("warnings", []))
+    non_incident_warnings = {
+        "forecast_collecting",
+        "forecast_not_better_than_baseline",
+    }
+    scan_age = operations.get("scan", {}).get("age_seconds")
+    stale_after = operations.get("scan", {}).get("stale_after_seconds")
 
     checks = {
         "health": health.get("status") == "ok",
@@ -63,6 +71,12 @@ def verify(
         "theory_graph": theories.get("theories", 0) >= 296,
         "scan_completed": bool(scan.get("last_completed_at")),
         "scan_errors": not scan.get("errors"),
+        "scan_fresh": (
+            isinstance(scan_age, int)
+            and isinstance(stale_after, int)
+            and scan_age <= stale_after
+        ),
+        "operations": not (operation_warnings - non_incident_warnings),
         "forecast_benchmark": "persistence_baseline_accuracy" in accuracy,
         "observation_only": all(
             alert.get("execution") == "observation_only"
@@ -77,6 +91,7 @@ def verify(
         "backend_id": health.get("backend_id"),
         "instance_id": storage.get("instance_id"),
         "scan_completed_at": scan.get("last_completed_at"),
+        "operations_warnings": sorted(operation_warnings),
     }
 
 
