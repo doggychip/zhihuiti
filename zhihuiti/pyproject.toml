@@ -22,5 +22,8 @@ dev = ["pytest>=8.0"]
 zhihuiti = "zhihuiti.cli:main"
 silicon-realms = "silicon_realms.cli:main"
 
+[tool.setuptools.packages.find]
+include = ["zhihuiti*", "silicon_realms*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
