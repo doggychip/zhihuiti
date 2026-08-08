@@ -18,7 +18,11 @@ jobs:
       - name: Verify deployed runtime
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
-            python scripts/production_smoke.py --expected-commit "$GITHUB_SHA" --timeout 600
+            python scripts/production_smoke.py \
+              --expected-commit "$GITHUB_SHA" \
+              --expected-instance-id "${{ vars.ZHIHUITI_EXPECTED_INSTANCE_ID }}" \
+              --timeout 600
           else
-            python scripts/production_smoke.py
+            python scripts/production_smoke.py \
+              --expected-instance-id "${{ vars.ZHIHUITI_EXPECTED_INSTANCE_ID }}"
           fi
