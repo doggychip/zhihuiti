@@ -206,3 +206,32 @@ def test_recall_limit():
     snaps = mem.recall(goal_id="g1", limit=3)
     assert len(snaps) == 3
     mem.close()
+
+
+def test_checkpoint_retention_bounds_storage_and_keeps_recent_chain(monkeypatch):
+    monkeypatch.setenv("ZHIHUITI_MAX_SNAPSHOTS", "3")
+    mem = _make_mem()
+    snapshot_ids = [
+        mem.checkpoint(phase=f"p{i}", goal_id="g1") for i in range(5)
+    ]
+
+    retained = mem.recall(goal_id="g1", limit=10)
+    assert {item["id"] for item in retained} == set(snapshot_ids[-3:])
+    chain = mem.get_snapshot_chain(snapshot_ids[-1])
+    assert [item["id"] for item in chain] == list(reversed(snapshot_ids[-3:]))
+    mem.close()
+
+
+def test_explicit_snapshot_pruning_uses_requested_limit():
+    mem = _make_mem()
+    for i in range(5):
+        mem.checkpoint(phase=f"p{i}")
+
+    assert mem.prune_snapshots(limit=2) == 3
+    assert len(mem.recall(limit=10)) == 2
+    mem.close()
+
+
+def test_snapshot_limit_falls_back_on_invalid_input(monkeypatch):
+    monkeypatch.setenv("ZHIHUITI_MAX_SNAPSHOTS", "invalid")
+    assert Memory._snapshot_limit() == 50

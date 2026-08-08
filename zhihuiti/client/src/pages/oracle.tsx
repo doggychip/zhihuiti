@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 // ── Oracle API base URL ───────────────────────────────────────────────────
-const ORACLE_API = "https://zhihuiti-oracle.zeabur.app";
+const ORACLE_API = "https://zhihuiti.zeabur.app";
 function oracleUrl(path: string) { return `${ORACLE_API}${path}`; }
 
 // ── Types ──────────────────────────────────────────────────────────────────

@@ -1,16 +1,9 @@
 name: Sync frontend to Lovable
 
 on:
+  # The Lovable repository is now the dashboard source of truth. Keep this
+  # legacy import manual so backend changes cannot silently replace it.
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'client/**'
-      - 'shared/**'
-      - 'tailwind.config.ts'
-      - 'postcss.config.js'
-      - 'components.json'
-      - 'package.json'
 
 jobs:
   sync:

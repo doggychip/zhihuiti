@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import threading
 import uuid
@@ -918,9 +919,47 @@ class Memory:
                     parent_id,
                 ),
             )
+            self._prune_snapshots_locked(self._snapshot_limit())
             self.conn.commit()
 
         return snapshot_id
+
+    @staticmethod
+    def _snapshot_limit() -> int:
+        """Return the bounded rollback window, falling back safely on bad input."""
+        try:
+            return max(1, int(os.environ.get("ZHIHUITI_MAX_SNAPSHOTS", "50")))
+        except ValueError:
+            return 50
+
+    def _prune_snapshots_locked(self, limit: int) -> int:
+        """Delete checkpoints older than ``limit`` while preserving valid chains."""
+        total = self.conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
+        remove_count = max(0, total - limit)
+        if not remove_count:
+            return 0
+        self.conn.execute(
+            """UPDATE snapshots SET parent_snapshot_id = NULL
+               WHERE parent_snapshot_id IN (
+                   SELECT id FROM snapshots ORDER BY rowid DESC LIMIT -1 OFFSET ?
+               )""",
+            (limit,),
+        )
+        self.conn.execute(
+            """DELETE FROM snapshots WHERE id IN (
+                   SELECT id FROM snapshots ORDER BY rowid DESC LIMIT -1 OFFSET ?
+               )""",
+            (limit,),
+        )
+        return remove_count
+
+    def prune_snapshots(self, limit: int | None = None) -> int:
+        """Apply checkpoint retention explicitly, returning rows removed."""
+        keep = self._snapshot_limit() if limit is None else max(1, int(limit))
+        with self._lock:
+            removed = self._prune_snapshots_locked(keep)
+            self.conn.commit()
+        return removed
 
     def rollback(self, snapshot_id: str) -> dict:
         """Restore state from a snapshot.

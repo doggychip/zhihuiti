@@ -19,7 +19,12 @@ def fetch_json(base_url: str, path: str) -> dict:
         return json.load(response)
 
 
-def verify(base_url: str, expected_commit: str = "") -> dict:
+def verify(
+    base_url: str,
+    expected_commit: str = "",
+    expected_backend_id: str = "canonical",
+    expected_instance_id: str = "",
+) -> dict:
     health = fetch_json(base_url, "/health")
     ready = fetch_json(base_url, "/readyz")
     status = fetch_json(base_url, "/api/status")
@@ -29,11 +34,23 @@ def verify(base_url: str, expected_commit: str = "") -> dict:
     alerts = fetch_json(base_url, "/api/oracle/alerts?limit=50")
     governance = status.get("governance", {})
     realms = status.get("realms", {})
+    storage = health.get("storage", {})
 
     checks = {
         "health": health.get("status") == "ok",
         "ready": ready.get("status") == "ready",
         "commit": not expected_commit or health.get("commit") == expected_commit,
+        "canonical_backend": (
+            not expected_backend_id or health.get("backend_id") == expected_backend_id
+        ),
+        "persistent_instance": (
+            storage.get("identity_persisted") is True
+            and storage.get("database", {}).get("exists") is True
+            and (
+                not expected_instance_id
+                or storage.get("instance_id") == expected_instance_id
+            )
+        ),
         "governance": (
             governance.get("autonomous_evolution") is False
             and governance.get("auto_mint_enabled") is False
@@ -57,6 +74,8 @@ def verify(base_url: str, expected_commit: str = "") -> dict:
         "ok": all(checks.values()),
         "checks": checks,
         "commit": health.get("commit"),
+        "backend_id": health.get("backend_id"),
+        "instance_id": storage.get("instance_id"),
         "scan_completed_at": scan.get("last_completed_at"),
     }
 
@@ -64,9 +83,11 @@ def verify(base_url: str, expected_commit: str = "") -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--base-url", default="https://zhihuiti-oracle.zeabur.app",
+        "--base-url", default="https://zhihuiti.zeabur.app",
     )
     parser.add_argument("--expected-commit", default="")
+    parser.add_argument("--expected-backend-id", default="canonical")
+    parser.add_argument("--expected-instance-id", default="")
     parser.add_argument("--timeout", type=int, default=0)
     args = parser.parse_args()
 
@@ -74,7 +95,12 @@ def main() -> int:
     last_error = ""
     while True:
         try:
-            result = verify(args.base_url, args.expected_commit)
+            result = verify(
+                args.base_url,
+                args.expected_commit,
+                args.expected_backend_id,
+                args.expected_instance_id,
+            )
             if result["ok"]:
                 print(json.dumps(result, sort_keys=True))
                 return 0

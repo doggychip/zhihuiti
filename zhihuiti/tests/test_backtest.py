@@ -80,7 +80,29 @@ def test_forward_summary_compares_against_persistence(monkeypatch):
     assert summary["skill_over_persistence"] == 1 / 3
     assert summary["transition_predictions"] == 2
     assert summary["transition_accuracy"] == 0.5
+    assert summary["predicted_transitions"] == 1
+    assert summary["transition_precision"] == 1.0
+    assert summary["transition_recall"] == 0.5
+    assert summary["transition_false_alarms"] == 0
     assert summary["status"] == "benchmarking"
+
+
+def test_auto_record_reports_warmup_instead_of_silently_skipping(monkeypatch):
+    class EmptyHistory:
+        def get_history(self, instrument, limit=100):
+            return []
+
+    monkeypatch.setattr(backtest, "verify_predictions", lambda *args: 0)
+    monkeypatch.setattr(backtest, "_predictions", [])
+
+    result = backtest.auto_record_and_verify([
+        {"instrument": "TEST", "regime": "quiet", "price": 100},
+    ], history=EmptyHistory())
+
+    assert result["status"] == "collecting"
+    assert result["warming_instruments"] == 1
+    assert result["eligible_instruments"] == 0
+    assert result["prediction_errors"] == []
 
 
 def test_prediction_verification_respects_configured_horizon(monkeypatch):
