@@ -10,7 +10,7 @@ Usage:
     python3 scripts/zeabur_deploy_watch.py [<commit-sha>]
 
 Defaults to the SHA of origin/main. Token is read from ~/.config/zeabur/cli.yaml.
-Service/env default to the zhihuiti-oracle service (BigBrain project); override
+Service/env default to the canonical zhihuiti service; override
 with ZEABUR_SERVICE_ID / ZEABUR_ENV_ID.
 """
 import json
@@ -21,8 +21,8 @@ import time
 import urllib.request
 
 API = "https://api.zeabur.com/graphql"
-SERVICE_ID = os.environ.get("ZEABUR_SERVICE_ID", "69cbe441cb1dac3576fc07e4")
-ENV_ID = os.environ.get("ZEABUR_ENV_ID", "69c91d0f76bc68ba374cd817")
+SERVICE_ID = os.environ.get("ZEABUR_SERVICE_ID", "69bee0921066986b9a16bced")
+ENV_ID = os.environ.get("ZEABUR_ENV_ID", "69bed4f476bc68ba374ca617")
 TRIGGER_WAIT = 240      # seconds to wait for the git trigger to create a deployment
 BUILD_WAIT = 900        # seconds to wait for a build to reach RUNNING
 MAX_REDEPLOYS = 2

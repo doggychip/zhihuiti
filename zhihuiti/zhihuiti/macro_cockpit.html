@@ -268,7 +268,7 @@ const leanColor=l=> l==='long'?'var(--gn)':l==='short'?'var(--rd)':'var(--cy)';
 const leanLabel=l=> l==='long'?'▲ long-lean':l==='short'?'▼ short-lean':'◆ neutral+';
 
 /* monitor-id → hub deep-link (own /monitor/* boards; absolute when opened as file://) */
-const HUB_BASE = location.protocol.indexOf('http')===0 ? '' : 'https://zhihuiti-oracle.zeabur.app';
+const HUB_BASE = location.protocol.indexOf('http')===0 ? '' : 'https://zhihuiti.zeabur.app';
 const HUB={
   dur:HUB_BASE+'/monitor/rates', rates:HUB_BASE+'/monitor/rates',
   usd:HUB_BASE+'/monitor/usd',
@@ -438,7 +438,7 @@ function drawTicks(s){
    =========================================================== */
 const API = new URLSearchParams(location.search).get('api')
   || (location.protocol.indexOf('http')===0 ? '/api/oracle/macro'
-      : 'https://zhihuiti-oracle.zeabur.app/api/oracle/macro');
+      : 'https://zhihuiti.zeabur.app/api/oracle/macro');
 
 async function boot(){
   render(defaultState());                       // paint immediately

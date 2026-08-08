@@ -18,6 +18,11 @@ Environment:
   OPENROUTER_API_KEY     — enables full agent system via OpenRouter
   DEEPSEEK_API_KEY       — enables full agent system via DeepSeek
   ZHIHUITI_DB            — SQLite database path (default: /app/data/zhihuiti.db)
+  ZHIHUITI_BACKEND_ID    — deployment role shown in health responses
+  ZHIHUITI_PUBLIC_BASE_URL — canonical public API URL
+  ZHIHUITI_MAX_SNAPSHOTS — retained rollback checkpoints (default: 50)
+  ZHIHUITI_ALERT_WEBHOOK_URL — optional operator alert destination
+  ZHIHUITI_ALERT_WEBHOOK_TOKEN — optional bearer token for that destination
   ZHIHUITI_AUTO_EVOLVE=1 — enable background goal execution & evolution
   ZHIHUITI_ORACLE_SCAN=0 — disable scheduled read-only market collection
   ZHIHUITI_ORACLE_SCAN_INTERVAL — collection interval in seconds (default: 1800)
@@ -30,6 +35,7 @@ from __future__ import annotations
 import json
 import hmac
 import os
+import sqlite3
 import sys
 import threading
 import time
@@ -38,6 +44,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse, parse_qs
+from urllib.request import Request, urlopen
 
 from rich.console import Console
 
@@ -106,6 +113,78 @@ def _runtime_commit() -> str:
     )
 
 
+def _backend_id() -> str:
+    return os.environ.get("ZHIHUITI_BACKEND_ID", "unconfigured").strip() or "unconfigured"
+
+
+def _canonical_base_url() -> str:
+    return (
+        os.environ.get("ZHIHUITI_PUBLIC_BASE_URL", "https://zhihuiti.zeabur.app")
+        .strip()
+        .rstrip("/")
+    )
+
+
+def _snapshot_limit() -> int:
+    try:
+        return max(1, int(os.environ.get("ZHIHUITI_MAX_SNAPSHOTS", "50")))
+    except ValueError:
+        return 50
+
+
+def _storage_status() -> dict[str, Any]:
+    """Return non-secret persistent identity and bounded database diagnostics."""
+    data_dir = Path(os.environ.get("ZHIHUITI_DATA", "/app/data"))
+    identity_path = data_dir / "instance.json"
+    identity: dict[str, Any]
+    identity_error = None
+    try:
+        identity = json.loads(identity_path.read_text())
+        if not isinstance(identity, dict) or not identity.get("instance_id"):
+            raise ValueError("invalid instance identity")
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        identity = {
+            "instance_id": uuid.uuid4().hex,
+            "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        }
+        try:
+            data_dir.mkdir(parents=True, exist_ok=True)
+            temporary = identity_path.with_suffix(".tmp")
+            temporary.write_text(json.dumps(identity, sort_keys=True))
+            os.replace(temporary, identity_path)
+        except OSError as exc:
+            identity_error = type(exc).__name__
+
+    db_path = Path(os.environ.get("ZHIHUITI_DB", str(data_dir / "zhihuiti.db")))
+    database = {
+        "exists": db_path.exists(),
+        "size_bytes": db_path.stat().st_size if db_path.exists() else 0,
+        "snapshots": None,
+        "tasks": None,
+        "agents": None,
+    }
+    if database["exists"]:
+        try:
+            conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=1)
+            try:
+                for table in ("snapshots", "tasks", "agents"):
+                    database[table] = conn.execute(
+                        f"SELECT COUNT(*) FROM {table}"  # noqa: S608
+                    ).fetchone()[0]
+            finally:
+                conn.close()
+        except sqlite3.Error:
+            pass
+    return {
+        "instance_id": identity.get("instance_id"),
+        "created_at": identity.get("created_at"),
+        "identity_persisted": identity_error is None,
+        "identity_error": identity_error,
+        "database": database,
+        "max_snapshots": _snapshot_limit(),
+    }
+
+
 def _json_response(handler: BaseHTTPRequestHandler, data: Any, status: int = 200):
     if status == 500 and isinstance(data, dict) and "error" in data:
         data = {**data, "error": "internal server error"}
@@ -119,6 +198,7 @@ def _json_response(handler: BaseHTTPRequestHandler, data: Any, status: int = 200
     handler.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
     handler.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
     handler.send_header("X-Zhihuiti-Commit", _runtime_commit())
+    handler.send_header("X-Zhihuiti-Backend", _backend_id())
     handler.send_header("Content-Length", str(len(body)))
     handler.end_headers()
     handler.wfile.write(body)
@@ -181,6 +261,8 @@ def _runtime_status() -> dict[str, Any]:
     return {
         "service": "zhihuiti",
         "commit": _runtime_commit(),
+        "backend_id": _backend_id(),
+        "canonical_base_url": _canonical_base_url(),
         "provider": provider,
         "llm_configured": _has_llm_key(),
         "operator_api_configured": bool(os.environ.get("ZHIHUITI_API_TOKEN", "").strip()),
@@ -197,6 +279,11 @@ _history_lock = threading.Lock()
 # In-memory alert + snapshot stores
 _alerts: list[dict] = []
 _alerts_lock = threading.Lock()
+_ALERT_DELIVERY_META = {
+    "last_attempt_at": None,
+    "last_success_at": None,
+    "last_error": None,
+}
 _prev_snapshots: list = []
 _prev_lock = threading.Lock()
 
@@ -243,6 +330,51 @@ def _load_alerts() -> None:
         pass
 
 
+def _alert_severity(alert: dict) -> str:
+    explicit = str(alert.get("severity", "")).lower()
+    if explicit in {"info", "warning", "critical"}:
+        return explicit
+    action_type = str(alert.get("action_type", "alert")).lower()
+    if action_type in {"halt", "emergency", "critical"}:
+        return "critical"
+    data = alert.get("data", {})
+    try:
+        signal = abs(float(data.get("signal_score", 0))) if isinstance(data, dict) else 0
+    except (TypeError, ValueError):
+        signal = 0
+    return "warning" if action_type == "alert" or signal >= 0.8 else "info"
+
+
+def _deliver_alerts(alerts: list[dict]) -> None:
+    """Deliver newly created alerts to an optional operator-owned webhook."""
+    webhook_url = os.environ.get("ZHIHUITI_ALERT_WEBHOOK_URL", "").strip()
+    if not webhook_url or not alerts:
+        return
+    _ALERT_DELIVERY_META["last_attempt_at"] = time.strftime(
+        "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+    )
+    payload = json.dumps({
+        "source": "zhihuiti",
+        "backend_id": _backend_id(),
+        "canonical_base_url": _canonical_base_url(),
+        "alerts": alerts,
+    }, default=str).encode()
+    headers = {"Content-Type": "application/json", "User-Agent": "zhihuiti-alerts/1.0"}
+    token = os.environ.get("ZHIHUITI_ALERT_WEBHOOK_TOKEN", "").strip()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    try:
+        with urlopen(Request(webhook_url, data=payload, headers=headers), timeout=5) as response:
+            if response.status < 200 or response.status >= 300:
+                raise OSError(f"webhook returned {response.status}")
+        _ALERT_DELIVERY_META["last_success_at"] = time.strftime(
+            "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+        )
+        _ALERT_DELIVERY_META["last_error"] = None
+    except OSError as exc:
+        _ALERT_DELIVERY_META["last_error"] = type(exc).__name__
+
+
 def _record_alerts(alerts: list[dict], now: float | None = None) -> dict[str, int]:
     """Create or coalesce alerts using a configurable cooldown and expiry."""
     now = now or time.time()
@@ -250,6 +382,7 @@ def _record_alerts(alerts: list[dict], now: float | None = None) -> dict[str, in
     ttl = max(cooldown, int(os.environ.get("ZHIHUITI_ALERT_TTL_SECONDS", "86400")))
     created = 0
     updated = 0
+    created_alerts: list[dict] = []
     with _alerts_lock:
         for existing in _alerts:
             if existing.get("status", "active") == "active" and existing.get("expires_at", 0) <= now:
@@ -283,6 +416,7 @@ def _record_alerts(alerts: list[dict], now: float | None = None) -> dict[str, in
 
             alert.update({
                 "id": alert.get("id") or uuid.uuid4().hex[:16],
+                "severity": _alert_severity(alert),
                 "timestamp": now,
                 "first_seen_at": now,
                 "last_seen_at": now,
@@ -291,11 +425,13 @@ def _record_alerts(alerts: list[dict], now: float | None = None) -> dict[str, in
                 "status": "active",
             })
             _alerts.append(alert)
+            created_alerts.append(dict(alert))
             created += 1
 
         if len(_alerts) > 500:
             _alerts[:] = _alerts[-500:]
         _persist_alerts_locked()
+    _deliver_alerts(created_alerts)
     return {"created": created, "updated": updated}
 
 
@@ -825,6 +961,7 @@ class OracleHandler(BaseHTTPRequestHandler):
                 "status": "ok",
                 "mode": "full" if runtime["llm_configured"] else "oracle-only",
                 "agents_enabled": runtime["llm_configured"],
+                "storage": _storage_status(),
             })
 
         elif path == "/readyz":
@@ -1302,21 +1439,40 @@ class OracleHandler(BaseHTTPRequestHandler):
             _json_response(self, {"error": str(e)}, 500)
 
     def _handle_alert_ack(self):
-        """POST /api/oracle/alerts/ack — acknowledge one alert by ID."""
-        alert_id = str(_read_body(self).get("id", "")).strip()
-        if not alert_id:
-            _json_response(self, {"error": "id is required"}, 400)
+        """POST /api/oracle/alerts/ack — acknowledge one or many alerts by ID."""
+        body = _read_body(self)
+        single_id = str(body.get("id", "")).strip()
+        raw_ids = body.get("ids", [])
+        if raw_ids and not isinstance(raw_ids, list):
+            _json_response(self, {"error": "ids must be a list"}, 400)
             return
+        alert_ids = [single_id] if single_id else []
+        alert_ids.extend(str(item).strip() for item in raw_ids if str(item).strip())
+        alert_ids = list(dict.fromkeys(alert_ids))[:100]
+        if not alert_ids:
+            _json_response(self, {"error": "id or ids is required"}, 400)
+            return
+
         with _alerts_lock:
-            alert = next((item for item in _alerts if item.get("id") == alert_id), None)
-            if alert is None:
+            selected = [item for item in _alerts if item.get("id") in alert_ids]
+            if not selected and single_id and not raw_ids:
                 _json_response(self, {"error": "alert not found"}, 404)
                 return
-            alert["status"] = "acknowledged"
-            alert["acknowledged_at"] = time.time()
+            acknowledged_at = time.time()
+            for alert in selected:
+                alert["status"] = "acknowledged"
+                alert["acknowledged_at"] = acknowledged_at
             _persist_alerts_locked()
-            result = dict(alert)
-        _json_response(self, result)
+            results = [dict(alert) for alert in selected]
+        if single_id and not raw_ids:
+            _json_response(self, results[0])
+        else:
+            found = {alert["id"] for alert in results}
+            _json_response(self, {
+                "acknowledged": len(results),
+                "alerts": results,
+                "missing_ids": [alert_id for alert_id in alert_ids if alert_id not in found],
+            })
 
     def _handle_cross_domain(self, qs):
         """GET /api/oracle/cross-domain — run cross-domain correlation on latest scans."""
@@ -1968,13 +2124,28 @@ class OracleHandler(BaseHTTPRequestHandler):
         if _MACRO_META.get("errors"):
             warnings.append("macro_partial")
         if forecast.get("status") != "validated":
-            warnings.append("forecast_not_better_than_baseline")
+            if forecast.get("status") == "collecting":
+                warnings.append("forecast_collecting")
+            elif forecast.get("status") == "unavailable":
+                warnings.append("forecast_unavailable")
+            else:
+                warnings.append("forecast_not_better_than_baseline")
         if governance["auto_mint_enabled"]:
             warnings.append("auto_mint_enabled")
+
+        storage = _storage_status()
+        if not storage["identity_persisted"]:
+            warnings.append("storage_identity_unavailable")
+        if storage["database"]["snapshots"] is not None and (
+            storage["database"]["snapshots"] > storage["max_snapshots"]
+        ):
+            warnings.append("snapshot_retention_pending")
 
         _json_response(self, {
             "status": "degraded" if warnings else "ok",
             "commit": _runtime_commit(),
+            "backend_id": _backend_id(),
+            "canonical_base_url": _canonical_base_url(),
             "warnings": warnings,
             "scan": {
                 **scan,
@@ -1987,9 +2158,16 @@ class OracleHandler(BaseHTTPRequestHandler):
                 "live_fields": _MACRO_META.get("live_fields", 0),
                 "errors": list(_MACRO_META.get("errors", [])),
             },
-            "alerts": {"active": active_alerts},
+            "alerts": {
+                "active": active_alerts,
+                "webhook_configured": bool(
+                    os.environ.get("ZHIHUITI_ALERT_WEBHOOK_URL", "").strip()
+                ),
+                "delivery": dict(_ALERT_DELIVERY_META),
+            },
             "forecast": forecast,
             "governance": governance,
+            "storage": storage,
         })
 
     def _handle_harness_status(self):

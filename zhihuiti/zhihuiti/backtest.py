@@ -213,6 +213,16 @@ def get_forward_accuracy_summary(minimum_verified: int = 30) -> dict:
     transition_correct = sum(
         1 for prediction in transition_predictions if prediction.correct
     )
+    predicted_transitions = [
+        prediction for prediction in verified
+        if prediction.predicted_regime
+        != (prediction.baseline_regime or prediction.current_regime)
+    ]
+    transition_false_alarms = sum(
+        1 for prediction in predicted_transitions
+        if prediction.actual_regime
+        == (prediction.baseline_regime or prediction.current_regime)
+    )
 
     brier_values = []
     for prediction in verified:
@@ -264,6 +274,16 @@ def get_forward_accuracy_summary(minimum_verified: int = 30) -> dict:
             transition_correct / len(transition_predictions)
             if transition_predictions else None
         ),
+        "predicted_transitions": len(predicted_transitions),
+        "transition_precision": (
+            transition_correct / len(predicted_transitions)
+            if predicted_transitions else None
+        ),
+        "transition_recall": (
+            transition_correct / len(transition_predictions)
+            if transition_predictions else None
+        ),
+        "transition_false_alarms": transition_false_alarms,
         "unverified": len(predictions) - total,
         "regime_accuracy": regime_stats,
         "recent": recent,
@@ -530,6 +550,9 @@ def auto_record_and_verify(scan_results: list, history=None) -> dict:
     history = history or RegimeHistory()
     verified_count = 0
     new_predictions = 0
+    eligible_instruments = 0
+    warming_instruments = 0
+    prediction_errors: list[dict[str, str]] = []
 
     for result in scan_results:
         instrument = result.instrument if hasattr(result, 'instrument') else result.get("instrument", "")
@@ -543,6 +566,7 @@ def auto_record_and_verify(scan_results: list, history=None) -> dict:
         try:
             hist = history.get_history(instrument, limit=100)
             if len(hist) >= 5:
+                eligible_instruments += 1
                 patterns = []
                 top_pattern = result.top_pattern if hasattr(result, 'top_pattern') else result.get("top_pattern", "")
                 top_strength = result.top_pattern_strength if hasattr(result, 'top_pattern_strength') else result.get("top_pattern_strength", 0.5)
@@ -565,13 +589,22 @@ def auto_record_and_verify(scan_results: list, history=None) -> dict:
                     price=price,
                 )
                 new_predictions += 1
-        except Exception:
-            pass
+            else:
+                warming_instruments += 1
+        except Exception as exc:
+            prediction_errors.append({
+                "instrument": instrument,
+                "error": type(exc).__name__,
+            })
 
     return {
+        "status": "active" if eligible_instruments else "collecting",
         "verified": verified_count,
         "new_predictions": new_predictions,
         "total_stored": len(_predictions),
+        "eligible_instruments": eligible_instruments,
+        "warming_instruments": warming_instruments,
+        "prediction_errors": prediction_errors,
     }
 
 

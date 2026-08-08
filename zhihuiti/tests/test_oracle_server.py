@@ -120,6 +120,20 @@ class TestHealthEndpoint:
         assert "warnings" in body
         assert body["governance"]["auto_mint_enabled"] is False
         assert "persistence_baseline_accuracy" in body["forecast"]
+        assert body["canonical_base_url"] == "https://zhihuiti.zeabur.app"
+        assert "instance_id" in body["storage"]
+
+    def test_storage_identity_survives_repeated_health_checks(self, server, tmp_path, monkeypatch):
+        monkeypatch.setenv("ZHIHUITI_DATA", str(tmp_path))
+        monkeypatch.setenv("ZHIHUITI_DB", str(tmp_path / "zhihuiti.db"))
+        monkeypatch.setenv("ZHIHUITI_BACKEND_ID", "canonical")
+
+        _, first = _get(server, "/healthz")
+        _, second = _get(server, "/healthz")
+
+        assert first["backend_id"] == "canonical"
+        assert first["storage"]["identity_persisted"] is True
+        assert first["storage"]["instance_id"] == second["storage"]["instance_id"]
 
 
 class TestOperatorProtection:
@@ -165,6 +179,7 @@ class TestAlertLifecycle:
         assert _record_alerts([alert], now=1100) == {"created": 0, "updated": 1}
         assert len(oracle_server._alerts) == 1
         assert oracle_server._alerts[0]["occurrences"] == 2
+        assert oracle_server._alerts[0]["severity"] == "warning"
 
     def test_operator_can_acknowledge_alert(self, server, tmp_path, monkeypatch):
         monkeypatch.setenv("ZHIHUITI_DATA", str(tmp_path))
@@ -181,6 +196,51 @@ class TestAlertLifecycle:
 
         assert status == 200
         assert body["status"] == "acknowledged"
+
+    def test_operator_can_acknowledge_multiple_alerts(self, server, tmp_path, monkeypatch):
+        monkeypatch.setenv("ZHIHUITI_DATA", str(tmp_path))
+        monkeypatch.setattr(oracle_server, "_alerts", [])
+        _record_alerts([
+            {"instrument": "BTC_USDT", "action_type": "alert", "message": "one"},
+            {"instrument": "ETH_USDT", "action_type": "alert", "message": "two"},
+        ], now=3000)
+        alert_ids = [alert["id"] for alert in oracle_server._alerts]
+
+        status, body = _post(server, "/api/oracle/alerts/ack", {"ids": alert_ids})
+
+        assert status == 200
+        assert body["acknowledged"] == 2
+        assert body["missing_ids"] == []
+
+    def test_new_alerts_can_reach_configured_webhook(self, tmp_path, monkeypatch):
+        class Response:
+            status = 204
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return None
+
+        delivered = []
+        monkeypatch.setenv("ZHIHUITI_DATA", str(tmp_path))
+        monkeypatch.setenv("ZHIHUITI_ALERT_WEBHOOK_URL", "https://alerts.example.test")
+        monkeypatch.setenv("ZHIHUITI_ALERT_WEBHOOK_TOKEN", "secret-token")
+        monkeypatch.setattr(oracle_server, "_alerts", [])
+        monkeypatch.setattr(
+            oracle_server,
+            "urlopen",
+            lambda request, timeout: delivered.append((request, timeout)) or Response(),
+        )
+
+        _record_alerts([
+            {"instrument": "BTC_USDT", "action_type": "alert", "message": "one"},
+        ], now=4000)
+
+        request, timeout = delivered[0]
+        assert timeout == 5
+        assert request.get_header("Authorization") == "Bearer secret-token"
+        assert json.loads(request.data)["alerts"][0]["severity"] == "warning"
 
 
 class TestCorsPolicy:
