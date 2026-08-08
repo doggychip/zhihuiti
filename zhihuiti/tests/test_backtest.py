@@ -5,7 +5,12 @@ from __future__ import annotations
 import time
 
 from zhihuiti import backtest
-from zhihuiti.backtest import PredictionRecord, build_regime_history_from_candles
+from zhihuiti.backtest import (
+    PredictionRecord,
+    build_regime_history_from_candles,
+    get_forecast_scorecards,
+)
+from zhihuiti.oracle_intelligence import predict_transition_calibrated
 
 
 def _candles(count: int = 80) -> list[dict]:
@@ -85,6 +90,44 @@ def test_forward_summary_compares_against_persistence(monkeypatch):
     assert summary["transition_recall"] == 0.5
     assert summary["transition_false_alarms"] == 0
     assert summary["status"] == "benchmarking"
+
+
+def test_forward_summary_keeps_shadow_model_isolated(monkeypatch):
+    incumbent = _prediction("quiet", "quiet", "quiet")
+    shadow = _prediction("trending_up", "quiet", "trending_up")
+    shadow.model_version = "transition-calibrated-v1"
+    monkeypatch.setattr(backtest, "_predictions", [incumbent, shadow])
+
+    incumbent_summary = backtest.get_forward_accuracy_summary(minimum_verified=1)
+    shadow_summary = backtest.get_forward_accuracy_summary(
+        minimum_verified=1,
+        model_version="transition-calibrated-v1",
+    )
+
+    assert incumbent_summary["verified"] == 1
+    assert incumbent_summary["accuracy"] == 1.0
+    assert shadow_summary["verified"] == 1
+    assert shadow_summary["transition_recall"] == 1.0
+
+
+def test_transition_candidate_is_calibrated_and_cannot_self_promote(monkeypatch):
+    history = [
+        _prediction("quiet", "quiet", "quiet").to_dict()
+        for _ in range(24)
+    ]
+    transition = _prediction("quiet", "quiet", "trending_up").to_dict()
+    history.append(transition)
+
+    prediction = predict_transition_calibrated("TEST", "quiet", history)
+
+    assert prediction.predicted_regime == "quiet"
+    assert 0 < prediction.probabilities["trending_up"] < 0.5
+    assert prediction.probabilities["quiet"] < 1.0
+
+    monkeypatch.setattr(backtest, "_predictions", [])
+    scorecards = get_forecast_scorecards()
+    assert scorecards["production_model"] == "incumbent-v1"
+    assert scorecards["promotion_ready"] is False
 
 
 def test_auto_record_reports_warmup_instead_of_silently_skipping(monkeypatch):

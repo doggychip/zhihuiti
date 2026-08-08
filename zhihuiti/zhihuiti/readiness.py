@@ -123,7 +123,9 @@ def build_shadow_readiness(orch, role: str = "researcher", *, probe: bool = Fals
             key: provider.get(key)
             for key in (
                 "provider", "model", "configured", "probe_performed", "ready",
-                "fallback_configured", "fallback_active", "message",
+                "fallback_configured", "fallback_active",
+                "provider_fallback_configured",
+                "credential_fallback_configured", "fallback_type", "message",
             )
         }
         orch.harness.record_provider_preflight(role, details)
