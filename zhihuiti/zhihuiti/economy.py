@@ -37,6 +37,12 @@ TAX_RATE = 0.15                   # 15% flat tax on all earnings
 BANKRUPTCY_THRESHOLD = 1.0        # Agent is bankrupt below this balance
 INFLATION_CHECK_INTERVAL = 20     # Re-evaluate money supply every N transactions
 TARGET_VELOCITY = 0.6             # Target ratio of circulating / total supply
+
+
+def _auto_mint_enabled() -> bool:
+    return os.environ.get("ZHIHUITI_ALLOW_AUTO_MINT", "0").strip().lower() in {
+        "1", "true", "yes", "on",
+    }
 DEBT_LIMIT_RATIO = 0.5            # Max debt as % of starting budget
 STAKING_MULTIPLIER = 1.2          # Bonus for high-truthfulness agents
 
@@ -292,6 +298,15 @@ class RewardEngine:
 
         # Check treasury can cover it
         if not self.treasury.pay_reward(gross):
+            if not _auto_mint_enabled():
+                return {
+                    "gross": gross,
+                    "tax": 0,
+                    "net": 0,
+                    "paid": False,
+                    "reason": "treasury_insufficient",
+                }
+
             # Treasury short — mint more
             shortfall = gross - self.treasury.balance
             self.central_bank.mint(
@@ -344,10 +359,7 @@ class Economy:
     def fund_spawn(self, budget: float = AGENT_STARTING_BUDGET) -> bool:
         """Allocate budget from treasury for a new agent."""
         success = self.treasury.fund_agent_spawn(budget)
-        allow_auto_mint = os.environ.get("ZHIHUITI_ALLOW_AUTO_MINT", "0").strip().lower() in {
-            "1", "true", "yes", "on",
-        }
-        if not success and allow_auto_mint:
+        if not success and _auto_mint_enabled():
             # Auto-mint if treasury is depleted
             self.central_bank.mint(budget * 2, "treasury", "Mint for agent spawn")
             self.treasury.balance += budget * 2

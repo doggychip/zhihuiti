@@ -91,3 +91,40 @@ def test_economy_full_cycle():
     assert report["total_minted"] > 0
     assert report["total_burned"] > 0
     mem.close()
+
+
+def test_reward_shortfall_does_not_mint_when_auto_mint_disabled(monkeypatch):
+    monkeypatch.delenv("ZHIHUITI_ALLOW_AUTO_MINT", raising=False)
+    mem = Memory(":memory:")
+    econ = Economy(mem)
+    econ.treasury.balance = 0.0
+    budget_ref = [50.0]
+    minted_before = econ.central_bank.total_minted
+
+    result = econ.reward_agent("agent1", 0.8, budget_ref)
+
+    assert result["gross"] > 0
+    assert result["tax"] == 0
+    assert result["net"] == 0
+    assert result["paid"] is False
+    assert result["reason"] == "treasury_insufficient"
+    assert budget_ref == [50.0]
+    assert econ.central_bank.total_minted == minted_before
+    mem.close()
+
+
+def test_reward_shortfall_mints_when_auto_mint_enabled(monkeypatch):
+    monkeypatch.setenv("ZHIHUITI_ALLOW_AUTO_MINT", "1")
+    mem = Memory(":memory:")
+    econ = Economy(mem)
+    econ.treasury.balance = 0.0
+    budget_ref = [50.0]
+    minted_before = econ.central_bank.total_minted
+
+    result = econ.reward_agent("agent1", 0.8, budget_ref)
+
+    assert result["paid"] is True
+    assert result["net"] > 0
+    assert budget_ref[0] > 50.0
+    assert econ.central_bank.total_minted > minted_before
+    mem.close()
