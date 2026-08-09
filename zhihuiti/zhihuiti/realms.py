@@ -212,6 +212,19 @@ class RealmManager:
         """Determine which realm an agent belongs to based on its role."""
         return ROLE_TO_REALM.get(role, Realm.EXECUTION)
 
+    def ensure_spawn_capacity(self, role: AgentRole, budget: float) -> None:
+        """Reserve realm quota for one externally bounded agent spawn.
+
+        This only expands the realm's accounting envelope.  Treasury funding
+        and any permitted minting remain enforced by ``Economy.fund_spawn``.
+        """
+        realm = self.assign_realm(role)
+        state = self.realms[realm]
+        required = state.budget_spent + max(0.0, budget)
+        if state.budget_allocated < required:
+            state.budget_allocated = required
+            self._save_state(realm)
+
     def route_task(self, task: Task) -> Realm:
         """Route a task to the appropriate realm based on the requested role."""
         role_name = task.metadata.get("requested_role", "custom")

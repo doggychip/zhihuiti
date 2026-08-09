@@ -292,7 +292,10 @@ class AgentManager:
             context = f"\n\nPast successful approaches:\n{examples}\n"
 
         # Add depth context so agent knows if it can delegate
-        can_delegate = agent.depth < MAX_DEPTH
+        can_delegate = (
+            agent.depth < MAX_DEPTH
+            and not task.metadata.get("disable_delegation", False)
+        )
         depth_note = ""
         if not can_delegate:
             depth_note = (
