@@ -116,8 +116,11 @@ def gather_core_data(orch) -> dict:
     if active_count >= max_active:
         warnings.append(f"active agent cap reached: {active_count}/{max_active}")
     for realm, state in realm_data.items():
-        if state["budget_remaining"] <= 0:
-            warnings.append(f"{realm} realm budget exhausted")
+        if state["quota_available"] <= 0:
+            warnings.append(
+                f"{realm} realm spawn quota unavailable until an eligible "
+                "scheduled population rotation"
+            )
     if auto_mint_enabled:
         warnings.append("automatic minting is enabled")
     data["governance"] = {

@@ -228,7 +228,7 @@ class AgentManager:
             remaining = realm_state.budget_remaining
             if remaining < budget:
                 raise ValueError(
-                    f"Cannot spawn agent: {realm.value} realm budget exhausted "
+                    f"Cannot spawn agent: {realm.value} realm spawn quota exhausted "
                     f"({remaining:.1f} remaining)"
                 )
 

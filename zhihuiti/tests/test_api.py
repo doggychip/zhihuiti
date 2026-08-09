@@ -127,6 +127,8 @@ class TestAPIHandler:
         orch.realm_manager.allocate_budgets(100.0, reset=True)
         research = orch.realm_manager.realms[Realm.RESEARCH]
         research.budget_spent = 20.0
+        orch.realm_manager.realms[Realm.EXECUTION].budget_spent = 35.0
+        orch.realm_manager.realms[Realm.CENTRAL].budget_spent = 15.0
         orch.economy.treasury.balance = 12.0
 
         data = gather_core_data(orch)
@@ -138,6 +140,12 @@ class TestAPIHandler:
         assert realm["treasury_backed_available"] == 12.0
         assert realm["funding_source"] == "shared_treasury"
         assert realm["replenishment"] == "eligible_population_rotation"
+        assert data["governance"]["warnings"] == [
+            "execution realm spawn quota unavailable until an eligible "
+            "scheduled population rotation",
+            "central realm spawn quota unavailable until an eligible "
+            "scheduled population rotation",
+        ]
 
 
 class TestAPIServer:
