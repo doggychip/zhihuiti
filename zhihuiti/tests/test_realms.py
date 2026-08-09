@@ -48,7 +48,7 @@ def test_spawn_rejects_realm_budget_overrun():
     )
 
     import pytest
-    with pytest.raises(ValueError, match="budget exhausted"):
+    with pytest.raises(ValueError, match="spawn quota exhausted"):
         rm.on_agent_spawn(agent)
     mem.close()
 

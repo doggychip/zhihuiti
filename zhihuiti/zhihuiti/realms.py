@@ -265,7 +265,7 @@ class RealmManager:
         realm = self.assign_realm(agent.config.role)
         if self.realms[realm].budget_remaining < agent.budget:
             raise ValueError(
-                f"{realm.value} realm budget exhausted: "
+                f"{realm.value} realm spawn quota exhausted: "
                 f"{self.realms[realm].budget_remaining:.1f} remaining"
             )
         agent.realm = realm
