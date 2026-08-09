@@ -107,6 +107,7 @@ def test_spawn_does_not_auto_mint_by_default(monkeypatch):
 
 def test_spawn_auto_mint_requires_explicit_opt_in(monkeypatch):
     monkeypatch.setenv("ZHIHUITI_ALLOW_AUTO_MINT", "1")
+    monkeypatch.setenv("ZHIHUITI_AUTO_MINT_DAILY_CAP", "200")
     mem = Memory(":memory:")
     econ = Economy(mem)
     econ.treasury.balance = 0.0

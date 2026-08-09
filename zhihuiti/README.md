@@ -210,7 +210,8 @@ zhihuiti dashboard              # Launch web dashboard
 | `ZHIHUITI_ORACLE_SCAN_INTERVAL` | Read-only collection interval in seconds (default: `1800`) |
 | `ZHIHUITI_SCAN_CRYPTO`, `ZHIHUITI_SCAN_EQUITIES`, `ZHIHUITI_SCAN_FOREX`, `ZHIHUITI_SCAN_INDICES` | Optional comma-separated scheduled watchlists |
 | `ZHIHUITI_AUTO_EVOLVE` | Operator-controlled autonomous training loop; disabled by default |
-| `ZHIHUITI_ALLOW_AUTO_MINT` | Permit treasury replenishment for agent spawning; disabled by default |
+| `ZHIHUITI_ALLOW_AUTO_MINT` | Permit bounded treasury replenishment for rewards, spawning, and inflation; disabled by default |
+| `ZHIHUITI_AUTO_MINT_DAILY_CAP` | UTC daily cap for automatic treasury minting; defaults to `0` |
 | `ZHIHUITI_MAX_ACTIVE_AGENTS` | Hard active-agent cap (default: `36`) |
 | `ZHIHUITI_MAX_AGENTS_PER_ROLE` | Hard per-role agent cap (default: `12`) |
 | `ZHIHUITI_RETAIN_ACTIVE_AGENTS` | Best persisted agents restored at startup (default: `24`) |
