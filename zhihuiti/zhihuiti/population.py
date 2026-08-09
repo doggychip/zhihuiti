@@ -13,7 +13,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
-from zhihuiti.models import AgentRole, Task, TaskStatus
+from zhihuiti.models import AgentRole, TaskStatus
+from zhihuiti.research import AgentResearchPublisher, build_research_task
 
 
 STATE_KEY = "population_rotation"
@@ -223,17 +224,24 @@ class PopulationRotator:
         state["spawned_today"] += 1
         self._save_state(state)
         project = os.environ.get("ZHIHUITI_PROJECT_NAME", "this project").strip()
-        task = Task(
-            description=(
-                f"Population rotation evaluation for {project}. Produce a concise, "
-                "evidence-disciplined reliability improvement plan. State assumptions, "
-                "three prioritized checks, measurable success criteria, and one stop "
-                "condition. Do not use tools, trade, deploy, or take external actions."
-            ),
-            metadata={
-                "requested_role": role.value,
-                "population_rotation": True,
-                "disable_delegation": True,
+        memory_stats = self.orch.memory.get_stats()
+        economy = self.orch.economy.get_report()
+        task, assignment = build_research_task(
+            project=project,
+            role=role,
+            sequence=memory_stats["total_agents"],
+            telemetry={
+                "historical_agents": memory_stats["total_agents"],
+                "active_agents": len([
+                    current for current in self.orch.agent_manager.agents.values()
+                    if current.alive
+                ]),
+                "total_tasks": memory_stats["total_tasks"],
+                "average_task_score": memory_stats["avg_task_score"],
+                "treasury_balance": economy["treasury_balance"],
+                "money_supply": economy["money_supply"],
+                "auto_mint_remaining_today": economy["auto_mint"]["remaining_today"],
+                "cumulative_target": self.config.target,
             },
         )
         record: dict[str, Any] = {
@@ -246,10 +254,16 @@ class PopulationRotator:
             self.orch.realm_manager.on_task_complete(
                 agent, score, task.status == TaskStatus.COMPLETED,
             )
+            publication = AgentResearchPublisher(
+                self.orch.memory,
+            ).publish_if_accepted(
+                project, assignment, task, agent, score,
+            )
             record.update({
                 "score": round(score, 3),
                 "task_status": task.status.value,
                 "output_preview": output[:160],
+                "research": publication,
             })
         except Exception as exc:
             task.status = TaskStatus.FAILED

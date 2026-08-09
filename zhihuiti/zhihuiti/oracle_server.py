@@ -1097,6 +1097,8 @@ class OracleHandler(BaseHTTPRequestHandler):
             self._handle_real_dashboard_data()
         elif path == "/api/population":
             self._handle_population_status()
+        elif path == "/api/research":
+            self._handle_public_research(qs)
         elif path == "/api/evolution":
             self._handle_evolution_status()
         elif path == "/api/harness":
@@ -2265,6 +2267,30 @@ class OracleHandler(BaseHTTPRequestHandler):
             return
         try:
             _json_response(self, _get_population_rotator().status())
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_public_research(self, qs):
+        """GET /api/research — inspection-approved public agent research only."""
+        if not _has_llm_key():
+            _json_response(self, {"outputs": [], "count": 0})
+            return
+        try:
+            query = qs.get("q", [""])[0].strip()
+            try:
+                limit = int(qs.get("limit", ["10"])[0])
+            except ValueError:
+                limit = 10
+            from zhihuiti.research import public_research_outputs
+            outputs = public_research_outputs(
+                _get_orchestrator().memory, query=query, limit=limit,
+            )
+            _json_response(self, {
+                "query": query,
+                "outputs": outputs,
+                "count": len(outputs),
+                "scope": "inspection_approved_agent_research_only",
+            })
         except Exception as e:
             _json_response(self, {"error": str(e)}, 500)
 
