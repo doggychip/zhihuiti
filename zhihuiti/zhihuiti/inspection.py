@@ -184,9 +184,9 @@ class InspectionGate:
             passed = score >= threshold
         except Exception as e:
             console.print(f"  [yellow]Inspection error at {layer.value}:[/yellow] {e}")
-            score = 0.5
+            score = 0.0
             reasoning = f"Inspection error: {e}"
-            passed = score >= threshold
+            passed = False
 
         return LayerResult(
             layer=layer, score=score, passed=passed, reasoning=reasoning,

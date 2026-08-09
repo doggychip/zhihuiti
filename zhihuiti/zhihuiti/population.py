@@ -251,13 +251,14 @@ class PopulationRotator:
         try:
             output = self.orch.agent_manager.execute_task(agent, task)
             score = self.orch.judge.score_task(task, agent)
+            inspection = self.orch.judge.inspection.history[-1]
             self.orch.realm_manager.on_task_complete(
                 agent, score, task.status == TaskStatus.COMPLETED,
             )
             publication = AgentResearchPublisher(
                 self.orch.memory,
             ).publish_if_accepted(
-                project, assignment, task, agent, score,
+                project, assignment, task, agent, inspection,
             )
             record.update({
                 "score": round(score, 3),

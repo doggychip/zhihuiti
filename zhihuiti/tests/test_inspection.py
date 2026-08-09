@@ -108,6 +108,18 @@ class TestInspectLayerEdgeCases:
         lr = gate.inspect_layer(InspectionLayer.RELEVANCE, task, agent)
         assert lr.passed is False
 
+    def test_inspection_exception_fails_closed(self):
+        gate = _make_gate(pass_score=0.8)
+        gate.llm.chat_json.side_effect = RuntimeError("provider unavailable")
+
+        lr = gate.inspect_layer(
+            InspectionLayer.RELEVANCE, _make_task(), _make_agent(),
+        )
+
+        assert lr.score == 0.0
+        assert lr.passed is False
+        assert lr.reasoning.startswith("Inspection error:")
+
     def test_full_inspection_empty_result(self):
         gate = _make_gate(pass_score=0.8)
         agent = _make_agent()
