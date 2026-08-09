@@ -258,6 +258,16 @@ def _runtime_status() -> dict[str, Any]:
         max_active_agents = max(1, int(os.environ.get("ZHIHUITI_MAX_ACTIVE_AGENTS", "36")))
     except ValueError:
         max_active_agents = 36
+    try:
+        auto_mint_daily_cap = max(
+            0.0,
+            min(
+                1_000_000.0,
+                float(os.environ.get("ZHIHUITI_AUTO_MINT_DAILY_CAP", "0")),
+            ),
+        )
+    except ValueError:
+        auto_mint_daily_cap = 0.0
     return {
         "service": "zhihuiti",
         "commit": _runtime_commit(),
@@ -269,6 +279,7 @@ def _runtime_status() -> dict[str, Any]:
         "autonomous_evolution": env_enabled("ZHIHUITI_AUTO_EVOLVE"),
         "max_active_agents": max_active_agents,
         "auto_mint_enabled": env_enabled("ZHIHUITI_ALLOW_AUTO_MINT"),
+        "auto_mint_daily_cap": auto_mint_daily_cap,
     }
 
 
@@ -2120,6 +2131,7 @@ class OracleHandler(BaseHTTPRequestHandler):
         governance = {
             "autonomous_evolution": env_enabled("ZHIHUITI_AUTO_EVOLVE"),
             "auto_mint_enabled": env_enabled("ZHIHUITI_ALLOW_AUTO_MINT"),
+            "auto_mint_daily_cap": _runtime_status()["auto_mint_daily_cap"],
             "max_active_agents": max(
                 1, int(os.environ.get("ZHIHUITI_MAX_ACTIVE_AGENTS", "36"))
             ),

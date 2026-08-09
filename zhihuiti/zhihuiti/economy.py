@@ -10,8 +10,10 @@ Modeled after 如老师's governance architecture:
 from __future__ import annotations
 
 import os
+import threading
 import uuid
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -37,14 +39,24 @@ TAX_RATE = 0.15                   # 15% flat tax on all earnings
 BANKRUPTCY_THRESHOLD = 1.0        # Agent is bankrupt below this balance
 INFLATION_CHECK_INTERVAL = 20     # Re-evaluate money supply every N transactions
 TARGET_VELOCITY = 0.6             # Target ratio of circulating / total supply
+DEBT_LIMIT_RATIO = 0.5            # Max debt as % of starting budget
+STAKING_MULTIPLIER = 1.2          # Bonus for high-truthfulness agents
 
 
 def _auto_mint_enabled() -> bool:
     return os.environ.get("ZHIHUITI_ALLOW_AUTO_MINT", "0").strip().lower() in {
         "1", "true", "yes", "on",
     }
-DEBT_LIMIT_RATIO = 0.5            # Max debt as % of starting budget
-STAKING_MULTIPLIER = 1.2          # Bonus for high-truthfulness agents
+
+
+def _auto_mint_daily_cap() -> float:
+    try:
+        return max(
+            0.0,
+            min(1_000_000.0, float(os.environ.get("ZHIHUITI_AUTO_MINT_DAILY_CAP", "0"))),
+        )
+    except ValueError:
+        return 0.0
 
 
 class TransactionType(str, Enum):
@@ -82,6 +94,9 @@ class CentralBank:
         self.total_minted = 0.0
         self.total_burned = 0.0
         self.transaction_count = 0
+        self.auto_mint_day = ""
+        self.auto_minted_today = 0.0
+        self._auto_mint_lock = threading.RLock()
         self._load_state()
 
     def _load_state(self) -> None:
@@ -91,13 +106,53 @@ class CentralBank:
             self.total_minted = state.get("total_minted", 0.0)
             self.total_burned = state.get("total_burned", 0.0)
             self.transaction_count = state.get("transaction_count", 0)
+            self.auto_mint_day = state.get("auto_mint_day", "")
+            self.auto_minted_today = state.get("auto_minted_today", 0.0)
+        self._refresh_auto_mint_window()
 
     def _save_state(self) -> None:
         self.memory.save_economy_state("central_bank", {
             "total_minted": self.total_minted,
             "total_burned": self.total_burned,
             "transaction_count": self.transaction_count,
+            "auto_mint_day": self.auto_mint_day,
+            "auto_minted_today": self.auto_minted_today,
         })
+
+    def _refresh_auto_mint_window(self) -> None:
+        today = datetime.now(timezone.utc).date().isoformat()
+        if self.auto_mint_day != today:
+            self.auto_mint_day = today
+            self.auto_minted_today = 0.0
+
+    def auto_mint(self, amount: float, minimum: float,
+                  recipient: str, memo: str) -> float:
+        """Mint within the configured UTC daily cap, or return zero."""
+        if not _auto_mint_enabled() or amount <= 0 or minimum <= 0:
+            return 0.0
+
+        with self._auto_mint_lock:
+            self._refresh_auto_mint_window()
+            remaining = max(0.0, _auto_mint_daily_cap() - self.auto_minted_today)
+            if remaining < minimum:
+                return 0.0
+
+            minted = min(amount, remaining)
+            self.auto_minted_today += minted
+            self.mint(minted, recipient, memo)
+            return minted
+
+    def auto_mint_report(self) -> dict[str, object]:
+        with self._auto_mint_lock:
+            self._refresh_auto_mint_window()
+            cap = _auto_mint_daily_cap()
+            return {
+                "enabled": _auto_mint_enabled(),
+                "day": self.auto_mint_day,
+                "daily_cap": round(cap, 2),
+                "minted_today": round(self.auto_minted_today, 2),
+                "remaining_today": round(max(0.0, cap - self.auto_minted_today), 2),
+            }
 
     @property
     def money_supply(self) -> float:
@@ -166,12 +221,18 @@ class CentralBank:
         elif velocity > TARGET_VELOCITY * 1.3:
             # Economy running hot — mint more
             mint_amount = self.money_supply * 0.05
-            treasury.balance += mint_amount
-            self.mint(mint_amount, "treasury", "Inflationary mint")
-            console.print(
-                f"  [dim]🏦 Inflation: minted {mint_amount:.1f} tokens "
-                f"(velocity={velocity:.2f})[/dim]"
+            minted = self.auto_mint(
+                mint_amount,
+                minimum=mint_amount,
+                recipient="treasury",
+                memo="Inflationary mint",
             )
+            if minted:
+                treasury.balance += minted
+                console.print(
+                    f"  [dim]🏦 Inflation: minted {minted:.1f} tokens "
+                    f"(velocity={velocity:.2f})[/dim]"
+                )
 
 
 class Treasury:
@@ -307,15 +368,25 @@ class RewardEngine:
                     "reason": "treasury_insufficient",
                 }
 
-            # Treasury short — mint more
+            # Treasury short — mint within the operator-configured daily cap.
             shortfall = gross - self.treasury.balance
-            self.central_bank.mint(
+            minted = self.central_bank.auto_mint(
                 shortfall * 2,  # Mint double the shortfall as buffer
-                "treasury",
-                "Emergency mint for reward payment",
+                minimum=shortfall,
+                recipient="treasury",
+                memo="Emergency mint for reward payment",
             )
-            self.treasury.balance += shortfall * 2
-            self.treasury.pay_reward(gross)
+            if not minted:
+                return {
+                    "gross": gross,
+                    "tax": 0,
+                    "net": 0,
+                    "paid": False,
+                    "reason": "auto_mint_daily_cap_exhausted",
+                }
+            self.treasury.balance += minted
+            if not self.treasury.pay_reward(gross):
+                raise RuntimeError("bounded auto-mint did not cover reward shortfall")
 
         # Tax the earning
         net, tax = self.tax_bureau.tax_earning(gross, agent_id)
@@ -360,10 +431,16 @@ class Economy:
         """Allocate budget from treasury for a new agent."""
         success = self.treasury.fund_agent_spawn(budget)
         if not success and _auto_mint_enabled():
-            # Auto-mint if treasury is depleted
-            self.central_bank.mint(budget * 2, "treasury", "Mint for agent spawn")
-            self.treasury.balance += budget * 2
-            success = self.treasury.fund_agent_spawn(budget)
+            shortfall = budget - self.treasury.balance
+            minted = self.central_bank.auto_mint(
+                budget * 2,
+                minimum=shortfall,
+                recipient="treasury",
+                memo="Mint for agent spawn",
+            )
+            if minted:
+                self.treasury.balance += minted
+                success = self.treasury.fund_agent_spawn(budget)
         return success
 
     def reward_agent(self, agent_id: str, score: float,
@@ -393,6 +470,7 @@ class Economy:
 
     def get_report(self) -> dict:
         """Full economic report."""
+        auto_mint = self.central_bank.auto_mint_report()
         return {
             "money_supply": round(self.central_bank.money_supply, 2),
             "total_minted": round(self.central_bank.total_minted, 2),
@@ -403,6 +481,7 @@ class Economy:
             "total_spawn_costs": round(self.treasury.total_spawn_costs, 2),
             "transactions": self.central_bank.transaction_count,
             "tax_rate": f"{self.tax_bureau.rate * 100:.0f}%",
+            "auto_mint": auto_mint,
         }
 
     def print_report(self) -> None:

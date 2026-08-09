@@ -115,6 +115,7 @@ def test_reward_shortfall_does_not_mint_when_auto_mint_disabled(monkeypatch):
 
 def test_reward_shortfall_mints_when_auto_mint_enabled(monkeypatch):
     monkeypatch.setenv("ZHIHUITI_ALLOW_AUTO_MINT", "1")
+    monkeypatch.setenv("ZHIHUITI_AUTO_MINT_DAILY_CAP", "100")
     mem = Memory(":memory:")
     econ = Economy(mem)
     econ.treasury.balance = 0.0
@@ -128,3 +129,41 @@ def test_reward_shortfall_mints_when_auto_mint_enabled(monkeypatch):
     assert budget_ref[0] > 50.0
     assert econ.central_bank.total_minted > minted_before
     mem.close()
+
+
+def test_reward_shortfall_stops_at_daily_auto_mint_cap(monkeypatch):
+    monkeypatch.setenv("ZHIHUITI_ALLOW_AUTO_MINT", "1")
+    monkeypatch.setenv("ZHIHUITI_AUTO_MINT_DAILY_CAP", "20")
+    mem = Memory(":memory:")
+    econ = Economy(mem)
+    econ.treasury.balance = 0.0
+    budget_ref = [50.0]
+    minted_before = econ.central_bank.total_minted
+
+    result = econ.reward_agent("agent1", 0.8, budget_ref)
+
+    assert result["paid"] is False
+    assert result["reason"] == "auto_mint_daily_cap_exhausted"
+    assert econ.central_bank.total_minted == minted_before
+    assert econ.get_report()["auto_mint"]["remaining_today"] == 20.0
+    mem.close()
+
+
+def test_daily_auto_mint_usage_persists(monkeypatch, tmp_path):
+    monkeypatch.setenv("ZHIHUITI_ALLOW_AUTO_MINT", "1")
+    monkeypatch.setenv("ZHIHUITI_AUTO_MINT_DAILY_CAP", "100")
+    db_path = str(tmp_path / "economy.db")
+
+    mem = Memory(db_path)
+    econ = Economy(mem)
+    econ.treasury.balance = 0.0
+    result = econ.reward_agent("agent1", 0.8, [50.0])
+    assert result["paid"] is True
+    minted_today = econ.get_report()["auto_mint"]["minted_today"]
+    assert 0 < minted_today <= 100
+    mem.close()
+
+    restored_mem = Memory(db_path)
+    restored = Economy(restored_mem)
+    assert restored.get_report()["auto_mint"]["minted_today"] == minted_today
+    restored_mem.close()
