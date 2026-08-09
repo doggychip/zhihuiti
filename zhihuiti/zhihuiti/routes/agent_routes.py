@@ -57,10 +57,24 @@ def gather_core_data(orch) -> dict:
     # Realms — reconcile counters from live agents before reading
     orch.realm_manager.reconcile_counts(orch.agent_manager.agents)
     realm_data = {}
+    shared_treasury = max(0.0, orch.economy.treasury.balance)
     for realm, rs in orch.realm_manager.realms.items():
+        quota_allocated = max(0.0, rs.budget_allocated)
+        quota_used = max(0.0, min(rs.budget_spent, quota_allocated))
+        quota_available = max(0.0, quota_allocated - quota_used)
         realm_data[realm.value] = {
+            # Legacy names retained for dashboard/API compatibility.
             "budget_allocated": round(rs.budget_allocated, 1),
             "budget_remaining": round(rs.budget_remaining, 1),
+            # Realm values are quota; Treasury is the shared token backing.
+            "quota_allocated": round(quota_allocated, 1),
+            "quota_used": round(quota_used, 1),
+            "quota_available": round(quota_available, 1),
+            "treasury_backed_available": round(
+                min(quota_available, shared_treasury), 1,
+            ),
+            "funding_source": "shared_treasury",
+            "replenishment": "eligible_population_rotation",
             "agents_active": rs.agents_active,
             "agents_frozen": rs.agents_frozen,
             "agents_bankrupt": rs.agents_bankrupt,

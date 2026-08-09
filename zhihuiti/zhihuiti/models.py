@@ -144,6 +144,7 @@ class AgentState:
     life_state: AgentLifeState = AgentLifeState.ACTIVE
     truthfulness: float = 1.0  # 0.0 to 1.0, drops on hallucination
     reflection_count: int = 0  # number of times agent self-corrected
+    realm_quota_reserved: float = 0.0  # original spawn quota, not current balance
 
     @property
     def avg_score(self) -> float:

@@ -122,6 +122,18 @@ class BiddingHouse:
             except ValueError:
                 role = AgentRole.CUSTOM
 
+            try:
+                persisted_config = json.loads(row["config"] or "{}")
+            except (TypeError, ValueError):
+                persisted_config = {}
+            try:
+                quota_reserved = max(
+                    0.0,
+                    float(persisted_config.get("realm_quota_reserved", 0.0)),
+                )
+            except (AttributeError, TypeError, ValueError):
+                quota_reserved = 0.0
+
             agent = AgentState(
                 id=row["id"],
                 config=AgentConfig(
@@ -132,6 +144,7 @@ class BiddingHouse:
                 ),
                 budget=row["budget"],
                 depth=row["depth"],
+                realm_quota_reserved=quota_reserved,
             )
             # Assign realm based on role (not persisted in DB)
             agent.realm = ROLE_TO_REALM.get(role, Realm.EXECUTION)

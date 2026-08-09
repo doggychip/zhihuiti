@@ -67,6 +67,26 @@ def test_rotation_grows_history_but_retains_bounded_active_pool():
     assert orch.memory.get_stats()["total_tasks"] == 2
 
 
+def test_rotation_replenishes_quota_only_with_treasury_backing(monkeypatch):
+    monkeypatch.setenv("ZHIHUITI_ALLOW_AUTO_MINT", "0")
+    orch = _orchestrator()
+    realm = orch.realm_manager.realms[
+        orch.realm_manager.assign_realm(AgentRole.ANALYST)
+    ]
+    realm.budget_allocated = 10.0
+    realm.budget_spent = 10.0
+    orch.economy.treasury.balance = 0.0
+
+    result = PopulationRotator(
+        orch, _config(target=1, batch_size=1, retain_active=1),
+    ).rotate(datetime(2026, 8, 9, tzinfo=timezone.utc))
+
+    assert result["status"] == "blocked"
+    assert result["total_agents"] == 0
+    assert result["errors"] == ["Treasury cannot fund agent spawn"]
+    assert realm.budget_allocated == 10.0
+
+
 def test_rotation_publishes_accepted_project_research(monkeypatch):
     monkeypatch.setenv("ZHIHUITI_PROJECT_NAME", "Software Supply Chain")
     output = (
