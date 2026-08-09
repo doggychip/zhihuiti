@@ -133,11 +133,16 @@ class Orchestrator:
                 restored_roles.add(agent.config.role)
             self.harness.apply_selected_config(agent.config, agent.id)
 
-        # Allocate initial realm budgets from treasury
-        self.realm_manager.allocate_budgets(
-            self.economy.treasury.balance * 0.5,
-            reset=True,
-        )
+        # Bootstrap realm quota once. Persisted quota is never reset merely by
+        # restarting; scheduled population rotations replenish it explicitly.
+        if not any(
+            state.budget_allocated > 0
+            for state in self.realm_manager.realms.values()
+        ):
+            self.realm_manager.allocate_budgets(
+                self.economy.treasury.balance * 0.5,
+                reset=True,
+            )
 
     def propose_improvement_candidate(self, role: AgentRole) -> str:
         """Turn current judge feedback into a gated, non-active candidate."""

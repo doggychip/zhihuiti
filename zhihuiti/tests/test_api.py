@@ -119,6 +119,26 @@ class TestAPIHandler:
         _json_response(handler, {"error": "bad"}, 400)
         handler.send_response.assert_called_once_with(400)
 
+    def test_realm_data_separates_quota_from_shared_treasury(self):
+        from zhihuiti.models import Realm
+        from zhihuiti.routes.agent_routes import gather_core_data
+
+        orch = _make_orchestrator()
+        orch.realm_manager.allocate_budgets(100.0, reset=True)
+        research = orch.realm_manager.realms[Realm.RESEARCH]
+        research.budget_spent = 20.0
+        orch.economy.treasury.balance = 12.0
+
+        data = gather_core_data(orch)
+        realm = data["realms"]["research"]
+
+        assert realm["quota_allocated"] == 50.0
+        assert realm["quota_used"] == 20.0
+        assert realm["quota_available"] == 30.0
+        assert realm["treasury_backed_available"] == 12.0
+        assert realm["funding_source"] == "shared_treasury"
+        assert realm["replenishment"] == "eligible_population_rotation"
+
 
 class TestAPIServer:
     """Integration tests using a real HTTP server on a random port."""

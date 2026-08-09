@@ -105,6 +105,18 @@ def test_spawn_does_not_auto_mint_by_default(monkeypatch):
     mem.close()
 
 
+def test_spawn_rejects_nonpositive_or_nonfinite_budget():
+    mem = Memory(":memory:")
+    econ = Economy(mem)
+    balance_before = econ.treasury.balance
+
+    assert econ.fund_spawn(0.0) is False
+    assert econ.fund_spawn(-25.0) is False
+    assert econ.fund_spawn(float("nan")) is False
+    assert econ.treasury.balance == balance_before
+    mem.close()
+
+
 def test_spawn_auto_mint_requires_explicit_opt_in(monkeypatch):
     monkeypatch.setenv("ZHIHUITI_ALLOW_AUTO_MINT", "1")
     monkeypatch.setenv("ZHIHUITI_AUTO_MINT_DAILY_CAP", "200")

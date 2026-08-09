@@ -210,13 +210,13 @@ class PopulationRotator:
     def _spawn_and_evaluate(
         self, role: AgentRole, state: dict[str, Any],
     ) -> dict[str, Any]:
-        self.orch.realm_manager.ensure_spawn_capacity(role, self.config.agent_budget)
         config = self.orch.agent_manager.get_best_config(role)
         agent = self.orch.agent_manager.spawn(
             role=role,
             depth=0,
             config=config,
             budget=self.config.agent_budget,
+            allow_realm_replenishment=True,
         )
         self.orch.bidding.pool.add(agent)
         # Persist the quota immediately after the historical population grows,

@@ -10,6 +10,7 @@ Modeled after 如老师's governance architecture:
 from __future__ import annotations
 
 import os
+import math
 import threading
 import uuid
 from dataclasses import dataclass, field
@@ -264,6 +265,8 @@ class Treasury:
 
     def fund_agent_spawn(self, amount: float) -> bool:
         """Allocate budget from treasury to spawn an agent."""
+        if not math.isfinite(amount) or amount <= 0:
+            return False
         if self.balance < amount:
             return False
         self.balance -= amount
@@ -427,10 +430,17 @@ class Economy:
             self.treasury.balance = INITIAL_MONEY_SUPPLY
             self.treasury._save_state()
 
-    def fund_spawn(self, budget: float = AGENT_STARTING_BUDGET) -> bool:
-        """Allocate budget from treasury for a new agent."""
-        success = self.treasury.fund_agent_spawn(budget)
-        if not success and _auto_mint_enabled():
+    def ensure_spawn_funding(self, budget: float = AGENT_STARTING_BUDGET) -> bool:
+        """Ensure the shared Treasury can cover one spawn.
+
+        This preflight runs before scheduled realm quota replenishment. Any
+        mint remains subject to the operator-controlled UTC daily cap.
+        """
+        if not math.isfinite(budget) or budget <= 0:
+            return False
+        if self.treasury.balance >= budget:
+            return True
+        if _auto_mint_enabled():
             shortfall = budget - self.treasury.balance
             minted = self.central_bank.auto_mint(
                 budget * 2,
@@ -440,8 +450,14 @@ class Economy:
             )
             if minted:
                 self.treasury.balance += minted
-                success = self.treasury.fund_agent_spawn(budget)
-        return success
+                self.treasury._save_state()
+        return self.treasury.balance >= budget
+
+    def fund_spawn(self, budget: float = AGENT_STARTING_BUDGET) -> bool:
+        """Allocate budget from the shared Treasury for a new agent."""
+        if not self.ensure_spawn_funding(budget):
+            return False
+        return self.treasury.fund_agent_spawn(budget)
 
     def reward_agent(self, agent_id: str, score: float,
                      agent_budget_ref: list, task_complexity: float = 1.0) -> dict:

@@ -145,6 +145,26 @@ class TestPoolRestoration:
         assert agent is not None
         assert agent.budget == pytest.approx(142.5)
 
+    def test_restored_agent_keeps_original_realm_quota_reservation(self):
+        from zhihuiti.bidding import BiddingHouse
+
+        mem = _make_memory()
+        mgr = _make_manager(mem)
+        agent = AgentState(
+            id="quota-agent-123",
+            config=AgentConfig(role=AgentRole.ANALYST, system_prompt=""),
+            budget=47.0,
+            realm_quota_reserved=25.0,
+        )
+        mgr.checkpoint_agent(agent)
+
+        restored = BiddingHouse(
+            llm=make_stub_llm(), memory=mem,
+        ).pool.get("quota-agent-123")
+
+        assert restored is not None
+        assert restored.realm_quota_reserved == pytest.approx(25.0)
+
 
 # ---------------------------------------------------------------------------
 # Orchestrator startup syncs pool → agent_manager

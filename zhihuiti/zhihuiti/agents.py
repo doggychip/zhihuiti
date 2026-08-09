@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import uuid
@@ -181,10 +182,13 @@ class AgentManager:
         parent_id: str | None = None,
         config: AgentConfig | None = None,
         budget: float = 100.0,
+        allow_realm_replenishment: bool = False,
     ) -> AgentState:
         """Spawn a new agent, respecting depth limits."""
         if depth > MAX_DEPTH:
             raise ValueError(f"Cannot spawn agent: depth {depth} exceeds max {MAX_DEPTH}")
+        if not math.isfinite(budget) or budget <= 0:
+            raise ValueError("Cannot spawn agent: budget must be a positive finite number")
 
         max_active = max(1, int(os.environ.get("ZHIHUITI_MAX_ACTIVE_AGENTS", "36")))
         max_per_role = max(1, int(os.environ.get("ZHIHUITI_MAX_AGENTS_PER_ROLE", "12")))
@@ -208,12 +212,21 @@ class AgentManager:
         agent_id = uuid.uuid4().hex[:12]
         self._apply_runtime_learning(config, agent_id)
 
-        # Reject realm overruns before mutating treasury state.
+        # Scheduled population growth may replenish administrative realm quota,
+        # but only after the shared Treasury can back the complete spawn.
         if self.realm_manager:
             realm = self.realm_manager.assign_realm(role)
             realm_state = self.realm_manager.realms[realm]
+            if allow_realm_replenishment and self.economy:
+                if not self.economy.ensure_spawn_funding(budget):
+                    raise ValueError("Treasury cannot fund agent spawn")
+                self.realm_manager.replenish_spawn_quota(
+                    role,
+                    budget,
+                    treasury_available=self.economy.treasury.balance,
+                )
             remaining = realm_state.budget_remaining
-            if realm_state.budget_allocated > 0 and remaining < budget:
+            if remaining < budget:
                 raise ValueError(
                     f"Cannot spawn agent: {realm.value} realm budget exhausted "
                     f"({remaining:.1f} remaining)"
@@ -230,6 +243,7 @@ class AgentManager:
             budget=budget,
             depth=depth,
             parent_agent_id=parent_id,
+            realm_quota_reserved=budget,
         )
         self.agents[agent.id] = agent
 
@@ -241,6 +255,7 @@ class AgentManager:
             avg_score=0.5,
             alive=True,
             parent_agent_id=parent_id,
+            config={"realm_quota_reserved": budget},
         )
 
         # Register in bloodline lineage
@@ -552,15 +567,18 @@ class AgentManager:
             avg_score=agent.avg_score,
             alive=agent.alive,
             parent_agent_id=agent.parent_agent_id,
+            config={"realm_quota_reserved": agent.realm_quota_reserved},
         )
 
     def cull_agent(self, agent: AgentState) -> None:
         """Kill an underperforming agent and burn its remaining tokens."""
+        unused_budget = max(0.0, agent.budget)
+        quota_release = min(unused_budget, agent.realm_quota_reserved)
         # Burn remaining budget
-        if self.economy and agent.budget > 0:
-            self.economy.burn_agent_balance(agent.id, agent.budget)
+        if self.economy and unused_budget > 0:
+            self.economy.burn_agent_balance(agent.id, unused_budget)
             console.print(
-                f"  [red]🔥 Burned[/red] {agent.budget:.1f} tokens from agent "
+                f"  [red]🔥 Burned[/red] {unused_budget:.1f} tokens from agent "
                 f"[dim]{agent.id}[/dim]"
             )
 
@@ -574,6 +592,7 @@ class AgentManager:
             avg_score=agent.avg_score,
             alive=False,
             parent_agent_id=agent.parent_agent_id,
+            config={"realm_quota_reserved": 0.0},
         )
 
         # Mark gene dead in bloodline
@@ -582,7 +601,12 @@ class AgentManager:
 
         # Update realm lifecycle
         if self.realm_manager:
-            self.realm_manager.on_agent_cull(agent)
+            self.realm_manager.on_agent_cull(
+                agent,
+                unused_budget=unused_budget,
+                quota_release=quota_release,
+            )
+        agent.realm_quota_reserved = 0.0
 
         console.print(
             f"  [red]☠ Culled[/red] {agent.config.role.value} agent "

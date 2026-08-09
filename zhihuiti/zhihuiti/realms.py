@@ -24,6 +24,7 @@ Agents within a realm can be: active / frozen / bankrupt.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import math
 from typing import TYPE_CHECKING
 
 from rich.console import Console
@@ -91,7 +92,7 @@ class RealmState:
 
     @property
     def budget_remaining(self) -> float:
-        return self.budget_allocated - self.budget_spent
+        return max(0.0, self.budget_allocated - self.budget_spent)
 
 
 class RealmManager:
@@ -212,18 +213,39 @@ class RealmManager:
         """Determine which realm an agent belongs to based on its role."""
         return ROLE_TO_REALM.get(role, Realm.EXECUTION)
 
-    def ensure_spawn_capacity(self, role: AgentRole, budget: float) -> None:
-        """Reserve realm quota for one externally bounded agent spawn.
+    def replenish_spawn_quota(
+        self,
+        role: AgentRole,
+        budget: float,
+        *,
+        treasury_available: float,
+    ) -> float:
+        """Expand spawn quota for one Treasury-backed scheduled spawn.
 
-        This only expands the realm's accounting envelope.  Treasury funding
-        and any permitted minting remain enforced by ``Economy.fund_spawn``.
+        Realm quota is an administrative limit, not a separate token balance.
+        The population rotator may expand it only after the shared Treasury can
+        fund the complete spawn. Other spawn paths remain bounded by quota.
+
+        Returns the amount of quota added.
         """
+        if not math.isfinite(budget) or budget <= 0:
+            raise ValueError("Scheduled spawn budget must be a positive finite number")
+        if not math.isfinite(treasury_available) or treasury_available < 0:
+            raise ValueError("Treasury availability must be a non-negative finite number")
+        if treasury_available < budget:
+            raise ValueError(
+                "Treasury cannot back scheduled realm quota replenishment: "
+                f"{treasury_available:.1f} available, {budget:.1f} required"
+            )
+
         realm = self.assign_realm(role)
         state = self.realms[realm]
-        required = state.budget_spent + max(0.0, budget)
-        if state.budget_allocated < required:
-            state.budget_allocated = required
+        required = state.budget_spent + budget
+        added = max(0.0, required - state.budget_allocated)
+        if added:
+            state.budget_allocated += added
             self._save_state(realm)
+        return added
 
     def route_task(self, task: Task) -> Realm:
         """Route a task to the appropriate realm based on the requested role."""
@@ -241,10 +263,7 @@ class RealmManager:
     def on_agent_spawn(self, agent: AgentState) -> None:
         """Register an agent spawn in its realm."""
         realm = self.assign_realm(agent.config.role)
-        if (
-            self.realms[realm].budget_allocated > 0
-            and self.realms[realm].budget_remaining < agent.budget
-        ):
+        if self.realms[realm].budget_remaining < agent.budget:
             raise ValueError(
                 f"{realm.value} realm budget exhausted: "
                 f"{self.realms[realm].budget_remaining:.1f} remaining"
@@ -333,18 +352,30 @@ class RealmManager:
             f"[dim]{agent.id}[/dim] in {REALM_NAMES[agent.realm]}"
         )
 
-    def on_agent_cull(self, agent: AgentState) -> None:
+    def on_agent_cull(
+        self,
+        agent: AgentState,
+        *,
+        unused_budget: float | None = None,
+        quota_release: float | None = None,
+    ) -> None:
         """Handle agent culling — decide between freeze and bankrupt.
 
         Very low scorers get frozen (preserved but inactive).
         Zero-budget agents get bankrupted.
+
+        ``unused_budget`` is burned by ``AgentManager``. ``quota_release`` is
+        capped at the agent's original reservation, so task rewards cannot
+        over-release quota. Neither value refunds tokens to Treasury.
         """
         rs = self.realms[agent.realm]
-        if agent.life_state == AgentLifeState.ACTIVE:
-            rs.agents_active = max(0, rs.agents_active - 1)
+        remaining = agent.budget if unused_budget is None else max(0.0, unused_budget)
+        released = remaining if quota_release is None else max(0.0, quota_release)
+        if released:
+            rs.budget_spent = max(0.0, rs.budget_spent - released)
             self._save_state(agent.realm)
 
-        if agent.budget <= BANKRUPTCY_BUDGET:
+        if remaining <= BANKRUPTCY_BUDGET:
             self.bankrupt_agent(agent)
         else:
             self.freeze_agent(agent)
