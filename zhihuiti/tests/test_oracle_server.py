@@ -113,6 +113,17 @@ class TestHealthEndpoint:
         assert body["provider"] == "deepseek"
         assert body["operator_api_configured"] is True
 
+    def test_readyz_exposes_guarded_population_target(self, server, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "configured-for-test")
+        monkeypatch.setenv("ZHIHUITI_CUMULATIVE_AGENT_TARGET", "1000")
+
+        status, body = _get(server, "/readyz")
+
+        assert status == 200
+        assert body["cumulative_agent_target"] == 1000
+        assert body["population_rotation_enabled"] is True
+        assert body["population_rotation_daily_limit"] == 10
+
     def test_operations_status_exposes_governance_and_forecast(self, server):
         status, body = _get(server, "/api/operations/status")
 

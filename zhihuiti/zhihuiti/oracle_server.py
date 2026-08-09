@@ -57,6 +57,8 @@ _orchestrator = None
 _orch_lock = threading.Lock()
 _orch_goals: dict[str, dict] = {}
 _orch_goals_lock = threading.Lock()
+_population_rotator = None
+_population_rotator_lock = threading.Lock()
 
 DEFAULT_CORS_ORIGIN = "https://zhihuiti.lovable.app"
 DEFAULT_MAX_REQUEST_BODY_BYTES = 1024 * 1024
@@ -87,6 +89,16 @@ def _get_orchestrator():
                     console.print(f"[bold red]Failed to init orchestrator:[/bold red] {e}")
                     raise
     return _orchestrator
+
+
+def _get_population_rotator():
+    global _population_rotator
+    if _population_rotator is None:
+        with _population_rotator_lock:
+            if _population_rotator is None:
+                from zhihuiti.population import PopulationRotator
+                _population_rotator = PopulationRotator(_get_orchestrator())
+    return _population_rotator
 
 
 def _configured_cors_origins() -> list[str]:
@@ -268,6 +280,8 @@ def _runtime_status() -> dict[str, Any]:
         )
     except ValueError:
         auto_mint_daily_cap = 0.0
+    from zhihuiti.population import PopulationConfig
+    population = PopulationConfig.from_env()
     return {
         "service": "zhihuiti",
         "commit": _runtime_commit(),
@@ -280,6 +294,9 @@ def _runtime_status() -> dict[str, Any]:
         "max_active_agents": max_active_agents,
         "auto_mint_enabled": env_enabled("ZHIHUITI_ALLOW_AUTO_MINT"),
         "auto_mint_daily_cap": auto_mint_daily_cap,
+        "cumulative_agent_target": population.target,
+        "population_rotation_enabled": population.enabled,
+        "population_rotation_daily_limit": population.daily_limit,
     }
 
 
@@ -1078,6 +1095,8 @@ class OracleHandler(BaseHTTPRequestHandler):
             self._handle_real_goal_get(goal_id)
         elif path == "/api/data":
             self._handle_real_dashboard_data()
+        elif path == "/api/population":
+            self._handle_population_status()
         elif path == "/api/evolution":
             self._handle_evolution_status()
         elif path == "/api/harness":
@@ -1150,6 +1169,8 @@ class OracleHandler(BaseHTTPRequestHandler):
             self._handle_real_goal_create()
         elif path == "/api/tasks":
             self._handle_real_single_task()
+        elif path == "/api/population/rotate":
+            self._handle_population_rotate()
         else:
             _json_response(self, {"error": "not found"}, 404)
 
@@ -2234,6 +2255,26 @@ class OracleHandler(BaseHTTPRequestHandler):
             from zhihuiti.dashboard import _gather_data
             data = _gather_data(orch)
             _json_response(self, data)
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_population_status(self):
+        """GET /api/population — cumulative target and guarded rotation status."""
+        if not _has_llm_key():
+            _json_response(self, {"error": "No LLM key configured."}, 503)
+            return
+        try:
+            _json_response(self, _get_population_rotator().status())
+        except Exception as e:
+            _json_response(self, {"error": str(e)}, 500)
+
+    def _handle_population_rotate(self):
+        """POST /api/population/rotate — run one bounded evaluated rotation."""
+        if not _has_llm_key():
+            _json_response(self, {"error": "No LLM key configured."}, 503)
+            return
+        try:
+            _json_response(self, _get_population_rotator().rotate())
         except Exception as e:
             _json_response(self, {"error": str(e)}, 500)
 

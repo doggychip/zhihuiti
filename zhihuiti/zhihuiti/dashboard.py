@@ -39,6 +39,8 @@ def _gather_data(orch) -> dict:
         data["harness"] = get_harness_status(orch)
     if orch and hasattr(orch, "economy"):
         data.update(gather_external_data())
+        from zhihuiti.population import PopulationRotator
+        data["population"] = PopulationRotator(orch).status()
     return data
 
 
@@ -99,6 +101,18 @@ function renderCard(icon, title, content) {
 }
 
 let html = '';
+
+// Guarded cumulative population rotation
+if (DATA.population && DATA.population.enabled) {
+  let p = DATA.population;
+  html += renderCard('🌱', 'Cumulative Agent Population', [
+    m('Historical Agents', p.total_agents + ' / ' + p.target, 'yellow'),
+    m('Progress', (p.progress * 100).toFixed(1) + '%'),
+    m('Active Retained', p.active_agents + ' / ' + p.retain_active, 'green'),
+    m('Spawned Today', p.spawned_today + ' / ' + p.daily_limit),
+    m('Remaining', p.remaining),
+  ].join(''));
+}
 
 // Guarded self-improvement harness
 if (DATA.harness) {
