@@ -67,6 +67,32 @@ def test_rotation_grows_history_but_retains_bounded_active_pool():
     assert orch.memory.get_stats()["total_tasks"] == 2
 
 
+def test_rotation_publishes_accepted_project_research(monkeypatch):
+    monkeypatch.setenv("ZHIHUITI_PROJECT_NAME", "Software Supply Chain")
+    output = (
+        "Finding: freshness needs an explicit timestamp gate. "
+        "Evidence: total_tasks and historical_agents are the supplied runtime fields. "
+        "Checks: validate dates, fail closed, and record coverage. "
+        "Success: no stale record passes. Uncertainty: source dates are unavailable. "
+        "Stop condition: halt publication when freshness cannot be verified."
+    )
+    orch = _orchestrator(task_output=output)
+    orch.judge.inspection.llm.chat_json.return_value = {
+        "score": 0.85, "reasoning": "accepted", "pass": True,
+    }
+
+    result = PopulationRotator(
+        orch, _config(target=1, batch_size=1, retain_active=1),
+    ).rotate(datetime(2026, 8, 9, tzinfo=timezone.utc))
+
+    assert result["spawned"][0]["research"]["published"] is True
+    row = orch.memory._query_one(
+        "SELECT title, chunk_type FROM knowledge_chunks LIMIT 1"
+    )
+    assert row["chunk_type"] == "agent_research"
+    assert "Software Supply Chain" in row["title"]
+
+
 def test_rotation_never_overshoots_cumulative_target():
     orch = _orchestrator()
     for index in range(999):

@@ -7,6 +7,7 @@ import json
 import os
 import threading
 from http.server import HTTPServer
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -153,6 +154,8 @@ class TestOperatorProtection:
         assert status == 401
         assert body["error"] == "operator authorization required"
 
+
+class TestOperatorProtectionMore:
     def test_post_rejects_wrong_bearer_token(self, server):
         status, _ = _post(server, "/api/oracle/diagnose", {}, token="wrong")
         assert status == 401
@@ -173,6 +176,50 @@ class TestOperatorProtection:
         status, body = _get(server, "/api/goals/example")
         assert status == 401
         assert body["error"] == "operator authorization required"
+
+
+class TestPublicResearch:
+    def test_returns_only_public_agent_research(self, server, monkeypatch):
+        from zhihuiti.knowledge import KnowledgeBase
+        from zhihuiti.memory import Memory
+        from zhihuiti.models import KnowledgeChunk
+
+        memory = Memory(":memory:")
+        kb = KnowledgeBase(memory)
+        kb.store(KnowledgeChunk(
+            id="public-research",
+            source="agent-research:test",
+            title="Public reliability output",
+            content="A sufficiently detailed public research output.",
+            chunk_type="agent_research",
+            confidence=0.85,
+            metadata={
+                "public": True,
+                "project": "Test Project",
+                "role": "analyst",
+                "score": 0.85,
+            },
+        ))
+        kb.store(KnowledgeChunk(
+            id="private-research",
+            source="internal",
+            title="Private output",
+            content="Must never be public.",
+            chunk_type="agent_research",
+            confidence=0.95,
+            metadata={"public": False},
+        ))
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "configured-for-test")
+        monkeypatch.setattr(
+            oracle_server, "_orchestrator", SimpleNamespace(memory=memory),
+        )
+
+        status, body = _get(server, "/api/research?limit=10")
+
+        assert status == 200
+        assert body["count"] == 1
+        assert body["outputs"][0]["id"] == "public-research"
+        assert body["scope"] == "inspection_approved_agent_research_only"
 
 
 class TestAlertLifecycle:

@@ -230,7 +230,9 @@ class KnowledgeBase:
     # ------------------------------------------------------------------
 
     def query(self, text: str, top_k: int = 5,
-              min_confidence: float = 0.0) -> list[KnowledgeChunk]:
+              min_confidence: float = 0.0,
+              chunk_type: str | None = None,
+              public_only: bool = False) -> list[KnowledgeChunk]:
         """Search knowledge chunks using TF-IDF keyword matching.
 
         Args:
@@ -245,12 +247,16 @@ class KnowledgeBase:
         if not query_tokens:
             return []
 
-        rows = self.memory._query(
+        sql = (
             "SELECT id, source, title, content, chunk_type, tags, "
             "confidence, metadata, created_at FROM knowledge_chunks "
-            "WHERE confidence >= ?",
-            (min_confidence,),
+            "WHERE confidence >= ?"
         )
+        params: list[object] = [min_confidence]
+        if chunk_type:
+            sql += " AND chunk_type = ?"
+            params.append(chunk_type)
+        rows = self.memory._query(sql, tuple(params))
 
         if not rows:
             return []
@@ -258,6 +264,9 @@ class KnowledgeBase:
         # Build token sets for IDF computation
         doc_data: list[tuple[dict, list[str], set[str]]] = []
         for row in rows:
+            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            if public_only and metadata.get("public") is not True:
+                continue
             tokens = _tokenize(row["title"] + " " + row["content"])
             doc_data.append((dict(row), tokens, set(tokens)))
 
@@ -288,6 +297,41 @@ class KnowledgeBase:
             ))
 
         return results
+
+    def recent(self, limit: int = 10, chunk_type: str | None = None,
+               public_only: bool = False) -> list[KnowledgeChunk]:
+        """Return recent chunks with optional type and public filters."""
+        sql = (
+            "SELECT id, source, title, content, chunk_type, tags, confidence, "
+            "metadata, created_at FROM knowledge_chunks"
+        )
+        params: list[object] = []
+        if chunk_type:
+            sql += " WHERE chunk_type = ?"
+            params.append(chunk_type)
+        sql += " ORDER BY created_at DESC, rowid DESC LIMIT ?"
+        # Fetch extra rows before the metadata-level public filter.
+        params.append(max(1, min(500, limit * 5)))
+        rows = self.memory._query(sql, tuple(params))
+        chunks: list[KnowledgeChunk] = []
+        for row in rows:
+            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            if public_only and metadata.get("public") is not True:
+                continue
+            chunks.append(KnowledgeChunk(
+                id=row["id"],
+                source=row["source"],
+                title=row["title"],
+                content=row["content"],
+                chunk_type=row["chunk_type"],
+                tags=json.loads(row["tags"]) if row["tags"] else [],
+                confidence=row["confidence"],
+                created_at=row["created_at"] or "",
+                metadata=metadata,
+            ))
+            if len(chunks) >= limit:
+                break
+        return chunks
 
     # ------------------------------------------------------------------
     # Ingest file
