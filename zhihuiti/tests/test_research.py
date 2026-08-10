@@ -218,6 +218,7 @@ def test_legacy_outputs_do_not_count_as_qualified_agents():
     assert stats["qualified_agents"] == 0
     assert stats["published_outputs"] == 0
     assert stats["legacy_published_outputs"] == 1
+    assert public_research_outputs(memory)[0]["validation"] is None
     memory.close()
 
 
