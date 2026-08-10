@@ -469,7 +469,7 @@ def public_research_outputs(
             "evidence_scope": chunk.metadata.get("evidence_scope", ""),
             "telemetry_snapshot": chunk.metadata.get("telemetry_snapshot", {}),
             "inspection": chunk.metadata.get("inspection", {}),
-            "validation": chunk.metadata.get("validation", {}),
+            "validation": chunk.metadata.get("validation"),
         }
         for chunk in chunks
     ]
@@ -493,7 +493,11 @@ def public_research_stats(memory) -> dict[str, Any]:
         if metadata.get("public") is not True:
             continue
         validation = metadata.get("validation")
-        if not isinstance(validation, dict) or validation.get("deterministic") is not True:
+        if (
+            not isinstance(validation, dict)
+            or validation.get("deterministic") is not True
+            or validation.get("errors")
+        ):
             legacy_published_outputs += 1
             continue
         published_outputs += 1
