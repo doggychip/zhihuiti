@@ -138,8 +138,21 @@ class TestAPIHandler:
         assert realm["quota_used"] == 20.0
         assert realm["quota_available"] == 30.0
         assert realm["treasury_backed_available"] == 12.0
+        assert realm["treasury_backed_available_is_shared"] is True
+        assert realm["treasury_backing_additive"] is False
+        assert realm["shared_treasury_balance"] == 12.0
         assert realm["funding_source"] == "shared_treasury"
         assert realm["replenishment"] == "eligible_population_rotation"
+        assert data["shared_treasury"] == {
+            "balance": 12.0,
+            "total_quota_available": 30.0,
+            "coverage_ratio": 0.4,
+            "realm_values_additive": False,
+            "explanation": (
+                "Each realm can draw from the same shared Treasury up to its quota; "
+                "realm-backed values must not be summed."
+            ),
+        }
         assert data["governance"]["warnings"] == [
             "execution realm spawn quota unavailable until an eligible "
             "scheduled population rotation",

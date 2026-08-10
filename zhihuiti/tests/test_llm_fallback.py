@@ -68,3 +68,44 @@ def test_openrouter_is_preferred_when_both_fallback_types_exist(monkeypatch):
     assert status["credential_fallback_configured"] is True
     assert status["fallback_type"] == "provider"
     llm.client.close()
+
+
+def test_provider_status_reports_observed_calls_without_secrets(monkeypatch):
+    _clear_provider_env(monkeypatch)
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "secret-value")
+    llm = LLM()
+
+    initial = llm.provider_status()
+    assert initial["live_call_observed"] is False
+    assert initial["ready"] is None
+
+    monkeypatch.setattr(llm, "_chat_openai_compat", lambda *_args, **_kwargs: "OK")
+    assert llm.chat("system", "user") == "OK"
+    observed = llm.provider_status()
+
+    assert observed["live_call_observed"] is True
+    assert observed["ready"] is True
+    assert observed["last_success_at"] is not None
+    assert observed["last_latency_ms"] >= 0
+    assert "secret-value" not in str(observed)
+    llm.client.close()
+
+
+def test_provider_status_records_secret_free_failure_type(monkeypatch):
+    _clear_provider_env(monkeypatch)
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "secret-value")
+    llm = LLM()
+
+    def fail(*_args, **_kwargs):
+        raise LLMError("provider rejected secret-value")
+
+    monkeypatch.setattr(llm, "_chat_openai_compat", fail)
+    with pytest.raises(LLMError):
+        llm.chat("system", "user")
+    status = llm.provider_status()
+
+    assert status["ready"] is False
+    assert status["last_error_type"] == "LLMError"
+    assert status["last_error_at"] is not None
+    assert "secret-value" not in str(status)
+    llm.client.close()

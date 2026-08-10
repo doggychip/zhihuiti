@@ -125,6 +125,13 @@ class LLM:
         self.total_calls = 0
         self.total_retries = 0
         self.total_failures = 0
+        self._probe_performed = False
+        self._last_call_at: str | None = None
+        self._last_success_at: str | None = None
+        self._last_error_at: str | None = None
+        self._last_error_type: str | None = None
+        self._last_latency_ms: int | None = None
+        self._last_call_succeeded: bool | None = None
 
         # Prefer a different provider; otherwise use an independently scoped key.
         self._primary_backend = self._backend
@@ -239,10 +246,34 @@ class LLM:
 
         model: optional per-call override; falls back to self.model.
         """
-        if self._backend == "ollama":
-            return self._chat_ollama(system, user, temperature, max_tokens, model=model)
-        # DeepSeek and OpenRouter both use OpenAI-compatible format
-        return self._chat_openai_compat(system, user, temperature, max_tokens, model=model)
+        started = time.monotonic()
+        timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        self._last_call_at = timestamp
+        try:
+            if self._backend == "ollama":
+                result = self._chat_ollama(
+                    system, user, temperature, max_tokens, model=model,
+                )
+            else:
+                # DeepSeek and OpenRouter both use OpenAI-compatible format.
+                result = self._chat_openai_compat(
+                    system, user, temperature, max_tokens, model=model,
+                )
+        except Exception as exc:
+            self._last_call_succeeded = False
+            self._last_error_at = time.strftime(
+                "%Y-%m-%dT%H:%M:%SZ", time.gmtime(),
+            )
+            self._last_error_type = type(exc).__name__
+            self._last_latency_ms = round((time.monotonic() - started) * 1000)
+            raise
+        self._last_call_succeeded = True
+        self._last_success_at = time.strftime(
+            "%Y-%m-%dT%H:%M:%SZ", time.gmtime(),
+        )
+        self._last_error_type = None
+        self._last_latency_ms = round((time.monotonic() - started) * 1000)
+        return result
 
     def chat_json(
         self,
@@ -285,8 +316,14 @@ class LLM:
             "provider": self._backend,
             "model": self.model,
             "configured": not misconfigured_generic,
-            "probe_performed": False,
-            "ready": None,
+            "probe_performed": self._probe_performed,
+            "ready": self._last_call_succeeded,
+            "live_call_observed": self._last_call_succeeded is not None,
+            "last_call_at": self._last_call_at,
+            "last_success_at": self._last_success_at,
+            "last_error_at": self._last_error_at,
+            "last_error_type": self._last_error_type,
+            "last_latency_ms": self._last_latency_ms,
             "fallback_configured": self._fallback_available,
             "fallback_active": self._using_fallback,
             "provider_fallback_configured": self._provider_fallback_available,
@@ -301,6 +338,10 @@ class LLM:
             "message": (
                 "LLM_API_KEY is set but LLM_BASE_URL is missing."
                 if misconfigured_generic
+                else "Provider completed a live model call."
+                if self._last_call_succeeded is True
+                else "The most recent live model call failed."
+                if self._last_call_succeeded is False
                 else "Provider is configured; live model access has not been checked."
             ),
         }
@@ -316,6 +357,7 @@ class LLM:
 
     def probe_provider(self) -> dict:
         """Make one minimal model call, falling back once when configured."""
+        self._probe_performed = True
         status = self.provider_status()
         if not status["configured"]:
             return {**status, "probe_performed": True, "ready": False}

@@ -7,12 +7,15 @@ import os
 import sqlite3
 import threading
 import uuid
+import zlib
 from datetime import datetime, timezone
 from pathlib import Path
 
 
 class Memory:
     """Persistent memory store using SQLite."""
+
+    _SNAPSHOT_PREFIX = b"zlib-json-v1\0"
 
     def __init__(self, db_path: str = "zhihuiti.db"):
         self.db_path = Path(db_path)
@@ -870,6 +873,20 @@ class Memory:
     # Versioned state: checkpoint / rollback / recall / search
     # ------------------------------------------------------------------
 
+    @classmethod
+    def _encode_snapshot_data(cls, data: dict) -> bytes:
+        raw = json.dumps(data, separators=(",", ":")).encode("utf-8")
+        return cls._SNAPSHOT_PREFIX + zlib.compress(raw, level=6)
+
+    @classmethod
+    def _decode_snapshot_data(cls, payload: str | bytes) -> dict:
+        if isinstance(payload, str):
+            return json.loads(payload)
+        raw = bytes(payload)
+        if raw.startswith(cls._SNAPSHOT_PREFIX):
+            raw = zlib.decompress(raw[len(cls._SNAPSHOT_PREFIX):])
+        return json.loads(raw.decode("utf-8"))
+
     def checkpoint(
         self,
         phase: str,
@@ -915,7 +932,7 @@ class Memory:
                     goal_id,
                     phase,
                     json.dumps(tags or []),
-                    json.dumps(data),
+                    self._encode_snapshot_data(data),
                     parent_id,
                 ),
             )
@@ -961,6 +978,44 @@ class Memory:
             self.conn.commit()
         return removed
 
+    def compact_snapshots(self) -> dict:
+        """Compress legacy text snapshots without changing their contents."""
+        with self._lock:
+            self.conn.execute("BEGIN IMMEDIATE")
+            try:
+                rows = self.conn.execute(
+                    "SELECT id, data, length(data) AS size FROM snapshots"
+                ).fetchall()
+                before_bytes = sum(int(row["size"] or 0) for row in rows)
+                compacted = 0
+                for row in rows:
+                    payload = row["data"]
+                    if (
+                        isinstance(payload, bytes)
+                        and payload.startswith(self._SNAPSHOT_PREFIX)
+                    ):
+                        continue
+                    decoded = self._decode_snapshot_data(payload)
+                    self.conn.execute(
+                        "UPDATE snapshots SET data = ? WHERE id = ?",
+                        (self._encode_snapshot_data(decoded), row["id"]),
+                    )
+                    compacted += 1
+                after_bytes = self.conn.execute(
+                    "SELECT COALESCE(SUM(length(data)), 0) FROM snapshots"
+                ).fetchone()[0]
+                self.conn.commit()
+            except Exception:
+                self.conn.rollback()
+                raise
+        return {
+            "scanned": len(rows),
+            "compacted": compacted,
+            "before_bytes": before_bytes,
+            "after_bytes": int(after_bytes or 0),
+            "saved_bytes": max(0, before_bytes - int(after_bytes or 0)),
+        }
+
     def rollback(self, snapshot_id: str) -> dict:
         """Restore state from a snapshot.
 
@@ -973,7 +1028,7 @@ class Memory:
         if not row:
             raise ValueError(f"Snapshot {snapshot_id} not found")
 
-        data: dict[str, list[dict]] = json.loads(row["data"])
+        data: dict[str, list[dict]] = self._decode_snapshot_data(row["data"])
 
         with self._lock:
             for table, rows in data.items():
@@ -1036,7 +1091,7 @@ class Memory:
             "SELECT data FROM snapshots WHERE id = ?", (snapshot_id,)
         )
         if row:
-            return json.loads(row["data"])
+            return self._decode_snapshot_data(row["data"])
         return None
 
     def get_snapshot_chain(self, snapshot_id: str, max_depth: int = 10) -> list[dict]:

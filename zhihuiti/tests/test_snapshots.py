@@ -1,5 +1,9 @@
 """Tests for the versioned state / checkpoint / rollback layer."""
 
+import json
+
+import pytest
+
 from zhihuiti.memory import Memory
 
 
@@ -27,6 +31,63 @@ def test_checkpoint_captures_state():
     assert len(data["agents"]) == 1
     assert data["agents"][0]["id"] == "a1"
     assert data["agents"][0]["budget"] == 100.0
+    mem.close()
+
+
+def test_new_snapshot_payload_is_compressed_blob():
+    mem = _make_mem()
+    sid = mem.checkpoint(phase="compressed")
+
+    row = mem._query_one(
+        "SELECT typeof(data) AS storage_type, data FROM snapshots WHERE id = ?",
+        (sid,),
+    )
+
+    assert row["storage_type"] == "blob"
+    assert row["data"].startswith(Memory._SNAPSHOT_PREFIX)
+    assert mem.get_snapshot_data(sid) is not None
+    mem.close()
+
+
+def test_legacy_text_snapshot_is_readable_and_compacted():
+    mem = _make_mem()
+    legacy = {"agents": [], "tasks": []}
+    mem.conn.execute(
+        "INSERT INTO snapshots (id, phase, tags, data) VALUES (?, ?, ?, ?)",
+        ("legacy", "old", "[]", json.dumps(legacy)),
+    )
+    mem.conn.commit()
+
+    assert mem.get_snapshot_data("legacy") == legacy
+    result = mem.compact_snapshots()
+
+    assert result["scanned"] == 1
+    assert result["compacted"] == 1
+    assert result["saved_bytes"] >= 0
+    row = mem._query_one(
+        "SELECT typeof(data) AS storage_type, data FROM snapshots WHERE id = 'legacy'"
+    )
+    assert row["storage_type"] == "blob"
+    assert row["data"].startswith(Memory._SNAPSHOT_PREFIX)
+    assert mem.get_snapshot_data("legacy") == legacy
+    mem.close()
+
+
+def test_snapshot_compaction_rolls_back_when_any_payload_is_corrupt():
+    mem = _make_mem()
+    mem.conn.executemany(
+        "INSERT INTO snapshots (id, phase, tags, data) VALUES (?, 'old', '[]', ?)",
+        [("valid", json.dumps({"agents": []})), ("corrupt", "not-json")],
+    )
+    mem.conn.commit()
+
+    with pytest.raises(json.JSONDecodeError):
+        mem.compact_snapshots()
+
+    row = mem._query_one(
+        "SELECT typeof(data) AS storage_type FROM snapshots WHERE id = 'valid'"
+    )
+    assert row["storage_type"] == "text"
     mem.close()
 
 

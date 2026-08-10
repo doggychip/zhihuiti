@@ -132,8 +132,38 @@ class TestHealthEndpoint:
         assert "warnings" in body
         assert body["governance"]["auto_mint_enabled"] is False
         assert "persistence_baseline_accuracy" in body["forecast"]
+        assert body["forecast"]["claim_status"] == "advisory_only"
+        assert body["forecast"]["headline_eligible"] is False
         assert body["canonical_base_url"] == "https://zhihuiti.zeabur.app"
         assert "instance_id" in body["storage"]
+
+    def test_agent_only_profile_omits_inapplicable_oracle_degradation(
+        self, server, monkeypatch,
+    ):
+        monkeypatch.setenv("ZHIHUITI_SERVICE_PROFILE", "agent_only")
+        monkeypatch.setenv("ZHIHUITI_EXTERNAL_ALERT_CHANNEL", "github_issues")
+        monkeypatch.delenv("ZHIHUITI_ALERT_WEBHOOK_URL", raising=False)
+
+        status, body = _get(server, "/api/operations/status")
+
+        assert status == 200
+        assert body["service_profile"] == "agent_only"
+        assert body["capabilities"]["oracle_scan"] is False
+        assert "scan_stale" not in body["warnings"]
+        assert "forecast_collecting" not in body["warnings"]
+        assert body["alerts"]["delivery_configured"] is False
+        assert body["alerts"]["external_channel_supported"] is False
+        assert body["alerts"]["configuration_state"] == "declared_unsupported"
+
+    def test_core_profile_declares_oracle_capabilities(self, server, monkeypatch):
+        monkeypatch.setenv("ZHIHUITI_SERVICE_PROFILE", "core_oracle")
+
+        status, body = _get(server, "/healthz")
+
+        assert status == 200
+        assert body["service_profile"] == "core_oracle"
+        assert body["capabilities"]["oracle_scan"] is True
+        assert body["capabilities"]["forecast"] is True
 
     def test_storage_identity_survives_repeated_health_checks(self, server, tmp_path, monkeypatch):
         monkeypatch.setenv("ZHIHUITI_DATA", str(tmp_path))

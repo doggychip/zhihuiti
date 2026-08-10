@@ -17,15 +17,35 @@ from zhihuiti.realms import RealmManager
 from tests.conftest import make_stub_llm
 
 
+def _valid_research() -> str:
+    return json.dumps({
+        "finding": "The supplied telemetry supports a deterministic gate before research is published.",
+        "evidence": [{
+            "field": "total_tasks",
+            "interpretation": "The canonical task count establishes the observed runtime scope.",
+        }],
+        "checks": [
+            "Reject evidence fields that are absent from supplied telemetry.",
+            "Use canonical values inserted by the server during rendering.",
+            "Record validation metadata for every published research output.",
+        ],
+        "success_criteria": ["Every published claim cites supplied runtime telemetry."],
+        "uncertainties": ["Runtime telemetry cannot prove unobserved source behavior."],
+        "stop_condition": "Stop publication whenever deterministic validation returns an error.",
+    })
+
+
 def _orchestrator(task_output: str | None = None):
     memory = Memory(":memory:")
     llm = make_stub_llm()
-    if task_output is not None:
-        llm.chat.return_value = task_output
+    llm.chat.return_value = task_output if task_output is not None else _valid_research()
     economy = Economy(memory)
     realms = RealmManager(memory)
     manager = AgentManager(llm, memory, economy=economy, realm_manager=realms)
     judge = Judge(llm, memory, manager)
+    judge.inspection.llm.chat_json.return_value = {
+        "score": 0.85, "reasoning": "accepted", "pass": True,
+    }
     bidding = BiddingHouse(llm, memory, economy)
     return SimpleNamespace(
         memory=memory,
@@ -89,13 +109,7 @@ def test_rotation_replenishes_quota_only_with_treasury_backing(monkeypatch):
 
 def test_rotation_publishes_accepted_project_research(monkeypatch):
     monkeypatch.setenv("ZHIHUITI_PROJECT_NAME", "Software Supply Chain")
-    output = (
-        "Finding: freshness needs an explicit timestamp gate. "
-        "Evidence: total_tasks and historical_agents are the supplied runtime fields. "
-        "Checks: validate dates, fail closed, and record coverage. "
-        "Success: no stale record passes. Uncertainty: source dates are unavailable. "
-        "Stop condition: halt publication when freshness cannot be verified."
-    )
+    output = _valid_research()
     orch = _orchestrator(task_output=output)
     orch.judge.inspection.llm.chat_json.return_value = {
         "score": 0.85, "reasoning": "accepted", "pass": True,
@@ -143,6 +157,21 @@ def test_rotation_agents_cannot_delegate_extra_spawns():
 
     assert result["total_agents"] == 1
     assert len(result["spawned"]) == 1
+
+
+def test_invalid_research_culls_candidate_and_stops_batch():
+    orch = _orchestrator(task_output="not valid structured research")
+
+    result = PopulationRotator(
+        orch, _config(target=3, batch_size=3, retain_active=3),
+    ).rotate(datetime(2026, 8, 9, tzinfo=timezone.utc))
+
+    assert result["status"] == "quality_gate_blocked"
+    assert result["total_agents"] == 1
+    assert result["active_agents"] == 0
+    assert result["rejected_since_tracking"] == 1
+    assert result["last_rotation_result"]["rejected"] == 1
+    assert result["spawned"][0]["research"]["reason"] == "deterministic_validation_failed"
 
 
 def test_rotation_enforces_daily_limit():

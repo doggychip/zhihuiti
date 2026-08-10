@@ -7,14 +7,19 @@ historical population while keeping the active pool bounded and evaluated.
 
 from __future__ import annotations
 
+import math
 import os
 import threading
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from zhihuiti.models import AgentRole, TaskStatus
-from zhihuiti.research import AgentResearchPublisher, build_research_task
+from zhihuiti.research import (
+    AgentResearchPublisher,
+    build_research_task,
+    public_research_stats,
+)
 
 
 STATE_KEY = "population_rotation"
@@ -100,6 +105,7 @@ class PopulationConfig:
         return {
             "enabled": self.enabled,
             "target": self.target,
+            "target_basis": "cumulative_historical_agents",
             "batch_size": self.batch_size,
             "daily_limit": self.daily_limit,
             "min_interval_seconds": self.min_interval_seconds,
@@ -124,16 +130,45 @@ class PopulationRotator:
         active = len([a for a in self.orch.agent_manager.agents.values() if a.alive])
         target = self.config.target
         progress = round(total / target, 4) if target else 0.0
+        research = public_research_stats(self.orch.memory)
+        last_rotation_at = state.get("last_rotation_at")
+        next_eligible_at = None
+        retry_after_seconds = 0
+        if last_rotation_at:
+            try:
+                next_eligible = datetime.fromisoformat(last_rotation_at) + timedelta(
+                    seconds=self.config.min_interval_seconds,
+                )
+                next_eligible_at = next_eligible.isoformat()
+                retry_after_seconds = max(0, int((next_eligible - now).total_seconds()))
+            except ValueError:
+                next_eligible_at = None
+        remaining = max(0, target - total)
         return {
             **self.config.public_dict(),
             "total_agents": total,
             "active_agents": active,
-            "remaining": max(0, target - total),
+            "remaining": remaining,
             "progress": min(1.0, progress),
+            **research,
+            "qualified_progress": (
+                min(1.0, round(research["qualified_agents"] / target, 4))
+                if target else 0.0
+            ),
             "day": state["day"],
             "spawned_today": state["spawned_today"],
             "daily_remaining": max(0, self.config.daily_limit - state["spawned_today"]),
-            "last_rotation_at": state.get("last_rotation_at"),
+            "last_rotation_at": last_rotation_at,
+            "next_eligible_at": next_eligible_at,
+            "retry_after_seconds": retry_after_seconds,
+            "estimated_days_remaining": (
+                math.ceil(remaining / self.config.daily_limit)
+                if self.config.daily_limit and remaining else 0
+            ),
+            "evaluated_since_tracking": int(state.get("evaluated_total", 0)),
+            "rejected_since_tracking": int(state.get("rejected_total", 0)),
+            "failed_since_tracking": int(state.get("failed_total", 0)),
+            "last_rotation_result": state.get("last_rotation_result"),
         }
 
     def rotate(self, now: datetime | None = None) -> dict[str, Any]:
@@ -187,18 +222,59 @@ class PopulationRotator:
             try:
                 record = self._spawn_and_evaluate(role, state)
                 spawned.append(record)
-                retired = self._trim_active_population()
+                state["evaluated_total"] = int(state.get("evaluated_total", 0)) + 1
+                qualified = bool(record.get("research", {}).get("published"))
+                if qualified:
+                    retired = self._trim_active_population()
+                else:
+                    state["rejected_total"] = int(state.get("rejected_total", 0)) + 1
+                    self.orch.agent_manager.cull_agent(
+                        self.orch.agent_manager.agents[record["agent_id"]],
+                    )
+                    retired = {
+                        "agent_id": record["agent_id"],
+                        "role": record["role"],
+                        "score": record.get("score", 0.0),
+                        "reason": "research_not_qualified",
+                    }
                 if retired:
                     culled.append(retired)
+                self._save_state(state)
+                # One rejected candidate closes the batch so unattended runs
+                # cannot amplify low-quality output or spend.
+                if not qualified:
+                    break
             except Exception as exc:
                 errors.append(str(exc))
+                state["failed_total"] = int(state.get("failed_total", 0)) + 1
+                self._save_state(state)
                 break
 
         self.orch.realm_manager.reconcile_counts(self.orch.agent_manager.agents)
         after = self.status(now)
-        status = "rotated" if spawned else "blocked"
-        if after["remaining"] == 0:
+        qualified_count = sum(
+            1 for record in spawned if record.get("research", {}).get("published")
+        )
+        status = (
+            "rotated"
+            if qualified_count
+            else "quality_gate_blocked"
+            if spawned
+            else "blocked"
+        )
+        if after["remaining"] == 0 and qualified_count:
             status = "target_reached"
+        state["last_rotation_result"] = {
+            "status": status,
+            "completed_at": now.isoformat(),
+            "spawned": len(spawned),
+            "qualified": qualified_count,
+            "rejected": len(spawned) - qualified_count,
+            "failed": len(errors),
+            "culled": len(culled),
+        }
+        self._save_state(state)
+        after = self.status(now)
         return {
             **after,
             "status": status,
@@ -226,6 +302,16 @@ class PopulationRotator:
         project = os.environ.get("ZHIHUITI_PROJECT_NAME", "this project").strip()
         memory_stats = self.orch.memory.get_stats()
         economy = self.orch.economy.get_report()
+        research_stats = public_research_stats(self.orch.memory)
+        explicit_profile = os.environ.get("ZHIHUITI_SERVICE_PROFILE", "").strip().lower()
+        scan_enabled = os.environ.get("ZHIHUITI_ORACLE_SCAN", "0").strip().lower() in {
+            "1", "true", "yes", "on",
+        }
+        service_profile = (
+            explicit_profile
+            if explicit_profile in {"core_oracle", "agent_only"}
+            else "core_oracle" if scan_enabled else "agent_only"
+        )
         task, assignment = build_research_task(
             project=project,
             role=role,
@@ -236,12 +322,20 @@ class PopulationRotator:
                     current for current in self.orch.agent_manager.agents.values()
                     if current.alive
                 ]),
+                "qualified_agents": research_stats["qualified_agents"],
+                "published_outputs": research_stats["published_outputs"],
                 "total_tasks": memory_stats["total_tasks"],
                 "average_task_score": memory_stats["avg_task_score"],
                 "treasury_balance": economy["treasury_balance"],
                 "money_supply": economy["money_supply"],
                 "auto_mint_remaining_today": economy["auto_mint"]["remaining_today"],
                 "cumulative_target": self.config.target,
+                "deployment_commit": os.environ.get(
+                    "ZEABUR_GIT_COMMIT_SHA",
+                    os.environ.get("ZHIHUITI_COMMIT_SHA", "unknown"),
+                ),
+                "snapshot_at": datetime.now(timezone.utc).isoformat(),
+                "service_profile": service_profile,
             },
         )
         record: dict[str, Any] = {
@@ -318,6 +412,10 @@ class PopulationRotator:
                 "day": day,
                 "spawned_today": 0,
                 "last_rotation_at": state.get("last_rotation_at"),
+                "evaluated_total": state.get("evaluated_total", 0),
+                "rejected_total": state.get("rejected_total", 0),
+                "failed_total": state.get("failed_total", 0),
+                "last_rotation_result": state.get("last_rotation_result"),
             }
         state["spawned_today"] = max(0, int(state.get("spawned_today", 0)))
         return state

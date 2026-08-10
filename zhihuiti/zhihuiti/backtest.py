@@ -233,6 +233,49 @@ def get_forward_accuracy_summary(
         if prediction.actual_regime
         == (prediction.baseline_regime or prediction.current_regime)
     )
+    transition_event_true_positives = sum(
+        1 for prediction in verified
+        if prediction.actual_regime
+        != (prediction.baseline_regime or prediction.current_regime)
+        and prediction.predicted_regime
+        != (prediction.baseline_regime or prediction.current_regime)
+    )
+    transition_event_false_positives = sum(
+        1 for prediction in verified
+        if prediction.actual_regime
+        == (prediction.baseline_regime or prediction.current_regime)
+        and prediction.predicted_regime
+        != (prediction.baseline_regime or prediction.current_regime)
+    )
+    transition_event_false_negatives = sum(
+        1 for prediction in verified
+        if prediction.actual_regime
+        != (prediction.baseline_regime or prediction.current_regime)
+        and prediction.predicted_regime
+        == (prediction.baseline_regime or prediction.current_regime)
+    )
+    event_precision_denominator = (
+        transition_event_true_positives + transition_event_false_positives
+    )
+    event_recall_denominator = (
+        transition_event_true_positives + transition_event_false_negatives
+    )
+    transition_event_precision = (
+        transition_event_true_positives / event_precision_denominator
+        if event_precision_denominator else None
+    )
+    transition_event_recall = (
+        transition_event_true_positives / event_recall_denominator
+        if event_recall_denominator else None
+    )
+    transition_event_f1 = (
+        2 * transition_event_precision * transition_event_recall
+        / (transition_event_precision + transition_event_recall)
+        if transition_event_precision is not None
+        and transition_event_recall is not None
+        and transition_event_precision + transition_event_recall > 0
+        else 0.0
+    )
 
     brier_values = []
     for prediction in verified:
@@ -295,6 +338,13 @@ def get_forward_accuracy_summary(
             if transition_predictions else None
         ),
         "transition_false_alarms": transition_false_alarms,
+        "transition_event_true_positives": transition_event_true_positives,
+        "transition_event_false_positives": transition_event_false_positives,
+        "transition_event_false_negatives": transition_event_false_negatives,
+        "transition_event_precision": transition_event_precision,
+        "transition_event_recall": transition_event_recall,
+        "transition_event_f1": transition_event_f1,
+        "transition_base_rate": len(transition_predictions) / total if total else None,
         "unverified": len(predictions) - total,
         "regime_accuracy": regime_stats,
         "recent": recent,
@@ -313,6 +363,7 @@ def get_forecast_scorecards() -> dict:
             models[version] = get_forward_accuracy_summary(model_version=version)
 
     candidate = models.get("transition-calibrated-v1")
+    incumbent_event_f1 = incumbent.get("transition_event_f1") or 0.0
     promotion_ready = bool(
         candidate
         and candidate["verified"] >= candidate["minimum_verified_predictions"]
@@ -324,11 +375,22 @@ def get_forecast_scorecards() -> dict:
         and candidate["brier_score"] < incumbent["brier_score"]
         and (candidate["transition_precision"] or 0) > 0
         and (candidate["transition_recall"] or 0) > 0
+        and (candidate["transition_event_f1"] or 0) > incumbent_event_f1
     )
+    blockers = []
+    if incumbent["skill_over_persistence"] <= 0:
+        blockers.append("no_skill_over_persistence")
+    if (incumbent.get("transition_event_recall") or 0) < 0.10:
+        blockers.append("transition_event_recall_below_10_percent")
+    if (incumbent.get("transition_accuracy") or 0) < 0.10:
+        blockers.append("transition_destination_accuracy_below_10_percent")
     return {
         "production_model": "incumbent-v1",
         "shadow_model": "transition-calibrated-v1",
         "promotion_ready": promotion_ready,
+        "headline_eligible": not blockers,
+        "claim_status": "advisory_only" if blockers else "validated",
+        "promotion_blockers": blockers,
         "models": models,
     }
 
