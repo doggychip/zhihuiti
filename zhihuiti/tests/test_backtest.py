@@ -89,6 +89,13 @@ def test_forward_summary_compares_against_persistence(monkeypatch):
     assert summary["transition_precision"] == 1.0
     assert summary["transition_recall"] == 0.5
     assert summary["transition_false_alarms"] == 0
+    assert summary["transition_event_true_positives"] == 1
+    assert summary["transition_event_false_positives"] == 0
+    assert summary["transition_event_false_negatives"] == 1
+    assert summary["transition_event_precision"] == 1.0
+    assert summary["transition_event_recall"] == 0.5
+    assert summary["transition_event_f1"] == 2 / 3
+    assert summary["transition_base_rate"] == 2 / 3
     assert summary["status"] == "benchmarking"
 
 
@@ -128,6 +135,9 @@ def test_transition_candidate_is_calibrated_and_cannot_self_promote(monkeypatch)
     scorecards = get_forecast_scorecards()
     assert scorecards["production_model"] == "incumbent-v1"
     assert scorecards["promotion_ready"] is False
+    assert scorecards["claim_status"] == "advisory_only"
+    assert scorecards["headline_eligible"] is False
+    assert "no_skill_over_persistence" in scorecards["promotion_blockers"]
 
 
 def test_auto_record_reports_warmup_instead_of_silently_skipping(monkeypatch):

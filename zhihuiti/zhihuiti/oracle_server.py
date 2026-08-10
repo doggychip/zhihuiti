@@ -137,6 +137,13 @@ def _canonical_base_url() -> str:
     )
 
 
+def _service_profile() -> str:
+    explicit = os.environ.get("ZHIHUITI_SERVICE_PROFILE", "").strip().lower()
+    if explicit in {"core_oracle", "agent_only"}:
+        return explicit
+    return "core_oracle" if env_enabled("ZHIHUITI_ORACLE_SCAN") else "agent_only"
+
+
 def _snapshot_limit() -> int:
     try:
         return max(1, int(os.environ.get("ZHIHUITI_MAX_SNAPSHOTS", "50")))
@@ -174,6 +181,9 @@ def _storage_status() -> dict[str, Any]:
         "snapshots": None,
         "tasks": None,
         "agents": None,
+        "snapshot_payload_bytes": None,
+        "compressed_snapshots": None,
+        "reclaimable_bytes": None,
     }
     if database["exists"]:
         try:
@@ -183,6 +193,15 @@ def _storage_status() -> dict[str, Any]:
                     database[table] = conn.execute(
                         f"SELECT COUNT(*) FROM {table}"  # noqa: S608
                     ).fetchone()[0]
+                database["snapshot_payload_bytes"] = conn.execute(
+                    "SELECT COALESCE(SUM(LENGTH(data)), 0) FROM snapshots"
+                ).fetchone()[0]
+                database["compressed_snapshots"] = conn.execute(
+                    "SELECT COUNT(*) FROM snapshots WHERE typeof(data) = 'blob'"
+                ).fetchone()[0]
+                page_size = conn.execute("PRAGMA page_size").fetchone()[0]
+                free_pages = conn.execute("PRAGMA freelist_count").fetchone()[0]
+                database["reclaimable_bytes"] = page_size * free_pages
             finally:
                 conn.close()
         except sqlite3.Error:
@@ -282,12 +301,20 @@ def _runtime_status() -> dict[str, Any]:
         auto_mint_daily_cap = 0.0
     from zhihuiti.population import PopulationConfig
     population = PopulationConfig.from_env()
+    profile = _service_profile()
     return {
         "service": "zhihuiti",
         "commit": _runtime_commit(),
         "backend_id": _backend_id(),
         "canonical_base_url": _canonical_base_url(),
         "provider": provider,
+        "service_profile": profile,
+        "capabilities": {
+            "agents": True,
+            "oracle_scan": profile == "core_oracle",
+            "forecast": profile == "core_oracle",
+            "macro": True,
+        },
         "llm_configured": _has_llm_key(),
         "operator_api_configured": bool(os.environ.get("ZHIHUITI_API_TOKEN", "").strip()),
         "autonomous_evolution": env_enabled("ZHIHUITI_AUTO_EVOLVE"),
@@ -2142,6 +2169,11 @@ class OracleHandler(BaseHTTPRequestHandler):
             scorecards = get_forecast_scorecards()
             forecast = scorecards["models"][scorecards["production_model"]]
             forecast = {key: value for key, value in forecast.items() if key != "recent"}
+            forecast.update({
+                "claim_status": scorecards.get("claim_status", "advisory_only"),
+                "headline_eligible": scorecards.get("headline_eligible", False),
+                "promotion_blockers": scorecards.get("promotion_blockers", []),
+            })
         except Exception:
             forecast = {"status": "unavailable"}
             scorecards = {
@@ -2163,25 +2195,36 @@ class OracleHandler(BaseHTTPRequestHandler):
             ),
         }
         warnings = []
-        if scan.get("errors"):
+        degraded_reasons = []
+        profile = _service_profile()
+        if profile == "core_oracle" and scan.get("errors"):
             warnings.append("scan_errors")
-        if scan_age_seconds is None or scan_age_seconds > stale_after:
+            degraded_reasons.append("scan_errors")
+        if profile == "core_oracle" and (
+            scan_age_seconds is None or scan_age_seconds > stale_after
+        ):
             warnings.append("scan_stale")
+            degraded_reasons.append("scan_stale")
         if _MACRO_META.get("errors"):
             warnings.append("macro_partial")
-        if forecast.get("status") != "validated":
+            degraded_reasons.append("macro_partial")
+        if profile == "core_oracle" and forecast.get("status") != "validated":
             if forecast.get("status") == "collecting":
                 warnings.append("forecast_collecting")
+                degraded_reasons.append("forecast_collecting")
             elif forecast.get("status") == "unavailable":
                 warnings.append("forecast_unavailable")
+                degraded_reasons.append("forecast_unavailable")
             else:
                 warnings.append("forecast_not_better_than_baseline")
+                degraded_reasons.append("forecast_not_better_than_baseline")
         if governance["auto_mint_enabled"]:
             warnings.append("auto_mint_enabled")
 
         storage = _storage_status()
         if not storage["identity_persisted"]:
             warnings.append("storage_identity_unavailable")
+            degraded_reasons.append("storage_identity_unavailable")
         if storage["database"]["snapshots"] is not None and (
             storage["database"]["snapshots"] > storage["max_snapshots"]
         ):
@@ -2202,13 +2245,25 @@ class OracleHandler(BaseHTTPRequestHandler):
         webhook_configured = bool(
             os.environ.get("ZHIHUITI_ALERT_WEBHOOK_URL", "").strip()
         )
+        external_channel_supported = False
+        alert_delivery_configured = webhook_configured
+        alert_configuration_state = (
+            "ready"
+            if webhook_configured
+            else "declared_unsupported"
+            if external_alert_channel
+            else "disabled"
+        )
 
         _json_response(self, {
-            "status": "degraded" if warnings else "ok",
+            "status": "degraded" if degraded_reasons else "ok",
             "commit": _runtime_commit(),
             "backend_id": _backend_id(),
             "canonical_base_url": _canonical_base_url(),
             "warnings": warnings,
+            "degraded_reasons": degraded_reasons,
+            "service_profile": profile,
+            "capabilities": _runtime_status()["capabilities"],
             "scan": {
                 **scan,
                 "age_seconds": scan_age_seconds,
@@ -2222,11 +2277,11 @@ class OracleHandler(BaseHTTPRequestHandler):
             },
             "alerts": {
                 "active": active_alerts,
-                "delivery_configured": bool(
-                    webhook_configured or external_alert_channel
-                ),
+                "delivery_configured": alert_delivery_configured,
                 "webhook_configured": webhook_configured,
                 "external_channel": external_alert_channel or None,
+                "external_channel_supported": external_channel_supported,
+                "configuration_state": alert_configuration_state,
                 "delivery": dict(_ALERT_DELIVERY_META),
             },
             "llm": llm_status,

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from zhihuiti.knowledge import KnowledgeBase
 from zhihuiti.inspection import InspectionLayer, InspectionResult, LayerResult
 from zhihuiti.memory import Memory
@@ -10,7 +12,9 @@ from zhihuiti.research import (
     AgentResearchPublisher,
     build_research_task,
     public_research_outputs,
+    public_research_stats,
     select_assignment,
+    validate_research_payload,
 )
 
 
@@ -27,6 +31,25 @@ def _agent() -> AgentState:
         id="agent-1",
         config=AgentConfig(role=AgentRole.ANALYST, system_prompt="test"),
     )
+
+
+def _valid_research(*evidence_fields: str) -> str:
+    fields = evidence_fields or ("total_tasks",)
+    return json.dumps({
+        "finding": "The supplied runtime evidence supports adding an explicit quality gate before publication.",
+        "evidence": [
+            {"field": field, "interpretation": "This canonical runtime value is used only within its defined unit."}
+            for field in fields
+        ],
+        "checks": [
+            "Reject outputs whose evidence field is absent from telemetry.",
+            "Render canonical values instead of accepting model supplied numbers.",
+            "Record the deterministic validation result with every output.",
+        ],
+        "success_criteria": ["Every published claim has a known telemetry field."],
+        "uncertainties": ["Runtime telemetry does not prove source-code behavior."],
+        "stop_condition": "Stop publication whenever deterministic validation reports any error.",
+    })
 
 
 def _inspection(task: Task, scores: tuple[float, float, float, float]) -> InspectionResult:
@@ -84,7 +107,7 @@ def test_only_accepted_research_is_published(monkeypatch):
     memory = Memory(":memory:")
     publisher = AgentResearchPublisher(memory)
     assignment = select_assignment("Zhihuiti-Core", 0)
-    content = "Finding grounded in runtime telemetry. " * 12
+    content = _valid_research("total_tasks")
 
     rejected_task = _completed_task(content)
     rejected = publisher.publish_if_accepted(
@@ -109,6 +132,93 @@ def test_only_accepted_research_is_published(monkeypatch):
     assert outputs[0]["telemetry_snapshot"] == {"total_tasks": 7}
     assert outputs[0]["inspection"]["accepted"] is True
     assert outputs[0]["inspection"]["scores"]["safety"] == 0.84
+    assert outputs[0]["validation"]["schema_version"] == 1
+    assert "`total_tasks` = `7`" in outputs[0]["content"]
+    assert public_research_stats(memory)["qualified_agents"] == 1
+
+
+def test_deterministic_validation_rejects_incompatible_units():
+    payload = json.loads(
+        _valid_research("average_task_score", "cumulative_target")
+    )
+    payload["finding"] = (
+        "The average_task_score is three orders below the cumulative_target, "
+        "which indicates a serious performance shortfall."
+    )
+
+    validated, errors = validate_research_payload(
+        json.dumps(payload),
+        {"average_task_score": 0.8, "cumulative_target": 1000},
+    )
+
+    assert validated is None
+    assert "incompatible_metric_comparison" in errors
+
+
+def test_deterministic_validation_rejects_false_treasury_reconciliation():
+    payload = json.loads(
+        _valid_research("treasury_balance", "money_supply")
+    )
+    payload["finding"] = (
+        "The treasury_balance and money_supply difference is an unexplained "
+        "discrepancy that represents unaccounted tokens."
+    )
+
+    validated, errors = validate_research_payload(
+        json.dumps(payload),
+        {"treasury_balance": 6.7, "money_supply": 9974.0},
+    )
+
+    assert validated is None
+    assert "unsupported_treasury_reconciliation" in errors
+
+
+def test_research_stats_are_not_capped_at_feed_limit():
+    memory = Memory(":memory:")
+    rows = [
+        (
+            f"research-{index}",
+            "agent_research",
+            json.dumps({
+                "public": True,
+                "agent_id": f"agent-{index}",
+                "validation": {"deterministic": True, "errors": []},
+            }),
+        )
+        for index in range(501)
+    ]
+    memory.conn.executemany(
+        "INSERT INTO knowledge_chunks (id, content, chunk_type, metadata) "
+        "VALUES (?, '', ?, ?)",
+        rows,
+    )
+    memory.conn.commit()
+
+    stats = public_research_stats(memory)
+
+    assert stats["qualified_agents"] == 501
+    assert stats["published_outputs"] == 501
+    assert stats["legacy_published_outputs"] == 0
+    memory.close()
+
+
+def test_legacy_outputs_do_not_count_as_qualified_agents():
+    memory = Memory(":memory:")
+    KnowledgeBase(memory).store(KnowledgeChunk(
+        id="legacy-public",
+        source="agent-research:test",
+        title="Legacy output",
+        content="Published before deterministic validation existed.",
+        chunk_type="agent_research",
+        metadata={"public": True, "agent_id": "legacy-agent"},
+    ))
+
+    stats = public_research_stats(memory)
+
+    assert stats["qualified_agents"] == 0
+    assert stats["published_outputs"] == 0
+    assert stats["legacy_published_outputs"] == 1
+    memory.close()
 
 
 def test_high_average_never_overrides_safety_rejection():

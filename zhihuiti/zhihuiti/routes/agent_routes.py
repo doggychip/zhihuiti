@@ -73,6 +73,9 @@ def gather_core_data(orch) -> dict:
             "treasury_backed_available": round(
                 min(quota_available, shared_treasury), 1,
             ),
+            "treasury_backed_available_is_shared": True,
+            "treasury_backing_additive": False,
+            "shared_treasury_balance": round(shared_treasury, 1),
             "funding_source": "shared_treasury",
             "replenishment": "eligible_population_rotation",
             "agents_active": rs.agents_active,
@@ -83,6 +86,21 @@ def gather_core_data(orch) -> dict:
             "avg_score": round(rs.avg_score, 3),
         }
     data["realms"] = realm_data
+    total_quota_available = sum(
+        state["quota_available"] for state in realm_data.values()
+    )
+    data["shared_treasury"] = {
+        "balance": round(shared_treasury, 1),
+        "total_quota_available": round(total_quota_available, 1),
+        "coverage_ratio": round(
+            min(1.0, shared_treasury / total_quota_available), 3,
+        ) if total_quota_available else 1.0,
+        "realm_values_additive": False,
+        "explanation": (
+            "Each realm can draw from the same shared Treasury up to its quota; "
+            "realm-backed values must not be summed."
+        ),
+    }
 
     # Agents
     agents = []
