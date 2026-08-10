@@ -19,11 +19,23 @@ from tests.conftest import make_stub_llm
 
 def _valid_research() -> str:
     return json.dumps({
-        "finding": "The supplied telemetry supports a deterministic gate before research is published.",
-        "evidence": [{
-            "field": "total_tasks",
-            "interpretation": "The canonical task count establishes the observed runtime scope.",
+        "role": "analyst",
+        "work_status": "completed",
+        "work_performed": [{
+            "action": "Compared compatible canonical telemetry fields.",
+            "evidence_fields": ["total_tasks", "historical_agents"],
         }],
+        "finding": "The supplied telemetry supports a deterministic gate before research is published.",
+        "evidence": [
+            {
+                "field": "total_tasks",
+                "interpretation": "The canonical task count establishes the observed runtime scope.",
+            },
+            {
+                "field": "historical_agents",
+                "interpretation": "The cumulative identity count bounds the observed population scope.",
+            },
+        ],
         "checks": [
             "Reject evidence fields that are absent from supplied telemetry.",
             "Use canonical values inserted by the server during rendering.",
@@ -39,6 +51,13 @@ def _orchestrator(task_output: str | None = None):
     memory = Memory(":memory:")
     llm = make_stub_llm()
     llm.chat.return_value = task_output if task_output is not None else _valid_research()
+    llm.provider_status.return_value = {
+        "provider": "test",
+        "ready": True,
+        "last_error_category": None,
+        "action_required": None,
+    }
+    llm.probe_provider.return_value = llm.provider_status.return_value
     economy = Economy(memory)
     realms = RealmManager(memory)
     manager = AgentManager(llm, memory, economy=economy, realm_manager=realms)
@@ -48,6 +67,7 @@ def _orchestrator(task_output: str | None = None):
     }
     bidding = BiddingHouse(llm, memory, economy)
     return SimpleNamespace(
+        llm=llm,
         memory=memory,
         economy=economy,
         realm_manager=realms,
@@ -66,7 +86,7 @@ def _config(**overrides) -> PopulationConfig:
         "agent_budget": 25.0,
         "retain_active": 1,
         "min_per_role": 0,
-        "roles": (AgentRole.ANALYST, AgentRole.RESEARCHER),
+        "roles": (AgentRole.ANALYST,),
     }
     values.update(overrides)
     return PopulationConfig(**values)
@@ -105,6 +125,32 @@ def test_rotation_replenishes_quota_only_with_treasury_backing(monkeypatch):
     assert result["total_agents"] == 0
     assert result["errors"] == ["Treasury cannot fund agent spawn"]
     assert realm.budget_allocated == 10.0
+
+
+def test_rotation_never_spawns_when_provider_preflight_fails():
+    orch = _orchestrator()
+    orch.agent_manager.llm.provider_status.return_value = {
+        "provider": "deepseek",
+        "ready": None,
+        "last_error_category": None,
+        "action_required": None,
+    }
+    orch.agent_manager.llm.probe_provider.return_value = {
+        "provider": "deepseek",
+        "ready": False,
+        "last_error_category": "insufficient_balance",
+        "action_required": "Add provider credit before agent work can resume.",
+    }
+
+    result = PopulationRotator(
+        orch, _config(target=1, batch_size=1, retain_active=1),
+    ).rotate(datetime(2026, 8, 9, tzinfo=timezone.utc))
+
+    assert result["status"] == "llm_unavailable"
+    assert result["total_agents"] == 0
+    assert result["spawned_today"] == 0
+    assert result["last_rotation_result"]["reason"] == "insufficient_balance"
+    assert result["llm_gate"]["ready"] is False
 
 
 def test_rotation_publishes_accepted_project_research(monkeypatch):

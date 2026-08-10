@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from zhihuiti.knowledge import KnowledgeBase
 from zhihuiti.inspection import InspectionLayer, InspectionResult, LayerResult
 from zhihuiti.memory import Memory
@@ -34,8 +36,14 @@ def _agent() -> AgentState:
 
 
 def _valid_research(*evidence_fields: str) -> str:
-    fields = evidence_fields or ("total_tasks",)
+    fields = evidence_fields or ("total_tasks", "historical_agents")
     return json.dumps({
+        "role": "analyst",
+        "work_status": "completed",
+        "work_performed": [{
+            "action": "Compared compatible canonical telemetry fields.",
+            "evidence_fields": list(fields),
+        }],
         "finding": "The supplied runtime evidence supports adding an explicit quality gate before publication.",
         "evidence": [
             {"field": field, "interpretation": "This canonical runtime value is used only within its defined unit."}
@@ -88,18 +96,29 @@ def test_assignment_selection_is_project_specific():
 def test_research_task_is_grounded_and_cannot_delegate():
     task, assignment = build_research_task(
         "Software Supply Chain",
-        AgentRole.CODER,
+        AgentRole.ANALYST,
         sequence=0,
         telemetry={"total_tasks": 5, "historical_agents": 14},
     )
 
-    assert assignment.key == "data-freshness"
+    assert assignment.key == "test-coverage"
     assert "total_tasks: 5" in task.description
     assert "Do not claim that you inspected source code" in task.description
     assert task.metadata["disable_delegation"] is True
     assert task.metadata["telemetry_snapshot"] == {
         "total_tasks": 5, "historical_agents": 14,
     }
+    assert task.metadata["role_contract"]["execution_mode"] == "telemetry_analysis"
+
+
+def test_rotation_task_rejects_roles_without_an_execution_contract():
+    with pytest.raises(ValueError, match="no safe population execution contract"):
+        build_research_task(
+            "Software Supply Chain",
+            AgentRole.CODER,
+            sequence=0,
+            telemetry={"total_tasks": 5, "historical_agents": 14},
+        )
 
 
 def test_only_accepted_research_is_published(monkeypatch):
@@ -107,7 +126,7 @@ def test_only_accepted_research_is_published(monkeypatch):
     memory = Memory(":memory:")
     publisher = AgentResearchPublisher(memory)
     assignment = select_assignment("Zhihuiti-Core", 0)
-    content = _valid_research("total_tasks")
+    content = _valid_research("total_tasks", "historical_agents")
 
     rejected_task = _completed_task(content)
     rejected = publisher.publish_if_accepted(
@@ -115,7 +134,10 @@ def test_only_accepted_research_is_published(monkeypatch):
         _inspection(rejected_task, (0.79, 0.79, 0.79, 0.79)),
     )
     accepted_task = _completed_task(content)
-    accepted_task.metadata["telemetry_snapshot"] = {"total_tasks": 7}
+    accepted_task.metadata["telemetry_snapshot"] = {
+        "total_tasks": 7,
+        "historical_agents": 14,
+    }
     accepted = publisher.publish_if_accepted(
         "Zhihuiti-Core", assignment, accepted_task, _agent(),
         _inspection(accepted_task, (0.84, 0.84, 0.84, 0.84)),
@@ -129,10 +151,14 @@ def test_only_accepted_research_is_published(monkeypatch):
     assert outputs[0]["score"] == 0.84
     assert outputs[0]["project"] == "Zhihuiti-Core"
     assert outputs[0]["evidence_scope"] == "runtime_telemetry_only"
-    assert outputs[0]["telemetry_snapshot"] == {"total_tasks": 7}
+    assert outputs[0]["telemetry_snapshot"] == {
+        "total_tasks": 7,
+        "historical_agents": 14,
+    }
     assert outputs[0]["inspection"]["accepted"] is True
     assert outputs[0]["inspection"]["scores"]["safety"] == 0.84
-    assert outputs[0]["validation"]["schema_version"] == 1
+    assert outputs[0]["validation"]["schema_version"] == 2
+    assert outputs[0]["work_status"] == "validated"
     assert "`total_tasks` = `7`" in outputs[0]["content"]
     assert public_research_stats(memory)["qualified_agents"] == 1
 
@@ -171,6 +197,22 @@ def test_deterministic_validation_rejects_false_treasury_reconciliation():
 
     assert validated is None
     assert "unsupported_treasury_reconciliation" in errors
+
+
+def test_deterministic_validation_rejects_role_mismatch_and_unperformed_work():
+    payload = json.loads(_valid_research("total_tasks", "historical_agents"))
+    payload["role"] = "researcher"
+    payload["work_performed"][0]["evidence_fields"] = ["source_code"]
+
+    validated, errors = validate_research_payload(
+        json.dumps(payload),
+        {"total_tasks": 7, "historical_agents": 14},
+        expected_role=AgentRole.ANALYST,
+    )
+
+    assert validated is None
+    assert "role_mismatch" in errors
+    assert "work_0_unknown_evidence" in errors
 
 
 def test_research_stats_are_not_capped_at_feed_limit():

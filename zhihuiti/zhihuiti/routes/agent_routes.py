@@ -6,6 +6,7 @@ import json
 import os
 import threading
 import uuid
+from collections import Counter
 from http.server import BaseHTTPRequestHandler
 from typing import TYPE_CHECKING
 
@@ -103,8 +104,17 @@ def gather_core_data(orch) -> dict:
     }
 
     # Agents
+    from zhihuiti.research import ROTATION_ROLE_CONTRACTS
+
     agents = []
+    latest_work = orch.memory.get_latest_task_states_by_agent()
     for a in orch.agent_manager.agents.values():
+        contract = ROTATION_ROLE_CONTRACTS.get(a.config.role)
+        work = latest_work.get(a.id, {
+            "work_status": "idle",
+            "execution_mode": contract.get("execution_mode") if contract else "unsupported",
+            "validation_reason": None,
+        })
         agents.append({
             "id": a.id,
             "role": a.config.role.value,
@@ -115,8 +125,33 @@ def gather_core_data(orch) -> dict:
             "life_state": a.life_state.value,
             "generation": a.config.generation,
             "tasks": len(a.scores),
+            "role_capable": contract is not None,
+            "role_contract": contract,
+            "work_status": work.get("work_status", "unknown"),
+            "last_work": work,
         })
     data["agents"] = agents
+    work_counts = Counter(agent["work_status"] for agent in agents)
+    data["role_execution"] = {
+        "states": dict(sorted(work_counts.items())),
+        "working_agents": sum(
+            work_counts.get(state, 0) for state in ("running", "validated")
+        ),
+        "validated_agents": work_counts.get("validated", 0),
+        "failed_agents": sum(
+            work_counts.get(state, 0) for state in ("failed", "rejected")
+        ),
+        "legacy_unvalidated_agents": work_counts.get("legacy_unvalidated", 0),
+        "capable_roles": sorted(role.value for role in ROTATION_ROLE_CONTRACTS),
+        "unsupported_roles": sorted(
+            role.value for role in {a.config.role for a in orch.agent_manager.agents.values()}
+            if role not in ROTATION_ROLE_CONTRACTS
+        ),
+        "definition": (
+            "An active agent is only working when a persisted task reports running or validated; "
+            "role labels alone do not count as work."
+        ),
+    }
 
     max_active = _positive_env_int("ZHIHUITI_MAX_ACTIVE_AGENTS", 36)
     max_per_role = _positive_env_int("ZHIHUITI_MAX_AGENTS_PER_ROLE", 12)

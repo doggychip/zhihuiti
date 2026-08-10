@@ -45,6 +45,29 @@ def test_save_and_get_task():
     mem.close()
 
 
+def test_latest_task_state_distinguishes_validated_from_legacy_work():
+    mem = Memory(":memory:")
+    mem.save_task(
+        "legacy", "old task", "completed", result="done", agent_id="a1",
+    )
+    mem.save_task(
+        "validated", "new task", "completed", result="done", agent_id="a2",
+        metadata={"role_execution": {
+            "assigned_role": "analyst",
+            "execution_mode": "telemetry_analysis",
+            "work_status": "validated",
+            "validation_reason": "deterministic_pass",
+        }},
+    )
+
+    states = mem.get_latest_task_states_by_agent()
+
+    assert states["a1"]["work_status"] == "legacy_unvalidated"
+    assert states["a2"]["work_status"] == "validated"
+    assert states["a2"]["assigned_role"] == "analyst"
+    mem.close()
+
+
 def test_save_and_get_agent():
     mem = Memory(":memory:")
     mem.save_agent("a1", "researcher", 100.0, 0, 0.8, True)

@@ -121,14 +121,31 @@ GENERIC_ASSIGNMENTS = (
     ),
 )
 
-RESEARCH_SCHEMA_VERSION = 1
+RESEARCH_SCHEMA_VERSION = 2
 RESEARCH_REQUIRED_FIELDS = {
+    "role",
+    "work_status",
+    "work_performed",
     "finding",
     "evidence",
     "checks",
     "success_criteria",
     "uncertainties",
     "stop_condition",
+}
+ROTATION_ROLE_CONTRACTS = {
+    AgentRole.RESEARCHER: {
+        "execution_mode": "telemetry_research",
+        "responsibility": "Inventory supplied evidence, distinguish known facts from gaps, and synthesize only supported findings.",
+    },
+    AgentRole.ANALYST: {
+        "execution_mode": "telemetry_analysis",
+        "responsibility": "Analyze compatible telemetry fields, state assumptions, and avoid comparisons across different units.",
+    },
+    AgentRole.AUDITOR: {
+        "execution_mode": "evidence_audit",
+        "responsibility": "Test whether a claim is supported by the supplied evidence and fail closed when required proof is absent.",
+    },
 }
 METRIC_DEFINITIONS = {
     "historical_agents": "cumulative count of agent identities ever spawned; count, not quality",
@@ -160,6 +177,7 @@ def _strip_json_fence(content: str) -> str:
 def validate_research_payload(
     content: str,
     telemetry: dict[str, Any],
+    expected_role: AgentRole | str | None = None,
 ) -> tuple[dict[str, Any] | None, list[str]]:
     """Validate the machine-readable evidence contract before publication."""
     try:
@@ -176,6 +194,36 @@ def validate_research_payload(
     unexpected = sorted(set(payload) - RESEARCH_REQUIRED_FIELDS)
     if unexpected:
         errors.append("unexpected_fields:" + ",".join(unexpected))
+
+    expected_role_name = (
+        expected_role.value if isinstance(expected_role, AgentRole) else expected_role
+    )
+    role = payload.get("role")
+    if not isinstance(role, str) or role not in {
+        contract_role.value for contract_role in ROTATION_ROLE_CONTRACTS
+    }:
+        errors.append("role_not_rotation_capable")
+    elif expected_role_name and role != expected_role_name:
+        errors.append("role_mismatch")
+    if payload.get("work_status") != "completed":
+        errors.append("work_status_not_completed")
+
+    work_performed = payload.get("work_performed")
+    if not isinstance(work_performed, list) or not work_performed:
+        errors.append("work_performed_missing")
+        work_performed = []
+    for index, item in enumerate(work_performed):
+        if not isinstance(item, dict):
+            errors.append(f"work_{index}_not_object")
+            continue
+        action = item.get("action")
+        fields = item.get("evidence_fields")
+        if not isinstance(action, str) or len(action.strip()) < 10:
+            errors.append(f"work_{index}_action_missing")
+        if not isinstance(fields, list) or not fields:
+            errors.append(f"work_{index}_evidence_missing")
+        elif any(field not in telemetry for field in fields):
+            errors.append(f"work_{index}_unknown_evidence")
 
     finding = payload.get("finding")
     if not isinstance(finding, str) or len(finding.strip()) < 40:
@@ -200,6 +248,8 @@ def validate_research_payload(
             errors.append(f"evidence_{index}_interpretation_missing")
         elif re.search(r"\b\d+(?:\.\d+)?\b", claim):
             errors.append(f"evidence_{index}_contains_numeric_literal")
+    if len(evidence_fields) < 2:
+        errors.append("insufficient_evidence_fields")
 
     for field, exact_length in (("checks", 3),):
         value = payload.get(field)
@@ -252,7 +302,13 @@ def render_research_payload(
     )
     success = "\n".join(f"- {item}" for item in payload["success_criteria"])
     uncertainties = "\n".join(f"- {item}" for item in payload["uncertainties"])
+    performed = "\n".join(
+        f"- {item['action']} (`{', '.join(item['evidence_fields'])}`)"
+        for item in payload["work_performed"]
+    )
     return (
+        f"Role: `{payload['role']}` · Work state: `validated`\n\n"
+        f"## Work performed\n\n{performed}\n\n"
         f"## Finding\n\n{payload['finding'].strip()}\n\n"
         f"## Verified evidence\n\n{evidence}\n\n"
         f"## Prioritized checks\n\n{checks}\n\n"
@@ -291,7 +347,11 @@ class ResearchAssignment:
     description: str
 
 
-def select_assignment(project: str, sequence: int) -> ResearchAssignment:
+def select_assignment(
+    project: str,
+    sequence: int,
+    role: AgentRole | None = None,
+) -> ResearchAssignment:
     normalized = _slug(project)
     if "ai-supply-chain" in normalized:
         assignments = AI_SUPPLY_CHAIN_ASSIGNMENTS
@@ -301,7 +361,29 @@ def select_assignment(project: str, sequence: int) -> ResearchAssignment:
         assignments = CORE_ASSIGNMENTS
     else:
         assignments = GENERIC_ASSIGNMENTS
-    key, title, description = assignments[sequence % len(assignments)]
+    role_keys = {
+        AgentRole.RESEARCHER: {
+            "knowledge-integrity", "source-traceability", "data-freshness",
+            "issuer-provenance", "universe-integrity", "reliability", "quality",
+        },
+        AgentRole.ANALYST: {
+            "population-quality", "economy-sustainability", "inspection-quality",
+            "test-coverage", "backlog-priority", "financial-reconciliation",
+            "quality", "reliability",
+        },
+        AgentRole.AUDITOR: {
+            "scheduler-reliability", "browser-runtime", "deployment-proof",
+            "filing-freshness", "vendor-integrity", "source-traceability",
+            "reliability", "quality",
+        },
+    }
+    eligible = (
+        [assignment for assignment in assignments if assignment[0] in role_keys[role]]
+        if role in role_keys else list(assignments)
+    )
+    if not eligible:
+        eligible = list(assignments)
+    key, title, description = eligible[sequence % len(eligible)]
     return ResearchAssignment(key=key, title=title, description=description)
 
 
@@ -312,7 +394,10 @@ def build_research_task(
     telemetry: dict[str, Any],
 ) -> tuple[Task, ResearchAssignment]:
     """Build one read-only assignment grounded only in supplied telemetry."""
-    assignment = select_assignment(project, sequence)
+    if role not in ROTATION_ROLE_CONTRACTS:
+        raise ValueError(f"Role {role.value} has no safe population execution contract")
+    assignment = select_assignment(project, sequence, role)
+    contract = ROTATION_ROLE_CONTRACTS[role]
     verified = "\n".join(
         f"- {key}: {value} ({METRIC_DEFINITIONS.get(key, 'runtime telemetry field')})"
         for key, value in telemetry.items()
@@ -321,12 +406,18 @@ def build_research_task(
         f"Public read-only agent research for {project}.\n\n"
         f"Assignment: {assignment.title}\n{assignment.description}\n\n"
         f"Verified runtime telemetry:\n{verified}\n\n"
+        f"Assigned role contract: {role.value} / {contract['execution_mode']}. "
+        f"Responsibility: {contract['responsibility']}\n\n"
         "Return ONLY one valid JSON object with exactly these fields: "
+        f'"role" (exactly "{role.value}"), "work_status" (exactly "completed"), '
+        '"work_performed" (array of objects with "action" and "evidence_fields"), '
         '"finding" (string), "evidence" (array of objects with "field" and '
         '"interpretation"), "checks" (exactly three strings), "success_criteria" '
         '(array of strings), "uncertainties" (array of strings), and "stop_condition" '
         "(string). Evidence field names must come from the supplied telemetry; do not "
         "repeat numeric values inside interpretations because the server injects canonical values. "
+        "Use at least two distinct telemetry fields. Every work_performed item must name the "
+        "telemetry fields actually examined; never claim an action outside this contract. "
         "Never compare metrics with different units. Money supply is not expected to equal the "
         "Treasury because agents and other ledger accounts also hold simulated tokens. "
         "Do not claim that you inspected source code, external sources, or production systems beyond "
@@ -342,6 +433,10 @@ def build_research_task(
             "disable_delegation": True,
             "telemetry_snapshot": dict(telemetry),
             "research_schema_version": RESEARCH_SCHEMA_VERSION,
+            "role_contract": {
+                "role": role.value,
+                **contract,
+            },
         },
     ), assignment
 
@@ -382,7 +477,11 @@ class AgentResearchPublisher:
         if score < threshold:
             return {"published": False, "reason": "score_below_threshold", "threshold": threshold}
         telemetry = task.metadata.get("telemetry_snapshot", {})
-        payload, validation_errors = validate_research_payload(task.result, telemetry)
+        payload, validation_errors = validate_research_payload(
+            task.result,
+            telemetry,
+            expected_role=agent.config.role,
+        )
         if payload is None:
             return {
                 "published": False,
@@ -418,7 +517,12 @@ class AgentResearchPublisher:
                     "schema_version": RESEARCH_SCHEMA_VERSION,
                     "deterministic": True,
                     "errors": [],
+                    "role_contract": True,
                 },
+                "work_status": "validated",
+                "execution_mode": task.metadata.get("role_contract", {}).get(
+                    "execution_mode", "telemetry_research",
+                ),
                 "inspection": {
                     "accepted": inspection.accepted,
                     "failed_at": (
@@ -470,6 +574,8 @@ def public_research_outputs(
             "telemetry_snapshot": chunk.metadata.get("telemetry_snapshot", {}),
             "inspection": chunk.metadata.get("inspection", {}),
             "validation": chunk.metadata.get("validation"),
+            "work_status": chunk.metadata.get("work_status", "legacy"),
+            "execution_mode": chunk.metadata.get("execution_mode", ""),
         }
         for chunk in chunks
     ]

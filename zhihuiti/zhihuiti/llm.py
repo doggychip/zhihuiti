@@ -49,6 +49,10 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_DEFAULT_MODEL = "anthropic/claude-sonnet-4"
 OPENROUTER_PREMIUM_MODEL = "anthropic/claude-opus-4"
 
+OPENAI_URL = "https://api.openai.com/v1/chat/completions"
+OPENAI_DEFAULT_MODEL = "gpt-4o-mini"
+OPENAI_PREMIUM_MODEL = "gpt-4.1"
+
 OLLAMA_DEFAULT_HOST = "http://localhost:11434"
 OLLAMA_DEFAULT_MODEL = "llama3"
 OLLAMA_PREMIUM_MODEL = "llama3.1"
@@ -68,12 +72,13 @@ class LLMError(Exception):
 
 
 class LLM:
-    """LLM wrapper that auto-selects DeepSeek, OpenRouter, or Ollama.
+    """LLM wrapper that auto-selects DeepSeek, OpenRouter, OpenAI, or Ollama.
 
     Priority:
       1. DEEPSEEK_API_KEY set   → DeepSeek API
       2. OPENROUTER_API_KEY set → OpenRouter
-      3. Otherwise              → Ollama (no key needed)
+      3. OPENAI_API_KEY set     → OpenAI
+      4. Otherwise              → Ollama (no key needed)
 
     Override the model with LLM_MODEL env var or the ``model`` constructor arg.
     """
@@ -84,11 +89,12 @@ class LLM:
             "DEEPSEEK_FALLBACK_API_KEY", "",
         )
         self._openrouter_key = os.environ.get("OPENROUTER_API_KEY", "")
+        self._openai_key = os.environ.get("OPENAI_API_KEY", "")
         self._fallback_model = os.environ.get("LLM_FALLBACK_MODEL", OPENROUTER_DEFAULT_MODEL)
         self._generic_key = os.environ.get("LLM_API_KEY", "")
         self._generic_url = os.environ.get("LLM_BASE_URL", "")
 
-        # Backend selection: DeepSeek > OpenRouter > Generic OpenAI-compat > Ollama
+        # Backend selection: DeepSeek > OpenRouter > OpenAI > Generic > Ollama
         if self._deepseek_key:
             self._backend = "deepseek"
             self._api_key = self._deepseek_key
@@ -101,6 +107,12 @@ class LLM:
             self._api_url = OPENROUTER_URL
             default_model = OPENROUTER_DEFAULT_MODEL
             default_premium = OPENROUTER_PREMIUM_MODEL
+        elif self._openai_key:
+            self._backend = "openai"
+            self._api_key = self._openai_key
+            self._api_url = OPENAI_URL
+            default_model = OPENAI_DEFAULT_MODEL
+            default_premium = OPENAI_PREMIUM_MODEL
         elif self._generic_key and self._generic_url:
             self._backend = "generic"
             self._api_key = self._generic_key
@@ -130,6 +142,7 @@ class LLM:
         self._last_success_at: str | None = None
         self._last_error_at: str | None = None
         self._last_error_type: str | None = None
+        self._last_error_category: str | None = None
         self._last_latency_ms: int | None = None
         self._last_call_succeeded: bool | None = None
 
@@ -139,7 +152,8 @@ class LLM:
         self._primary_api_url = self._api_url
         self._primary_model = self.model
         self._provider_fallback_available = (
-            self._backend == "deepseek" and bool(self._openrouter_key)
+            self._backend == "deepseek"
+            and bool(self._openrouter_key or self._openai_key)
         )
         self._credential_fallback_available = (
             self._backend == "deepseek"
@@ -151,10 +165,18 @@ class LLM:
             or self._credential_fallback_available
         )
         if self._provider_fallback_available:
-            self._fallback_backend = "openrouter"
-            self._fallback_api_key = self._openrouter_key
-            self._fallback_api_url = OPENROUTER_URL
-            self._effective_fallback_model = self._fallback_model
+            if self._openrouter_key:
+                self._fallback_backend = "openrouter"
+                self._fallback_api_key = self._openrouter_key
+                self._fallback_api_url = OPENROUTER_URL
+                self._effective_fallback_model = self._fallback_model
+            else:
+                self._fallback_backend = "openai"
+                self._fallback_api_key = self._openai_key
+                self._fallback_api_url = OPENAI_URL
+                self._effective_fallback_model = os.environ.get(
+                    "LLM_FALLBACK_MODEL", OPENAI_DEFAULT_MODEL,
+                )
         else:
             self._fallback_backend = "deepseek"
             self._fallback_api_key = self._deepseek_fallback_key
@@ -170,6 +192,8 @@ class LLM:
             backend = f"DeepSeek ({self.model})"
         elif self._backend == "generic":
             backend = f"Generic ({self._generic_url}, {self.model})"
+        elif self._backend == "openai":
+            backend = f"OpenAI ({self.model})"
         else:
             backend = f"OpenRouter ({self.model})"
         # Lazy import to avoid circular
@@ -265,6 +289,7 @@ class LLM:
                 "%Y-%m-%dT%H:%M:%SZ", time.gmtime(),
             )
             self._last_error_type = type(exc).__name__
+            self._last_error_category = self._classify_error(exc)
             self._last_latency_ms = round((time.monotonic() - started) * 1000)
             raise
         self._last_call_succeeded = True
@@ -272,6 +297,7 @@ class LLM:
             "%Y-%m-%dT%H:%M:%SZ", time.gmtime(),
         )
         self._last_error_type = None
+        self._last_error_category = None
         self._last_latency_ms = round((time.monotonic() - started) * 1000)
         return result
 
@@ -323,6 +349,7 @@ class LLM:
             "last_success_at": self._last_success_at,
             "last_error_at": self._last_error_at,
             "last_error_type": self._last_error_type,
+            "last_error_category": self._last_error_category,
             "last_latency_ms": self._last_latency_ms,
             "fallback_configured": self._fallback_available,
             "fallback_active": self._using_fallback,
@@ -344,7 +371,30 @@ class LLM:
                 if self._last_call_succeeded is False
                 else "Provider is configured; live model access has not been checked."
             ),
+            "action_required": (
+                "Add provider credit before agent work can resume."
+                if self._last_error_category == "insufficient_balance"
+                else "Replace the rejected provider credential."
+                if self._last_error_category == "authentication_failed"
+                else "Wait for the provider rate limit to reset or configure another provider."
+                if self._last_error_category == "rate_limited"
+                else None
+            ),
         }
+
+    @staticmethod
+    def _classify_error(exc: Exception) -> str:
+        """Return a stable, secret-free operational error category."""
+        message = str(exc).lower()
+        if "insufficient balance" in message or "error 402" in message:
+            return "insufficient_balance"
+        if any(token in message for token in ("error 401", "error 403", "unauthorized", "invalid api key")):
+            return "authentication_failed"
+        if "error 429" in message or "rate limit" in message:
+            return "rate_limited"
+        if any(token in message for token in ("error 500", "error 502", "error 503", "error 504")):
+            return "provider_unavailable"
+        return "request_failed"
 
     @staticmethod
     def _probe_failure_message(backend: str, exc: Exception) -> str:
@@ -389,7 +439,7 @@ class LLM:
                     }
             else:
                 return {
-                    **status,
+                    **self.provider_status(),
                     "probe_performed": True,
                     "ready": False,
                     "message": self._probe_failure_message(primary_backend, primary_error),
