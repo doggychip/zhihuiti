@@ -7,6 +7,7 @@ import math
 import os
 import re
 import uuid
+from datetime import datetime, timezone
 from typing import Any, TYPE_CHECKING
 
 from rich.console import Console
@@ -548,13 +549,41 @@ class AgentManager:
             )
 
     def _save_task(self, task: Task, agent: AgentState) -> None:
+        execution = task.metadata.get("role_execution")
+        if not isinstance(execution, dict):
+            provider_status = self.llm.provider_status()
+            if not isinstance(provider_status, dict):
+                provider_status = {}
+            provider = provider_status.get("provider")
+            if not isinstance(provider, str):
+                provider = "unknown"
+            execution = {
+                "assigned_role": agent.config.role.value,
+                "execution_mode": (
+                    "tool_assisted" if agent.config.tools_enabled and self.tool_executor
+                    else "llm_advisory"
+                ),
+                "work_status": (
+                    "failed" if task.status == TaskStatus.FAILED
+                    else "completed_unvalidated" if task.status == TaskStatus.COMPLETED
+                    else task.status.value
+                ),
+                "evidence_scope": task.metadata.get("evidence_scope"),
+                "validation_reason": "role_specific_validation_not_run",
+                "provider": provider,
+                "live_model_succeeded": provider_status.get("ready") is True,
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+            }
+            task.metadata["role_execution"] = execution
         self.memory.save_task(
             task_id=task.id,
             description=task.description,
             status=task.status.value,
             result=task.result,
+            score=task.score,
             agent_id=agent.id,
             parent_task_id=task.parent_task_id,
+            metadata=task.metadata,
         )
 
     def checkpoint_agent(self, agent: AgentState) -> None:

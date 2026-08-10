@@ -1945,6 +1945,7 @@ class OracleHandler(BaseHTTPRequestHandler):
         try:
             orch = _get_orchestrator()
             agents = []
+            latest_work = orch.memory.get_latest_task_states_by_agent()
             for agent in orch.agent_manager.agents.values():
                 role = getattr(agent.config, 'role', None) if hasattr(agent, 'config') else None
                 role_str = role.value if hasattr(role, 'value') else str(role or 'unknown')
@@ -1962,6 +1963,10 @@ class OracleHandler(BaseHTTPRequestHandler):
                     "generation": gen,
                     "realm": realm_str,
                     "depth": getattr(agent, "depth", 0),
+                    "work_status": latest_work.get(agent.id, {}).get(
+                        "work_status", "idle",
+                    ),
+                    "last_work": latest_work.get(agent.id),
                 })
             _json_response(self, {"agents": agents, "count": len(agents), "mode": "full"})
         except Exception as e:

@@ -324,6 +324,44 @@ class Memory:
             )
             self.conn.commit()
 
+    def get_latest_task_states_by_agent(self) -> dict[str, dict]:
+        """Return the latest persisted, secret-free work state for each agent."""
+        rows = self._query(
+            "SELECT id, assigned_agent_id, status, score, metadata, created_at "
+            "FROM tasks WHERE assigned_agent_id IS NOT NULL "
+            "ORDER BY created_at DESC, rowid DESC"
+        )
+        latest: dict[str, dict] = {}
+        for row in rows:
+            agent_id = str(row["assigned_agent_id"] or "")
+            if not agent_id or agent_id in latest:
+                continue
+            try:
+                metadata = json.loads(row["metadata"] or "{}")
+            except (json.JSONDecodeError, TypeError):
+                metadata = {}
+            execution = metadata.get("role_execution")
+            if not isinstance(execution, dict):
+                execution = {
+                    "assigned_role": metadata.get("requested_role"),
+                    "execution_mode": "legacy",
+                    "work_status": (
+                        "failed" if row["status"] == "failed"
+                        else "legacy_unvalidated" if row["status"] == "completed"
+                        else row["status"]
+                    ),
+                    "evidence_scope": None,
+                    "validation_reason": "legacy_task_without_role_contract",
+                }
+            latest[agent_id] = {
+                "task_id": row["id"],
+                "task_status": row["status"],
+                "score": row["score"],
+                "created_at": row["created_at"],
+                **execution,
+            }
+        return latest
+
     def save_agent(self, agent_id: str, role: str, budget: float,
                    depth: int, avg_score: float, alive: bool,
                    parent_agent_id: str | None = None,

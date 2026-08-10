@@ -17,6 +17,7 @@ from typing import Any
 from zhihuiti.models import AgentRole, TaskStatus
 from zhihuiti.research import (
     AgentResearchPublisher,
+    ROTATION_ROLE_CONTRACTS,
     build_research_task,
     public_research_stats,
 )
@@ -26,15 +27,8 @@ STATE_KEY = "population_rotation"
 SAFE_DEFAULT_ROLES = (
     AgentRole.ANALYST,
     AgentRole.RESEARCHER,
-    AgentRole.STRATEGIST,
     AgentRole.AUDITOR,
-    AgentRole.CAUSAL_REASONER,
-    AgentRole.CODER,
-    AgentRole.CUSTOM,
 )
-FORBIDDEN_ROLES = {AgentRole.TRADER, AgentRole.ALPHAARENA_TRADER}
-
-
 def _bounded_int(name: str, default: int, minimum: int, maximum: int) -> int:
     try:
         value = int(os.environ.get(name, str(default)))
@@ -79,7 +73,7 @@ class PopulationConfig:
                 role = AgentRole(name.strip())
             except ValueError:
                 continue
-            if role not in FORBIDDEN_ROLES and role not in roles:
+            if role in ROTATION_ROLE_CONTRACTS and role not in roles:
                 roles.append(role)
         if not roles:
             roles = list(SAFE_DEFAULT_ROLES)
@@ -112,6 +106,14 @@ class PopulationConfig:
             "agent_budget": self.agent_budget,
             "retain_active": self.retain_active,
             "roles": [role.value for role in self.roles],
+            "role_contracts": {
+                role.value: ROTATION_ROLE_CONTRACTS[role]
+                for role in self.roles
+            },
+            "unsupported_rotation_roles": sorted(
+                role.value for role in AgentRole
+                if role not in ROTATION_ROLE_CONTRACTS
+            ),
         }
 
 
@@ -169,6 +171,7 @@ class PopulationRotator:
             "rejected_since_tracking": int(state.get("rejected_total", 0)),
             "failed_since_tracking": int(state.get("failed_total", 0)),
             "last_rotation_result": state.get("last_rotation_result"),
+            "llm_gate": state.get("llm_gate"),
         }
 
     def rotate(self, now: datetime | None = None) -> dict[str, Any]:
@@ -188,6 +191,36 @@ class PopulationRotator:
             return {**before, "status": "target_reached", "spawned": [], "culled": []}
         if before["daily_remaining"] <= 0:
             return {**before, "status": "daily_limit_reached", "spawned": [], "culled": []}
+
+        state = self._state_for_day(now)
+        provider = self._provider_readiness(state, now)
+        if provider.get("ready") is not True:
+            result = {
+                "status": "llm_unavailable",
+                "completed_at": now.isoformat(),
+                "spawned": 0,
+                "qualified": 0,
+                "rejected": 0,
+                "failed": 0,
+                "culled": 0,
+                "reason": provider.get("last_error_category") or "provider_not_ready",
+            }
+            state["last_rotation_result"] = result
+            state["llm_gate"] = {
+                "ready": False,
+                "provider": provider.get("provider"),
+                "last_error_category": provider.get("last_error_category"),
+                "action_required": provider.get("action_required"),
+                "checked_at": now.isoformat(),
+            }
+            self._save_state(state)
+            return {
+                **self.status(now),
+                "status": "llm_unavailable",
+                "spawned": [],
+                "culled": [],
+                "errors": [],
+            }
 
         last_rotation = before.get("last_rotation_at")
         if last_rotation:
@@ -209,8 +242,12 @@ class PopulationRotator:
             before["remaining"],
             before["daily_remaining"],
         )
-        state = self._state_for_day(now)
         state["last_rotation_at"] = now.isoformat()
+        state["llm_gate"] = {
+            "ready": True,
+            "provider": provider.get("provider"),
+            "checked_at": now.isoformat(),
+        }
         self._save_state(state)
 
         spawned: list[dict[str, Any]] = []
@@ -354,15 +391,47 @@ class PopulationRotator:
             ).publish_if_accepted(
                 project, assignment, task, agent, inspection,
             )
+            work_status = "validated" if publication.get("published") else "rejected"
+            task.metadata["role_execution"] = {
+                "assigned_role": role.value,
+                "execution_mode": task.metadata.get("role_contract", {}).get("execution_mode"),
+                "work_status": work_status,
+                "evidence_scope": "runtime_telemetry_only",
+                "validation_reason": publication.get("reason", "deterministic_pass"),
+                "provider": self.orch.llm.provider_status().get("provider"),
+                "live_model_succeeded": self.orch.llm.provider_status().get("ready") is True,
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+            }
+            self.orch.memory.save_task(
+                task_id=task.id,
+                description=task.description,
+                status=task.status.value,
+                result=task.result,
+                score=task.score,
+                agent_id=agent.id,
+                parent_task_id=task.parent_task_id,
+                metadata=task.metadata,
+            )
             record.update({
                 "score": round(score, 3),
                 "task_status": task.status.value,
                 "output_preview": output[:160],
                 "research": publication,
+                "work_status": work_status,
             })
         except Exception as exc:
             task.status = TaskStatus.FAILED
             task.result = f"Population evaluation error: {exc}"
+            task.metadata["role_execution"] = {
+                "assigned_role": role.value,
+                "execution_mode": task.metadata.get("role_contract", {}).get("execution_mode"),
+                "work_status": "failed",
+                "evidence_scope": "runtime_telemetry_only",
+                "validation_reason": "execution_error",
+                "provider": self.orch.llm.provider_status().get("provider"),
+                "live_model_succeeded": False,
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+            }
             agent.scores.append(0.1)
             self.orch.memory.save_task(
                 task_id=task.id,
@@ -377,6 +446,7 @@ class PopulationRotator:
                 "score": 0.1,
                 "task_status": task.status.value,
                 "evaluation_error": str(exc),
+                "work_status": "failed",
             })
         self.orch.agent_manager.checkpoint_agent(agent)
         return record
@@ -416,9 +486,30 @@ class PopulationRotator:
                 "rejected_total": state.get("rejected_total", 0),
                 "failed_total": state.get("failed_total", 0),
                 "last_rotation_result": state.get("last_rotation_result"),
+                "last_llm_probe_at": state.get("last_llm_probe_at"),
+                "llm_gate": state.get("llm_gate"),
             }
         state["spawned_today"] = max(0, int(state.get("spawned_today", 0)))
         return state
 
     def _save_state(self, state: dict[str, Any]) -> None:
         self.orch.memory.save_economy_state(STATE_KEY, state)
+
+    def _provider_readiness(
+        self, state: dict[str, Any], now: datetime,
+    ) -> dict[str, Any]:
+        status = self.orch.llm.provider_status()
+        if status.get("ready") is True:
+            return status
+        last_probe = state.get("last_llm_probe_at")
+        if last_probe and status.get("ready") is False:
+            try:
+                elapsed = (now - datetime.fromisoformat(last_probe)).total_seconds()
+            except ValueError:
+                elapsed = 1_800
+            if elapsed < 1_800:
+                return status
+        status = self.orch.llm.probe_provider()
+        state["last_llm_probe_at"] = now.isoformat()
+        self._save_state(state)
+        return status
