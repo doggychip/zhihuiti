@@ -8358,5 +8358,695 @@
       "Consensus as thermal equilibrium corresponds to vanishing thermodynamic forces"
     ],
     "interpretation": "Near-consensus opinion dynamics obeys reciprocal relations analogous to Onsager's: symmetric social influence corresponds to the time-reversal symmetry underlying Onsager's reciprocal transport coefficients."
+  },
+  {
+    "a": "schelling_segregation_model",
+    "b": "global_workspace",
+    "score": 0.24,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "phase_transition",
+      "self_organization"
+    ],
+    "shared_operators": [
+      "comparison",
+      "threshold"
+    ],
+    "shared_update_form": null,
+    "shared_structure": null,
+    "bridges": [
+      "Both definitions list the structural pattern \"phase transition\": Schelling Segregation Model (Social Dynamics) and Global Workspace Theory (Baars) (Cognitive Science).",
+      "Both definitions list the structural pattern \"self organization\": Schelling Segregation Model (Social Dynamics) and Global Workspace Theory (Baars) (Cognitive Science).",
+      "Both definitions use the operator \"comparison\".",
+      "Both definitions use the operator \"threshold\"."
+    ],
+    "interpretation": "Schelling Segregation Model (Social Dynamics) and Global Workspace Theory (Baars) (Cognitive Science) overlap on 2 shared patterns (phase transition, self organization); 2 shared operators (comparison, threshold). Score 0.240 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "schelling_segregation_model",
+      "global_workspace"
+    ],
+    "pattern_jaccard": 0.2222222222222222,
+    "operator_jaccard": 0.4
+  },
+  {
+    "a": "schelling_segregation_model",
+    "b": "distributed_consensus",
+    "score": 0.185,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "self_organization"
+    ],
+    "shared_operators": [
+      "comparison",
+      "threshold"
+    ],
+    "shared_update_form": null,
+    "shared_structure": null,
+    "bridges": [
+      "Both definitions list the structural pattern \"self organization\": Schelling Segregation Model (Social Dynamics) and Distributed Consensus / Paxos-Raft (Computer Science).",
+      "Both definitions use the operator \"comparison\".",
+      "Both definitions use the operator \"threshold\"."
+    ],
+    "interpretation": "Schelling Segregation Model (Social Dynamics) and Distributed Consensus / Paxos-Raft (Computer Science) overlap on 1 shared pattern (self organization); 2 shared operators (comparison, threshold). Score 0.185 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "schelling_segregation_model",
+      "distributed_consensus"
+    ],
+    "pattern_jaccard": 0.1,
+    "operator_jaccard": 0.4
+  },
+  {
+    "a": "granovetter_threshold_model",
+    "b": "rational_expectations",
+    "score": 0.19924242424242425,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "fixed_point_stability"
+    ],
+    "shared_operators": [
+      "fixed_point"
+    ],
+    "shared_update_form": null,
+    "shared_structure": "fixed_point_equilibrium",
+    "bridges": [
+      "Both definitions list the structural pattern \"fixed point stability\": Granovetter Threshold Model of Collective Behavior (Social Dynamics) and Rational Expectations (Muth-Lucas) (Economics).",
+      "Both definitions use the operator \"fixed point\".",
+      "Both are described by the structure \"fixed point equilibrium\"."
+    ],
+    "interpretation": "Granovetter Threshold Model of Collective Behavior (Social Dynamics) and Rational Expectations (Muth-Lucas) (Economics) overlap on 1 shared pattern (fixed point stability); 1 shared operator (fixed point); the same structure (fixed point equilibrium). Score 0.199 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "granovetter_threshold_model",
+      "rational_expectations"
+    ],
+    "pattern_jaccard": 0.09090909090909091,
+    "operator_jaccard": 0.16666666666666666
+  },
+  {
+    "a": "granovetter_threshold_model",
+    "b": "ess",
+    "score": 0.18999999999999997,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "fixed_point_stability"
+    ],
+    "shared_operators": [
+      "comparison",
+      "fixed_point"
+    ],
+    "shared_update_form": null,
+    "shared_structure": null,
+    "bridges": [
+      "Both definitions list the structural pattern \"fixed point stability\": Granovetter Threshold Model of Collective Behavior (Social Dynamics) and Evolutionarily Stable Strategy (Evolutionary Game Theory).",
+      "Both definitions use the operator \"comparison\".",
+      "Both definitions use the operator \"fixed point\"."
+    ],
+    "interpretation": "Granovetter Threshold Model of Collective Behavior (Social Dynamics) and Evolutionarily Stable Strategy (Evolutionary Game Theory) overlap on 1 shared pattern (fixed point stability); 2 shared operators (comparison, fixed point). Score 0.190 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "granovetter_threshold_model",
+      "ess"
+    ],
+    "pattern_jaccard": 0.1111111111111111,
+    "operator_jaccard": 0.4
+  },
+  {
+    "a": "bass_diffusion_model",
+    "b": "logistic_growth",
+    "score": 0.255,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "saturation"
+    ],
+    "shared_operators": [
+      "differential",
+      "growth",
+      "saturation"
+    ],
+    "shared_update_form": null,
+    "shared_structure": null,
+    "bridges": [
+      "Both definitions list the structural pattern \"saturation\": Bass Diffusion Model (Social Dynamics) and Logistic Growth / Verhulst Equation (Biology).",
+      "Both definitions use the operator \"differential\".",
+      "Both definitions use the operator \"growth\".",
+      "Both definitions use the operator \"saturation\"."
+    ],
+    "interpretation": "Bass Diffusion Model (Social Dynamics) and Logistic Growth / Verhulst Equation (Biology) overlap on 1 shared pattern (saturation); 3 shared operators (differential, growth, saturation). Score 0.255 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "bass_diffusion_model",
+      "logistic_growth"
+    ],
+    "pattern_jaccard": 0.1,
+    "operator_jaccard": 0.6
+  },
+  {
+    "a": "black_litterman_model",
+    "b": "kalman_filter_sp",
+    "score": 0.22,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "bayesian_updating"
+    ],
+    "shared_operators": [
+      "covariance",
+      "linear_combination",
+      "matrix_multiply"
+    ],
+    "shared_update_form": null,
+    "shared_structure": null,
+    "bridges": [
+      "Both definitions list the structural pattern \"bayesian updating\": Black-Litterman Model (Quantitative Finance) and Kalman Filter / State Estimation (Signal Processing).",
+      "Both definitions use the operator \"covariance\".",
+      "Both definitions use the operator \"linear combination\".",
+      "Both definitions use the operator \"matrix multiply\"."
+    ],
+    "interpretation": "Black-Litterman Model (Quantitative Finance) and Kalman Filter / State Estimation (Signal Processing) overlap on 1 shared pattern (bayesian updating); 3 shared operators (covariance, linear combination, matrix multiply). Score 0.220 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "black_litterman_model",
+      "kalman_filter_sp"
+    ],
+    "pattern_jaccard": 0.1,
+    "operator_jaccard": 0.5
+  },
+  {
+    "a": "expected_shortfall",
+    "b": "var_cvar",
+    "score": 0.20666666666666667,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "subadditivity",
+      "tail_risk"
+    ],
+    "shared_operators": [
+      "conditional_expectation",
+      "quantile"
+    ],
+    "shared_update_form": null,
+    "shared_structure": null,
+    "bridges": [
+      "Both definitions list the structural pattern \"subadditivity\": Expected Shortfall (Coherent Risk Measure) (Risk Science) and Value-at-Risk / Conditional VaR (Economics).",
+      "Both definitions list the structural pattern \"tail risk\": Expected Shortfall (Coherent Risk Measure) (Risk Science) and Value-at-Risk / Conditional VaR (Economics).",
+      "Both definitions use the operator \"conditional expectation\".",
+      "Both definitions use the operator \"quantile\"."
+    ],
+    "interpretation": "Expected Shortfall (Coherent Risk Measure) (Risk Science) and Value-at-Risk / Conditional VaR (Economics) overlap on 2 shared patterns (subadditivity, tail risk); 2 shared operators (conditional expectation, quantile). Score 0.207 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "expected_shortfall",
+      "var_cvar"
+    ],
+    "pattern_jaccard": 0.2,
+    "operator_jaccard": 0.3333333333333333
+  },
+  {
+    "a": "island_biogeography",
+    "b": "lyapunov_stability_ct",
+    "score": 0.18999999999999997,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "fixed_point_stability"
+    ],
+    "shared_operators": [
+      "comparison",
+      "differential"
+    ],
+    "shared_update_form": null,
+    "shared_structure": null,
+    "bridges": [
+      "Both definitions list the structural pattern \"fixed point stability\": Theory of Island Biogeography (Ecology) and Lyapunov Stability Theory (Control Theory).",
+      "Both definitions use the operator \"comparison\".",
+      "Both definitions use the operator \"differential\"."
+    ],
+    "interpretation": "Theory of Island Biogeography (Ecology) and Lyapunov Stability Theory (Control Theory) overlap on 1 shared pattern (fixed point stability); 2 shared operators (comparison, differential). Score 0.190 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "island_biogeography",
+      "lyapunov_stability_ct"
+    ],
+    "pattern_jaccard": 0.1111111111111111,
+    "operator_jaccard": 0.4
+  },
+  {
+    "a": "hawkes_self_exciting_process",
+    "b": "quantum_tunneling",
+    "score": 0.18999999999999997,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "exponential_decay"
+    ],
+    "shared_operators": [
+      "exponential",
+      "integration"
+    ],
+    "shared_update_form": null,
+    "shared_structure": null,
+    "bridges": [
+      "Both definitions list the structural pattern \"exponential decay\": Hawkes Self-Exciting Point Process (Systems Engineering) and Quantum Tunneling / WKB Approximation (Quantum Physics).",
+      "Both definitions use the operator \"exponential\".",
+      "Both definitions use the operator \"integration\"."
+    ],
+    "interpretation": "Hawkes Self-Exciting Point Process (Systems Engineering) and Quantum Tunneling / WKB Approximation (Quantum Physics) overlap on 1 shared pattern (exponential decay); 2 shared operators (exponential, integration). Score 0.190 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "hawkes_self_exciting_process",
+      "quantum_tunneling"
+    ],
+    "pattern_jaccard": 0.1111111111111111,
+    "operator_jaccard": 0.4
+  },
+  {
+    "a": "control_barrier_functions",
+    "b": "model_predictive_control",
+    "score": 0.25,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "convex_optimization",
+      "feedback_loop"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "shared_update_form": null,
+    "shared_structure": "constrained_optimization",
+    "bridges": [
+      "Both definitions list the structural pattern \"convex optimization\": Control Barrier Functions (Systems Engineering) and Model Predictive Control (MPC) (Control Theory).",
+      "Both definitions list the structural pattern \"feedback loop\": Control Barrier Functions (Systems Engineering) and Model Predictive Control (MPC) (Control Theory).",
+      "Both definitions use the operator \"gradient\".",
+      "Both are described by the structure \"constrained optimization\"."
+    ],
+    "interpretation": "Control Barrier Functions (Systems Engineering) and Model Predictive Control (MPC) (Control Theory) overlap on 2 shared patterns (convex optimization, feedback loop); 1 shared operator (gradient); the same structure (constrained optimization). Score 0.250 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "control_barrier_functions",
+      "model_predictive_control"
+    ],
+    "pattern_jaccard": 0.2222222222222222,
+    "operator_jaccard": 0.14285714285714285
+  },
+  {
+    "a": "mean_field_game",
+    "b": "domain_adaptation",
+    "score": 0.23888888888888887,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "competitive_dynamics",
+      "energy_minimization"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "shared_update_form": null,
+    "shared_structure": "minimax_optimization",
+    "bridges": [
+      "Both definitions list the structural pattern \"competitive dynamics\": Mean-Field Game (Game Theory) and Domain Adaptation / Distribution Shift (Machine Learning).",
+      "Both definitions list the structural pattern \"energy minimization\": Mean-Field Game (Game Theory) and Domain Adaptation / Distribution Shift (Machine Learning).",
+      "Both definitions use the operator \"gradient\".",
+      "Both are described by the structure \"minimax optimization\"."
+    ],
+    "interpretation": "Mean-Field Game (Game Theory) and Domain Adaptation / Distribution Shift (Machine Learning) overlap on 2 shared patterns (competitive dynamics, energy minimization); 1 shared operator (gradient); the same structure (minimax optimization). Score 0.239 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "mean_field_game",
+      "domain_adaptation"
+    ],
+    "pattern_jaccard": 0.2222222222222222,
+    "operator_jaccard": 0.1111111111111111
+  },
+  {
+    "a": "mean_field_game",
+    "b": "frank_wolfe",
+    "score": 0.2076388888888889,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "energy_minimization",
+      "fixed_point_iteration",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "shared_update_form": null,
+    "shared_structure": null,
+    "bridges": [
+      "Both definitions list the structural pattern \"energy minimization\": Mean-Field Game (Game Theory) and Frank-Wolfe / Conditional Gradient (Optimization).",
+      "Both definitions list the structural pattern \"fixed point iteration\": Mean-Field Game (Game Theory) and Frank-Wolfe / Conditional Gradient (Optimization).",
+      "Both definitions list the structural pattern \"variational principle\": Mean-Field Game (Game Theory) and Frank-Wolfe / Conditional Gradient (Optimization).",
+      "Both definitions use the operator \"gradient\"."
+    ],
+    "interpretation": "Mean-Field Game (Game Theory) and Frank-Wolfe / Conditional Gradient (Optimization) overlap on 3 shared patterns (energy minimization, fixed point iteration, variational principle); 1 shared operator (gradient). Score 0.208 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "mean_field_game",
+      "frank_wolfe"
+    ],
+    "pattern_jaccard": 0.375,
+    "operator_jaccard": 0.1111111111111111
+  },
+  {
+    "a": "mean_field_game",
+    "b": "robust_estimation",
+    "score": 0.2076388888888889,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "energy_minimization",
+      "fixed_point_iteration",
+      "variational_principle"
+    ],
+    "shared_operators": [
+      "gradient"
+    ],
+    "shared_update_form": null,
+    "shared_structure": null,
+    "bridges": [
+      "Both definitions list the structural pattern \"energy minimization\": Mean-Field Game (Game Theory) and Robust Estimation / M-Estimators (Statistics).",
+      "Both definitions list the structural pattern \"fixed point iteration\": Mean-Field Game (Game Theory) and Robust Estimation / M-Estimators (Statistics).",
+      "Both definitions list the structural pattern \"variational principle\": Mean-Field Game (Game Theory) and Robust Estimation / M-Estimators (Statistics).",
+      "Both definitions use the operator \"gradient\"."
+    ],
+    "interpretation": "Mean-Field Game (Game Theory) and Robust Estimation / M-Estimators (Statistics) overlap on 3 shared patterns (energy minimization, fixed point iteration, variational principle); 1 shared operator (gradient). Score 0.208 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "mean_field_game",
+      "robust_estimation"
+    ],
+    "pattern_jaccard": 0.375,
+    "operator_jaccard": 0.1111111111111111
+  },
+  {
+    "a": "front_door_adjustment",
+    "b": "causal_inference",
+    "score": 0.25,
+    "collision_strength": "resonance",
+    "shared_patterns": [],
+    "shared_operators": [
+      "adjustment_formula",
+      "do_operator",
+      "graph_surgery"
+    ],
+    "shared_update_form": "interventional_query",
+    "shared_structure": null,
+    "bridges": [
+      "Both definitions use the operator \"adjustment formula\".",
+      "Both definitions use the operator \"do operator\".",
+      "Both definitions use the operator \"graph surgery\".",
+      "Both are written in the update form \"interventional query\"."
+    ],
+    "interpretation": "Front-Door Adjustment (Causal Inference) and Causal Inference / do-calculus (Statistics) overlap on 3 shared operators (adjustment formula, do operator, graph surgery); the same update form (interventional query). Score 0.250 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "front_door_adjustment",
+      "causal_inference"
+    ],
+    "pattern_jaccard": 0.0,
+    "operator_jaccard": 0.42857142857142855
+  },
+  {
+    "a": "coherent_risk_measures",
+    "b": "var_cvar",
+    "score": 0.2625,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "coherent_risk_measure",
+      "subadditivity",
+      "tail_risk"
+    ],
+    "shared_operators": [
+      "expectation"
+    ],
+    "shared_update_form": null,
+    "shared_structure": "risk_measure",
+    "bridges": [
+      "Both definitions list the structural pattern \"coherent risk measure\": Coherent Measures of Risk (Risk Science) and Value-at-Risk / Conditional VaR (Economics).",
+      "Both definitions list the structural pattern \"subadditivity\": Coherent Measures of Risk (Risk Science) and Value-at-Risk / Conditional VaR (Economics).",
+      "Both definitions list the structural pattern \"tail risk\": Coherent Measures of Risk (Risk Science) and Value-at-Risk / Conditional VaR (Economics).",
+      "Both definitions use the operator \"expectation\".",
+      "Both are described by the structure \"risk measure\"."
+    ],
+    "interpretation": "Coherent Measures of Risk (Risk Science) and Value-at-Risk / Conditional VaR (Economics) overlap on 3 shared patterns (coherent risk measure, subadditivity, tail risk); 1 shared operator (expectation); the same structure (risk measure). Score 0.263 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "coherent_risk_measures",
+      "var_cvar"
+    ],
+    "pattern_jaccard": 0.25,
+    "operator_jaccard": 0.14285714285714285
+  },
+  {
+    "a": "eisenberg_noe_clearing",
+    "b": "granovetter_threshold_model",
+    "score": 0.23375,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "fixed_point_stability",
+      "threshold_cascade"
+    ],
+    "shared_operators": [
+      "fixed_point"
+    ],
+    "shared_update_form": null,
+    "shared_structure": "fixed_point_equilibrium",
+    "bridges": [
+      "Both definitions list the structural pattern \"fixed point stability\": Eisenberg-Noe Financial Clearing Network (Risk Science) and Granovetter Threshold Model of Collective Behavior (Social Dynamics).",
+      "Both definitions list the structural pattern \"threshold cascade\": Eisenberg-Noe Financial Clearing Network (Risk Science) and Granovetter Threshold Model of Collective Behavior (Social Dynamics).",
+      "Both definitions use the operator \"fixed point\".",
+      "Both are described by the structure \"fixed point equilibrium\"."
+    ],
+    "interpretation": "Eisenberg-Noe Financial Clearing Network (Risk Science) and Granovetter Threshold Model of Collective Behavior (Social Dynamics) overlap on 2 shared patterns (fixed point stability, threshold cascade); 1 shared operator (fixed point); the same structure (fixed point equilibrium). Score 0.234 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "eisenberg_noe_clearing",
+      "granovetter_threshold_model"
+    ],
+    "pattern_jaccard": 0.2,
+    "operator_jaccard": 0.125
+  },
+  {
+    "a": "eisenberg_noe_clearing",
+    "b": "rational_expectations",
+    "score": 0.225,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "fixed_point_iteration",
+      "fixed_point_stability"
+    ],
+    "shared_operators": [
+      "fixed_point"
+    ],
+    "shared_update_form": null,
+    "shared_structure": "fixed_point_equilibrium",
+    "bridges": [
+      "Both definitions list the structural pattern \"fixed point iteration\": Eisenberg-Noe Financial Clearing Network (Risk Science) and Rational Expectations (Muth-Lucas) (Economics).",
+      "Both definitions list the structural pattern \"fixed point stability\": Eisenberg-Noe Financial Clearing Network (Risk Science) and Rational Expectations (Muth-Lucas) (Economics).",
+      "Both definitions use the operator \"fixed point\".",
+      "Both are described by the structure \"fixed point equilibrium\"."
+    ],
+    "interpretation": "Eisenberg-Noe Financial Clearing Network (Risk Science) and Rational Expectations (Muth-Lucas) (Economics) overlap on 2 shared patterns (fixed point iteration, fixed point stability); 1 shared operator (fixed point); the same structure (fixed point equilibrium). Score 0.225 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "eisenberg_noe_clearing",
+      "rational_expectations"
+    ],
+    "pattern_jaccard": 0.16666666666666666,
+    "operator_jaccard": 0.14285714285714285
+  },
+  {
+    "a": "eisenberg_noe_clearing",
+    "b": "network_robustness",
+    "score": 0.1875,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "fixed_point_iteration"
+    ],
+    "shared_operators": [
+      "fixed_point"
+    ],
+    "shared_update_form": null,
+    "shared_structure": "fixed_point_equilibrium",
+    "bridges": [
+      "Both definitions list the structural pattern \"fixed point iteration\": Eisenberg-Noe Financial Clearing Network (Risk Science) and Network Robustness / Percolation (Network Science).",
+      "Both definitions use the operator \"fixed point\".",
+      "Both are described by the structure \"fixed point equilibrium\"."
+    ],
+    "interpretation": "Eisenberg-Noe Financial Clearing Network (Risk Science) and Network Robustness / Percolation (Network Science) overlap on 1 shared pattern (fixed point iteration); 1 shared operator (fixed point); the same structure (fixed point equilibrium). Score 0.188 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "eisenberg_noe_clearing",
+      "network_robustness"
+    ],
+    "pattern_jaccard": 0.08333333333333333,
+    "operator_jaccard": 0.14285714285714285
+  },
+  {
+    "a": "levins_metapopulation",
+    "b": "logistic_growth",
+    "score": 0.225,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "fixed_point_stability",
+      "s_curve"
+    ],
+    "shared_operators": [
+      "differential"
+    ],
+    "shared_update_form": null,
+    "shared_structure": "scalar_ode",
+    "bridges": [
+      "Both definitions list the structural pattern \"fixed point stability\": Levins Metapopulation Model (Ecology) and Logistic Growth / Verhulst Equation (Biology).",
+      "Both definitions list the structural pattern \"s curve\": Levins Metapopulation Model (Ecology) and Logistic Growth / Verhulst Equation (Biology).",
+      "Both definitions use the operator \"differential\".",
+      "Both are described by the structure \"scalar ode\"."
+    ],
+    "interpretation": "Levins Metapopulation Model (Ecology) and Logistic Growth / Verhulst Equation (Biology) overlap on 2 shared patterns (fixed point stability, s curve); 1 shared operator (differential); the same structure (scalar ode). Score 0.225 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "levins_metapopulation",
+      "logistic_growth"
+    ],
+    "pattern_jaccard": 0.16666666666666666,
+    "operator_jaccard": 0.14285714285714285
+  },
+  {
+    "a": "macarthur_resource_competition",
+    "b": "competitive_exclusion",
+    "score": 0.3434343434343434,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "coexistence_criteria",
+      "competitive_exclusion",
+      "lyapunov_stability",
+      "niche_differentiation",
+      "resource_competition"
+    ],
+    "shared_operators": [
+      "differential"
+    ],
+    "shared_update_form": null,
+    "shared_structure": "coupled_ode",
+    "bridges": [
+      "Both definitions list the structural pattern \"coexistence criteria\": MacArthur Consumer-Resource Competition (Ecology) and Competitive Exclusion / Gause's Law (Biology).",
+      "Both definitions list the structural pattern \"competitive exclusion\": MacArthur Consumer-Resource Competition (Ecology) and Competitive Exclusion / Gause's Law (Biology).",
+      "Both definitions list the structural pattern \"lyapunov stability\": MacArthur Consumer-Resource Competition (Ecology) and Competitive Exclusion / Gause's Law (Biology).",
+      "Both definitions list the structural pattern \"niche differentiation\": MacArthur Consumer-Resource Competition (Ecology) and Competitive Exclusion / Gause's Law (Biology).",
+      "Both definitions list the structural pattern \"resource competition\": MacArthur Consumer-Resource Competition (Ecology) and Competitive Exclusion / Gause's Law (Biology).",
+      "Both definitions use the operator \"differential\".",
+      "Both are described by the structure \"coupled ode\"."
+    ],
+    "interpretation": "MacArthur Consumer-Resource Competition (Ecology) and Competitive Exclusion / Gause's Law (Biology) overlap on 5 shared patterns (coexistence criteria, competitive exclusion, lyapunov stability, niche differentiation, resource competition); 1 shared operator (differential); the same structure (coupled ode). Score 0.343 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "macarthur_resource_competition",
+      "competitive_exclusion"
+    ],
+    "pattern_jaccard": 0.45454545454545453,
+    "operator_jaccard": 0.1111111111111111
+  },
+  {
+    "a": "macarthur_resource_competition",
+    "b": "lotka_volterra_bio",
+    "score": 0.2388888888888889,
+    "collision_strength": "resonance",
+    "shared_patterns": [],
+    "shared_operators": [
+      "differential"
+    ],
+    "shared_update_form": "coupled_population_dynamics",
+    "shared_structure": "coupled_ode",
+    "bridges": [
+      "Both definitions use the operator \"differential\".",
+      "Both are written in the update form \"coupled population dynamics\".",
+      "Both are described by the structure \"coupled ode\"."
+    ],
+    "interpretation": "MacArthur Consumer-Resource Competition (Ecology) and Lotka-Volterra / Predator-Prey (Biology) overlap on 1 shared operator (differential); the same update form (coupled population dynamics); the same structure (coupled ode). Score 0.239 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "macarthur_resource_competition",
+      "lotka_volterra_bio"
+    ],
+    "pattern_jaccard": 0.0,
+    "operator_jaccard": 0.1111111111111111
+  },
+  {
+    "a": "may_complexity_stability",
+    "b": "random_matrix_theory",
+    "score": 0.23750000000000002,
+    "collision_strength": "resonance",
+    "shared_patterns": [
+      "phase_transition"
+    ],
+    "shared_operators": [],
+    "shared_update_form": "eigenvalue_statistics",
+    "shared_structure": "ensemble_average_over_matrices",
+    "bridges": [
+      "Both definitions list the structural pattern \"phase transition\": May Complexity-Stability Criterion (Ecology) and Random Matrix Theory (Statistical Physics).",
+      "Both are written in the update form \"eigenvalue statistics\".",
+      "Both are described by the structure \"ensemble average over matrices\"."
+    ],
+    "interpretation": "May Complexity-Stability Criterion (Ecology) and Random Matrix Theory (Statistical Physics) overlap on 1 shared pattern (phase transition); the same update form (eigenvalue statistics); the same structure (ensemble average over matrices). Score 0.238 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "may_complexity_stability",
+      "random_matrix_theory"
+    ],
+    "pattern_jaccard": 0.08333333333333333,
+    "operator_jaccard": 0.0
+  },
+  {
+    "a": "schaefer_bioeconomic_model",
+    "b": "logistic_growth",
+    "score": 0.3727272727272727,
+    "collision_strength": "significant",
+    "shared_patterns": [
+      "density_dependence",
+      "fixed_point_stability",
+      "s_curve"
+    ],
+    "shared_operators": [
+      "differential"
+    ],
+    "shared_update_form": "density_dependent_growth",
+    "shared_structure": "scalar_ode",
+    "bridges": [
+      "Both definitions list the structural pattern \"density dependence\": Schaefer Surplus-Production Fishery (Ecology) and Logistic Growth / Verhulst Equation (Biology).",
+      "Both definitions list the structural pattern \"fixed point stability\": Schaefer Surplus-Production Fishery (Ecology) and Logistic Growth / Verhulst Equation (Biology).",
+      "Both definitions list the structural pattern \"s curve\": Schaefer Surplus-Production Fishery (Ecology) and Logistic Growth / Verhulst Equation (Biology).",
+      "Both definitions use the operator \"differential\".",
+      "Both are written in the update form \"density dependent growth\".",
+      "Both are described by the structure \"scalar ode\"."
+    ],
+    "interpretation": "Schaefer Surplus-Production Fishery (Ecology) and Logistic Growth / Verhulst Equation (Biology) overlap on 3 shared patterns (density dependence, fixed point stability, s curve); 1 shared operator (differential); the same update form (density dependent growth); the same structure (scalar ode). Score 0.373 from deterministic_structural_overlap_v1. Structural analogy, not empirical evidence.",
+    "method": "deterministic_structural_overlap_v1",
+    "provenance": "computed",
+    "source_theory_ids": [
+      "schaefer_bioeconomic_model",
+      "logistic_growth"
+    ],
+    "pattern_jaccard": 0.2727272727272727,
+    "operator_jaccard": 0.14285714285714285
   }
 ]

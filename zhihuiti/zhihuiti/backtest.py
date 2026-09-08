@@ -14,8 +14,10 @@ Usage:
 from __future__ import annotations
 
 import json
+import math
 import os
 import threading
+import tempfile
 import time
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
@@ -36,6 +38,11 @@ class PredictionRecord:
     price_at_prediction: float
     baseline_regime: str = ""
     model_version: str = "incumbent-v1"
+    horizon_seconds: int = 14400
+    verification_tolerance_seconds: int = 3600
+    observation_at: float = 0.0
+    source_at_prediction: float = 0.0
+    outcome_source_at: float = 0.0
     # Filled in after verification
     actual_regime: str = ""
     actual_price: float = 0.0
@@ -132,6 +139,7 @@ def record_prediction(
     patterns: list[str],
     price: float,
     model_version: str = "incumbent-v1",
+    source_at: float = 0.0,
 ) -> PredictionRecord:
     """Record a prediction for future verification."""
     pred = PredictionRecord(
@@ -145,29 +153,46 @@ def record_prediction(
         price_at_prediction=price,
         baseline_regime=current_regime,
         model_version=model_version,
+        horizon_seconds=prediction_horizon_seconds(),
+        source_at_prediction=source_at,
     )
     with _predictions_lock:
         _predictions.append(pred)
-    _save_prediction(pred)
+        _save_prediction(pred)
     return pred
 
 
-def verify_predictions(instrument: str, actual_regime: str, actual_price: float) -> int:
+def verify_predictions(instrument: str, actual_regime: str, actual_price: float,
+                       observed_at: float | None = None, source_at: float = 0.0) -> int:
     """Verify unverified predictions for an instrument against actual outcome.
 
     Returns number of predictions verified.
     """
     verified = 0
     now = time.time()
+    # The caller must timestamp collection, not replay a cached observation as now.
+    observed_at = now if observed_at is None else observed_at
+    from zhihuiti.oracle_intelligence import REGIMES
+    if (not math.isfinite(observed_at) or observed_at > now
+            or actual_regime not in REGIMES
+            or not math.isfinite(actual_price) or actual_price <= 0):
+        return 0
     with _predictions_lock:
         for pred in _predictions:
             if pred.instrument == instrument and not pred.verified_at:
-                # Verify only after the configured forward horizon has elapsed.
-                if now - pred.timestamp < prediction_horizon_seconds():
+                # Never turn an outage into a much longer, mislabeled forecast.
+                due = pred.timestamp + pred.horizon_seconds
+                if not due <= observed_at <= due + pred.verification_tolerance_seconds:
+                    continue
+                if pred.source_at_prediction and not (
+                    math.isfinite(source_at) and pred.source_at_prediction < source_at <= observed_at
+                ):
                     continue
                 pred.actual_regime = actual_regime
                 pred.actual_price = actual_price
                 pred.verified_at = now
+                pred.observation_at = observed_at
+                pred.outcome_source_at = source_at
                 pred.correct = pred.predicted_regime == actual_regime
                 baseline = pred.baseline_regime or pred.current_regime
                 pred.baseline_correct = baseline == actual_regime
@@ -198,6 +223,10 @@ def get_forward_accuracy_summary(
     ]
     verified = [prediction for prediction in predictions if prediction.verified_at > 0]
     total = len(verified)
+    now = time.time()
+    expired = sum(1 for prediction in predictions if not prediction.verified_at
+                  and now > prediction.timestamp + prediction.horizon_seconds
+                  + prediction.verification_tolerance_seconds)
     correct = sum(1 for prediction in verified if prediction.correct)
     baseline_correct = sum(
         1 for prediction in verified
@@ -346,6 +375,10 @@ def get_forward_accuracy_summary(
         "transition_event_f1": transition_event_f1,
         "transition_base_rate": len(transition_predictions) / total if total else None,
         "unverified": len(predictions) - total,
+        "expired": expired,
+        "pending": len(predictions) - total - expired,
+        "verification_tolerance_seconds": 3600,
+        "verification_method": "bounded_forward_observation_v1",
         "regime_accuracy": regime_stats,
         "recent": recent,
     }
@@ -399,9 +432,22 @@ def _rewrite_store():
     """Rewrite the full prediction store (after verification updates)."""
     _store_path.parent.mkdir(parents=True, exist_ok=True)
     with _predictions_lock:
-        with open(_store_path, "w") as f:
-            for pred in _predictions:
-                f.write(json.dumps(pred.to_dict()) + "\n")
+        # Keep the original ledger intact until a complete replacement is durable.
+        with tempfile.NamedTemporaryFile(mode="w", dir=_store_path.parent,
+                                         prefix=".predictions-", delete=False) as f:
+            temporary = Path(f.name)
+            try:
+                for pred in _predictions:
+                    f.write(json.dumps(pred.to_dict()) + "\n")
+                f.flush()
+                os.fsync(f.fileno())
+            except BaseException:
+                temporary.unlink(missing_ok=True)
+                raise
+        try:
+            os.replace(temporary, _store_path)
+        finally:
+            temporary.unlink(missing_ok=True)
 
 
 # ── Backtesting Engine ───────────────────────────────────────────────────
@@ -667,9 +713,21 @@ def auto_record_and_verify(scan_results: list, history=None) -> dict:
         instrument = result.instrument if hasattr(result, 'instrument') else result.get("instrument", "")
         regime = result.regime if hasattr(result, 'regime') else result.get("regime", "quiet")
         price = result.price if hasattr(result, 'price') else result.get("price", 0)
+        observed_at = (result.observed_at if hasattr(result, 'observed_at')
+                       else result.get("observed_at", 0))
+        source_at = (result.source_at if hasattr(result, 'source_at')
+                     else result.get("source_at", 0))
+        # Legacy/cached inputs without collection evidence are not scored.
+        if (not math.isfinite(observed_at) or not observed_at
+                or time.time() - observed_at > 3600 or observed_at > time.time()
+                or not math.isfinite(source_at) or source_at <= 0
+                or source_at > observed_at or observed_at - source_at > 86400
+                or not math.isfinite(price) or price <= 0):
+            prediction_errors.append({"instrument": instrument, "error": "missing_or_stale_observation"})
+            continue
 
         # Verify old predictions
-        verified_count += verify_predictions(instrument, regime, price)
+        verified_count += verify_predictions(instrument, regime, price, observed_at, source_at)
 
         # Make and record new prediction
         try:
@@ -696,6 +754,7 @@ def auto_record_and_verify(scan_results: list, history=None) -> dict:
                     probabilities=prediction.probabilities,
                     patterns=[p["name"] for p in patterns],
                     price=price,
+                    source_at=source_at,
                 )
                 new_predictions += 1
 
@@ -720,6 +779,7 @@ def auto_record_and_verify(scan_results: list, history=None) -> dict:
                     patterns=[p["name"] for p in patterns],
                     price=price,
                     model_version="transition-calibrated-v1",
+                    source_at=source_at,
                 )
                 shadow_predictions += 1
             else:

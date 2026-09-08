@@ -9,6 +9,7 @@ Used by the MCP server to expose theory intelligence to external projects.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import threading
@@ -22,54 +23,21 @@ _DATA_FILES = {
     "skeletons.json": list,
     "historical.json": list,
 }
-_DATA_REVISION = "d91abeb749828c446b0ad2d2944fbeab48766852"
-_RAW_DATA_BASE = (
-    "https://raw.githubusercontent.com/doggychip/zhihuiti/"
-    f"{_DATA_REVISION}/zhihuiti/client/src/data"
-)
-
 _instance: "TheoryGraph | None" = None
 _lock = threading.Lock()
 
 
-def _valid_data_dir(path: Path) -> bool:
-    return all((path / name).is_file() for name in _DATA_FILES)
-
-
 def _resolve_data_dir() -> Path:
-    """Use bundled theory data or fetch a pinned copy into persistent storage."""
-    if _valid_data_dir(_BUNDLED_DATA_DIR):
-        return _BUNDLED_DATA_DIR
-
-    data_root = os.environ.get("ZHIHUITI_DATA", "").strip()
-    cache_dir = (
-        Path(data_root) / "theory_graph"
-        if data_root
-        else Path.home() / ".zhihuiti" / "theory_graph"
-    )
-    if _valid_data_dir(cache_dir):
-        return cache_dir
-
-    import httpx
-
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    for filename, expected_type in _DATA_FILES.items():
-        response = httpx.get(
-            f"{_RAW_DATA_BASE}/{filename}",
-            headers={"User-Agent": "zhihuiti-theory-loader/1.0"},
-            timeout=30,
-        )
-        response.raise_for_status()
-        if len(response.content) > 5_000_000:
-            raise ValueError(f"theory data file is unexpectedly large: {filename}")
-        payload = response.json()
-        if not isinstance(payload, expected_type):
-            raise ValueError(f"invalid theory data shape: {filename}")
-        temporary = cache_dir / f".{filename}.tmp"
-        with open(temporary, "wb") as output:
-            output.write(response.content)
-        os.replace(temporary, cache_dir / filename)
-    return cache_dir
+    """Use the release bundle only; never silently reuse an obsolete volume cache."""
+    for filename in (*_DATA_FILES, "catalog-manifest.json"):
+        if not (_BUNDLED_DATA_DIR / filename).is_file():
+            raise FileNotFoundError(f"Missing bundled catalog file: {filename}")
+    manifest = json.loads((_BUNDLED_DATA_DIR / "catalog-manifest.json").read_text())
+    for filename in ("theories.json", "collisions.json"):
+        actual = hashlib.sha256((_BUNDLED_DATA_DIR / filename).read_bytes()).hexdigest()
+        if actual != manifest["sha256"][filename]:
+            raise ValueError(f"Catalog checksum mismatch: {filename}")
+    return _BUNDLED_DATA_DIR
 
 
 def get_graph() -> "TheoryGraph":
@@ -99,6 +67,9 @@ class TheoryGraph:
 
         with open(data_dir / "historical.json") as f:
             self.historical: list[dict] = json.load(f)
+
+        manifest_path = data_dir / "catalog-manifest.json"
+        self.catalog = json.loads(manifest_path.read_text()) if manifest_path.is_file() else None
 
         # Build indexes
         self._collisions_by_theory: dict[str, list[dict]] = {}
@@ -292,6 +263,7 @@ class TheoryGraph:
             strengths[s] = strengths.get(s, 0) + 1
 
         return {
+            "catalog": self.catalog,
             "theories": len(self.theories),
             "collisions": len(self.collisions),
             "skeletons": len(self.skeletons),

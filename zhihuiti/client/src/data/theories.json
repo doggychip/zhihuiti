@@ -3,7 +3,7 @@
     "id": "replicator_dynamics",
     "name": "Replicator Dynamics (EGT)",
     "domain": "Evolutionary Game Theory",
-    "equation": "dx\u1d62/dt = x\u1d62(f\u1d62(x) \u2212 \u03c6(x))",
+    "equation": "dxᵢ/dt = xᵢ(fᵢ(x) − φ(x))",
     "update_form": "multiplicative_error_correction",
     "optimization": "maximize_mean_fitness",
     "fixed_points": "nash_equilibrium",
@@ -36,7 +36,7 @@
     "id": "ess",
     "name": "Evolutionarily Stable Strategy",
     "domain": "Evolutionary Game Theory",
-    "equation": "E(\u03c3*,\u03c3*) > E(\u03c3,\u03c3*)  OR  [= AND E(\u03c3*,\u03c3) > E(\u03c3,\u03c3)]",
+    "equation": "E(σ*,σ*) > E(σ,σ*)  OR  [= AND E(σ*,σ) > E(σ,σ)]",
     "update_form": "invasion_stability_check",
     "optimization": "maximize_payoff",
     "fixed_points": "ess_is_lyapunov_stable",
@@ -64,7 +64,7 @@
     "id": "boltzmann_distribution",
     "name": "Boltzmann Distribution",
     "domain": "Statistical Mechanics",
-    "equation": "P(E\u1d62) = exp(\u2212E\u1d62/kT) / Z",
+    "equation": "P(Eᵢ) = exp(−Eᵢ/kT) / Z",
     "update_form": "exponential_weighting",
     "optimization": "minimize_free_energy",
     "fixed_points": "thermal_equilibrium",
@@ -97,7 +97,7 @@
     "id": "ising_model",
     "name": "Ising Model",
     "domain": "Statistical Mechanics",
-    "equation": "H = \u2212J \u03a3 s\u1d62s\u2c7c \u2212 h \u03a3 s\u1d62",
+    "equation": "H = −J Σ sᵢsⱼ − h Σ sᵢ",
     "update_form": "energy_minimization_with_noise",
     "optimization": "minimize_hamiltonian",
     "fixed_points": "magnetized_or_disordered_phase",
@@ -129,7 +129,7 @@
     "id": "free_energy_thermo",
     "name": "Helmholtz Free Energy",
     "domain": "Statistical Mechanics",
-    "equation": "F = U \u2212 TS = \u2212kT ln Z",
+    "equation": "F = U − TS = −kT ln Z",
     "update_form": "legendre_transform_of_energy",
     "optimization": "minimize_free_energy",
     "fixed_points": "thermodynamic_equilibrium",
@@ -157,7 +157,7 @@
     "id": "kalman_filter",
     "name": "Kalman Filter",
     "domain": "Control Theory",
-    "equation": "x\u0302 = x\u0302\u207b + K(y \u2212 Cx\u0302\u207b);  K = P\u207bC\u1d40(CP\u207bC\u1d40+R)\u207b\u00b9",
+    "equation": "x̂ = x̂⁻ + K(y − Cx̂⁻);  K = P⁻Cᵀ(CP⁻Cᵀ+R)⁻¹",
     "update_form": "predict_then_correct",
     "optimization": "minimize_mean_squared_error",
     "fixed_points": "steady_state_riccati",
@@ -189,7 +189,7 @@
     "id": "bellman_equation",
     "name": "Bellman Equation (Dynamic Programming)",
     "domain": "Control Theory",
-    "equation": "V*(s) = max_a [r(s,a) + \u03b3 V*(s')]",
+    "equation": "V*(s) = max_a [r(s,a) + γ V*(s')]",
     "update_form": "recursive_value_propagation",
     "optimization": "maximize_cumulative_reward",
     "fixed_points": "optimal_value_function",
@@ -220,7 +220,7 @@
     "id": "pontryagin",
     "name": "Pontryagin Maximum Principle",
     "domain": "Control Theory",
-    "equation": "H(x,u,\u03bb) = L + \u03bb\u1d40f;  \u03bb\u0307 = \u2212\u2202H/\u2202x;  u* = argmin H",
+    "equation": "H(x,u,λ) = L + λᵀf;  λ̇ = −∂H/∂x;  u* = argmin H",
     "update_form": "hamiltonian_optimization",
     "optimization": "minimize_integral_cost",
     "fixed_points": "optimal_trajectory",
@@ -251,7 +251,7 @@
     "id": "shannon_entropy",
     "name": "Shannon Information Theory",
     "domain": "Information Theory",
-    "equation": "H(X) = \u2212\u03a3 p(x) log p(x)",
+    "equation": "H(X) = −Σ p(x) log p(x)",
     "update_form": "probability_weighted_log_sum",
     "optimization": "maximize_entropy_subject_to_constraints",
     "fixed_points": "uniform_distribution_maximizes_entropy",
@@ -281,7 +281,7 @@
     "id": "maxent",
     "name": "Maximum Entropy Principle (Jaynes)",
     "domain": "Information Theory",
-    "equation": "P*(x) = exp(\u2212\u03a3\u03bb\u2096f\u2096(x)) / Z",
+    "equation": "P*(x) = exp(−Σλₖfₖ(x)) / Z",
     "update_form": "constrained_entropy_maximization",
     "optimization": "maximize_entropy_subject_to_moment_constraints",
     "fixed_points": "exponential_family_distribution",
@@ -313,7 +313,7 @@
     "id": "kl_divergence",
     "name": "KL Divergence / Relative Entropy",
     "domain": "Information Theory",
-    "equation": "D_KL(P\u2016Q) = \u03a3 p(x) log[p(x)/q(x)] \u2265 0",
+    "equation": "D_KL(P‖Q) = Σ p(x) log[p(x)/q(x)] ≥ 0",
     "update_form": "measure_of_distribution_difference",
     "optimization": "minimize_kl_to_target",
     "fixed_points": "P = Q",
@@ -342,7 +342,7 @@
     "id": "hebbian_learning",
     "name": "Hebbian Learning",
     "domain": "Neuroscience",
-    "equation": "\u0394w\u1d62\u2c7c = \u03b7 \u00b7 x\u1d62 \u00b7 x\u2c7c",
+    "equation": "Δwᵢⱼ = η · xᵢ · xⱼ",
     "update_form": "correlation_based_weight_update",
     "optimization": "maximize_correlation",
     "fixed_points": "principal_components",
@@ -371,7 +371,7 @@
     "id": "hopfield_network",
     "name": "Hopfield Network",
     "domain": "Neuroscience",
-    "equation": "E = \u2212\u00bd \u03a3 w\u1d62\u2c7c s\u1d62 s\u2c7c;  s\u1d62 \u2190 sgn(\u03a3\u2c7c w\u1d62\u2c7c s\u2c7c)",
+    "equation": "E = −½ Σ wᵢⱼ sᵢ sⱼ;  sᵢ ← sgn(Σⱼ wᵢⱼ sⱼ)",
     "update_form": "energy_minimization",
     "optimization": "minimize_energy_function",
     "fixed_points": "stored_memories_as_attractors",
@@ -402,7 +402,7 @@
     "id": "predictive_coding",
     "name": "Predictive Coding",
     "domain": "Neuroscience",
-    "equation": "\u03b5_l = x_l \u2212 \u03bc_l;  d\u03bc_l/dt = \u2212\u03b5_l + (\u2202f/\u2202\u03bc)\u03b5_{l+1}",
+    "equation": "ε_l = x_l − μ_l;  dμ_l/dt = −ε_l + (∂f/∂μ)ε_{l+1}",
     "update_form": "hierarchical_error_propagation",
     "optimization": "minimize_prediction_error",
     "fixed_points": "beliefs_match_sensory_input",
@@ -433,7 +433,7 @@
     "id": "free_energy_principle",
     "name": "Free Energy Principle (Friston)",
     "domain": "Cognitive Science",
-    "equation": "F = D_KL[q(s)\u2016p(s|o)] \u2212 log p(o) \u2265 \u2212log p(o)",
+    "equation": "F = D_KL[q(s)‖p(s|o)] − log p(o) ≥ −log p(o)",
     "update_form": "variational_inference",
     "optimization": "minimize_variational_free_energy",
     "fixed_points": "beliefs_match_posterior",
@@ -463,7 +463,7 @@
     "id": "bayesian_brain",
     "name": "Bayesian Brain Hypothesis",
     "domain": "Cognitive Science",
-    "equation": "P(H|D) \u221d P(D|H) \u00b7 P(H)",
+    "equation": "P(H|D) ∝ P(D|H) · P(H)",
     "update_form": "bayesian_belief_update",
     "optimization": "maximize_posterior_probability",
     "fixed_points": "posterior_as_optimal_belief",
@@ -495,7 +495,7 @@
     "id": "attractor_dynamics",
     "name": "Attractor Dynamics",
     "domain": "Dynamic Systems",
-    "equation": "\u1e8b = f(x);  \u2203V: V\u0307 \u2264 0 (Lyapunov function)",
+    "equation": "ẋ = f(x);  ∃V: V̇ ≤ 0 (Lyapunov function)",
     "update_form": "gradient_flow_to_attractor",
     "optimization": "minimize_lyapunov_function",
     "fixed_points": "attractor_states",
@@ -526,7 +526,7 @@
     "id": "chaos_theory",
     "name": "Chaos Theory (Lorenz)",
     "domain": "Dynamic Systems",
-    "equation": "\u03bb = lim_{t\u2192\u221e} (1/t) ln|\u03b4x(t)/\u03b4x(0)|  (Lyapunov exponent)",
+    "equation": "λ = lim_{t→∞} (1/t) ln|δx(t)/δx(0)|  (Lyapunov exponent)",
     "update_form": "sensitive_dependence_on_ics",
     "optimization": null,
     "fixed_points": "unstable_fixed_points_and_strange_attractor",
@@ -555,7 +555,7 @@
     "id": "self_organized_criticality",
     "name": "Self-Organized Criticality (Bak)",
     "domain": "Dynamic Systems",
-    "equation": "P(s) ~ s^{\u2212\u03c4}  (avalanche size power law)",
+    "equation": "P(s) ~ s^{−τ}  (avalanche size power law)",
     "update_form": "threshold_cascade",
     "optimization": null,
     "fixed_points": "critical_point_as_attractor_of_dynamics",
@@ -585,7 +585,7 @@
     "id": "path_integral",
     "name": "Feynman Path Integral",
     "domain": "Quantum Physics",
-    "equation": "Z = \u222b Dx exp(iS[x]/\u210f)",
+    "equation": "Z = ∫ Dx exp(iS[x]/ℏ)",
     "update_form": "sum_over_histories",
     "optimization": "stationary_action_principle",
     "fixed_points": "classical_path",
@@ -616,7 +616,7 @@
     "id": "renormalization_group_mf",
     "name": "Renormalization Group",
     "domain": "Meta-Frameworks",
-    "equation": "dg/dl = \u03b2(g);  \u03b2(g*) = 0  (fixed point)",
+    "equation": "dg/dl = β(g);  β(g*) = 0  (fixed point)",
     "update_form": "coarse_graining_iteration",
     "optimization": "flow_to_fixed_point",
     "fixed_points": "universality_class_fixed_point",
@@ -648,7 +648,7 @@
     "id": "structure_mapping",
     "name": "Structure Mapping Theory (Gentner)",
     "domain": "Meta-Frameworks",
-    "equation": "Analogy: Source \u2192 Target via M: {(s\u1d62,t\u1d62)} preserving relations",
+    "equation": "Analogy: Source → Target via M: {(sᵢ,tᵢ)} preserving relations",
     "update_form": "relational_alignment",
     "optimization": "maximize_systematicity",
     "fixed_points": "best_mapping",
@@ -678,7 +678,7 @@
     "id": "persistent_homology",
     "name": "Persistent Homology (TDA)",
     "domain": "Topology",
-    "equation": "\u03b2\u2096(\u03b5) = rank H\u2096(VR(X,\u03b5));  persistence = death \u2212 birth",
+    "equation": "βₖ(ε) = rank Hₖ(VR(X,ε));  persistence = death − birth",
     "update_form": "filtration_tracking",
     "optimization": null,
     "fixed_points": "topological_features_at_multiple_scales",
@@ -708,7 +708,7 @@
     "id": "morse_theory",
     "name": "Morse Theory",
     "domain": "Topology",
-    "equation": "\u03c7(M) = \u03a3 (\u22121)^k c\u2096;  \u2207f(p)=0 \u21d2 index(p) = # negative eigenvalues of Hf",
+    "equation": "χ(M) = Σ (−1)^k cₖ;  ∇f(p)=0 ⇒ index(p) = # negative eigenvalues of Hf",
     "update_form": "gradient_flow_to_critical_points",
     "optimization": "minimize_morse_function",
     "fixed_points": "critical_points_by_index",
@@ -743,7 +743,7 @@
     "id": "category_theory",
     "name": "Category Theory",
     "domain": "Meta-Frameworks",
-    "equation": "F: C \u2192 D (functor);  \u03b7: F \u21d2 G (natural transformation);  F \u22a3 G (adjunction)",
+    "equation": "F: C → D (functor);  η: F ⇒ G (natural transformation);  F ⊣ G (adjunction)",
     "update_form": "functorial_mapping",
     "optimization": "universal_properties",
     "fixed_points": "terminal_initial_objects",
@@ -779,7 +779,7 @@
     "id": "price_equation",
     "name": "Price Equation (Multilevel Selection)",
     "domain": "Evolutionary Game Theory",
-    "equation": "w\u0304 \u0394z\u0304 = Cov(w,z) + E(w\u0394z)",
+    "equation": "w̄ Δz̄ = Cov(w,z) + E(wΔz)",
     "update_form": "covariance_driven_selection",
     "optimization": "maximize_mean_fitness",
     "fixed_points": "selection_transmission_balance",
@@ -814,7 +814,7 @@
     "id": "fisher_information",
     "name": "Fisher Information",
     "domain": "Information Theory",
-    "equation": "I(\u03b8)\u1d62\u2c7c = E[(\u2202log p/\u2202\u03b8\u1d62)(\u2202log p/\u2202\u03b8\u2c7c)]  \u2265  1/Var(\u03b8\u0302)  (Cram\u00e9r-Rao)",
+    "equation": "I(θ)ᵢⱼ = E[(∂log p/∂θᵢ)(∂log p/∂θⱼ)]  ≥  1/Var(θ̂)  (Cramér-Rao)",
     "update_form": "curvature_of_likelihood",
     "optimization": "minimize_estimation_variance",
     "fixed_points": "cramer_rao_bound",
@@ -847,7 +847,7 @@
     "id": "reaction_diffusion",
     "name": "Turing Reaction-Diffusion",
     "domain": "Dynamic Systems",
-    "equation": "\u2202u/\u2202t = f(u,v) + D\u1d64\u2207\u00b2u;  \u2202v/\u2202t = g(u,v) + D\u1d65\u2207\u00b2v",
+    "equation": "∂u/∂t = f(u,v) + Dᵤ∇²u;  ∂v/∂t = g(u,v) + Dᵥ∇²v",
     "update_form": "pattern_forming_instability",
     "optimization": null,
     "fixed_points": "spatially_periodic_patterns",
@@ -883,7 +883,7 @@
     "id": "noether_theorem",
     "name": "Noether's Theorem",
     "domain": "Physics",
-    "equation": "continuous symmetry G \u27f9 conserved current J\u03bc:  \u2202\u03bcJ\u03bc = 0",
+    "equation": "continuous symmetry G ⟹ conserved current Jμ:  ∂μJμ = 0",
     "update_form": "symmetry_implies_conservation",
     "optimization": "stationary_action",
     "fixed_points": "conserved_quantities",
@@ -920,7 +920,7 @@
     "id": "percolation_theory",
     "name": "Percolation Theory",
     "domain": "Statistical Physics",
-    "equation": "P\u221e(p) ~ (p \u2212 p\u2096)^\u03b2  for p > p\u2096;  \u03be(p) ~ |p \u2212 p\u2096|^{\u2212\u03bd}",
+    "equation": "P∞(p) ~ (p − pₖ)^β  for p > pₖ;  ξ(p) ~ |p − pₖ|^{−ν}",
     "update_form": "bond_site_occupation",
     "optimization": null,
     "fixed_points": "percolation_threshold",
@@ -953,7 +953,7 @@
     "id": "variational_inference",
     "name": "Variational Inference (ELBO)",
     "domain": "Machine Learning",
-    "equation": "ELBO = E_q[log p(x,z)] \u2212 E_q[log q(z)] \u2264 log p(x);  KL(q\u2016p) = log p(x) \u2212 ELBO",
+    "equation": "ELBO = E_q[log p(x,z)] − E_q[log q(z)] ≤ log p(x);  KL(q‖p) = log p(x) − ELBO",
     "update_form": "variational_optimization",
     "optimization": "maximize_evidence_lower_bound",
     "fixed_points": "approximate_posterior",
@@ -987,7 +987,7 @@
     "id": "lotka_volterra",
     "name": "Lotka-Volterra Equations",
     "domain": "Dynamic Systems",
-    "equation": "dx/dt = \u03b1x \u2212 \u03b2xy;  dy/dt = \u03b4xy \u2212 \u03b3y",
+    "equation": "dx/dt = αx − βxy;  dy/dt = δxy − γy",
     "update_form": "coupled_nonlinear_ode",
     "optimization": null,
     "fixed_points": "coexistence_equilibrium",
@@ -1020,7 +1020,7 @@
     "id": "natural_gradient",
     "name": "Natural Gradient Descent",
     "domain": "Optimization",
-    "equation": "\u03b8_{t+1} = \u03b8_t \u2212 \u03b7 F(\u03b8)\u207b\u00b9 \u2207L(\u03b8);  F(\u03b8)\u1d62\u2c7c = E[(\u2202log p/\u2202\u03b8\u1d62)(\u2202log p/\u2202\u03b8\u2c7c)]",
+    "equation": "θ_{t+1} = θ_t − η F(θ)⁻¹ ∇L(θ);  F(θ)ᵢⱼ = E[(∂log p/∂θᵢ)(∂log p/∂θⱼ)]",
     "update_form": "precision_weighted_gradient",
     "optimization": "minimize_loss_on_manifold",
     "fixed_points": "fisher_efficient_optimum",
@@ -1051,7 +1051,7 @@
     "id": "optimal_transport",
     "name": "Optimal Transport (Wasserstein)",
     "domain": "Optimization",
-    "equation": "W_p(\u03bc,\u03bd) = (inf_{\u03b3\u2208\u0393(\u03bc,\u03bd)} \u222b c(x,y)^p d\u03b3)^{1/p};  Monge: T*=argmin \u222bc(x,T(x))d\u03bc",
+    "equation": "W_p(μ,ν) = (inf_{γ∈Γ(μ,ν)} ∫ c(x,y)^p dγ)^{1/p};  Monge: T*=argmin ∫c(x,T(x))dμ",
     "update_form": "transport_plan_optimization",
     "optimization": "minimize_transport_cost",
     "fixed_points": "optimal_coupling",
@@ -1086,7 +1086,7 @@
     "id": "spin_glass",
     "name": "Spin Glass (Edwards-Anderson)",
     "domain": "Statistical Physics",
-    "equation": "H = \u2212\u03a3\u1d62\u2c7c J\u1d62\u2c7c s\u1d62s\u2c7c \u2212 \u03a3\u1d62 h\u1d62s\u1d62;  J\u1d62\u2c7c ~ N(0,J\u00b2/N);  q = (1/N)\u03a3\u1d62 \u27e8s\u1d62\u27e9\u00b2",
+    "equation": "H = −Σᵢⱼ Jᵢⱼ sᵢsⱼ − Σᵢ hᵢsᵢ;  Jᵢⱼ ~ N(0,J²/N);  q = (1/N)Σᵢ ⟨sᵢ⟩²",
     "update_form": "disordered_energy_minimization",
     "optimization": "minimize_frustrated_energy",
     "fixed_points": "metastable_glassy_states",
@@ -1122,7 +1122,7 @@
     "id": "policy_gradient",
     "name": "Policy Gradient (REINFORCE)",
     "domain": "Machine Learning",
-    "equation": "\u2207J(\u03b8) = E_\u03c0[\u2207log \u03c0(a|s;\u03b8) \u00b7 (R \u2212 b)];  \u03b8 \u2190 \u03b8 + \u03b1\u2207J(\u03b8)",
+    "equation": "∇J(θ) = E_π[∇log π(a|s;θ) · (R − b)];  θ ← θ + α∇J(θ)",
     "update_form": "score_function_gradient",
     "optimization": "maximize_expected_return",
     "fixed_points": "locally_optimal_policy",
@@ -1157,7 +1157,7 @@
     "id": "mean_field_theory",
     "name": "Mean Field Theory",
     "domain": "Statistical Physics",
-    "equation": "m = tanh(\u03b2(Jzm + h));  F_MF = \u2212(Jz/2)m\u00b2 \u2212 hm + (1/\u03b2)[(1+m)/2 ln(1+m)/2 + (1\u2212m)/2 ln(1\u2212m)/2]",
+    "equation": "m = tanh(β(Jzm + h));  F_MF = −(Jz/2)m² − hm + (1/β)[(1+m)/2 ln(1+m)/2 + (1−m)/2 ln(1−m)/2]",
     "update_form": "self_consistent_field",
     "optimization": "minimize_free_energy",
     "fixed_points": "self_consistent_magnetization",
@@ -1191,7 +1191,7 @@
     "id": "dissipative_structures",
     "name": "Dissipative Structures (Prigogine)",
     "domain": "Thermodynamics",
-    "equation": "d\u1d62S/dt \u2265 0;  dS/dt = d\u1d62S/dt + d\u2091S/dt;  far from equilibrium: d\u2091S/dt < 0 possible",
+    "equation": "dᵢS/dt ≥ 0;  dS/dt = dᵢS/dt + dₑS/dt;  far from equilibrium: dₑS/dt < 0 possible",
     "update_form": "entropy_production_driven",
     "optimization": null,
     "fixed_points": "far_from_equilibrium_steady_state",
@@ -1226,7 +1226,7 @@
     "id": "fokker_planck",
     "name": "Fokker-Planck / Langevin Dynamics",
     "domain": "Statistical Physics",
-    "equation": "\u2202p/\u2202t = \u2212\u2202/\u2202x[\u03bc(x)p] + (1/2)\u2202\u00b2/\u2202x\u00b2[\u03c3\u00b2(x)p];  dx = \u03bcdt + \u03c3dW",
+    "equation": "∂p/∂t = −∂/∂x[μ(x)p] + (1/2)∂²/∂x²[σ²(x)p];  dx = μdt + σdW",
     "update_form": "drift_diffusion",
     "optimization": null,
     "fixed_points": "stationary_distribution",
@@ -1261,7 +1261,7 @@
     "id": "nash_equilibrium",
     "name": "Nash Equilibrium",
     "domain": "Evolutionary Game Theory",
-    "equation": "\u03c3* \u2208 NE \u27fa \u2200i, u\u1d62(\u03c3*) \u2265 u\u1d62(\u03c3'\u1d62, \u03c3*\u208b\u1d62);  BR(\u03c3\u208b\u1d62) = argmax u\u1d62(\u03c3\u1d62, \u03c3\u208b\u1d62)",
+    "equation": "σ* ∈ NE ⟺ ∀i, uᵢ(σ*) ≥ uᵢ(σ'ᵢ, σ*₋ᵢ);  BR(σ₋ᵢ) = argmax uᵢ(σᵢ, σ₋ᵢ)",
     "update_form": "best_response_dynamics",
     "optimization": "maximize_individual_utility",
     "fixed_points": "mutual_best_response_equilibrium",
@@ -1294,7 +1294,7 @@
     "id": "boltzmann_machine",
     "name": "Boltzmann Machine",
     "domain": "Machine Learning",
-    "equation": "P(v) = \u03a3_h exp(\u2212E(v,h))/Z;  E(v,h) = \u2212v^TWh \u2212 b^Tv \u2212 c^Th;  \u0394W = \u27e8vh^T\u27e9_data \u2212 \u27e8vh^T\u27e9_model",
+    "equation": "P(v) = Σ_h exp(−E(v,h))/Z;  E(v,h) = −v^TWh − b^Tv − c^Th;  ΔW = ⟨vh^T⟩_data − ⟨vh^T⟩_model",
     "update_form": "contrastive_divergence",
     "optimization": "maximize_log_likelihood",
     "fixed_points": "thermal_equilibrium_distribution",
@@ -1330,7 +1330,7 @@
     "id": "compressed_sensing",
     "name": "Compressed Sensing",
     "domain": "Information Theory",
-    "equation": "y = \u03a6x, x sparse;  x* = argmin \u2016x\u2016\u2081 s.t. \u03a6x = y;  RIP: (1\u2212\u03b4)\u2016x\u2016\u2082\u00b2 \u2264 \u2016\u03a6x\u2016\u2082\u00b2 \u2264 (1+\u03b4)\u2016x\u2016\u2082\u00b2",
+    "equation": "y = Φx, x sparse;  x* = argmin ‖x‖₁ s.t. Φx = y;  RIP: (1−δ)‖x‖₂² ≤ ‖Φx‖₂² ≤ (1+δ)‖x‖₂²",
     "update_form": "sparse_recovery",
     "optimization": "minimize_l1_norm",
     "fixed_points": "sparsest_consistent_solution",
@@ -1364,7 +1364,7 @@
     "id": "gauge_theory",
     "name": "Gauge Theory",
     "domain": "Physics",
-    "equation": "D\u03bc = \u2202\u03bc + igA\u03bc;  F\u03bc\u03bd = \u2202\u03bcA\u03bd \u2212 \u2202\u03bdA\u03bc + ig[A\u03bc,A\u03bd];  L = \u2212(1/4)F\u03bc\u03bdF^\u03bc\u03bd + \u03c8\u0304(iD\u0338\u2212m)\u03c8",
+    "equation": "Dμ = ∂μ + igAμ;  Fμν = ∂μAν − ∂νAμ + ig[Aμ,Aν];  L = −(1/4)FμνF^μν + ψ̄(iD̸−m)ψ",
     "update_form": "local_symmetry_covariant",
     "optimization": "stationary_action",
     "fixed_points": "gauge_invariant_observables",
@@ -1400,7 +1400,7 @@
     "id": "quantum_information",
     "name": "Quantum Information (Density Matrix)",
     "domain": "Physics",
-    "equation": "\u03c1 = \u03a3\u1d62 p\u1d62|\u03c8\u1d62\u27e9\u27e8\u03c8\u1d62|;  S(\u03c1) = \u2212Tr(\u03c1 ln \u03c1);  \u2202\u03c1/\u2202t = \u2212i[H,\u03c1] + \u03a3 L\u03c1L\u2020 \u2212 \u00bd{L\u2020L,\u03c1}",
+    "equation": "ρ = Σᵢ pᵢ|ψᵢ⟩⟨ψᵢ|;  S(ρ) = −Tr(ρ ln ρ);  ∂ρ/∂t = −i[H,ρ] + Σ LρL† − ½{L†L,ρ}",
     "update_form": "lindblad_master_equation",
     "optimization": null,
     "fixed_points": "steady_state_density_matrix",
@@ -1438,7 +1438,7 @@
     "id": "simulated_annealing",
     "name": "Simulated Annealing",
     "domain": "Optimization",
-    "equation": "P(accept) = min(1, exp(\u2212\u0394E / T));  T(t) \u2192 0;  \u03c0(x) \u221d exp(\u2212E(x)/T)",
+    "equation": "P(accept) = min(1, exp(−ΔE / T));  T(t) → 0;  π(x) ∝ exp(−E(x)/T)",
     "update_form": "metropolis_hastings",
     "optimization": "global_minimum_energy",
     "fixed_points": "ground_state_configuration",
@@ -1472,7 +1472,7 @@
     "id": "sparse_coding",
     "name": "Sparse Coding / Efficient Neural Coding",
     "domain": "Neuroscience",
-    "equation": "x = \u03a6a + \u03b5;  a* = argmin \u2016x \u2212 \u03a6a\u2016\u2082\u00b2 + \u03bb\u2016a\u2016\u2081;  \u0394\u03a6 = \u03b7(x \u2212 \u03a6a)a^T",
+    "equation": "x = Φa + ε;  a* = argmin ‖x − Φa‖₂² + λ‖a‖₁;  ΔΦ = η(x − Φa)a^T",
     "update_form": "iterative_shrinkage_thresholding",
     "optimization": "minimize_reconstruction_plus_sparsity",
     "fixed_points": "sparse_representation",
@@ -1506,7 +1506,7 @@
     "id": "simplicial_homology",
     "name": "Simplicial Homology",
     "domain": "Topology",
-    "equation": "H\u2099(K) = ker \u2202\u2099 / im \u2202\u2099\u208a\u2081;  \u2202\u2099\u2202\u2099\u208a\u2081 = 0;  \u03c7(K) = \u03a3 (\u22121)\u207f \u03b2\u2099",
+    "equation": "Hₙ(K) = ker ∂ₙ / im ∂ₙ₊₁;  ∂ₙ∂ₙ₊₁ = 0;  χ(K) = Σ (−1)ⁿ βₙ",
     "update_form": "boundary_operator_chain",
     "optimization": null,
     "fixed_points": "homology_classes",
@@ -1539,7 +1539,7 @@
     "id": "general_equilibrium",
     "name": "General Equilibrium (Arrow-Debreu)",
     "domain": "Economics",
-    "equation": "\u03a3\u1d62 x\u1d62(p) = \u03a3\u1d62 \u03c9\u1d62;  x\u1d62(p) = argmax u\u1d62(x) s.t. p\u00b7x \u2264 p\u00b7\u03c9\u1d62;  \u2203p*: z(p*) = 0",
+    "equation": "Σᵢ xᵢ(p) = Σᵢ ωᵢ;  xᵢ(p) = argmax uᵢ(x) s.t. p·x ≤ p·ωᵢ;  ∃p*: z(p*) = 0",
     "update_form": "tatonnement_price_adjustment",
     "optimization": "maximize_utility_under_budget",
     "fixed_points": "walrasian_equilibrium_prices",
@@ -1574,7 +1574,7 @@
     "id": "genetic_algorithm",
     "name": "Genetic Algorithm",
     "domain": "Evolutionary Game Theory",
-    "equation": "f(t+1) = select(crossover(mutate(f(t))));  P(select x\u1d62) \u221d fitness(x\u1d62)/\u27e8fitness\u27e9",
+    "equation": "f(t+1) = select(crossover(mutate(f(t))));  P(select xᵢ) ∝ fitness(xᵢ)/⟨fitness⟩",
     "update_form": "selection_variation_inheritance",
     "optimization": "maximize_fitness",
     "fixed_points": "fitness_landscape_peak",
@@ -1609,7 +1609,7 @@
     "id": "variational_autoencoder",
     "name": "Variational Autoencoder (VAE)",
     "domain": "Machine Learning",
-    "equation": "ELBO = E_q[log p(x|z)] \u2212 KL(q(z|x) \u2016 p(z));  q(z|x) = N(\u03bc(x), \u03c3\u00b2(x));  z = \u03bc + \u03c3\u03b5",
+    "equation": "ELBO = E_q[log p(x|z)] − KL(q(z|x) ‖ p(z));  q(z|x) = N(μ(x), σ²(x));  z = μ + σε",
     "update_form": "amortized_variational_inference",
     "optimization": "maximize_ELBO",
     "fixed_points": "learned_generative_model",
@@ -1645,7 +1645,7 @@
     "id": "attention_mechanism",
     "name": "Attention Mechanism (Transformers)",
     "domain": "Machine Learning",
-    "equation": "Attn(Q,K,V) = softmax(QK^T/\u221ad)V;  softmax(z\u1d62) = exp(z\u1d62)/\u03a3\u2c7c exp(z\u2c7c);  MultiHead = Concat(head\u2081,...,head\u2095)W",
+    "equation": "Attn(Q,K,V) = softmax(QK^T/√d)V;  softmax(zᵢ) = exp(zᵢ)/Σⱼ exp(zⱼ);  MultiHead = Concat(head₁,...,headₕ)W",
     "update_form": "weighted_value_aggregation",
     "optimization": "minimize_cross_entropy_loss",
     "fixed_points": "learned_attention_patterns",
@@ -1681,7 +1681,7 @@
     "id": "hamilton_jacobi_bellman",
     "name": "Hamilton-Jacobi-Bellman Equation",
     "domain": "Control Theory",
-    "equation": "\u2212\u2202V/\u2202t = min_u [L(x,u) + (\u2202V/\u2202x)f(x,u)];  V(x,T) = \u03a6(x);  u* = argmin H(x,u,\u2207V)",
+    "equation": "−∂V/∂t = min_u [L(x,u) + (∂V/∂x)f(x,u)];  V(x,T) = Φ(x);  u* = argmin H(x,u,∇V)",
     "update_form": "dynamic_programming_continuous",
     "optimization": "minimize_cumulative_cost",
     "fixed_points": "optimal_value_function",
@@ -1715,7 +1715,7 @@
     "id": "sgd_as_langevin",
     "name": "SGD as Langevin Dynamics",
     "domain": "Optimization",
-    "equation": "\u03b8_{t+1} = \u03b8_t \u2212 \u03b7\u2207L\u0303(\u03b8_t);  \u2207L\u0303 = \u2207L + \u03b5, \u03b5 ~ N(0, \u03a3/B);  \u03b8(t) ~ exp(\u2212L(\u03b8)/\u03b7) as t\u2192\u221e",
+    "equation": "θ_{t+1} = θ_t − η∇L̃(θ_t);  ∇L̃ = ∇L + ε, ε ~ N(0, Σ/B);  θ(t) ~ exp(−L(θ)/η) as t→∞",
     "update_form": "noisy_gradient_descent",
     "optimization": "minimize_loss",
     "fixed_points": "flat_minima_basin",
@@ -1747,7 +1747,7 @@
     "id": "diffusion_model",
     "name": "Diffusion Model (Score Matching)",
     "domain": "Machine Learning",
-    "equation": "q(x\u209c|x\u2080) = N(\u221a\u1fb1\u209cx\u2080, (1\u2212\u1fb1\u209c)I);  p_\u03b8(x_{t-1}|x\u209c) = N(\u03bc_\u03b8(x\u209c,t), \u03c3\u00b2I);  L = E\u2016\u03b5 \u2212 \u03b5_\u03b8(x\u209c,t)\u2016\u00b2",
+    "equation": "q(xₜ|x₀) = N(√ᾱₜx₀, (1−ᾱₜ)I);  p_θ(x_{t-1}|xₜ) = N(μ_θ(xₜ,t), σ²I);  L = E‖ε − ε_θ(xₜ,t)‖²",
     "update_form": "iterative_denoising",
     "optimization": "minimize_denoising_score_matching",
     "fixed_points": "learned_data_distribution",
@@ -1783,7 +1783,7 @@
     "id": "random_matrix_theory",
     "name": "Random Matrix Theory",
     "domain": "Statistical Physics",
-    "equation": "\u03c1(\u03bb) = (1/2\u03c0\u03c3\u00b2)\u221a(4\u03c3\u00b2\u2212\u03bb\u00b2);  P(M) \u221d exp(\u2212N Tr V(M));  R\u2082(\u03bb\u2081,\u03bb\u2082) = \u03c1(\u03bb\u2081)\u03c1(\u03bb\u2082) \u2212 sin\u00b2(\u03c0(\u03bb\u2081\u2212\u03bb\u2082)\u03c1)/(\u03c0(\u03bb\u2081\u2212\u03bb\u2082))\u00b2",
+    "equation": "ρ(λ) = (1/2πσ²)√(4σ²−λ²);  P(M) ∝ exp(−N Tr V(M));  R₂(λ₁,λ₂) = ρ(λ₁)ρ(λ₂) − sin²(π(λ₁−λ₂)ρ)/(π(λ₁−λ₂))²",
     "update_form": "eigenvalue_statistics",
     "optimization": null,
     "fixed_points": "universal_spectral_distributions",
@@ -1817,7 +1817,7 @@
     "id": "reservoir_computing",
     "name": "Reservoir Computing / Echo State Networks",
     "domain": "Dynamic Systems",
-    "equation": "h(t+1) = tanh(W_in x(t) + W h(t));  y(t) = W_out h(t);  W_out = argmin \u2016Y \u2212 W_out H\u2016\u00b2",
+    "equation": "h(t+1) = tanh(W_in x(t) + W h(t));  y(t) = W_out h(t);  W_out = argmin ‖Y − W_out H‖²",
     "update_form": "driven_recurrent_dynamics",
     "optimization": "minimize_readout_error",
     "fixed_points": "echo_state_property",
@@ -1850,7 +1850,7 @@
     "id": "maximum_likelihood",
     "name": "Maximum Likelihood Estimation",
     "domain": "Statistics",
-    "equation": "\u03b8_ML = argmax \u03a3\u1d62 log p(x\u1d62|\u03b8);  \u2202/\u2202\u03b8 \u03a3 log p(x\u1d62|\u03b8) = 0;  Var(\u03b8_ML) \u2192 I(\u03b8)\u207b\u00b9 as n\u2192\u221e",
+    "equation": "θ_ML = argmax Σᵢ log p(xᵢ|θ);  ∂/∂θ Σ log p(xᵢ|θ) = 0;  Var(θ_ML) → I(θ)⁻¹ as n→∞",
     "update_form": "score_equation_root",
     "optimization": "maximize_log_likelihood",
     "fixed_points": "consistent_efficient_estimator",
@@ -1881,7 +1881,7 @@
     "id": "kernel_methods",
     "name": "Kernel Methods / RKHS",
     "domain": "Machine Learning",
-    "equation": "k(x,x') = \u27e8\u03c6(x),\u03c6(x')\u27e9_H;  f*(x) = \u03a3\u1d62 \u03b1\u1d62k(x\u1d62,x);  \u03b1 = (K + \u03bbI)\u207b\u00b9y;  K = Mercer kernel matrix",
+    "equation": "k(x,x') = ⟨φ(x),φ(x')⟩_H;  f*(x) = Σᵢ αᵢk(xᵢ,x);  α = (K + λI)⁻¹y;  K = Mercer kernel matrix",
     "update_form": "kernel_ridge_regression",
     "optimization": "minimize_regularized_loss_in_RKHS",
     "fixed_points": "representer_theorem_solution",
@@ -1915,7 +1915,7 @@
     "id": "constraint_satisfaction",
     "name": "Constraint Satisfaction / SAT",
     "domain": "Optimization",
-    "equation": "Find x: \u2227\u1d62 C\u1d62(x) = true;  E(x) = \u03a3\u1d62 (1\u2212C\u1d62(x));  \u03b1_c: phase transition at clause/variable ratio",
+    "equation": "Find x: ∧ᵢ Cᵢ(x) = true;  E(x) = Σᵢ (1−Cᵢ(x));  α_c: phase transition at clause/variable ratio",
     "update_form": "constraint_propagation",
     "optimization": "minimize_violated_constraints",
     "fixed_points": "satisfying_assignment",
@@ -1946,7 +1946,7 @@
     "id": "autopoiesis",
     "name": "Autopoiesis",
     "domain": "Dynamic Systems",
-    "equation": "dX\u1d62/dt = P(X,E) \u2212 D(X\u1d62);  boundary: B(X) self-maintains;  organization: O(X) = O(X(t)) \u2200t",
+    "equation": "dXᵢ/dt = P(X,E) − D(Xᵢ);  boundary: B(X) self-maintains;  organization: O(X) = O(X(t)) ∀t",
     "update_form": "self_producing_network",
     "optimization": null,
     "fixed_points": "self_maintaining_organization",
@@ -1978,7 +1978,7 @@
     "id": "lagrangian_mechanics",
     "name": "Lagrangian Mechanics",
     "domain": "Physics",
-    "equation": "L = T \u2212 V;  \u03b4S = \u03b4\u222bL dt = 0;  d/dt(\u2202L/\u2202q\u0307) \u2212 \u2202L/\u2202q = 0 (Euler-Lagrange)",
+    "equation": "L = T − V;  δS = δ∫L dt = 0;  d/dt(∂L/∂q̇) − ∂L/∂q = 0 (Euler-Lagrange)",
     "update_form": "euler_lagrange_equations",
     "optimization": "stationary_action",
     "fixed_points": "classical_trajectory",
@@ -2014,7 +2014,7 @@
     "id": "mcmc",
     "name": "Markov Chain Monte Carlo",
     "domain": "Statistics",
-    "equation": "\u03c0(x') T(x'\u2192x) = \u03c0(x) T(x\u2192x');  \u03b1 = min(1, \u03c0(x')q(x|x')/\u03c0(x)q(x'|x));  x ~ \u03c0 as t\u2192\u221e",
+    "equation": "π(x') T(x'→x) = π(x) T(x→x');  α = min(1, π(x')q(x|x')/π(x)q(x'|x));  x ~ π as t→∞",
     "update_form": "metropolis_hastings",
     "optimization": null,
     "fixed_points": "target_distribution_samples",
@@ -2049,7 +2049,7 @@
     "id": "expectation_maximization",
     "name": "Expectation Maximization (EM)",
     "domain": "Machine Learning",
-    "equation": "E: Q(z) = p(z|x,\u03b8_old);  M: \u03b8_new = argmax E_Q[log p(x,z|\u03b8)];  L(\u03b8) \u2191 monotonically",
+    "equation": "E: Q(z) = p(z|x,θ_old);  M: θ_new = argmax E_Q[log p(x,z|θ)];  L(θ) ↑ monotonically",
     "update_form": "alternating_optimization",
     "optimization": "maximize_log_likelihood",
     "fixed_points": "local_maximum_likelihood",
@@ -2083,7 +2083,7 @@
     "id": "information_bottleneck",
     "name": "Information Bottleneck",
     "domain": "Information Theory",
-    "equation": "min I(X;T) \u2212 \u03b2 I(T;Y);  p(t|x) = p(t)/Z exp(\u2212\u03b2 \u03a3_y p(y|x) log p(y|x)/p(y|t))",
+    "equation": "min I(X;T) − β I(T;Y);  p(t|x) = p(t)/Z exp(−β Σ_y p(y|x) log p(y|x)/p(y|t))",
     "update_form": "iterative_blahut_arimoto",
     "optimization": "minimize_compression_distortion",
     "fixed_points": "optimal_compression_representation",
@@ -2117,7 +2117,7 @@
     "id": "pontryagin_maximum",
     "name": "Pontryagin Maximum Principle",
     "domain": "Control Theory",
-    "equation": "H(x,u,\u03bb) = L(x,u) + \u03bb^T f(x,u);  u* = argmax H;  \u1e8b = \u2202H/\u2202\u03bb, \u03bb\u0307 = \u2212\u2202H/\u2202x;  \u03bb(T) = \u2202\u03a6/\u2202x(T)",
+    "equation": "H(x,u,λ) = L(x,u) + λ^T f(x,u);  u* = argmax H;  ẋ = ∂H/∂λ, λ̇ = −∂H/∂x;  λ(T) = ∂Φ/∂x(T)",
     "update_form": "hamiltonian_two_point_boundary",
     "optimization": "maximize_hamiltonian",
     "fixed_points": "optimal_costate_trajectory",
@@ -2150,7 +2150,7 @@
     "id": "neural_tangent_kernel",
     "name": "Neural Tangent Kernel (NTK)",
     "domain": "Machine Learning",
-    "equation": "\u0398(x,x') = \u27e8\u2207_\u03b8f(x),\u2207_\u03b8f(x')\u27e9;  df/dt = \u2212\u0398(X,X)(f(X)\u2212Y);  \u0398 \u2192 \u0398\u221e as width\u2192\u221e",
+    "equation": "Θ(x,x') = ⟨∇_θf(x),∇_θf(x')⟩;  df/dt = −Θ(X,X)(f(X)−Y);  Θ → Θ∞ as width→∞",
     "update_form": "kernel_gradient_flow",
     "optimization": "minimize_squared_loss",
     "fixed_points": "kernel_regression_solution",
@@ -2182,7 +2182,7 @@
     "id": "hopf_bifurcation",
     "name": "Hopf Bifurcation",
     "domain": "Dynamic Systems",
-    "equation": "\u1e8b = f(x,\u03bc);  eigenvalues \u03bb(\u03bc_c) = \u00b1i\u03c9;  dRe(\u03bb)/d\u03bc|_{\u03bc_c} \u2260 0;  x \u2192 limit cycle for \u03bc > \u03bc_c",
+    "equation": "ẋ = f(x,μ);  eigenvalues λ(μ_c) = ±iω;  dRe(λ)/dμ|_{μ_c} ≠ 0;  x → limit cycle for μ > μ_c",
     "update_form": "normal_form_reduction",
     "optimization": null,
     "fixed_points": "limit_cycle_via_bifurcation",
@@ -2213,7 +2213,7 @@
     "id": "chemical_reaction_network",
     "name": "Chemical Reaction Network Theory (CRNT)",
     "domain": "Dynamic Systems",
-    "equation": "dc/dt = S\u00b7v(c);  v_j(c) = k_j \u03a0 c\u1d62^{y_ij};  deficiency \u03b4 = n \u2212 l \u2212 s;  \u03b4=0 \u2192 unique equilibrium",
+    "equation": "dc/dt = S·v(c);  v_j(c) = k_j Π cᵢ^{y_ij};  deficiency δ = n − l − s;  δ=0 → unique equilibrium",
     "update_form": "mass_action_kinetics",
     "optimization": null,
     "fixed_points": "detailed_balance_equilibrium",
@@ -2248,7 +2248,7 @@
     "id": "replica_method",
     "name": "Replica Method",
     "domain": "Statistical Physics",
-    "equation": "\u27e8ln Z\u27e9 = lim_{n\u21920} (\u27e8Z^n\u27e9\u22121)/n;  F = \u2212(1/\u03b2) lim_{n\u21920} \u2202/\u2202n \u27e8Z^n\u27e9;  RSB: Q_ab \u2192 Parisi functional",
+    "equation": "⟨ln Z⟩ = lim_{n→0} (⟨Z^n⟩−1)/n;  F = −(1/β) lim_{n→0} ∂/∂n ⟨Z^n⟩;  RSB: Q_ab → Parisi functional",
     "update_form": "analytic_continuation",
     "optimization": null,
     "fixed_points": "quenched_free_energy",
@@ -2282,7 +2282,7 @@
     "id": "information_geometry",
     "name": "Information Geometry",
     "domain": "Statistics",
-    "equation": "g\u1d62\u2c7c(\u03b8) = E[\u2202\u1d62log p \u00b7 \u2202\u2c7clog p] = I(\u03b8)\u1d62\u2c7c;  \u0393\u1d62\u2c7c\u2096 = E[\u2202\u1d62\u2202\u2c7clog p \u00b7 \u2202\u2096log p];  ds\u00b2 = g\u1d62\u2c7cd\u03b8\u2071d\u03b8\u02b2",
+    "equation": "gᵢⱼ(θ) = E[∂ᵢlog p · ∂ⱼlog p] = I(θ)ᵢⱼ;  Γᵢⱼₖ = E[∂ᵢ∂ⱼlog p · ∂ₖlog p];  ds² = gᵢⱼdθⁱdθʲ",
     "update_form": "riemannian_gradient",
     "optimization": "geodesic_on_statistical_manifold",
     "fixed_points": "sufficient_statistic_submanifold",
@@ -2316,7 +2316,7 @@
     "id": "lyapunov_stability_ds",
     "name": "Lyapunov Stability Theory",
     "domain": "Dynamic Systems",
-    "equation": "V(x) > 0, V(0) = 0;  V\u0307(x) = \u2207V\u00b7f(x) \u2264 0;  V\u0307 < 0 \u2192 asymptotic stability;  V\u0307 \u2264 0 \u2192 stability",
+    "equation": "V(x) > 0, V(0) = 0;  V̇(x) = ∇V·f(x) ≤ 0;  V̇ < 0 → asymptotic stability;  V̇ ≤ 0 → stability",
     "update_form": "lyapunov_function_descent",
     "optimization": null,
     "fixed_points": "stable_equilibrium",
@@ -2349,7 +2349,7 @@
     "id": "mirror_descent",
     "name": "Mirror Descent",
     "domain": "Optimization",
-    "equation": "\u2207\u03c6(x_{t+1}) = \u2207\u03c6(x_t) \u2212 \u03b7\u2207f(x_t);  x_{t+1} = argmin{\u03b7\u27e8\u2207f,x\u27e9 + D_\u03c6(x,x_t)};  D_\u03c6 = Bregman divergence",
+    "equation": "∇φ(x_{t+1}) = ∇φ(x_t) − η∇f(x_t);  x_{t+1} = argmin{η⟨∇f,x⟩ + D_φ(x,x_t)};  D_φ = Bregman divergence",
     "update_form": "bregman_proximal",
     "optimization": "minimize_loss_in_dual",
     "fixed_points": "constrained_optimum",
@@ -2383,7 +2383,7 @@
     "id": "gan",
     "name": "Generative Adversarial Network (GAN)",
     "domain": "Machine Learning",
-    "equation": "min_G max_D E[log D(x)] + E[log(1\u2212D(G(z)))];  p_G \u2192 p_data at Nash equilibrium",
+    "equation": "min_G max_D E[log D(x)] + E[log(1−D(G(z)))];  p_G → p_data at Nash equilibrium",
     "update_form": "alternating_gradient",
     "optimization": "minimax_saddle_point",
     "fixed_points": "nash_equilibrium_generative",
@@ -2415,7 +2415,7 @@
     "id": "td_learning",
     "name": "Temporal Difference Learning",
     "domain": "Reinforcement Learning",
-    "equation": "\u03b4_t = r_t + \u03b3V(s_{t+1}) \u2212 V(s_t);  V(s_t) \u2190 V(s_t) + \u03b1\u03b4_t;  TD(\u03bb): e_t = \u03b3\u03bbe_{t-1} + \u2207V(s_t)",
+    "equation": "δ_t = r_t + γV(s_{t+1}) − V(s_t);  V(s_t) ← V(s_t) + αδ_t;  TD(λ): e_t = γλe_{t-1} + ∇V(s_t)",
     "update_form": "bootstrapped_value_update",
     "optimization": "minimize_td_error",
     "fixed_points": "value_function_fixed_point",
@@ -2448,7 +2448,7 @@
     "id": "spectral_graph_theory",
     "name": "Spectral Graph Theory",
     "domain": "Mathematics",
-    "equation": "Lf = \u03bbf;  L = D \u2212 A;  \u03bb_2 = algebraic connectivity;  h(G) \u2264 \u221a(2\u03bb_2) (Cheeger);  f_k = k-th Fiedler vector",
+    "equation": "Lf = λf;  L = D − A;  λ_2 = algebraic connectivity;  h(G) ≤ √(2λ_2) (Cheeger);  f_k = k-th Fiedler vector",
     "update_form": "eigenvalue_decomposition",
     "optimization": null,
     "fixed_points": "graph_laplacian_spectrum",
@@ -2482,7 +2482,7 @@
     "id": "normalizing_flows",
     "name": "Normalizing Flows",
     "domain": "Machine Learning",
-    "equation": "x = f(z), z ~ p_z;  log p_x(x) = log p_z(f\u207b\u00b9(x)) + log|det \u2202f\u207b\u00b9/\u2202x|;  max \u03a3 log p_x(x\u1d62)",
+    "equation": "x = f(z), z ~ p_z;  log p_x(x) = log p_z(f⁻¹(x)) + log|det ∂f⁻¹/∂x|;  max Σ log p_x(xᵢ)",
     "update_form": "gradient_on_flow_parameters",
     "optimization": "maximize_log_likelihood",
     "fixed_points": "trained_invertible_map",
@@ -2516,7 +2516,7 @@
     "id": "stochastic_optimal_control",
     "name": "Stochastic Optimal Control",
     "domain": "Control Theory",
-    "equation": "dx = f(x,u)dt + \u03c3(x)dW;  J = E[\u222bL(x,u)dt + \u03a6(x_T)];  \u2212\u2202V/\u2202t = min_u{L + f\u00b7\u2207V + \u00bd\u03c3\u03c3\u1d40:\u2207\u00b2V}",
+    "equation": "dx = f(x,u)dt + σ(x)dW;  J = E[∫L(x,u)dt + Φ(x_T)];  −∂V/∂t = min_u{L + f·∇V + ½σσᵀ:∇²V}",
     "update_form": "stochastic_hjb",
     "optimization": "minimize_expected_cost",
     "fixed_points": "optimal_stochastic_policy",
@@ -2550,7 +2550,7 @@
     "id": "contrastive_learning",
     "name": "Contrastive Learning / NCE",
     "domain": "Machine Learning",
-    "equation": "L = \u2212log[exp(sim(z_i,z_j)/\u03c4) / \u03a3_k exp(sim(z_i,z_k)/\u03c4)];  p(d=1|x,c) = \u03c3(f(x)\u1d40f(c));  NCE \u2192 MLE as k\u2192\u221e",
+    "equation": "L = −log[exp(sim(z_i,z_j)/τ) / Σ_k exp(sim(z_i,z_k)/τ)];  p(d=1|x,c) = σ(f(x)ᵀf(c));  NCE → MLE as k→∞",
     "update_form": "contrastive_gradient",
     "optimization": "maximize_mutual_information_bound",
     "fixed_points": "aligned_representation",
@@ -2582,7 +2582,7 @@
     "id": "belief_propagation",
     "name": "Belief Propagation / Message Passing",
     "domain": "Machine Learning",
-    "equation": "m_{i\u2192j}(x_j) = \u03a3_{x_i} \u03c8(x_i,x_j) \u03c6(x_i) \u03a0_{k\u2208N(i)\\j} m_{k\u2192i}(x_i);  b(x_i) \u221d \u03c6(x_i) \u03a0_{j\u2208N(i)} m_{j\u2192i}(x_i)",
+    "equation": "m_{i→j}(x_j) = Σ_{x_i} ψ(x_i,x_j) φ(x_i) Π_{k∈N(i)\\j} m_{k→i}(x_i);  b(x_i) ∝ φ(x_i) Π_{j∈N(i)} m_{j→i}(x_i)",
     "update_form": "message_passing_fixed_point",
     "optimization": "bethe_free_energy",
     "fixed_points": "marginal_beliefs",
@@ -2616,7 +2616,7 @@
     "id": "map_estimation",
     "name": "Maximum a Posteriori (MAP) Estimation",
     "domain": "Statistics",
-    "equation": "\u03b8_MAP = argmax p(\u03b8|x) = argmax [log p(x|\u03b8) + log p(\u03b8)];  \u2207log p(x|\u03b8) + \u2207log p(\u03b8) = 0;  MAP \u2192 MLE as prior \u2192 flat",
+    "equation": "θ_MAP = argmax p(θ|x) = argmax [log p(x|θ) + log p(θ)];  ∇log p(x|θ) + ∇log p(θ) = 0;  MAP → MLE as prior → flat",
     "update_form": "penalized_likelihood_gradient",
     "optimization": "maximize_posterior",
     "fixed_points": "posterior_mode",
@@ -2648,7 +2648,7 @@
     "id": "wasserstein_gan",
     "name": "Wasserstein GAN",
     "domain": "Machine Learning",
-    "equation": "min_G max_D E[D(x)] \u2212 E[D(G(z))];  W(p,q) = sup_{||D||_L\u22641} E_p[D] \u2212 E_q[D];  Kantorovich-Rubinstein duality",
+    "equation": "min_G max_D E[D(x)] − E[D(G(z))];  W(p,q) = sup_{||D||_L≤1} E_p[D] − E_q[D];  Kantorovich-Rubinstein duality",
     "update_form": "alternating_gradient",
     "optimization": "minimax_wasserstein",
     "fixed_points": "generator_matches_data",
@@ -2680,7 +2680,7 @@
     "id": "mcts",
     "name": "Monte Carlo Tree Search (MCTS)",
     "domain": "Reinforcement Learning",
-    "equation": "UCB1: a* = argmax[Q(s,a) + c\u221a(ln N(s)/N(s,a))];  V(s) = 1/N \u03a3 R_i;  backup: N(s)+=1, Q(s,a) += (R\u2212Q)/N",
+    "equation": "UCB1: a* = argmax[Q(s,a) + c√(ln N(s)/N(s,a))];  V(s) = 1/N Σ R_i;  backup: N(s)+=1, Q(s,a) += (R−Q)/N",
     "update_form": "tree_backup",
     "optimization": "maximize_expected_return",
     "fixed_points": "optimal_action_values",
@@ -2713,7 +2713,7 @@
     "id": "bayesian_optimization",
     "name": "Bayesian Optimization",
     "domain": "Optimization",
-    "equation": "x_{n+1} = argmax \u03b1(x; D_n);  \u03b1_EI(x) = E[max(f(x)\u2212f*,0)];  f ~ GP(\u03bc,k);  p(f|D) \u221d p(D|f)p(f)",
+    "equation": "x_{n+1} = argmax α(x; D_n);  α_EI(x) = E[max(f(x)−f*,0)];  f ~ GP(μ,k);  p(f|D) ∝ p(D|f)p(f)",
     "update_form": "acquisition_maximization",
     "optimization": "maximize_acquisition_function",
     "fixed_points": "global_optimum",
@@ -2745,7 +2745,7 @@
     "id": "expectation_propagation",
     "name": "Expectation Propagation (EP)",
     "domain": "Machine Learning",
-    "equation": "q(\u03b8) = 1/Z \u03a0 f\u0303\u1d62(\u03b8);  f\u0303\u1d62 \u2190 proj[q^\\i \u00b7 f\u1d62] / q^\\i;  proj = moment matching to exponential family;  q^\\i = q/f\u0303\u1d62",
+    "equation": "q(θ) = 1/Z Π f̃ᵢ(θ);  f̃ᵢ ← proj[q^\\i · fᵢ] / q^\\i;  proj = moment matching to exponential family;  q^\\i = q/f̃ᵢ",
     "update_form": "moment_matching_iteration",
     "optimization": "minimize_local_kl_divergence",
     "fixed_points": "consistent_site_approximations",
@@ -2778,7 +2778,7 @@
     "id": "tensor_network",
     "name": "Tensor Network / Tensor Decomposition",
     "domain": "Physics",
-    "equation": "\u03a8 = \u03a3 A^{s1} A^{s2} ... A^{sN};  MPS: \u03a8_{s1...sN} = Tr(A^{s1}...A^{sN});  SVD truncation: ||\u03a8 \u2212 \u03a8\u0303|| \u2264 \u03b5",
+    "equation": "Ψ = Σ A^{s1} A^{s2} ... A^{sN};  MPS: Ψ_{s1...sN} = Tr(A^{s1}...A^{sN});  SVD truncation: ||Ψ − Ψ̃|| ≤ ε",
     "update_form": "local_tensor_update",
     "optimization": "minimize_truncation_error",
     "fixed_points": "optimal_low_rank_approximation",
@@ -2812,7 +2812,7 @@
     "id": "multi_armed_bandit",
     "name": "Multi-Armed Bandit / UCB",
     "domain": "Reinforcement Learning",
-    "equation": "UCB: a* = argmax[\u03bc\u0302\u2090 + c\u221a(ln t / N\u2090)];  regret R_T = T \u03bc* \u2212 \u03a3 \u03bc_{a\u209c};  Thompson: sample \u03b8\u2090 ~ posterior, play argmax \u03b8\u2090",
+    "equation": "UCB: a* = argmax[μ̂ₐ + c√(ln t / Nₐ)];  regret R_T = T μ* − Σ μ_{aₜ};  Thompson: sample θₐ ~ posterior, play argmax θₐ",
     "update_form": "index_policy_update",
     "optimization": "minimize_cumulative_regret",
     "fixed_points": "optimal_arm",
@@ -2844,7 +2844,7 @@
     "id": "wasserstein_gradient_flow",
     "name": "Wasserstein Gradient Flow",
     "domain": "Optimization",
-    "equation": "\u2202\u03c1/\u2202t = \u2207\u00b7(\u03c1\u2207(\u03b4F/\u03b4\u03c1));  JKO: \u03c1_{k+1} = argmin[F(\u03c1) + W\u2082\u00b2(\u03c1,\u03c1\u2096)/2\u03c4];  F(\u03c1) = \u222b\u03c1log\u03c1 + \u222b\u03c1V + \u222b\u222b\u03c1W\u03c1",
+    "equation": "∂ρ/∂t = ∇·(ρ∇(δF/δρ));  JKO: ρ_{k+1} = argmin[F(ρ) + W₂²(ρ,ρₖ)/2τ];  F(ρ) = ∫ρlogρ + ∫ρV + ∫∫ρWρ",
     "update_form": "jko_proximal_step",
     "optimization": "minimize_free_energy_functional",
     "fixed_points": "stationary_measure",
@@ -2877,7 +2877,7 @@
     "id": "stein_variational",
     "name": "Stein Variational Gradient Descent (SVGD)",
     "domain": "Machine Learning",
-    "equation": "x\u1d62 \u2190 x\u1d62 + \u03b5 \u03c6*(x\u1d62);  \u03c6* = argmax_{||\u03c6||\u22641} \u2212d/d\u03b5 KL(T_\u03b5 q || p);  \u03c6*(x) = E_q[k(x',x)\u2207log p(x') + \u2207_{x'}k(x',x)]",
+    "equation": "xᵢ ← xᵢ + ε φ*(xᵢ);  φ* = argmax_{||φ||≤1} −d/dε KL(T_ε q || p);  φ*(x) = E_q[k(x',x)∇log p(x') + ∇_{x'}k(x',x)]",
     "update_form": "kernel_gradient_transport",
     "optimization": "minimize_kl_divergence",
     "fixed_points": "posterior_particle_approximation",
@@ -2909,7 +2909,7 @@
     "id": "neural_ode",
     "name": "Neural ODE",
     "domain": "Machine Learning",
-    "equation": "dh/dt = f_\u03b8(h,t);  h(T) = h(0) + \u222b\u2080\u1d40 f_\u03b8(h,t)dt;  adjoint: da/dt = \u2212a\u1d40 \u2202f/\u2202h;  \u2202L/\u2202\u03b8 = \u2212\u222b a\u1d40 \u2202f/\u2202\u03b8 dt",
+    "equation": "dh/dt = f_θ(h,t);  h(T) = h(0) + ∫₀ᵀ f_θ(h,t)dt;  adjoint: da/dt = −aᵀ ∂f/∂h;  ∂L/∂θ = −∫ aᵀ ∂f/∂θ dt",
     "update_form": "adjoint_sensitivity",
     "optimization": "minimize_loss_via_adjoint",
     "fixed_points": "trained_vector_field",
@@ -2942,7 +2942,7 @@
     "id": "causal_inference",
     "name": "Causal Inference / do-calculus",
     "domain": "Statistics",
-    "equation": "P(y|do(x)) = \u03a3_z P(y|x,z)P(z);  backdoor: P(y|do(x)) = \u03a3_z P(y|x,z)P(z);  frontdoor;  counterfactual: Y_x(u)",
+    "equation": "P(y|do(x)) = Σ_z P(y|x,z)P(z);  backdoor: P(y|do(x)) = Σ_z P(y|x,z)P(z);  frontdoor;  counterfactual: Y_x(u)",
     "update_form": "interventional_query",
     "optimization": "identify_causal_effect",
     "fixed_points": "causal_estimand",
@@ -2975,7 +2975,7 @@
     "id": "gaussian_process",
     "name": "Gaussian Process Regression",
     "domain": "Machine Learning",
-    "equation": "f ~ GP(\u03bc,k);  p(f*|X*,X,y) = N(K*\u1d40(K+\u03c3\u00b2I)\u207b\u00b9y, K**\u2212K*\u1d40(K+\u03c3\u00b2I)\u207b\u00b9K*);  log p(y|X) = \u2212\u00bdy\u1d40K\u207b\u00b9y \u2212 \u00bdlog|K| \u2212 n/2 log 2\u03c0",
+    "equation": "f ~ GP(μ,k);  p(f*|X*,X,y) = N(K*ᵀ(K+σ²I)⁻¹y, K**−K*ᵀ(K+σ²I)⁻¹K*);  log p(y|X) = −½yᵀK⁻¹y − ½log|K| − n/2 log 2π",
     "update_form": "posterior_conditioning",
     "optimization": "maximize_marginal_likelihood",
     "fixed_points": "posterior_predictive",
@@ -3009,7 +3009,7 @@
     "id": "markov_decision_process",
     "name": "Markov Decision Process (MDP)",
     "domain": "Reinforcement Learning",
-    "equation": "V*(s) = max_a [R(s,a) + \u03b3 \u03a3 P(s'|s,a)V*(s')];  \u03c0*(s) = argmax_a Q*(s,a);  Q*(s,a) = R + \u03b3 \u03a3 P V*",
+    "equation": "V*(s) = max_a [R(s,a) + γ Σ P(s'|s,a)V*(s')];  π*(s) = argmax_a Q*(s,a);  Q*(s,a) = R + γ Σ P V*",
     "update_form": "bellman_optimality",
     "optimization": "maximize_discounted_return",
     "fixed_points": "optimal_value_and_policy",
@@ -3042,7 +3042,7 @@
     "id": "contraction_mapping",
     "name": "Contraction Mapping / Banach Fixed Point",
     "domain": "Mathematics",
-    "equation": "T: X\u2192X;  d(Tx,Ty) \u2264 \u03b3 d(x,y), \u03b3<1;  x* = lim T^n(x\u2080);  d(x_n,x*) \u2264 \u03b3\u207f/(1\u2212\u03b3) d(x\u2081,x\u2080)",
+    "equation": "T: X→X;  d(Tx,Ty) ≤ γ d(x,y), γ<1;  x* = lim T^n(x₀);  d(x_n,x*) ≤ γⁿ/(1−γ) d(x₁,x₀)",
     "update_form": "iterated_contraction",
     "optimization": "find_fixed_point",
     "fixed_points": "unique_fixed_point",
@@ -3071,7 +3071,7 @@
     "id": "active_inference",
     "name": "Active Inference",
     "domain": "Neuroscience",
-    "equation": "F = E_q[log q(s) \u2212 log p(o,s)];  \u03c0* = argmin E_q(\u03c0)[G(\u03c0)];  G = E[H[P(o|s)] + D_KL[q(s|\u03c0)||p(s)]];  action = \u2212\u2202F/\u2202a",
+    "equation": "F = E_q[log q(s) − log p(o,s)];  π* = argmin E_q(π)[G(π)];  G = E[H[P(o|s)] + D_KL[q(s|π)||p(s)]];  action = −∂F/∂a",
     "update_form": "free_energy_minimization",
     "optimization": "minimize_expected_free_energy",
     "fixed_points": "preferred_observations",
@@ -3103,7 +3103,7 @@
     "id": "boosting",
     "name": "Gradient Boosting / AdaBoost",
     "domain": "Machine Learning",
-    "equation": "F_m(x) = F_{m-1}(x) + \u03bd h_m(x);  h_m = argmin \u03a3 L(y\u1d62, F_{m-1}(x\u1d62) + h(x\u1d62));  w\u1d62 \u221d exp(\u2212y\u1d62 F(x\u1d62));  AdaBoost = exp loss",
+    "equation": "F_m(x) = F_{m-1}(x) + ν h_m(x);  h_m = argmin Σ L(yᵢ, F_{m-1}(xᵢ) + h(xᵢ));  wᵢ ∝ exp(−yᵢ F(xᵢ));  AdaBoost = exp loss",
     "update_form": "functional_gradient_descent",
     "optimization": "minimize_empirical_loss",
     "fixed_points": "converged_ensemble",
@@ -3134,7 +3134,7 @@
     "id": "matrix_factorization",
     "name": "Matrix Factorization / NMF",
     "domain": "Machine Learning",
-    "equation": "min ||X \u2212 WH||\u00b2_F;  NMF: W,H \u2265 0;  SVD: X = U\u03a3V\u1d40;  update: H \u2190 H \u2299 (W\u1d40X)/(W\u1d40WH);  W \u2190 W \u2299 (XH\u1d40)/(WHH\u1d40)",
+    "equation": "min ||X − WH||²_F;  NMF: W,H ≥ 0;  SVD: X = UΣVᵀ;  update: H ← H ⊙ (WᵀX)/(WᵀWH);  W ← W ⊙ (XHᵀ)/(WHHᵀ)",
     "update_form": "alternating_minimization",
     "optimization": "minimize_reconstruction_error",
     "fixed_points": "optimal_factorization",
@@ -3167,7 +3167,7 @@
     "id": "pac_learning",
     "name": "PAC Learning / VC Theory",
     "domain": "Statistics",
-    "equation": "P(sup_{h\u2208H} |R(h)\u2212R\u0302(h)| > \u03b5) \u2264 2|H|e^{-2n\u03b5\u00b2};  VC: n = O(d/\u03b5\u00b2 log(1/\u03b4));  Rademacher: R\u0302_n(H) = E_\u03c3[sup_h 1/n \u03a3 \u03c3\u1d62h(x\u1d62)]",
+    "equation": "P(sup_{h∈H} |R(h)−R̂(h)| > ε) ≤ 2|H|e^{-2nε²};  VC: n = O(d/ε² log(1/δ));  Rademacher: R̂_n(H) = E_σ[sup_h 1/n Σ σᵢh(xᵢ)]",
     "update_form": "uniform_convergence_bound",
     "optimization": "minimize_generalization_error",
     "fixed_points": "consistent_hypothesis",
@@ -3198,7 +3198,7 @@
     "id": "navier_stokes",
     "name": "Navier-Stokes Equations",
     "domain": "Physics",
-    "equation": "\u2202u/\u2202t + (u\u00b7\u2207)u = \u2212\u2207p/\u03c1 + \u03bd\u2207\u00b2u + f;  \u2207\u00b7u = 0;  Re = UL/\u03bd;  energy: d/dt \u222b\u00bd|u|\u00b2 = \u2212\u03bd\u222b|\u2207u|\u00b2 + \u222bf\u00b7u",
+    "equation": "∂u/∂t + (u·∇)u = −∇p/ρ + ν∇²u + f;  ∇·u = 0;  Re = UL/ν;  energy: d/dt ∫½|u|² = −ν∫|∇u|² + ∫f·u",
     "update_form": "momentum_transport",
     "optimization": "satisfy_conservation_laws",
     "fixed_points": "steady_state_flow",
@@ -3231,7 +3231,7 @@
     "id": "kolmogorov_complexity",
     "name": "Kolmogorov Complexity / AIT",
     "domain": "Information Theory",
-    "equation": "K(x) = min{|p| : U(p) = x};  K(x|y) = min{|p| : U(p,y) = x};  K(x,y) \u2248 K(x) + K(y|x);  incompressibility: K(x) \u2265 |x| \u2212 c",
+    "equation": "K(x) = min{|p| : U(p) = x};  K(x|y) = min{|p| : U(p,y) = x};  K(x,y) ≈ K(x) + K(y|x);  incompressibility: K(x) ≥ |x| − c",
     "update_form": "shortest_program_search",
     "optimization": "minimize_description_length",
     "fixed_points": "minimal_sufficient_program",
@@ -3262,7 +3262,7 @@
     "id": "minimum_description_length",
     "name": "Minimum Description Length (MDL)",
     "domain": "Statistics",
-    "equation": "M* = argmin [L(D|M) + L(M)];  two-part: L(x,\u03b8) = \u2212log p(x|\u03b8) + L(\u03b8);  normalized ML: p\u0304(x) = p(x|\u03b8\u0302(x))/\u222bp(y|\u03b8\u0302(y))dy",
+    "equation": "M* = argmin [L(D|M) + L(M)];  two-part: L(x,θ) = −log p(x|θ) + L(θ);  normalized ML: p̄(x) = p(x|θ̂(x))/∫p(y|θ̂(y))dy",
     "update_form": "model_selection",
     "optimization": "minimize_total_codelength",
     "fixed_points": "optimal_model_complexity",
@@ -3296,7 +3296,7 @@
     "id": "lagrange_duality",
     "name": "Lagrange Duality / KKT Conditions",
     "domain": "Optimization",
-    "equation": "L(x,\u03bb,\u03bd) = f(x) + \u03a3\u03bb\u1d62g\u1d62(x) + \u03a3\u03bd\u2c7ch\u2c7c(x);  d* = max_{\u03bb\u22650} min_x L;  strong duality: p*=d*;  KKT: \u2207f + \u03a3\u03bb\u1d62\u2207g\u1d62 = 0, \u03bb\u1d62g\u1d62 = 0",
+    "equation": "L(x,λ,ν) = f(x) + Σλᵢgᵢ(x) + Σνⱼhⱼ(x);  d* = max_{λ≥0} min_x L;  strong duality: p*=d*;  KKT: ∇f + Σλᵢ∇gᵢ = 0, λᵢgᵢ = 0",
     "update_form": "primal_dual_iteration",
     "optimization": "saddle_point_of_lagrangian",
     "fixed_points": "kkt_point",
@@ -3329,7 +3329,7 @@
     "id": "online_convex_optimization",
     "name": "Online Convex Optimization / Regret",
     "domain": "Machine Learning",
-    "equation": "Regret_T = \u03a3 f_t(x_t) \u2212 min_x \u03a3 f_t(x);  FTRL: x_t = argmin[\u03a3 f_s(x) + R(x)];  OGD: x_{t+1} = \u03a0(x_t \u2212 \u03b7\u2207f_t)",
+    "equation": "Regret_T = Σ f_t(x_t) − min_x Σ f_t(x);  FTRL: x_t = argmin[Σ f_s(x) + R(x)];  OGD: x_{t+1} = Π(x_t − η∇f_t)",
     "update_form": "follow_the_regularized_leader",
     "optimization": "minimize_regret",
     "fixed_points": "no_regret_strategy",
@@ -3360,7 +3360,7 @@
     "id": "optimal_stopping",
     "name": "Optimal Stopping / Secretary Problem",
     "domain": "Statistics",
-    "equation": "V(x,t) = max{g(x,t), E[V(X_{t+1},t+1)|X_t=x]};  \u03c4* = inf{t: V(X_t,t) = g(X_t,t)};  secretary: reject first n/e, pick next best",
+    "equation": "V(x,t) = max{g(x,t), E[V(X_{t+1},t+1)|X_t=x]};  τ* = inf{t: V(X_t,t) = g(X_t,t)};  secretary: reject first n/e, pick next best",
     "update_form": "backward_induction",
     "optimization": "maximize_expected_payoff",
     "fixed_points": "optimal_stopping_boundary",
@@ -3389,9 +3389,9 @@
   },
   "large_deviations_math": {
     "id": "large_deviations_math",
-    "name": "Large Deviations / Cram\u00e9r's Theorem",
+    "name": "Large Deviations / Cramér's Theorem",
     "domain": "Mathematics",
-    "equation": "P(S_n/n \u2208 A) \u2248 exp(\u2212n inf_{x\u2208A} I(x));  I(x) = sup_\u03b8[\u03b8x \u2212 log M(\u03b8)];  Sanov: I(Q) = D_KL(Q||P);  Varadhan: lim 1/n log E[e^{nF}] = sup[F\u2212I]",
+    "equation": "P(S_n/n ∈ A) ≈ exp(−n inf_{x∈A} I(x));  I(x) = sup_θ[θx − log M(θ)];  Sanov: I(Q) = D_KL(Q||P);  Varadhan: lim 1/n log E[e^{nF}] = sup[F−I]",
     "update_form": "rate_function_computation",
     "optimization": "minimize_rate_function",
     "fixed_points": "most_likely_deviation",
@@ -3421,7 +3421,7 @@
     "id": "ergodic_theory",
     "name": "Ergodic Theory",
     "domain": "Mathematics",
-    "equation": "lim 1/N \u03a3 f(T^n x) = \u222b f d\u03bc  a.e.;  mixing: \u03bc(A\u2229T\u207b\u207fB) \u2192 \u03bc(A)\u03bc(B);  entropy: h(T) = sup_P H(P|T\u207b\u00b9P)",
+    "equation": "lim 1/N Σ f(T^n x) = ∫ f dμ  a.e.;  mixing: μ(A∩T⁻ⁿB) → μ(A)μ(B);  entropy: h(T) = sup_P H(P|T⁻¹P)",
     "update_form": "time_average_convergence",
     "optimization": "characterize_invariant_measure",
     "fixed_points": "ergodic_measure",
@@ -3453,7 +3453,7 @@
     "id": "mechanism_design",
     "name": "Mechanism Design / Auction Theory",
     "domain": "Economics",
-    "equation": "max \u03a3 v\u1d62(a(\u03b8)) s.t. IC: U\u1d62(\u03b8\u1d62) \u2265 U\u1d62(\u03b8'\u1d62);  IR: U\u1d62(\u03b8\u1d62) \u2265 0;  VCG: p\u1d62 = max_{a} \u03a3_{j\u2260i} v\u2c7c \u2212 \u03a3_{j\u2260i} v\u2c7c(a*(\u03b8));  revelation principle",
+    "equation": "max Σ vᵢ(a(θ)) s.t. IC: Uᵢ(θᵢ) ≥ Uᵢ(θ'ᵢ);  IR: Uᵢ(θᵢ) ≥ 0;  VCG: pᵢ = max_{a} Σ_{j≠i} vⱼ − Σ_{j≠i} vⱼ(a*(θ));  revelation principle",
     "update_form": "incentive_compatible_mechanism",
     "optimization": "maximize_social_welfare",
     "fixed_points": "incentive_compatible_equilibrium",
@@ -3485,7 +3485,7 @@
     "id": "proximal_methods",
     "name": "Proximal Methods / ADMM",
     "domain": "Optimization",
-    "equation": "prox_f(x) = argmin[f(y) + \u00bd||y\u2212x||\u00b2];  ADMM: x\u2190argmin[f(x)+\u03c1/2||Ax+Bz\u2212c+u||\u00b2], z\u2190argmin[g(z)+\u03c1/2||Ax+Bz\u2212c+u||\u00b2], u\u2190u+Ax+Bz\u2212c",
+    "equation": "prox_f(x) = argmin[f(y) + ½||y−x||²];  ADMM: x←argmin[f(x)+ρ/2||Ax+Bz−c+u||²], z←argmin[g(z)+ρ/2||Ax+Bz−c+u||²], u←u+Ax+Bz−c",
     "update_form": "proximal_splitting",
     "optimization": "minimize_composite_objective",
     "fixed_points": "consensus_solution",
@@ -3516,7 +3516,7 @@
     "id": "mean_field_game",
     "name": "Mean-Field Game",
     "domain": "Game Theory",
-    "equation": "\u2212\u2202V/\u2202t \u2212 \u03bd\u2206V + H(x,\u2207V) = F(x,m);  \u2202m/\u2202t \u2212 \u03bd\u2206m \u2212 div(m\u2207_pH) = 0;  coupled HJB + Fokker-Planck;  Nash of N\u2192\u221e players",
+    "equation": "−∂V/∂t − ν∆V + H(x,∇V) = F(x,m);  ∂m/∂t − ν∆m − div(m∇_pH) = 0;  coupled HJB + Fokker-Planck;  Nash of N→∞ players",
     "update_form": "coupled_hjb_fokker_planck",
     "optimization": "nash_equilibrium_of_continuum",
     "fixed_points": "mean_field_equilibrium",
@@ -3544,13 +3544,19 @@
     "conservation": [
       "mass_conservation"
     ],
-    "structure": "minimax_optimization"
+    "structure": "minimax_optimization",
+    "source": {
+      "title": "Mean field games",
+      "url": "https://doi.org/10.1007/s11537-006-0611-7",
+      "year": 2007
+    },
+    "provenance": "curated"
   },
   "diffusion_maps": {
     "id": "diffusion_maps",
     "name": "Diffusion Maps",
     "domain": "Machine Learning",
-    "equation": "P = D\u207b\u00b9W;  P\u1d57 \u2192 diffusion at scale t;  \u03a8_t(x) = (\u03bb\u2081\u1d57\u03c8\u2081(x),...,\u03bb\u2096\u1d57\u03c8\u2096(x));  D_t\u00b2(x,y) = \u03a3 \u03bb\u1d62\u00b2\u1d57(\u03c8\u1d62(x)\u2212\u03c8\u1d62(y))\u00b2",
+    "equation": "P = D⁻¹W;  Pᵗ → diffusion at scale t;  Ψ_t(x) = (λ₁ᵗψ₁(x),...,λₖᵗψₖ(x));  D_t²(x,y) = Σ λᵢ²ᵗ(ψᵢ(x)−ψᵢ(y))²",
     "update_form": "markov_chain_embedding",
     "optimization": "preserve_diffusion_distance",
     "fixed_points": "spectral_embedding",
@@ -3582,7 +3588,7 @@
     "id": "spiking_neural_network",
     "name": "Spiking Neural Network / Integrate-and-Fire",
     "domain": "Neuroscience",
-    "equation": "\u03c4 dV/dt = \u2212(V\u2212V_rest) + R\u00b7I(t);  V\u2265V_th \u27f9 spike, V\u2190V_reset;  STDP: \u0394w = A+ exp(\u2212\u0394t/\u03c4+) if pre<post, else \u2212A\u2212 exp(\u0394t/\u03c4\u2212)",
+    "equation": "τ dV/dt = −(V−V_rest) + R·I(t);  V≥V_th ⟹ spike, V←V_reset;  STDP: Δw = A+ exp(−Δt/τ+) if pre<post, else −A− exp(Δt/τ−)",
     "update_form": "spike_timing_plasticity",
     "optimization": "minimize_prediction_error",
     "fixed_points": "stable_firing_pattern",
@@ -3616,7 +3622,7 @@
     "id": "inverse_problem",
     "name": "Inverse Problem / Tikhonov Regularization",
     "domain": "Mathematics",
-    "equation": "min ||Ax\u2212b||\u00b2 + \u03b1||Lx||\u00b2;  x_\u03b1 = (A\u1d40A + \u03b1L\u1d40L)\u207b\u00b9A\u1d40b;  Morozov: ||Ax_\u03b1\u2212b|| = \u03b4;  L-curve: trade-off ||x|| vs ||Ax\u2212b||",
+    "equation": "min ||Ax−b||² + α||Lx||²;  x_α = (AᵀA + αLᵀL)⁻¹Aᵀb;  Morozov: ||Ax_α−b|| = δ;  L-curve: trade-off ||x|| vs ||Ax−b||",
     "update_form": "regularized_least_squares",
     "optimization": "minimize_regularized_residual",
     "fixed_points": "regularized_solution",
@@ -3646,7 +3652,7 @@
     "id": "robbins_monro",
     "name": "Robbins-Monro / Stochastic Approximation",
     "domain": "Optimization",
-    "equation": "x_{n+1} = x_n \u2212 a_n(H(x_n) + \u03be_n);  \u03a3 a\u2099 = \u221e, \u03a3 a\u2099\u00b2 < \u221e;  ODE method: dx/dt = \u2212H(x);  x_n \u2192 x* a.s.",
+    "equation": "x_{n+1} = x_n − a_n(H(x_n) + ξ_n);  Σ aₙ = ∞, Σ aₙ² < ∞;  ODE method: dx/dt = −H(x);  x_n → x* a.s.",
     "update_form": "stochastic_recursion",
     "optimization": "find_root_of_expectation",
     "fixed_points": "root_of_mean_field",
@@ -3675,7 +3681,7 @@
     "id": "preferential_attachment",
     "name": "Preferential Attachment / Scale-Free Networks",
     "domain": "Network Science",
-    "equation": "P(new edge to i) \u221d k\u1d62;  P(k) ~ k^{\u2212\u03b3}, \u03b3\u22483;  mean-field: dk\u1d62/dt = m\u00b7k\u1d62/(2mt);  k\u1d62(t) = m\u221a(t/t\u1d62)",
+    "equation": "P(new edge to i) ∝ kᵢ;  P(k) ~ k^{−γ}, γ≈3;  mean-field: dkᵢ/dt = m·kᵢ/(2mt);  kᵢ(t) = m√(t/tᵢ)",
     "update_form": "growth_attachment",
     "optimization": "characterize_degree_distribution",
     "fixed_points": "power_law_distribution",
@@ -3707,7 +3713,7 @@
     "id": "operator_semigroup",
     "name": "Operator Semigroups / Hille-Yosida",
     "domain": "Mathematics",
-    "equation": "du/dt = Au;  T(t) = e^{tA};  T(t+s)=T(t)T(s);  resolvent: R(\u03bb,A) = (\u03bbI\u2212A)\u207b\u00b9;  Hille-Yosida: ||R(\u03bb,A)\u207f|| \u2264 M/(\u03bb\u2212\u03c9)\u207f",
+    "equation": "du/dt = Au;  T(t) = e^{tA};  T(t+s)=T(t)T(s);  resolvent: R(λ,A) = (λI−A)⁻¹;  Hille-Yosida: ||R(λ,A)ⁿ|| ≤ M/(λ−ω)ⁿ",
     "update_form": "semigroup_evolution",
     "optimization": "characterize_generator_spectrum",
     "fixed_points": "equilibrium_of_generator",
@@ -3738,7 +3744,7 @@
     "id": "shapley_value",
     "name": "Shapley Value / Cooperative Games",
     "domain": "Game Theory",
-    "equation": "\u03c6\u1d62(v) = \u03a3_{S\u2286N\\i} |S|!(n\u2212|S|\u22121)!/n! [v(S\u222a{i})\u2212v(S)];  efficiency: \u03a3\u03c6\u1d62=v(N);  linearity;  null player;  symmetry",
+    "equation": "φᵢ(v) = Σ_{S⊆N\\i} |S|!(n−|S|−1)!/n! [v(S∪{i})−v(S)];  efficiency: Σφᵢ=v(N);  linearity;  null player;  symmetry",
     "update_form": "marginal_contribution_average",
     "optimization": "fair_surplus_allocation",
     "fixed_points": "unique_fair_allocation",
@@ -3769,7 +3775,7 @@
     "id": "topological_data_analysis",
     "name": "Topological Data Analysis (TDA)",
     "domain": "Mathematics",
-    "equation": "VR_\u03b5 = {\u03c3\u2286X : diam(\u03c3)\u2264\u03b5};  \u03b2_k = rank H_k;  persistence: dgm = {(b_i,d_i)};  stability: d_B(dgm_f,dgm_g) \u2264 ||f\u2212g||_\u221e",
+    "equation": "VR_ε = {σ⊆X : diam(σ)≤ε};  β_k = rank H_k;  persistence: dgm = {(b_i,d_i)};  stability: d_B(dgm_f,dgm_g) ≤ ||f−g||_∞",
     "update_form": "filtration_computation",
     "optimization": "extract_topological_features",
     "fixed_points": "persistent_features",
@@ -3801,7 +3807,7 @@
     "id": "world_model",
     "name": "World Models / Model-Based RL",
     "domain": "Reinforcement Learning",
-    "equation": "p\u0302(s'|s,a;\u03b8);  r\u0302(s,a;\u03c6);  plan: \u03c0* = argmax E_{p\u0302}[\u03a3\u03b3\u1d57r\u0302];  Dyna: real experience + simulated rollouts;  model error: ||p\u0302\u2212p||",
+    "equation": "p̂(s'|s,a;θ);  r̂(s,a;φ);  plan: π* = argmax E_{p̂}[Σγᵗr̂];  Dyna: real experience + simulated rollouts;  model error: ||p̂−p||",
     "update_form": "model_learning_plus_planning",
     "optimization": "minimize_model_error_and_policy_loss",
     "fixed_points": "accurate_model_optimal_policy",
@@ -3832,7 +3838,7 @@
     "id": "calculus_of_variations",
     "name": "Calculus of Variations / Euler-Lagrange",
     "domain": "Mathematics",
-    "equation": "\u03b4J[y] = 0;  J[y] = \u222b F(x,y,y')dx;  Euler-Lagrange: \u2202F/\u2202y \u2212 d/dx(\u2202F/\u2202y') = 0;  natural BC: \u2202F/\u2202y'|_{\u2202\u03a9} = 0",
+    "equation": "δJ[y] = 0;  J[y] = ∫ F(x,y,y')dx;  Euler-Lagrange: ∂F/∂y − d/dx(∂F/∂y') = 0;  natural BC: ∂F/∂y'|_{∂Ω} = 0",
     "update_form": "euler_lagrange_equation",
     "optimization": "stationarity_of_functional",
     "fixed_points": "extremal_curve",
@@ -3865,7 +3871,7 @@
     "id": "concentration_inequalities",
     "name": "Concentration of Measure / Tail Bounds",
     "domain": "Mathematics",
-    "equation": "Hoeffding: P(S_n\u2212E[S_n]\u2265t) \u2264 exp(\u22122t\u00b2/\u03a3(b\u1d62\u2212a\u1d62)\u00b2);  McDiarmid: P(f\u2212Ef\u2265t) \u2264 exp(\u22122t\u00b2/\u03a3c\u1d62\u00b2);  sub-Gaussian: E[e^{\u03bbX}] \u2264 e^{\u03bb\u00b2\u03c3\u00b2/2}",
+    "equation": "Hoeffding: P(S_n−E[S_n]≥t) ≤ exp(−2t²/Σ(bᵢ−aᵢ)²);  McDiarmid: P(f−Ef≥t) ≤ exp(−2t²/Σcᵢ²);  sub-Gaussian: E[e^{λX}] ≤ e^{λ²σ²/2}",
     "update_form": "chernoff_bound_optimization",
     "optimization": "tightest_tail_bound",
     "fixed_points": "concentration_radius",
@@ -3894,7 +3900,7 @@
     "id": "martingale_theory",
     "name": "Martingale Theory / Optional Stopping",
     "domain": "Mathematics",
-    "equation": "E[X_{n+1}|F_n] = X_n;  optional stopping: E[X_\u03c4] = E[X_0] if \u03c4 bounded;  Doob: X_n = M_n + A_n;  maximal: P(max X_k \u2265 \u03bb) \u2264 E[X_n]/\u03bb",
+    "equation": "E[X_{n+1}|F_n] = X_n;  optional stopping: E[X_τ] = E[X_0] if τ bounded;  Doob: X_n = M_n + A_n;  maximal: P(max X_k ≥ λ) ≤ E[X_n]/λ",
     "update_form": "conditional_expectation",
     "optimization": "fair_game_characterization",
     "fixed_points": "martingale_limit",
@@ -3926,7 +3932,7 @@
     "id": "hidden_markov_model",
     "name": "Hidden Markov Model (HMM)",
     "domain": "Machine Learning",
-    "equation": "P(O,S) = \u03c0_{s1} \u03a0 P(s\u209c|s\u209c\u208b\u2081) \u03a0 P(o\u209c|s\u209c);  forward: \u03b1_t(j) = \u03a3\u1d62 \u03b1_{t-1}(i)a\u1d62\u2c7cb\u2c7c(o\u209c);  Baum-Welch = EM on HMM",
+    "equation": "P(O,S) = π_{s1} Π P(sₜ|sₜ₋₁) Π P(oₜ|sₜ);  forward: α_t(j) = Σᵢ α_{t-1}(i)aᵢⱼbⱼ(oₜ);  Baum-Welch = EM on HMM",
     "update_form": "forward_backward_em",
     "optimization": "maximize_observation_likelihood",
     "fixed_points": "learned_transition_emission",
@@ -3959,7 +3965,7 @@
     "id": "particle_filter",
     "name": "Particle Filter / Sequential Monte Carlo",
     "domain": "Statistics",
-    "equation": "p(x\u209c|y\u2081:\u209c) \u2248 \u03a3 w\u209c\u2071 \u03b4(x\u209c\u2212x\u209c\u2071);  w\u209c\u2071 \u221d p(y\u209c|x\u209c\u2071)p(x\u209c\u2071|x\u209c\u208b\u2081\u2071)/q(x\u209c\u2071);  resample when ESS < N/2;  N_eff = 1/\u03a3(w\u2071)\u00b2",
+    "equation": "p(xₜ|y₁:ₜ) ≈ Σ wₜⁱ δ(xₜ−xₜⁱ);  wₜⁱ ∝ p(yₜ|xₜⁱ)p(xₜⁱ|xₜ₋₁ⁱ)/q(xₜⁱ);  resample when ESS < N/2;  N_eff = 1/Σ(wⁱ)²",
     "update_form": "importance_sampling_resampling",
     "optimization": "approximate_posterior_filtering",
     "fixed_points": "posterior_particle_cloud",
@@ -3992,7 +3998,7 @@
     "id": "linear_programming",
     "name": "Linear Programming / Simplex Method",
     "domain": "Optimization",
-    "equation": "min c\u1d40x s.t. Ax\u2264b, x\u22650;  dual: max b\u1d40y s.t. A\u1d40y\u2264c, y\u22650;  strong duality: c\u1d40x* = b\u1d40y*;  complementary slackness",
+    "equation": "min cᵀx s.t. Ax≤b, x≥0;  dual: max bᵀy s.t. Aᵀy≤c, y≥0;  strong duality: cᵀx* = bᵀy*;  complementary slackness",
     "update_form": "simplex_pivot",
     "optimization": "minimize_linear_objective",
     "fixed_points": "optimal_vertex",
@@ -4024,7 +4030,7 @@
     "id": "max_flow_min_cut",
     "name": "Max Flow / Min Cut",
     "domain": "Optimization",
-    "equation": "max \u03a3\u2c7c f(s,j);  s.t. f(u,v) \u2264 c(u,v), \u03a3 f(u,v) = \u03a3 f(v,w);  max-flow = min-cut;  Ford-Fulkerson: augment along s-t paths",
+    "equation": "max Σⱼ f(s,j);  s.t. f(u,v) ≤ c(u,v), Σ f(u,v) = Σ f(v,w);  max-flow = min-cut;  Ford-Fulkerson: augment along s-t paths",
     "update_form": "augmenting_path",
     "optimization": "maximize_flow",
     "fixed_points": "maximum_flow",
@@ -4056,7 +4062,7 @@
     "id": "optimal_design",
     "name": "Optimal Experiment Design",
     "domain": "Statistics",
-    "equation": "D-optimal: max det F(\u03be);  A-optimal: min tr F(\u03be)\u207b\u00b9;  F(\u03be) = \u03a3 w\u1d62 f(x\u1d62)f(x\u1d62)\u1d40;  equivalence: D-optimal iff max d(x,\u03be*) = p",
+    "equation": "D-optimal: max det F(ξ);  A-optimal: min tr F(ξ)⁻¹;  F(ξ) = Σ wᵢ f(xᵢ)f(xᵢ)ᵀ;  equivalence: D-optimal iff max d(x,ξ*) = p",
     "update_form": "design_measure_update",
     "optimization": "maximize_information_criterion",
     "fixed_points": "optimal_design_measure",
@@ -4088,7 +4094,7 @@
     "id": "pareto_optimization",
     "name": "Multi-Objective / Pareto Optimization",
     "domain": "Optimization",
-    "equation": "min (f\u2081(x),...,f\u2096(x));  Pareto: x* if \u2204x: f\u1d62(x)\u2264f\u1d62(x*) \u2200i, strict for some;  scalarization: min \u03a3\u03bb\u1d62f\u1d62(x);  \u03b5-constraint",
+    "equation": "min (f₁(x),...,fₖ(x));  Pareto: x* if ∄x: fᵢ(x)≤fᵢ(x*) ∀i, strict for some;  scalarization: min Σλᵢfᵢ(x);  ε-constraint",
     "update_form": "pareto_front_construction",
     "optimization": "find_pareto_front",
     "fixed_points": "pareto_optimal_set",
@@ -4119,7 +4125,7 @@
     "id": "domain_adaptation",
     "name": "Domain Adaptation / Distribution Shift",
     "domain": "Machine Learning",
-    "equation": "R_T(h) \u2264 R_S(h) + d_H(S,T) + \u03bb*;  importance weighting: E_T[\u2113] = E_S[w(x)\u2113], w=p_T/p_S;  DANN: min_\u03b8 max_d L_task \u2212 \u03bbL_domain",
+    "equation": "R_T(h) ≤ R_S(h) + d_H(S,T) + λ*;  importance weighting: E_T[ℓ] = E_S[w(x)ℓ], w=p_T/p_S;  DANN: min_θ max_d L_task − λL_domain",
     "update_form": "domain_adversarial_training",
     "optimization": "minimize_target_risk",
     "fixed_points": "domain_invariant_representation",
@@ -4150,7 +4156,7 @@
     "id": "empirical_risk_minimization",
     "name": "Empirical Risk Minimization (ERM)",
     "domain": "Machine Learning",
-    "equation": "R\u0302(h) = 1/n \u03a3 \u2113(h(x\u1d62),y\u1d62);  h* = argmin R\u0302(h);  R(h) \u2264 R\u0302(h) + O(\u221a(VC(H)/n));  structural risk: min R\u0302 + \u03a9(H)",
+    "equation": "R̂(h) = 1/n Σ ℓ(h(xᵢ),yᵢ);  h* = argmin R̂(h);  R(h) ≤ R̂(h) + O(√(VC(H)/n));  structural risk: min R̂ + Ω(H)",
     "update_form": "loss_minimization",
     "optimization": "minimize_empirical_risk",
     "fixed_points": "risk_minimizer",
@@ -4179,9 +4185,9 @@
   },
   "ito_calculus": {
     "id": "ito_calculus",
-    "name": "It\u00f4 Calculus / SDE Theory",
+    "name": "Itô Calculus / SDE Theory",
     "domain": "Mathematics",
-    "equation": "dX\u209c = \u03bc(X\u209c)dt + \u03c3(X\u209c)dW\u209c;  It\u00f4: df = (\u2202f/\u2202t + \u03bc\u2202f/\u2202x + \u00bd\u03c3\u00b2\u2202\u00b2f/\u2202x\u00b2)dt + \u03c3\u2202f/\u2202x dW;  Girsanov: dW\u0303 = dW + \u03b8dt",
+    "equation": "dXₜ = μ(Xₜ)dt + σ(Xₜ)dWₜ;  Itô: df = (∂f/∂t + μ∂f/∂x + ½σ²∂²f/∂x²)dt + σ∂f/∂x dW;  Girsanov: dW̃ = dW + θdt",
     "update_form": "ito_integration",
     "optimization": "characterize_diffusion",
     "fixed_points": "stationary_distribution",
@@ -4213,7 +4219,7 @@
     "id": "sat_solving",
     "name": "Boolean Satisfiability / SAT Solving",
     "domain": "Computer Science",
-    "equation": "\u03c6 = \u2227\u1d62 C\u1d62, C\u1d62 = \u2228\u2c7c l\u1d62\u2c7c;  DPLL: unit propagation + branching;  CDCL: conflict analysis \u2192 learned clause;  random k-SAT: \u03b1_c(k) \u2248 2\u1d4f ln2",
+    "equation": "φ = ∧ᵢ Cᵢ, Cᵢ = ∨ⱼ lᵢⱼ;  DPLL: unit propagation + branching;  CDCL: conflict analysis → learned clause;  random k-SAT: α_c(k) ≈ 2ᵏ ln2",
     "update_form": "conflict_driven_search",
     "optimization": "find_satisfying_assignment",
     "fixed_points": "satisfying_assignment",
@@ -4243,7 +4249,7 @@
     "id": "fourier_analysis",
     "name": "Fourier Analysis / Spectral Decomposition",
     "domain": "Mathematics",
-    "equation": "f(x) = \u03a3 c\u2099 e\u2071\u207f\u02e3;  F(\u03c9) = \u222bf(t)e\u207b\u2071\u03c9\u1d57dt;  Parseval: \u222b|f|\u00b2 = \u03a3|c\u2099|\u00b2;  convolution: F(f*g) = F(f)\u00b7F(g);  sampling: f_s \u2265 2f_max",
+    "equation": "f(x) = Σ cₙ eⁱⁿˣ;  F(ω) = ∫f(t)e⁻ⁱωᵗdt;  Parseval: ∫|f|² = Σ|cₙ|²;  convolution: F(f*g) = F(f)·F(g);  sampling: f_s ≥ 2f_max",
     "update_form": "spectral_decomposition",
     "optimization": "optimal_frequency_representation",
     "fixed_points": "spectral_coefficients",
@@ -4276,7 +4282,7 @@
     "id": "wavelet_theory",
     "name": "Wavelet Theory / Multiresolution",
     "domain": "Signal Processing",
-    "equation": "f = \u03a3\u27e8f,\u03c8\u2c7c\u2096\u27e9\u03c8\u2c7c\u2096;  \u03c8\u2c7c\u2096(t) = 2^{j/2}\u03c8(2\u02b2t\u2212k);  MRA: V_j \u2282 V_{j+1};  \u03c6(t) = \u221a2 \u03a3 h\u2096 \u03c6(2t\u2212k);  ||f||\u00b2 = \u03a3|\u27e8f,\u03c8\u2c7c\u2096\u27e9|\u00b2",
+    "equation": "f = Σ⟨f,ψⱼₖ⟩ψⱼₖ;  ψⱼₖ(t) = 2^{j/2}ψ(2ʲt−k);  MRA: V_j ⊂ V_{j+1};  φ(t) = √2 Σ hₖ φ(2t−k);  ||f||² = Σ|⟨f,ψⱼₖ⟩|²",
     "update_form": "multiresolution_decomposition",
     "optimization": "optimal_time_frequency_representation",
     "fixed_points": "wavelet_coefficients",
@@ -4309,7 +4315,7 @@
     "id": "black_scholes",
     "name": "Black-Scholes / Option Pricing",
     "domain": "Economics",
-    "equation": "\u2202V/\u2202t + \u00bd\u03c3\u00b2S\u00b2\u2202\u00b2V/\u2202S\u00b2 + rS\u2202V/\u2202S \u2212 rV = 0;  C = SN(d\u2081) \u2212 Ke\u207b\u02b3\u1d40N(d\u2082);  \u0394-hedge: d\u03a0 = r\u03a0dt;  risk-neutral: E^Q[e\u207b\u02b3\u1d40 payoff]",
+    "equation": "∂V/∂t + ½σ²S²∂²V/∂S² + rS∂V/∂S − rV = 0;  C = SN(d₁) − Ke⁻ʳᵀN(d₂);  Δ-hedge: dΠ = rΠdt;  risk-neutral: E^Q[e⁻ʳᵀ payoff]",
     "update_form": "risk_neutral_pricing",
     "optimization": "replicate_payoff",
     "fixed_points": "arbitrage_free_price",
@@ -4341,7 +4347,7 @@
     "id": "markowitz_portfolio",
     "name": "Markowitz Portfolio / Mean-Variance",
     "domain": "Economics",
-    "equation": "min w\u1d40\u03a3w s.t. w\u1d40\u03bc=r, w\u1d401=1;  efficient frontier: \u03c3\u00b2(r) = a r\u00b2 \u2212 2br + c;  Sharpe: max (w\u1d40\u03bc\u2212r_f)/\u221a(w\u1d40\u03a3w);  CAPM: E[r\u1d62]\u2212r_f = \u03b2\u1d62(E[r_m]\u2212r_f)",
+    "equation": "min wᵀΣw s.t. wᵀμ=r, wᵀ1=1;  efficient frontier: σ²(r) = a r² − 2br + c;  Sharpe: max (wᵀμ−r_f)/√(wᵀΣw);  CAPM: E[rᵢ]−r_f = βᵢ(E[r_m]−r_f)",
     "update_form": "mean_variance_optimization",
     "optimization": "minimize_portfolio_variance",
     "fixed_points": "efficient_portfolio",
@@ -4372,7 +4378,7 @@
     "id": "sir_model",
     "name": "SIR / Epidemiological Model",
     "domain": "Biology",
-    "equation": "dS/dt = \u2212\u03b2SI;  dI/dt = \u03b2SI \u2212 \u03b3I;  dR/dt = \u03b3I;  R\u2080 = \u03b2/\u03b3;  herd immunity: S < 1/R\u2080;  final size: 1\u2212R\u221e = e^{\u2212R\u2080R\u221e}",
+    "equation": "dS/dt = −βSI;  dI/dt = βSI − γI;  dR/dt = γI;  R₀ = β/γ;  herd immunity: S < 1/R₀;  final size: 1−R∞ = e^{−R₀R∞}",
     "update_form": "compartmental_ode",
     "optimization": "minimize_epidemic_size",
     "fixed_points": "disease_free_equilibrium",
@@ -4404,7 +4410,7 @@
     "id": "curry_howard",
     "name": "Curry-Howard Correspondence / Type Theory",
     "domain": "Computer Science",
-    "equation": "\u0393 \u22a2 t : A  \u2245  proof of A from \u0393;  A\u2192B \u2245 implication;  A\u00d7B \u2245 conjunction;  \u03a0(x:A).B(x) \u2245 \u2200x.B;  \u03a3(x:A).B(x) \u2245 \u2203x.B",
+    "equation": "Γ ⊢ t : A  ≅  proof of A from Γ;  A→B ≅ implication;  A×B ≅ conjunction;  Π(x:A).B(x) ≅ ∀x.B;  Σ(x:A).B(x) ≅ ∃x.B",
     "update_form": "type_checking_inference",
     "optimization": "construct_proof_term",
     "fixed_points": "well_typed_program",
@@ -4436,7 +4442,7 @@
     "id": "quantum_computing",
     "name": "Quantum Computing / Gate Model",
     "domain": "Physics",
-    "equation": "|\u03c8\u27e9 = \u03a3 \u03b1\u1d62|i\u27e9;  U = \u03a0 G\u2c7c;  Grover: O(\u221aN) search;  Shor: period finding via QFT;  ||\u03c8||\u00b2 = 1;  decoherence: \u03c1 \u2192 \u03a3 E\u2096\u03c1E\u2096\u2020",
+    "equation": "|ψ⟩ = Σ αᵢ|i⟩;  U = Π Gⱼ;  Grover: O(√N) search;  Shor: period finding via QFT;  ||ψ||² = 1;  decoherence: ρ → Σ EₖρEₖ†",
     "update_form": "unitary_gate_sequence",
     "optimization": "minimize_circuit_depth",
     "fixed_points": "measurement_outcome",
@@ -4470,7 +4476,7 @@
     "id": "community_detection",
     "name": "Community Detection / Modularity",
     "domain": "Network Science",
-    "equation": "Q = 1/(2m) \u03a3 [A\u1d62\u2c7c \u2212 k\u1d62k\u2c7c/(2m)] \u03b4(c\u1d62,c\u2c7c);  SBM: P(A\u1d62\u2c7c=1) = p if c\u1d62=c\u2c7c, q otherwise;  detection threshold: (p\u2212q)\u00b2/[2(p+q)] = log n",
+    "equation": "Q = 1/(2m) Σ [Aᵢⱼ − kᵢkⱼ/(2m)] δ(cᵢ,cⱼ);  SBM: P(Aᵢⱼ=1) = p if cᵢ=cⱼ, q otherwise;  detection threshold: (p−q)²/[2(p+q)] = log n",
     "update_form": "modularity_optimization",
     "optimization": "maximize_modularity",
     "fixed_points": "optimal_partition",
@@ -4500,7 +4506,7 @@
     "id": "wright_fisher",
     "name": "Wright-Fisher / Population Genetics",
     "domain": "Biology",
-    "equation": "E[p\u209c\u208a\u2081] = p(1+s)/(1+sp);  drift: Var(\u0394p) = p(1\u2212p)/(2N);  diffusion: \u2202f/\u2202t = 1/(4N)\u2202\u00b2(p(1-p)f)/\u2202p\u00b2 \u2212 s\u2202(p(1-p)f)/\u2202p;  fixation: u(p) \u2248 (1\u2212e\u207b\u2074\u1d3a\u02e2\u1d56)/(1\u2212e\u207b\u2074\u1d3a\u02e2)",
+    "equation": "E[pₜ₊₁] = p(1+s)/(1+sp);  drift: Var(Δp) = p(1−p)/(2N);  diffusion: ∂f/∂t = 1/(4N)∂²(p(1-p)f)/∂p² − s∂(p(1-p)f)/∂p;  fixation: u(p) ≈ (1−e⁻⁴ᴺˢᵖ)/(1−e⁻⁴ᴺˢ)",
     "update_form": "binomial_sampling_selection",
     "optimization": "characterize_allele_dynamics",
     "fixed_points": "fixation_or_loss",
@@ -4533,7 +4539,7 @@
     "id": "quantum_error_correction",
     "name": "Quantum Error Correction",
     "domain": "Physics",
-    "equation": "[[n,k,d]] code;  syndrome: s = H\u03b5;  Knill-Laflamme: \u27e8\u03c8\u1d62|E\u2020\u2090E\u1d66|\u03c8\u2c7c\u27e9 = C\u2090\u1d66\u03b4\u1d62\u2c7c;  threshold: p < p_th \u2192 arbitrarily long computation;  toric code",
+    "equation": "[[n,k,d]] code;  syndrome: s = Hε;  Knill-Laflamme: ⟨ψᵢ|E†ₐEᵦ|ψⱼ⟩ = Cₐᵦδᵢⱼ;  threshold: p < p_th → arbitrarily long computation;  toric code",
     "update_form": "syndrome_decoding",
     "optimization": "minimize_logical_error_rate",
     "fixed_points": "fault_tolerant_logical_qubit",
@@ -4564,9 +4570,9 @@
   },
   "schrodinger_equation": {
     "id": "schrodinger_equation",
-    "name": "Schr\u00f6dinger Equation",
+    "name": "Schrödinger Equation",
     "domain": "Physics",
-    "equation": "i\u210f\u2202\u03c8/\u2202t = \u0124\u03c8;  \u0124 = \u2212\u210f\u00b2/2m \u2207\u00b2 + V;  E_n \u03c8_n = \u0124\u03c8_n;  \u27e8A\u27e9 = \u27e8\u03c8|\u00c2|\u03c8\u27e9;  \u0394x\u0394p \u2265 \u210f/2",
+    "equation": "iℏ∂ψ/∂t = Ĥψ;  Ĥ = −ℏ²/2m ∇² + V;  E_n ψ_n = Ĥψ_n;  ⟨A⟩ = ⟨ψ|Â|ψ⟩;  ΔxΔp ≥ ℏ/2",
     "update_form": "unitary_time_evolution",
     "optimization": "minimize_energy_expectation",
     "fixed_points": "energy_eigenstates",
@@ -4600,7 +4606,7 @@
     "id": "heat_equation",
     "name": "Heat Equation / Diffusion PDE",
     "domain": "Physics",
-    "equation": "\u2202u/\u2202t = \u03b1\u2207\u00b2u;  u(x,t) = \u222bG(x\u2212y,t)u\u2080(y)dy;  G(x,t) = (4\u03c0\u03b1t)\u207b\u207f/\u00b2 exp(\u2212|x|\u00b2/4\u03b1t);  max principle: max on boundary",
+    "equation": "∂u/∂t = α∇²u;  u(x,t) = ∫G(x−y,t)u₀(y)dy;  G(x,t) = (4παt)⁻ⁿ/² exp(−|x|²/4αt);  max principle: max on boundary",
     "update_form": "diffusion_kernel_convolution",
     "optimization": "dissipate_to_equilibrium",
     "fixed_points": "uniform_temperature",
@@ -4632,7 +4638,7 @@
     "id": "wave_equation",
     "name": "Wave Equation / d'Alembert",
     "domain": "Physics",
-    "equation": "\u2202\u00b2u/\u2202t\u00b2 = c\u00b2\u2207\u00b2u;  d'Alembert: u = f(x\u2212ct) + g(x+ct);  energy: E = \u00bd\u222b(u_t\u00b2 + c\u00b2|\u2207u|\u00b2)dx;  dispersion: \u03c9 = \u03c9(k)",
+    "equation": "∂²u/∂t² = c²∇²u;  d'Alembert: u = f(x−ct) + g(x+ct);  energy: E = ½∫(u_t² + c²|∇u|²)dx;  dispersion: ω = ω(k)",
     "update_form": "wave_propagation",
     "optimization": "satisfy_wave_dynamics",
     "fixed_points": "standing_wave_modes",
@@ -4664,7 +4670,7 @@
     "id": "score_matching",
     "name": "Score Matching / Score Function",
     "domain": "Machine Learning",
-    "equation": "s_\u03b8(x) \u2248 \u2207_x log p(x);  J(\u03b8) = \u00bdE_p[||s_\u03b8 \u2212 \u2207log p||\u00b2] = E_p[\u00bd||s_\u03b8||\u00b2 + tr(\u2207s_\u03b8)];  DSM: J = E[||s_\u03b8(x\u0303) \u2212 \u2207log p(x\u0303|x)||\u00b2]",
+    "equation": "s_θ(x) ≈ ∇_x log p(x);  J(θ) = ½E_p[||s_θ − ∇log p||²] = E_p[½||s_θ||² + tr(∇s_θ)];  DSM: J = E[||s_θ(x̃) − ∇log p(x̃|x)||²]",
     "update_form": "score_network_training",
     "optimization": "minimize_score_matching_loss",
     "fixed_points": "learned_score_function",
@@ -4695,7 +4701,7 @@
     "id": "knowledge_distillation",
     "name": "Knowledge Distillation",
     "domain": "Machine Learning",
-    "equation": "L = (1\u2212\u03b1)H(y,\u03c3(z_s)) + \u03b1 T\u00b2 KL(\u03c3(z_t/T)||\u03c3(z_s/T));  student: small model;  teacher: large model;  dark knowledge in soft labels",
+    "equation": "L = (1−α)H(y,σ(z_s)) + α T² KL(σ(z_t/T)||σ(z_s/T));  student: small model;  teacher: large model;  dark knowledge in soft labels",
     "update_form": "soft_label_training",
     "optimization": "minimize_distillation_loss",
     "fixed_points": "compressed_student",
@@ -4758,7 +4764,7 @@
     "id": "robust_estimation",
     "name": "Robust Estimation / M-Estimators",
     "domain": "Statistics",
-    "equation": "\u03b8\u0302 = argmin \u03a3 \u03c1(x\u1d62\u2212\u03b8);  influence: IF(x;T,F) = lim [T((1\u2212\u03b5)F+\u03b5\u03b4_x)\u2212T(F)]/\u03b5;  breakdown: \u03b5* = max \u03b5 s.t. bounded;  Huber: \u03c1(x) = x\u00b2/2 if |x|\u2264k, k|x|\u2212k\u00b2/2 else",
+    "equation": "θ̂ = argmin Σ ρ(xᵢ−θ);  influence: IF(x;T,F) = lim [T((1−ε)F+εδ_x)−T(F)]/ε;  breakdown: ε* = max ε s.t. bounded;  Huber: ρ(x) = x²/2 if |x|≤k, k|x|−k²/2 else",
     "update_form": "iteratively_reweighted_least_squares",
     "optimization": "minimize_robust_loss",
     "fixed_points": "robust_location_estimate",
@@ -4789,7 +4795,7 @@
     "id": "quantum_annealing",
     "name": "Quantum Annealing / Adiabatic QC",
     "domain": "Physics",
-    "equation": "H(s) = (1\u2212s)H_0 + sH_P;  s: 0\u21921;  adiabatic: T \u2265 O(1/\u0394\u00b2_min);  \u0394 = E\u2081\u2212E\u2080;  ground state of H_P = solution",
+    "equation": "H(s) = (1−s)H_0 + sH_P;  s: 0→1;  adiabatic: T ≥ O(1/Δ²_min);  Δ = E₁−E₀;  ground state of H_P = solution",
     "update_form": "adiabatic_evolution",
     "optimization": "find_ground_state",
     "fixed_points": "ground_state_of_problem_hamiltonian",
@@ -4822,7 +4828,7 @@
     "id": "shortest_path",
     "name": "Shortest Path / Dijkstra-Bellman-Ford",
     "domain": "Computer Science",
-    "equation": "d(v) = min_{u:(u,v)\u2208E} [d(u) + w(u,v)];  Dijkstra: greedy + priority queue O(E log V);  Bellman-Ford: relax all edges V\u22121 times;  Floyd: d[i][j] = min(d[i][j], d[i][k]+d[k][j])",
+    "equation": "d(v) = min_{u:(u,v)∈E} [d(u) + w(u,v)];  Dijkstra: greedy + priority queue O(E log V);  Bellman-Ford: relax all edges V−1 times;  Floyd: d[i][j] = min(d[i][j], d[i][k]+d[k][j])",
     "update_form": "relaxation_iteration",
     "optimization": "minimize_path_cost",
     "fixed_points": "shortest_path_tree",
@@ -4853,7 +4859,7 @@
     "id": "variational_quantum",
     "name": "Variational Quantum Eigensolver (VQE)",
     "domain": "Physics",
-    "equation": "E(\u03b8) = \u27e8\u03c8(\u03b8)|H|\u03c8(\u03b8)\u27e9;  |\u03c8(\u03b8)\u27e9 = U(\u03b8)|0\u27e9;  \u03b8* = argmin E(\u03b8);  \u2202E/\u2202\u03b8\u1d62 = \u00bd[E(\u03b8\u1d62+\u03c0/2) \u2212 E(\u03b8\u1d62\u2212\u03c0/2)];  E(\u03b8) \u2265 E\u2080",
+    "equation": "E(θ) = ⟨ψ(θ)|H|ψ(θ)⟩;  |ψ(θ)⟩ = U(θ)|0⟩;  θ* = argmin E(θ);  ∂E/∂θᵢ = ½[E(θᵢ+π/2) − E(θᵢ−π/2)];  E(θ) ≥ E₀",
     "update_form": "parameter_shift_gradient",
     "optimization": "minimize_energy_expectation",
     "fixed_points": "approximate_ground_state",
@@ -4886,7 +4892,7 @@
     "id": "elasticity_theory",
     "name": "Elasticity / Continuum Mechanics",
     "domain": "Physics",
-    "equation": "\u03c3\u1d62\u2c7c = C\u1d62\u2c7c\u2096\u2097 \u03b5\u2096\u2097;  \u03b5\u1d62\u2c7c = \u00bd(\u2202u\u1d62/\u2202x\u2c7c + \u2202u\u2c7c/\u2202x\u1d62);  \u2207\u00b7\u03c3 + f = \u03c1\u00fc;  W = \u00bd\u222b\u03c3:\u03b5 dV;  min \u03a0[u] = W[u] \u2212 \u222bf\u00b7u",
+    "equation": "σᵢⱼ = Cᵢⱼₖₗ εₖₗ;  εᵢⱼ = ½(∂uᵢ/∂xⱼ + ∂uⱼ/∂xᵢ);  ∇·σ + f = ρü;  W = ½∫σ:ε dV;  min Π[u] = W[u] − ∫f·u",
     "update_form": "variational_displacement",
     "optimization": "minimize_potential_energy",
     "fixed_points": "equilibrium_configuration",
@@ -4919,7 +4925,7 @@
     "id": "maxwell_equations",
     "name": "Maxwell's Equations / Electrodynamics",
     "domain": "Physics",
-    "equation": "\u2207\u00b7E = \u03c1/\u03b5\u2080;  \u2207\u00d7E = \u2212\u2202B/\u2202t;  \u2207\u00b7B = 0;  \u2207\u00d7B = \u03bc\u2080J + \u03bc\u2080\u03b5\u2080\u2202E/\u2202t;  F^\u03bc\u03bd = \u2202^\u03bcA^\u03bd \u2212 \u2202^\u03bdA^\u03bc;  L = \u2212\u00bcF\u03bc\u03bdF^\u03bc\u03bd",
+    "equation": "∇·E = ρ/ε₀;  ∇×E = −∂B/∂t;  ∇·B = 0;  ∇×B = μ₀J + μ₀ε₀∂E/∂t;  F^μν = ∂^μA^ν − ∂^νA^μ;  L = −¼FμνF^μν",
     "update_form": "field_propagation",
     "optimization": "satisfy_gauge_invariant_dynamics",
     "fixed_points": "static_field_configuration",
@@ -4953,7 +4959,7 @@
     "id": "batch_normalization",
     "name": "Batch Normalization / Layer Norm",
     "domain": "Machine Learning",
-    "equation": "x\u0302 = (x\u2212\u03bc_B)/\u221a(\u03c3\u00b2_B+\u03b5);  y = \u03b3x\u0302 + \u03b2;  \u03bc_B = 1/m \u03a3 x\u1d62;  \u03c3\u00b2_B = 1/m \u03a3(x\u1d62\u2212\u03bc_B)\u00b2;  smooths loss landscape",
+    "equation": "x̂ = (x−μ_B)/√(σ²_B+ε);  y = γx̂ + β;  μ_B = 1/m Σ xᵢ;  σ²_B = 1/m Σ(xᵢ−μ_B)²;  smooths loss landscape",
     "update_form": "normalize_then_scale",
     "optimization": "stabilize_training",
     "fixed_points": "trained_scale_shift",
@@ -4984,7 +4990,7 @@
     "id": "recursive_least_squares",
     "name": "Recursive Least Squares / LMS",
     "domain": "Signal Processing",
-    "equation": "\u03b8\u0302_n = \u03b8\u0302_{n-1} + K_n(y_n \u2212 \u03c6_n\u1d40\u03b8\u0302_{n-1});  K_n = P_{n-1}\u03c6_n/(1+\u03c6_n\u1d40P_{n-1}\u03c6_n);  P_n = (I\u2212K_n\u03c6_n\u1d40)P_{n-1};  LMS: \u03b8\u0302 += \u03bce\u03c6",
+    "equation": "θ̂_n = θ̂_{n-1} + K_n(y_n − φ_nᵀθ̂_{n-1});  K_n = P_{n-1}φ_n/(1+φ_nᵀP_{n-1}φ_n);  P_n = (I−K_nφ_nᵀ)P_{n-1};  LMS: θ̂ += μeφ",
     "update_form": "recursive_parameter_update",
     "optimization": "minimize_prediction_error",
     "fixed_points": "least_squares_estimate",
@@ -5014,7 +5020,7 @@
     "id": "traveling_salesman",
     "name": "Traveling Salesman / Combinatorial Optimization",
     "domain": "Computer Science",
-    "equation": "min \u03a3 d(\u03c0(i),\u03c0(i+1));  ILP: \u03a3\u2c7cx\u1d62\u2c7c=1, \u03a3\u1d62x\u1d62\u2c7c=1;  subtour elimination;  Christofides: 3/2-approx;  LKH: k-opt local search",
+    "equation": "min Σ d(π(i),π(i+1));  ILP: Σⱼxᵢⱼ=1, Σᵢxᵢⱼ=1;  subtour elimination;  Christofides: 3/2-approx;  LKH: k-opt local search",
     "update_form": "local_search_improvement",
     "optimization": "minimize_tour_length",
     "fixed_points": "locally_optimal_tour",
@@ -5045,7 +5051,7 @@
     "id": "error_correcting_codes",
     "name": "Error-Correcting Codes / Shannon Capacity",
     "domain": "Information Theory",
-    "equation": "C = max_{p(x)} I(X;Y);  AWGN: C = \u00bdlog(1+SNR);  [n,k,d] code: correct \u230a(d-1)/2\u230b;  Hamming bound: \u03a3 C(n,i) \u2264 2^{n-k};  turbo/LDPC \u2192 capacity",
+    "equation": "C = max_{p(x)} I(X;Y);  AWGN: C = ½log(1+SNR);  [n,k,d] code: correct ⌊(d-1)/2⌋;  Hamming bound: Σ C(n,i) ≤ 2^{n-k};  turbo/LDPC → capacity",
     "update_form": "iterative_decoding",
     "optimization": "maximize_rate_at_target_error",
     "fixed_points": "capacity_achieving_code",
@@ -5078,7 +5084,7 @@
     "id": "kernel_density_estimation",
     "name": "Kernel Density Estimation (KDE)",
     "domain": "Statistics",
-    "equation": "f\u0302(x) = 1/(nh) \u03a3 K((x\u2212x\u1d62)/h);  MISE = \u222b(f\u0302\u2212f)\u00b2 \u2248 1/(nh)\u222bK\u00b2 + h\u2074/4(\u222bK''\u00b2)(\u222bf''\u00b2);  h* \u221d n^{-1/5};  AMISE optimal",
+    "equation": "f̂(x) = 1/(nh) Σ K((x−xᵢ)/h);  MISE = ∫(f̂−f)² ≈ 1/(nh)∫K² + h⁴/4(∫K''²)(∫f''²);  h* ∝ n^{-1/5};  AMISE optimal",
     "update_form": "bandwidth_selection",
     "optimization": "minimize_integrated_squared_error",
     "fixed_points": "optimal_bandwidth_density",
@@ -5109,7 +5115,7 @@
     "id": "landauer_principle",
     "name": "Landauer's Principle / Thermodynamic Computing",
     "domain": "Physics",
-    "equation": "W \u2265 kT ln 2 per bit erased;  S_system + S_env \u2265 0;  Maxwell demon: information \u2192 work;  Jarzynski: \u27e8e^{-W/kT}\u27e9 = e^{-\u0394F/kT}",
+    "equation": "W ≥ kT ln 2 per bit erased;  S_system + S_env ≥ 0;  Maxwell demon: information → work;  Jarzynski: ⟨e^{-W/kT}⟩ = e^{-ΔF/kT}",
     "update_form": "thermodynamic_bound",
     "optimization": "minimize_dissipation",
     "fixed_points": "reversible_computation_limit",
@@ -5138,9 +5144,9 @@
   },
   "disentangled_representations": {
     "id": "disentangled_representations",
-    "name": "Disentangled Representations / \u03b2-VAE",
+    "name": "Disentangled Representations / β-VAE",
     "domain": "Machine Learning",
-    "equation": "L = E_q[log p(x|z)] \u2212 \u03b2 D_KL(q(z|x)||p(z));  disentanglement: z_i \u22a5 z_j;  DCI metric;  \u03b2>1 \u2192 more disentangled, less reconstruction",
+    "equation": "L = E_q[log p(x|z)] − β D_KL(q(z|x)||p(z));  disentanglement: z_i ⊥ z_j;  DCI metric;  β>1 → more disentangled, less reconstruction",
     "update_form": "regularized_variational",
     "optimization": "maximize_disentangled_elbo",
     "fixed_points": "disentangled_latent_space",
@@ -5172,7 +5178,7 @@
     "id": "frank_wolfe",
     "name": "Frank-Wolfe / Conditional Gradient",
     "domain": "Optimization",
-    "equation": "s_t = argmin_{s\u2208C} \u27e8\u2207f(x_t), s\u27e9;  x_{t+1} = x_t + \u03b3_t(s_t \u2212 x_t);  gap_t = \u27e8\u2207f(x_t), x_t\u2212s_t\u27e9;  f(x_t)\u2212f* \u2264 O(1/t)",
+    "equation": "s_t = argmin_{s∈C} ⟨∇f(x_t), s⟩;  x_{t+1} = x_t + γ_t(s_t − x_t);  gap_t = ⟨∇f(x_t), x_t−s_t⟩;  f(x_t)−f* ≤ O(1/t)",
     "update_form": "linear_minimization_oracle",
     "optimization": "minimize_over_convex_set",
     "fixed_points": "constrained_optimum",
@@ -5205,7 +5211,7 @@
     "id": "sheaf_cohomology",
     "name": "Sheaf Cohomology / Local-to-Global",
     "domain": "Mathematics",
-    "equation": "0 \u2192 F(X) \u2192 \u03a0F(U\u1d62) \u2192 \u03a0F(U\u1d62\u2229U\u2c7c);  H\u207f(X,F) = R\u207f \u0393(X,F);  \u010cech: \u021e\u207f = lim H\u207f(U);  Serre duality: H\u207f(X,F) \u2245 H^{d-n}(X,F*\u2297\u03c9)\u1d5b",
+    "equation": "0 → F(X) → ΠF(Uᵢ) → ΠF(Uᵢ∩Uⱼ);  Hⁿ(X,F) = Rⁿ Γ(X,F);  Čech: Ȟⁿ = lim Hⁿ(U);  Serre duality: Hⁿ(X,F) ≅ H^{d-n}(X,F*⊗ω)ᵛ",
     "update_form": "local_section_extension",
     "optimization": "compute_global_sections",
     "fixed_points": "cohomology_class",
@@ -5237,7 +5243,7 @@
     "id": "magnetohydrodynamics",
     "name": "Magnetohydrodynamics (MHD)",
     "domain": "Physics",
-    "equation": "\u03c1(\u2202v/\u2202t + v\u00b7\u2207v) = J\u00d7B \u2212 \u2207p;  \u2202B/\u2202t = \u2207\u00d7(v\u00d7B) + \u03b7\u2207\u00b2B;  \u2207\u00b7B = 0;  Alfv\u00e9n: v_A = B/\u221a(\u03bc\u2080\u03c1);  magnetic Reynolds: Rm = vL/\u03b7",
+    "equation": "ρ(∂v/∂t + v·∇v) = J×B − ∇p;  ∂B/∂t = ∇×(v×B) + η∇²B;  ∇·B = 0;  Alfvén: v_A = B/√(μ₀ρ);  magnetic Reynolds: Rm = vL/η",
     "update_form": "coupled_fluid_field",
     "optimization": "satisfy_mhd_equilibrium",
     "fixed_points": "force_free_field",
@@ -5272,7 +5278,7 @@
     "id": "stable_matching",
     "name": "Stable Matching / Gale-Shapley",
     "domain": "Economics",
-    "equation": "blocking pair (m,w): m prefers w over partner, w prefers m;  stable = no blocking pair;  Gale-Shapley: O(n\u00b2);  lattice of stable matchings;  rural hospital theorem",
+    "equation": "blocking pair (m,w): m prefers w over partner, w prefers m;  stable = no blocking pair;  Gale-Shapley: O(n²);  lattice of stable matchings;  rural hospital theorem",
     "update_form": "proposal_rejection",
     "optimization": "find_stable_matching",
     "fixed_points": "stable_matching",
@@ -5305,7 +5311,7 @@
     "id": "relevance_vector_machine",
     "name": "Relevance Vector Machine / Sparse Bayes",
     "domain": "Machine Learning",
-    "equation": "p(w|\u03b1) = \u03a0 N(w\u1d62|0,\u03b1\u1d62\u207b\u00b9);  marginal: p(t|\u03b1) = N(0, \u03c3\u00b2I + \u03a6A\u207b\u00b9\u03a6\u1d40);  update \u03b1\u1d62 = \u03b3\u1d62/\u03bc\u1d62\u00b2;  prune if \u03b1\u1d62\u2192\u221e;  ARD prior",
+    "equation": "p(w|α) = Π N(wᵢ|0,αᵢ⁻¹);  marginal: p(t|α) = N(0, σ²I + ΦA⁻¹Φᵀ);  update αᵢ = γᵢ/μᵢ²;  prune if αᵢ→∞;  ARD prior",
     "update_form": "evidence_maximization",
     "optimization": "maximize_marginal_likelihood",
     "fixed_points": "sparse_posterior",
@@ -5336,7 +5342,7 @@
     "id": "spectral_methods",
     "name": "Spectral Methods / Chebyshev-Galerkin",
     "domain": "Mathematics",
-    "equation": "u_N = \u03a3 \u00e2_k \u03c6_k;  \u27e8Lu_N \u2212 f, \u03c6_j\u27e9 = 0;  Chebyshev: T_n(cos \u03b8) = cos(n\u03b8);  spectral convergence: |u\u2212u_N| \u2264 Ce^{\u2212\u03b1N};  pseudospectral: collocation",
+    "equation": "u_N = Σ â_k φ_k;  ⟨Lu_N − f, φ_j⟩ = 0;  Chebyshev: T_n(cos θ) = cos(nθ);  spectral convergence: |u−u_N| ≤ Ce^{−αN};  pseudospectral: collocation",
     "update_form": "coefficient_projection",
     "optimization": "minimize_residual_in_function_space",
     "fixed_points": "spectral_solution",
@@ -5369,7 +5375,7 @@
     "id": "homotopy_type_theory",
     "name": "Homotopy Type Theory / Univalence",
     "domain": "Mathematics",
-    "equation": "Id_A(a,b) \u2243 (a =_A b);  univalence: (A \u2243 B) \u2243 (A =_U B);  \u03a0(x:A).B(x);  \u03a3(x:A).B(x);  higher inductive types;  n-truncation \u2016A\u2016_n",
+    "equation": "Id_A(a,b) ≃ (a =_A b);  univalence: (A ≃ B) ≃ (A =_U B);  Π(x:A).B(x);  Σ(x:A).B(x);  higher inductive types;  n-truncation ‖A‖_n",
     "update_form": "type_checking",
     "optimization": "construct_proof_term",
     "fixed_points": "canonical_form",
@@ -5402,7 +5408,7 @@
     "id": "topological_quantum_computing",
     "name": "Topological Quantum Computing / Anyons",
     "domain": "Physics",
-    "equation": "braiding: \u03c3\u1d62\u03c3\u2c7c = \u03c3\u2c7c\u03c3\u1d62 (|i\u2212j|\u22652);  \u03c3\u1d62\u03c3\u1d62\u208a\u2081\u03c3\u1d62 = \u03c3\u1d62\u208a\u2081\u03c3\u1d62\u03c3\u1d62\u208a\u2081;  fusion: a\u00d7b = \u03a3 N^c_{ab} c;  Jones polynomial from Temperley-Lieb;  gap protects qubits",
+    "equation": "braiding: σᵢσⱼ = σⱼσᵢ (|i−j|≥2);  σᵢσᵢ₊₁σᵢ = σᵢ₊₁σᵢσᵢ₊₁;  fusion: a×b = Σ N^c_{ab} c;  Jones polynomial from Temperley-Lieb;  gap protects qubits",
     "update_form": "braid_group_evolution",
     "optimization": "compile_unitary_from_braids",
     "fixed_points": "topologically_protected_state",
@@ -5434,7 +5440,7 @@
     "id": "differential_privacy",
     "name": "Differential Privacy",
     "domain": "Computer Science",
-    "equation": "P[M(D)\u2208S] \u2264 e^\u03b5 P[M(D')\u2208S] + \u03b4;  Laplace: noise ~ Lap(\u0394f/\u03b5);  Gaussian: \u03c3 \u2265 \u0394f\u221a(2ln(1.25/\u03b4))/\u03b5;  composition: \u03b5_total ~ \u03b5\u221ak;  R\u00e9nyi DP: D_\u03b1(M(D)||M(D')) \u2264 \u03b5",
+    "equation": "P[M(D)∈S] ≤ e^ε P[M(D')∈S] + δ;  Laplace: noise ~ Lap(Δf/ε);  Gaussian: σ ≥ Δf√(2ln(1.25/δ))/ε;  composition: ε_total ~ ε√k;  Rényi DP: D_α(M(D)||M(D')) ≤ ε",
     "update_form": "noise_injection",
     "optimization": "maximize_utility_under_privacy",
     "fixed_points": "privacy_utility_pareto",
@@ -5467,7 +5473,7 @@
     "id": "point_processes",
     "name": "Point Processes / Stochastic Geometry",
     "domain": "Statistics",
-    "equation": "Poisson: P(N(B)=k) = (\u03bb|B|)^k e^{\u2212\u03bb|B|}/k!;  intensity: \u03bb(x) = lim E[N(dx)]/|dx|;  Ripley K(r) = \u03bb\u207b\u00b9E[N(b(o,r))];  Palm: P^o(\u00b7);  Papangelou: \u03bb*(x,X) = density ratio",
+    "equation": "Poisson: P(N(B)=k) = (λ|B|)^k e^{−λ|B|}/k!;  intensity: λ(x) = lim E[N(dx)]/|dx|;  Ripley K(r) = λ⁻¹E[N(b(o,r))];  Palm: P^o(·);  Papangelou: λ*(x,X) = density ratio",
     "update_form": "intensity_driven_realization",
     "optimization": "fit_intensity_function",
     "fixed_points": "stationary_process",
@@ -5498,9 +5504,9 @@
   },
   "extremal_graph_theory": {
     "id": "extremal_graph_theory",
-    "name": "Extremal Graph Theory / Tur\u00e1n-type",
+    "name": "Extremal Graph Theory / Turán-type",
     "domain": "Mathematics",
-    "equation": "ex(n,H) = max |E(G)| s.t. H \u2284 G;  Tur\u00e1n: ex(n,K_{r+1}) = (1\u22121/r)n\u00b2/2;  Szemer\u00e9di regularity;  Ramsey: R(s,t);  graph limits: W:[0,1]\u00b2\u2192[0,1]",
+    "equation": "ex(n,H) = max |E(G)| s.t. H ⊄ G;  Turán: ex(n,K_{r+1}) = (1−1/r)n²/2;  Szemerédi regularity;  Ramsey: R(s,t);  graph limits: W:[0,1]²→[0,1]",
     "update_form": "density_extremization",
     "optimization": "maximize_edges_avoiding_subgraph",
     "fixed_points": "extremal_graph",
@@ -5531,7 +5537,7 @@
     "id": "social_choice",
     "name": "Social Choice / Arrow's Theorem",
     "domain": "Economics",
-    "equation": "Arrow: no SWF satisfies U+P+IIA+ND;  Gibbard-Satterthwaite: strategyproof \u2192 dictatorial;  Condorcet: a\u227bb if majority prefers a;  Borda: score = \u03a3 rank;  median voter theorem",
+    "equation": "Arrow: no SWF satisfies U+P+IIA+ND;  Gibbard-Satterthwaite: strategyproof → dictatorial;  Condorcet: a≻b if majority prefers a;  Borda: score = Σ rank;  median voter theorem",
     "update_form": "aggregation_rule",
     "optimization": "maximize_social_welfare",
     "fixed_points": "condorcet_winner",
@@ -5890,7 +5896,13 @@
       "reference": "long_run_variance"
     },
     "conservation": [],
-    "structure": "coupled_sde"
+    "structure": "coupled_sde",
+    "source": {
+      "title": "A Closed-Form Solution for Options with Stochastic Volatility with Applications to Bond and Currency Options",
+      "url": "https://doi.org/10.1093/rfs/6.2.327",
+      "year": 1993
+    },
+    "provenance": "curated"
   },
   "market_microstructure": {
     "id": "market_microstructure",
@@ -9508,5 +9520,2176 @@
     },
     "conservation": [],
     "structure": "driven_dynamical_system"
+  },
+  "potential_outcomes_rubin": {
+    "id": "potential_outcomes_rubin",
+    "name": "Potential Outcomes / Rubin Causal Model",
+    "domain": "Causal Inference",
+    "equation": "Yᵢ = Dᵢ·Yᵢ(1) + (1−Dᵢ)·Yᵢ(0);  τ = E[Y(1) − Y(0)]",
+    "update_form": "contrast_of_potential_outcomes",
+    "optimization": "not_applicable",
+    "fixed_points": "identified_average_treatment_effect",
+    "operators": [
+      "expectation",
+      "conditional_expectation",
+      "subtraction",
+      "random_assignment"
+    ],
+    "patterns": [
+      "counterfactual_contrast",
+      "conditional_independence",
+      "missing_data_structure",
+      "random_assignment_balances_confounders"
+    ],
+    "variables": {
+      "state": "potential_outcome",
+      "coupling": "treatment_assignment",
+      "reference": "control_outcome",
+      "score": "individual_causal_effect"
+    },
+    "conservation": [
+      "not_applicable"
+    ],
+    "structure": "counterfactual_identification",
+    "source": {
+      "title": "Estimating causal effects of treatments in randomized and nonrandomized studies",
+      "url": "https://doi.org/10.1037/h0037350",
+      "year": 1974
+    },
+    "provenance": "curated"
+  },
+  "regression_discontinuity_design": {
+    "id": "regression_discontinuity_design",
+    "name": "Regression Discontinuity Design",
+    "domain": "Causal Inference",
+    "equation": "τ_RD = lim_{x↓c} E[Y|X=x] − lim_{x↑c} E[Y|X=x],  D = 1{X ≥ c}",
+    "update_form": "limit_contrast_at_cutoff",
+    "optimization": "minimize_local_weighted_squared_error",
+    "fixed_points": "local_average_treatment_effect_at_cutoff",
+    "operators": [
+      "conditional_expectation",
+      "limit",
+      "threshold",
+      "subtraction",
+      "regression"
+    ],
+    "patterns": [
+      "counterfactual_contrast",
+      "threshold_assignment",
+      "local_randomization",
+      "discontinuity_at_cutoff"
+    ],
+    "variables": {
+      "state": "outcome",
+      "coupling": "running_variable",
+      "reference": "assignment_cutoff",
+      "score": "local_treatment_effect"
+    },
+    "conservation": [
+      "not_applicable"
+    ],
+    "structure": "local_identification_at_threshold",
+    "source": {
+      "title": "Regression-discontinuity analysis: an alternative to the ex post facto experiment",
+      "url": "https://doi.org/10.1037/h0044319",
+      "year": 1960
+    },
+    "provenance": "curated"
+  },
+  "synthetic_control_method": {
+    "id": "synthetic_control_method",
+    "name": "Synthetic Control Method",
+    "domain": "Causal Inference",
+    "equation": "Ŷ₁ₜ(0) = Σⱼ₌₂ᴶ wⱼ Yⱼₜ,  wⱼ ≥ 0,  Σⱼ wⱼ = 1",
+    "update_form": "constrained_donor_weight_optimization",
+    "optimization": "minimize_pretreatment_prediction_error",
+    "fixed_points": "optimal_donor_weights",
+    "operators": [
+      "linear_combination",
+      "normalize",
+      "minimize",
+      "comparison"
+    ],
+    "patterns": [
+      "counterfactual_contrast",
+      "convex_optimization",
+      "donor_pool_reweighting",
+      "pretreatment_fit_matching"
+    ],
+    "variables": {
+      "state": "outcome_trajectory",
+      "coupling": "donor_unit_weights",
+      "reference": "synthetic_counterfactual",
+      "score": "treatment_effect_gap"
+    },
+    "conservation": [
+      "weights_sum_to_one"
+    ],
+    "structure": "simplex_constrained_optimization",
+    "source": {
+      "title": "Synthetic control methods for comparative case studies",
+      "url": "https://doi.org/10.1198/jasa.2009.ap08746",
+      "year": 2010
+    },
+    "provenance": "curated"
+  },
+  "double_debiased_machine_learning": {
+    "id": "double_debiased_machine_learning",
+    "name": "Double / Debiased Machine Learning",
+    "domain": "Causal Inference",
+    "equation": "θ̌ solves (1/n)Σᵢ ψ(Wᵢ; θ, η̂_{k(i)}) = 0 with Neyman-orthogonal ψ and cross-fitted η̂",
+    "update_form": "orthogonal_moment_root_finding",
+    "optimization": "solve_orthogonalized_moment_condition",
+    "fixed_points": "root_of_orthogonalized_moment",
+    "operators": [
+      "conditional_expectation",
+      "projection",
+      "regression",
+      "averaging",
+      "gradient"
+    ],
+    "patterns": [
+      "neyman_orthogonality",
+      "sample_splitting",
+      "residual_on_residual_regression",
+      "asymptotic_normality"
+    ],
+    "variables": {
+      "state": "target_parameter",
+      "coupling": "nuisance_function",
+      "reference": "orthogonalized_residual",
+      "score": "influence_function"
+    },
+    "conservation": [
+      "not_applicable"
+    ],
+    "structure": "semiparametric_moment_condition",
+    "source": {
+      "title": "Double/debiased machine learning for treatment and structural parameters",
+      "url": "https://doi.org/10.1111/ectj.12097",
+      "year": 2018
+    },
+    "provenance": "curated"
+  },
+  "raft_consensus": {
+    "id": "raft_consensus",
+    "name": "Raft Consensus",
+    "domain": "Distributed Systems",
+    "equation": "at most one leader per term T; commitIndex advances once an entry is replicated on ⌈(N+1)/2⌉ servers",
+    "update_form": "leader_replicated_log_append",
+    "optimization": "not_applicable",
+    "fixed_points": "committed_log_prefix_agreement",
+    "operators": [
+      "majority_quorum",
+      "leader_election",
+      "log_append",
+      "term_comparison",
+      "timeout"
+    ],
+    "patterns": [
+      "quorum_intersection",
+      "single_leader_per_term",
+      "log_matching",
+      "monotonic_term",
+      "crash_fault_tolerance"
+    ],
+    "variables": {
+      "state": "replicated_log",
+      "coupling": "majority_quorum",
+      "reference": "leader_term",
+      "dynamics": "election_and_replication"
+    },
+    "conservation": [
+      "committed_log_prefix"
+    ],
+    "structure": "replicated_state_machine",
+    "source": {
+      "title": "In Search of an Understandable Consensus Algorithm",
+      "url": "https://www.usenix.org/conference/atc14/technical-sessions/presentation/ongaro",
+      "year": 2014
+    },
+    "provenance": "curated"
+  },
+  "byzantine_generals_problem": {
+    "id": "byzantine_generals_problem",
+    "name": "Byzantine Generals Problem",
+    "domain": "Distributed Systems",
+    "equation": "with oral messages, interactive consistency is solvable iff n ≥ 3m + 1 for m traitorous processes",
+    "update_form": "recursive_majority_agreement",
+    "optimization": "not_applicable",
+    "fixed_points": "interactive_consistency_agreement",
+    "operators": [
+      "message_broadcast",
+      "majority_vote",
+      "recursion",
+      "signature_verification",
+      "comparison"
+    ],
+    "patterns": [
+      "quorum_intersection",
+      "fault_tolerance_bound",
+      "recursive_decomposition",
+      "adversarial_worst_case",
+      "impossibility_threshold"
+    ],
+    "variables": {
+      "state": "commanders_order",
+      "coupling": "message_exchange",
+      "reference": "loyal_majority",
+      "score": "tolerable_fault_count"
+    },
+    "conservation": [
+      "not_applicable"
+    ],
+    "structure": "adversarial_agreement_bound",
+    "source": {
+      "title": "The Byzantine Generals Problem",
+      "url": "https://doi.org/10.1145/357172.357176",
+      "year": 1982
+    },
+    "provenance": "curated"
+  },
+  "bloom_filter": {
+    "id": "bloom_filter",
+    "name": "Bloom Filter",
+    "domain": "Distributed Systems",
+    "equation": "P_fp ≈ (1 − e^{−kn/m})^k;  k* = (m/n)·ln 2",
+    "update_form": "hash_indexed_bit_setting",
+    "optimization": "minimize_false_positive_rate",
+    "fixed_points": "optimal_hash_function_count",
+    "operators": [
+      "hash_function",
+      "bitwise_or",
+      "membership_test",
+      "exponential"
+    ],
+    "patterns": [
+      "space_time_tradeoff",
+      "one_sided_error",
+      "no_false_negatives",
+      "probabilistic_membership",
+      "lossy_compression"
+    ],
+    "variables": {
+      "state": "bit_array",
+      "coupling": "hash_functions",
+      "reference": "false_positive_rate",
+      "score": "bits_per_element"
+    },
+    "conservation": [
+      "not_applicable"
+    ],
+    "structure": "probabilistic_bit_array",
+    "source": {
+      "title": "Space/time trade-offs in hash coding with allowable errors",
+      "url": "https://doi.org/10.1145/362686.362692",
+      "year": 1970
+    },
+    "provenance": "curated"
+  },
+  "amdahls_law": {
+    "id": "amdahls_law",
+    "name": "Amdahl's Law",
+    "domain": "Distributed Systems",
+    "equation": "S(N) = 1 / (s + (1 − s)/N);  lim_{N→∞} S(N) = 1/s",
+    "update_form": "serial_parallel_time_decomposition",
+    "optimization": "maximize_speedup",
+    "fixed_points": "asymptotic_speedup_ceiling",
+    "operators": [
+      "reciprocal",
+      "division",
+      "limit",
+      "summation"
+    ],
+    "patterns": [
+      "serial_bottleneck",
+      "diminishing_returns",
+      "asymptotic_ceiling",
+      "hierarchical_decomposition"
+    ],
+    "variables": {
+      "state": "speedup",
+      "coupling": "processor_count",
+      "reference": "serial_fraction",
+      "score": "parallel_efficiency"
+    },
+    "conservation": [
+      "work_fractions_sum_to_one"
+    ],
+    "structure": "closed_form_speedup_bound",
+    "source": {
+      "title": "Validity of the single processor approach to achieving large scale computing capabilities",
+      "url": "https://doi.org/10.1145/1465482.1465560",
+      "year": 1967
+    },
+    "provenance": "curated"
+  },
+  "conflict_free_replicated_data_types": {
+    "id": "conflict_free_replicated_data_types",
+    "name": "Conflict-Free Replicated Data Types (CRDT)",
+    "domain": "Distributed Systems",
+    "equation": "(S, ⊔) is a join-semilattice: merge is commutative, associative and idempotent ⇒ replicas converge to ⊔ of all states",
+    "update_form": "monotonic_join_merge",
+    "optimization": "not_applicable",
+    "fixed_points": "least_upper_bound_of_replica_states",
+    "operators": [
+      "join_semilattice_merge",
+      "partial_order_comparison",
+      "monotonic_update",
+      "composition"
+    ],
+    "patterns": [
+      "commutativity",
+      "associativity",
+      "idempotence",
+      "monotonic_convergence",
+      "eventual_consistency"
+    ],
+    "variables": {
+      "state": "replica_state",
+      "coupling": "merge_operation",
+      "reference": "least_upper_bound",
+      "dynamics": "monotonic_growth"
+    },
+    "conservation": [
+      "monotonicity_of_state"
+    ],
+    "structure": "join_semilattice",
+    "source": {
+      "title": "Conflict-free Replicated Data Types",
+      "url": "https://inria.hal.science/inria-00609399",
+      "year": 2011
+    },
+    "provenance": "curated"
+  },
+  "schelling_segregation_model": {
+    "id": "schelling_segregation_model",
+    "name": "Schelling Segregation Model",
+    "domain": "Social Dynamics",
+    "equation": "agent relocates iff (like-neighbours / neighbours) < τ",
+    "update_form": "threshold_triggered_relocation",
+    "optimization": "not_applicable",
+    "fixed_points": "segregated_stable_configuration",
+    "operators": [
+      "threshold",
+      "neighborhood_count",
+      "relocation",
+      "comparison"
+    ],
+    "patterns": [
+      "local_rule_global_pattern",
+      "self_organization",
+      "spatial_structure",
+      "tipping_point",
+      "phase_transition"
+    ],
+    "variables": {
+      "state": "agent_location",
+      "coupling": "neighborhood_composition",
+      "reference": "tolerance_threshold",
+      "score": "segregation_index"
+    },
+    "conservation": [
+      "agent_population"
+    ],
+    "structure": "agent_based_lattice_dynamics",
+    "source": {
+      "title": "Dynamic models of segregation",
+      "url": "https://doi.org/10.1080/0022250X.1971.9989794",
+      "year": 1971
+    },
+    "provenance": "curated"
+  },
+  "granovetter_threshold_model": {
+    "id": "granovetter_threshold_model",
+    "name": "Granovetter Threshold Model of Collective Behavior",
+    "domain": "Social Dynamics",
+    "equation": "r_{t+1} = F(r_t) with F the threshold cdf;  equilibria satisfy F(r*) = r*",
+    "update_form": "threshold_cascade",
+    "optimization": "not_applicable",
+    "fixed_points": "equilibrium_participation_rate",
+    "operators": [
+      "threshold",
+      "cumulative_distribution",
+      "fixed_point",
+      "comparison"
+    ],
+    "patterns": [
+      "threshold_cascade",
+      "fixed_point_stability",
+      "tipping_point",
+      "heterogeneous_thresholds",
+      "collective_action"
+    ],
+    "variables": {
+      "state": "participation_rate",
+      "coupling": "threshold_distribution",
+      "reference": "equilibrium_rate",
+      "dynamics": "cascade_iteration"
+    },
+    "conservation": [
+      "population_size"
+    ],
+    "structure": "fixed_point_equilibrium",
+    "source": {
+      "title": "Threshold models of collective behavior",
+      "url": "https://doi.org/10.1086/226707",
+      "year": 1978
+    },
+    "provenance": "curated"
+  },
+  "bass_diffusion_model": {
+    "id": "bass_diffusion_model",
+    "name": "Bass Diffusion Model",
+    "domain": "Social Dynamics",
+    "equation": "dN/dt = (p + q·N(t)/m)·(m − N(t))",
+    "update_form": "coupled_innovation_imitation_growth",
+    "optimization": "fit_adoption_curve",
+    "fixed_points": "full_market_saturation",
+    "operators": [
+      "differential",
+      "multiply",
+      "saturation",
+      "growth"
+    ],
+    "patterns": [
+      "s_curve_adoption",
+      "saturation",
+      "population_dynamics",
+      "imitation_and_innovation"
+    ],
+    "variables": {
+      "state": "cumulative_adopters",
+      "coupling": "imitation_coefficient",
+      "reference": "market_potential",
+      "score": "adoption_rate"
+    },
+    "conservation": [
+      "market_potential"
+    ],
+    "structure": "nonlinear_ode",
+    "source": {
+      "title": "A new product growth for model consumer durables",
+      "url": "https://doi.org/10.1287/mnsc.15.5.215",
+      "year": 1969
+    },
+    "provenance": "curated"
+  },
+  "minority_game": {
+    "id": "minority_game",
+    "name": "Minority Game",
+    "domain": "Social Dynamics",
+    "equation": "A(t) = Σᵢ aᵢ(t); the minority side wins; behaviour controlled by α = P/N with predictability H = ⟨A⟩²",
+    "update_form": "score_based_strategy_switching",
+    "optimization": "minimize_predictability",
+    "fixed_points": "symmetric_and_asymmetric_phases",
+    "operators": [
+      "strategy_scoring",
+      "summation",
+      "comparison",
+      "best_response"
+    ],
+    "patterns": [
+      "frequency_dependent",
+      "competitive_dynamics",
+      "phase_transition",
+      "self_organization"
+    ],
+    "variables": {
+      "state": "strategy_choice",
+      "coupling": "aggregate_attendance",
+      "reference": "minority_side",
+      "score": "strategy_virtual_score"
+    },
+    "conservation": [
+      "not_applicable"
+    ],
+    "structure": "disordered_strategy_ensemble",
+    "source": {
+      "title": "Statistical mechanics of systems with heterogeneous agents: minority games",
+      "url": "https://doi.org/10.1103/PhysRevLett.84.1824",
+      "year": 2000
+    },
+    "provenance": "curated"
+  },
+  "black_litterman_model": {
+    "id": "black_litterman_model",
+    "name": "Black-Litterman Model",
+    "domain": "Quantitative Finance",
+    "equation": "E[R] = [(τΣ)⁻¹ + PᵗΩ⁻¹P]⁻¹ · [(τΣ)⁻¹Π + PᵗΩ⁻¹Q]",
+    "update_form": "precision_weighted_blend_of_prior_and_views",
+    "optimization": "maximize_mean_variance_utility",
+    "fixed_points": "posterior_expected_returns",
+    "operators": [
+      "matrix_inverse",
+      "matrix_multiply",
+      "covariance",
+      "linear_combination"
+    ],
+    "patterns": [
+      "bayesian_updating",
+      "precision_weighted_update",
+      "shrinkage_toward_prior",
+      "equilibrium_prior"
+    ],
+    "variables": {
+      "state": "expected_returns",
+      "coupling": "view_matrix",
+      "reference": "equilibrium_prior",
+      "precision": "view_confidence"
+    },
+    "conservation": [
+      "portfolio_weights_sum_to_one"
+    ],
+    "structure": "bayesian_posterior_over_returns",
+    "source": {
+      "title": "Global Portfolio Optimization",
+      "url": "https://doi.org/10.2469/faj.v48.n5.28",
+      "year": 1992
+    },
+    "provenance": "curated"
+  },
+  "rough_volatility": {
+    "id": "rough_volatility",
+    "name": "Rough Volatility",
+    "domain": "Quantitative Finance",
+    "equation": "E[|log σ_{t+Δ} − log σₜ|^q] ∝ Δ^{qH} with H ≈ 0.1 (fractional Brownian log-volatility)",
+    "update_form": "fractional_stochastic_dynamics",
+    "optimization": "fit_scaling_exponent",
+    "fixed_points": "not_applicable",
+    "operators": [
+      "fractional_brownian_motion",
+      "logarithm",
+      "expectation",
+      "scaling_exponent_estimation"
+    ],
+    "patterns": [
+      "scale_invariance",
+      "power_law_scaling",
+      "volatility_clustering",
+      "self_similarity"
+    ],
+    "variables": {
+      "state": "log_volatility",
+      "coupling": "fractional_noise",
+      "reference": "hurst_exponent",
+      "scale": "sampling_interval"
+    },
+    "conservation": [
+      "not_applicable"
+    ],
+    "structure": "fractional_stochastic_process",
+    "source": {
+      "title": "Volatility is rough",
+      "url": "https://arxiv.org/abs/1410.3394",
+      "year": 2014
+    },
+    "provenance": "curated"
+  },
+  "minsky_financial_instability": {
+    "id": "minsky_financial_instability",
+    "name": "Minsky Financial Instability Hypothesis",
+    "domain": "Quantitative Finance",
+    "equation": "financing regimes shift hedge → speculative → Ponzi as debt-service to cash-flow ratios rise through an expansion; stability is destabilising",
+    "update_form": "endogenous_leverage_buildup",
+    "optimization": "not_applicable",
+    "fixed_points": "no_stable_equilibrium",
+    "operators": [
+      "debt_service_ratio",
+      "regime_classification",
+      "feedback_loop",
+      "comparison"
+    ],
+    "patterns": [
+      "feedback_loop",
+      "endogenous_instability",
+      "regime_transition",
+      "leverage_cycle",
+      "tipping_point"
+    ],
+    "variables": {
+      "state": "financing_regime",
+      "coupling": "debt_to_cash_flow",
+      "reference": "hedge_finance",
+      "dynamics": "expansion_to_crisis"
+    },
+    "conservation": [
+      "not_applicable"
+    ],
+    "structure": "qualitative_regime_taxonomy",
+    "source": {
+      "title": "The Financial Instability Hypothesis (Working Paper No. 74)",
+      "url": "https://www.levyinstitute.org/publications/the-financial-instability-hypothesis",
+      "year": 1992
+    },
+    "provenance": "curated"
+  },
+  "expected_shortfall": {
+    "id": "expected_shortfall",
+    "name": "Expected Shortfall (Coherent Risk Measure)",
+    "domain": "Risk Science",
+    "equation": "ESα(L) = (1/(1−α)) ∫_α¹ VaR_u(L) du = E[L | L ≥ VaRα(L)]",
+    "update_form": "tail_conditional_averaging",
+    "optimization": "minimize_tail_risk",
+    "fixed_points": "not_applicable",
+    "operators": [
+      "conditional_expectation",
+      "quantile",
+      "integration",
+      "comparison"
+    ],
+    "patterns": [
+      "tail_risk",
+      "subadditivity",
+      "coherence_axioms",
+      "positive_homogeneity"
+    ],
+    "variables": {
+      "state": "loss_distribution",
+      "coupling": "confidence_level",
+      "reference": "value_at_risk",
+      "score": "expected_tail_loss"
+    },
+    "conservation": [
+      "translation_equivariance"
+    ],
+    "structure": "coherent_risk_measure",
+    "source": {
+      "title": "Coherent Measures of Risk",
+      "url": "https://doi.org/10.1111/1467-9965.00004",
+      "year": 1999
+    },
+    "provenance": "curated"
+  },
+  "peaks_over_threshold_extreme_value": {
+    "id": "peaks_over_threshold_extreme_value",
+    "name": "Peaks-Over-Threshold Extreme Value Theory",
+    "domain": "Risk Science",
+    "equation": "P(X − u ≤ y | X > u) → G(y) = 1 − (1 + ξy/σ)^{−1/ξ} as u → x_F",
+    "update_form": "threshold_exceedance_limit_law",
+    "optimization": "maximize_log_likelihood",
+    "fixed_points": "generalized_pareto_limit",
+    "operators": [
+      "threshold",
+      "conditional_distribution",
+      "limit",
+      "maximize"
+    ],
+    "patterns": [
+      "tail_risk",
+      "power_law_scaling",
+      "universality",
+      "fat_tails"
+    ],
+    "variables": {
+      "state": "threshold_exceedance",
+      "coupling": "threshold_level",
+      "reference": "generalized_pareto_distribution",
+      "score": "tail_index"
+    },
+    "conservation": [
+      "not_applicable"
+    ],
+    "structure": "extreme_value_limit_law",
+    "source": {
+      "title": "Statistical Inference Using Extreme Order Statistics",
+      "url": "https://doi.org/10.1214/aos/1176343003",
+      "year": 1975
+    },
+    "provenance": "curated"
+  },
+  "cox_proportional_hazards": {
+    "id": "cox_proportional_hazards",
+    "name": "Cox Proportional Hazards Model",
+    "domain": "Risk Science",
+    "equation": "λ(t|x) = λ₀(t)·exp(βᵗx);  L(β) = Πᵢ exp(βᵗxᵢ) / Σ_{j∈R(tᵢ)} exp(βᵗxⱼ)",
+    "update_form": "partial_likelihood_maximization",
+    "optimization": "maximize_partial_likelihood",
+    "fixed_points": "maximum_partial_likelihood_estimate",
+    "operators": [
+      "exponential",
+      "softmax",
+      "logarithm",
+      "gradient",
+      "summation"
+    ],
+    "patterns": [
+      "proportional_effects",
+      "multiplicative_scaling",
+      "semiparametric_separation",
+      "softmax_over_risk_set"
+    ],
+    "variables": {
+      "state": "hazard_rate",
+      "coupling": "covariate_vector",
+      "reference": "baseline_hazard",
+      "score": "log_hazard_ratio"
+    },
+    "conservation": [
+      "not_applicable"
+    ],
+    "structure": "semiparametric_hazard_model",
+    "source": {
+      "title": "Regression Models and Life-Tables",
+      "url": "https://doi.org/10.1111/j.2517-6161.1972.tb00899.x",
+      "year": 1972
+    },
+    "provenance": "curated"
+  },
+  "fine_gray_competing_risks": {
+    "id": "fine_gray_competing_risks",
+    "name": "Fine-Gray Competing Risks Model",
+    "domain": "Risk Science",
+    "equation": "λ̄₁(t|x) = −d log{1 − F₁(t|x)}/dt = λ̄₁₀(t)·exp(βᵗx)",
+    "update_form": "weighted_partial_likelihood_maximization",
+    "optimization": "maximize_weighted_partial_likelihood",
+    "fixed_points": "subdistribution_hazard_estimate",
+    "operators": [
+      "exponential",
+      "logarithm",
+      "censoring_weight",
+      "summation",
+      "gradient"
+    ],
+    "patterns": [
+      "proportional_effects",
+      "competing_events",
+      "cumulative_incidence_decomposition",
+      "censoring_correction"
+    ],
+    "variables": {
+      "state": "cumulative_incidence",
+      "coupling": "covariate_vector",
+      "reference": "baseline_subdistribution_hazard",
+      "score": "subdistribution_hazard_ratio"
+    },
+    "conservation": [
+      "cause_specific_incidences_sum_to_total_risk"
+    ],
+    "structure": "subdistribution_hazard_model",
+    "source": {
+      "title": "A Proportional Hazards Model for the Subdistribution of a Competing Risk",
+      "url": "https://doi.org/10.1080/01621459.1999.10474144",
+      "year": 1999
+    },
+    "provenance": "curated"
+  },
+  "island_biogeography": {
+    "id": "island_biogeography",
+    "name": "Theory of Island Biogeography",
+    "domain": "Ecology",
+    "equation": "dS/dt = I(S) − E(S);  equilibrium richness S* where immigration rate = extinction rate",
+    "update_form": "immigration_extinction_balance",
+    "optimization": "not_applicable",
+    "fixed_points": "species_richness_equilibrium",
+    "operators": [
+      "differential",
+      "subtraction",
+      "saturation",
+      "comparison"
+    ],
+    "patterns": [
+      "dynamic_equilibrium",
+      "area_species_scaling",
+      "distance_decay",
+      "turnover_at_equilibrium",
+      "fixed_point_stability"
+    ],
+    "variables": {
+      "state": "species_richness",
+      "coupling": "island_area_and_isolation",
+      "reference": "equilibrium_richness",
+      "dynamics": "immigration_and_extinction"
+    },
+    "conservation": [
+      "not_applicable"
+    ],
+    "structure": "balance_of_opposing_rates",
+    "source": {
+      "title": "The Theory of Island Biogeography",
+      "url": "https://press.princeton.edu/books/paperback/9780691088365/the-theory-of-island-biogeography",
+      "year": 1967
+    },
+    "provenance": "curated"
+  },
+  "metabolic_scaling": {
+    "id": "metabolic_scaling",
+    "name": "Metabolic Scaling (WBE Theory)",
+    "domain": "Ecology",
+    "equation": "B = B₀·M^{3/4}",
+    "update_form": "allometric_power_law",
+    "optimization": "minimize_transport_energy_dissipation",
+    "fixed_points": "quarter_power_scaling_exponent",
+    "operators": [
+      "power_law",
+      "logarithm",
+      "regression",
+      "division"
+    ],
+    "patterns": [
+      "power_law_scaling",
+      "scale_invariance",
+      "allometry",
+      "hierarchical_branching_network",
+      "universality"
+    ],
+    "variables": {
+      "state": "metabolic_rate",
+      "coupling": "body_mass",
+      "reference": "scaling_exponent",
+      "score": "normalization_constant"
+    },
+    "conservation": [
+      "fluid_volume_through_branching_network"
+    ],
+    "structure": "allometric_scaling_law",
+    "source": {
+      "title": "A General Model for the Origin of Allometric Scaling Laws in Biology",
+      "url": "https://doi.org/10.1126/science.276.5309.122",
+      "year": 1997
+    },
+    "provenance": "curated"
+  },
+  "ecological_resilience": {
+    "id": "ecological_resilience",
+    "name": "Ecological Resilience",
+    "domain": "Ecology",
+    "equation": "resilience = magnitude of perturbation a system absorbs before shifting to another basin of attraction",
+    "update_form": "perturbation_and_basin_return",
+    "optimization": "not_applicable",
+    "fixed_points": "multiple_locally_stable_equilibria",
+    "operators": [
+      "perturbation",
+      "basin_boundary_measure",
+      "vector_field",
+      "comparison"
+    ],
+    "patterns": [
+      "multiple_stable_states",
+      "basin_of_attraction",
+      "regime_transition",
+      "hysteresis",
+      "nonlinear_dynamics"
+    ],
+    "variables": {
+      "state": "ecosystem_configuration",
+      "coupling": "perturbation_magnitude",
+      "reference": "basin_boundary",
+      "dynamics": "return_or_regime_shift"
+    },
+    "conservation": [
+      "not_applicable"
+    ],
+    "structure": "multistable_dynamical_system",
+    "source": {
+      "title": "Resilience and Stability of Ecological Systems",
+      "url": "https://doi.org/10.1146/annurev.es.04.110173.000245",
+      "year": 1973
+    },
+    "provenance": "curated"
+  },
+  "hawkes_self_exciting_process": {
+    "id": "hawkes_self_exciting_process",
+    "name": "Hawkes Self-Exciting Point Process",
+    "domain": "Systems Engineering",
+    "equation": "λ(t) = μ + ∫_{−∞}^{t} g(t − s) dN(s),  g ≥ 0",
+    "update_form": "intensity_excited_by_past_events",
+    "optimization": "maximize_log_likelihood",
+    "fixed_points": "stationary_intensity_when_branching_ratio_below_one",
+    "operators": [
+      "convolution",
+      "integration",
+      "point_process_intensity",
+      "exponential"
+    ],
+    "patterns": [
+      "self_excitation",
+      "temporal_clustering",
+      "branching_structure",
+      "exponential_decay",
+      "feedback_loop"
+    ],
+    "variables": {
+      "state": "event_count",
+      "coupling": "excitation_kernel",
+      "reference": "baseline_intensity",
+      "score": "branching_ratio"
+    },
+    "conservation": [
+      "not_applicable"
+    ],
+    "structure": "self_exciting_point_process",
+    "source": {
+      "title": "Spectra of some self-exciting and mutually exciting point processes",
+      "url": "https://doi.org/10.1093/biomet/58.1.83",
+      "year": 1971
+    },
+    "provenance": "curated"
+  },
+  "jackson_queueing_network": {
+    "id": "jackson_queueing_network",
+    "name": "Jackson Queueing Network",
+    "domain": "Systems Engineering",
+    "equation": "λⱼ = γⱼ + Σᵢ λᵢ pᵢⱼ;  π(n) = Πⱼ (1 − ρⱼ)·ρⱼ^{nⱼ}",
+    "update_form": "traffic_equation_balance",
+    "optimization": "not_applicable",
+    "fixed_points": "product_form_stationary_distribution",
+    "operators": [
+      "linear_system_solve",
+      "product",
+      "routing_matrix",
+      "comparison"
+    ],
+    "patterns": [
+      "product_form_stationary_distribution",
+      "flow_balance",
+      "independence_decomposition",
+      "queueing_stability"
+    ],
+    "variables": {
+      "state": "queue_lengths",
+      "coupling": "routing_probabilities",
+      "reference": "arrival_rates",
+      "score": "utilization"
+    },
+    "conservation": [
+      "flow_conservation"
+    ],
+    "structure": "continuous_time_markov_chain",
+    "source": {
+      "title": "Networks of Waiting Lines",
+      "url": "https://doi.org/10.1287/opre.5.4.518",
+      "year": 1957
+    },
+    "provenance": "curated"
+  },
+  "control_barrier_functions": {
+    "id": "control_barrier_functions",
+    "name": "Control Barrier Functions",
+    "domain": "Systems Engineering",
+    "equation": "sup_u [L_f h(x) + L_g h(x)·u + α(h(x))] ≥ 0 ⇒ C = {x : h(x) ≥ 0} is forward invariant",
+    "update_form": "constrained_safety_filter",
+    "optimization": "minimize_control_deviation_subject_to_safety",
+    "fixed_points": "safe_set_forward_invariance",
+    "operators": [
+      "lie_derivative",
+      "inequality_constraint",
+      "quadratic_program",
+      "gradient"
+    ],
+    "patterns": [
+      "forward_invariance",
+      "safety_constraint",
+      "lyapunov_stability",
+      "feedback_loop",
+      "convex_optimization"
+    ],
+    "variables": {
+      "state": "system_state",
+      "coupling": "control_input",
+      "reference": "safe_set_boundary",
+      "energy": "barrier_function"
+    },
+    "conservation": [
+      "safe_set_membership"
+    ],
+    "structure": "constrained_optimization",
+    "source": {
+      "title": "Control Barrier Function Based Quadratic Programs with Application to Adaptive Cruise Control",
+      "url": "https://doi.org/10.1109/CDC.2014.7040372",
+      "year": 2014
+    },
+    "provenance": "curated"
+  },
+  "difference_in_differences": {
+    "id": "difference_in_differences",
+    "name": "Difference-in-Differences (Multiple Time Periods)",
+    "domain": "Causal Inference",
+    "equation": "τ = (E[Y_post|D=1] − E[Y_pre|D=1]) − (E[Y_post|D=0] − E[Y_pre|D=0]);  group-time ATT(g,t) aggregated over cohorts",
+    "update_form": "contrast_of_potential_outcomes",
+    "optimization": "unbiased_estimation_of_treatment_effect",
+    "fixed_points": "parallel_trends_identified_att",
+    "operators": [
+      "conditional_expectation",
+      "expectation",
+      "group_time_aggregation",
+      "subtract",
+      "weighted_average"
+    ],
+    "patterns": [
+      "counterfactual_contrast",
+      "exact_decomposition",
+      "panel_structure",
+      "parallel_trends_assumption",
+      "staggered_adoption"
+    ],
+    "variables": {
+      "outcome": "Y",
+      "treatment": "D",
+      "time": "t",
+      "cohort": "g",
+      "effect": "att"
+    },
+    "conservation": [
+      "not_applicable"
+    ],
+    "structure": "counterfactual_identification",
+    "source": {
+      "title": "Difference-in-Differences with Multiple Time Periods",
+      "url": "https://doi.org/10.1016/j.jeconom.2020.12.001",
+      "year": 2021
+    },
+    "provenance": "curated"
+  },
+  "instrumental_variables_late": {
+    "id": "instrumental_variables_late",
+    "name": "Instrumental Variables / Local Average Treatment Effect",
+    "domain": "Causal Inference",
+    "equation": "τ_LATE = Cov(Z,Y) / Cov(Z,D)",
+    "update_form": "ratio_of_covariances",
+    "optimization": "identification_under_exclusion_restriction",
+    "fixed_points": "late_on_compliers",
+    "operators": [
+      "covariance",
+      "divide",
+      "expectation",
+      "projection",
+      "rank_condition"
+    ],
+    "patterns": [
+      "conditional_independence",
+      "counterfactual_contrast",
+      "exclusion_restriction",
+      "monotonicity_assumption",
+      "partial_identification_subpopulation"
+    ],
+    "variables": {
+      "instrument": "Z",
+      "treatment": "D",
+      "outcome": "Y",
+      "effect": "late"
+    },
+    "conservation": [
+      "not_applicable"
+    ],
+    "structure": "counterfactual_identification",
+    "source": {
+      "title": "Identification of Causal Effects Using Instrumental Variables",
+      "url": "https://doi.org/10.1080/01621459.1996.10476902",
+      "year": 1996
+    },
+    "provenance": "curated"
+  },
+  "generalized_random_forests": {
+    "id": "generalized_random_forests",
+    "name": "Generalized Random Forests",
+    "domain": "Causal Inference",
+    "equation": "τ(x) = E[Y(1) − Y(0) | X = x], solved from Σ_i α_i(x) ψ_{τ(x)}(Y_i, D_i) = 0 with adaptive forest weights α_i(x)",
+    "update_form": "local_moment_condition_solving",
+    "optimization": "minimize_heterogeneity_weighted_moment_error",
+    "fixed_points": "local_estimating_equation_root",
+    "operators": [
+      "adaptive_neighborhood_weighting",
+      "bootstrap_aggregation",
+      "recursive_partitioning",
+      "sample_splitting",
+      "score_equation_root"
+    ],
+    "patterns": [
+      "asymptotic_normality",
+      "counterfactual_contrast",
+      "neyman_orthogonality",
+      "sample_splitting",
+      "treatment_effect_heterogeneity",
+      "tree_structure"
+    ],
+    "variables": {
+      "covariates": "X",
+      "treatment": "D",
+      "outcome": "Y",
+      "effect": "conditional_att"
+    },
+    "conservation": [
+      "not_applicable"
+    ],
+    "structure": "semiparametric_moment_condition",
+    "source": {
+      "title": "Generalized Random Forests",
+      "url": "https://doi.org/10.1214/18-AOS1709",
+      "year": 2019
+    },
+    "provenance": "curated"
+  },
+  "front_door_adjustment": {
+    "id": "front_door_adjustment",
+    "name": "Front-Door Adjustment",
+    "domain": "Causal Inference",
+    "equation": "P(y|do(x)) = Σ_m P(m|x) Σ_{x'} P(y|m,x') P(x')",
+    "update_form": "interventional_query",
+    "optimization": "identification_of_interventional_distribution",
+    "fixed_points": "identified_causal_effect",
+    "operators": [
+      "adjustment_formula",
+      "conditional_expectation",
+      "do_operator",
+      "graph_surgery",
+      "marginalization"
+    ],
+    "patterns": [
+      "conditional_independence",
+      "counterfactual_contrast",
+      "exact_decomposition",
+      "graphical_identification",
+      "mediation_path"
+    ],
+    "variables": {
+      "treatment": "X",
+      "mediator": "M",
+      "outcome": "Y"
+    },
+    "conservation": [
+      "total_probability"
+    ],
+    "structure": "counterfactual_identification",
+    "source": {
+      "title": "Causal Diagrams for Empirical Research",
+      "url": "https://doi.org/10.1093/biomet/82.4.669",
+      "year": 1995
+    },
+    "provenance": "curated"
+  },
+  "lamport_logical_clocks": {
+    "id": "lamport_logical_clocks",
+    "name": "Lamport Logical Clocks",
+    "domain": "Distributed Systems",
+    "equation": "C(e) = 1 + max(C(local predecessor), C(received message));  a → b ⟹ C(a) < C(b)",
+    "update_form": "monotonic_counter_max_merge",
+    "optimization": "consistent_causal_ordering",
+    "fixed_points": "not_applicable",
+    "operators": [
+      "increment",
+      "max",
+      "message_passing",
+      "monotonic_join_merge",
+      "partial_order_extension"
+    ],
+    "patterns": [
+      "causal_ordering",
+      "happens_before_partial_order",
+      "idempotence",
+      "monotonic_term",
+      "no_global_clock"
+    ],
+    "variables": {
+      "event": "e",
+      "clock": "C",
+      "message": "m"
+    },
+    "conservation": [
+      "monotonicity_of_clocks"
+    ],
+    "structure": "join_semilattice",
+    "source": {
+      "title": "Time, Clocks, and the Ordering of Events in a Distributed System",
+      "url": "https://doi.org/10.1145/359545.359563",
+      "year": 1978
+    },
+    "provenance": "curated"
+  },
+  "consistent_hashing": {
+    "id": "consistent_hashing",
+    "name": "Consistent Hashing",
+    "domain": "Distributed Systems",
+    "equation": "owner(k) = first node clockwise from h(k) on the ring;  expected keys remapped on membership change ≈ K/N",
+    "update_form": "ring_position_successor_lookup",
+    "optimization": "minimize_remapping_on_membership_change",
+    "fixed_points": "stable_key_ownership_partition",
+    "operators": [
+      "hash_function",
+      "modular_ring_ordering",
+      "partition_assignment",
+      "successor_search",
+      "virtual_node_replication"
+    ],
+    "patterns": [
+      "decentralized_lookup",
+      "incremental_stability",
+      "load_balancing",
+      "network_topology",
+      "uniform_hash_spread"
+    ],
+    "variables": {
+      "key": "k",
+      "nodes": "N",
+      "hash": "h",
+      "keys": "K"
+    },
+    "conservation": [
+      "total_keyspace"
+    ],
+    "structure": "graph_dynamical_system",
+    "source": {
+      "title": "Dynamo: Amazon's Highly Available Key-value Store",
+      "url": "https://doi.org/10.1145/1294261.1294281",
+      "year": 2007
+    },
+    "provenance": "curated"
+  },
+  "epidemic_gossip_protocol": {
+    "id": "epidemic_gossip_protocol",
+    "name": "Epidemic / Gossip Replication",
+    "domain": "Distributed Systems",
+    "equation": "pairwise anti-entropy exchange per round;  fraction of infected replicas follows dp/dt = βp(1−p) with O(log N) rounds to convergence",
+    "update_form": "randomized_pairwise_anti_entropy",
+    "optimization": "minimize_rounds_and_traffic_to_convergence",
+    "fixed_points": "all_replicas_converged",
+    "operators": [
+      "anti_entropy_reconciliation",
+      "monotonic_join_merge",
+      "random_peer_selection",
+      "rumor_mongering",
+      "state_merge"
+    ],
+    "patterns": [
+      "diffusion",
+      "epidemic_threshold",
+      "eventual_consistency",
+      "idempotence",
+      "redundancy",
+      "s_curve"
+    ],
+    "variables": {
+      "replicas": "N",
+      "infected_fraction": "p",
+      "rate": "beta"
+    },
+    "conservation": [
+      "update_durability"
+    ],
+    "structure": "distributed_protocol",
+    "source": {
+      "title": "Epidemic Algorithms for Replicated Database Maintenance",
+      "url": "https://doi.org/10.1145/41840.41841",
+      "year": 1987
+    },
+    "provenance": "curated"
+  },
+  "bounded_confidence_model": {
+    "id": "bounded_confidence_model",
+    "name": "Hegselmann-Krause Bounded Confidence",
+    "domain": "Social Dynamics",
+    "equation": "x_i(t+1) = mean{ x_j(t) : |x_j(t) − x_i(t)| ≤ ε }",
+    "update_form": "confidence_bounded_averaging",
+    "optimization": "not_applicable",
+    "fixed_points": "opinion_clusters_separated_by_more_than_epsilon",
+    "operators": [
+      "averaging",
+      "iterate",
+      "neighbor_set_construction",
+      "threshold_selection"
+    ],
+    "patterns": [
+      "clustering",
+      "consensus_or_fragmentation",
+      "convergence_to_equilibrium",
+      "local_rule_global_pattern",
+      "opinion_dynamics",
+      "threshold_behavior"
+    ],
+    "variables": {
+      "opinion": "x_i",
+      "confidence_bound": "epsilon",
+      "time": "t"
+    },
+    "conservation": [
+      "opinion_convex_hull_nonexpansion"
+    ],
+    "structure": "discrete_dynamical_system",
+    "source": {
+      "title": "Opinion Dynamics and Bounded Confidence: Models, Analysis and Simulation",
+      "url": "https://www.jasss.org/5/3/2.html",
+      "year": 2002
+    },
+    "provenance": "curated"
+  },
+  "information_cascades": {
+    "id": "information_cascades",
+    "name": "Informational Cascades",
+    "domain": "Social Dynamics",
+    "equation": "agent n adopts iff P(good | public history) exceeds threshold;  private signal is discarded once the public posterior dominates it",
+    "update_form": "sequential_bayesian_observational_learning",
+    "optimization": "individually_rational_choice_given_history",
+    "fixed_points": "absorbing_cascade_on_one_action",
+    "operators": [
+      "bayes_rule",
+      "posterior_conditioning",
+      "sequential_observation",
+      "threshold_selection"
+    ],
+    "patterns": [
+      "absorbing_state",
+      "bayesian_updating",
+      "fragility_of_cascade",
+      "herding_behavior",
+      "information_aggregation",
+      "information_asymmetry",
+      "path_dependence"
+    ],
+    "variables": {
+      "signal": "private_signal",
+      "history": "public_actions",
+      "belief": "posterior"
+    },
+    "conservation": [
+      "not_applicable"
+    ],
+    "structure": "sequential_bayesian_game",
+    "source": {
+      "title": "A Theory of Fads, Fashion, Custom, and Cultural Change as Informational Cascades",
+      "url": "https://doi.org/10.1086/261849",
+      "year": 1992
+    },
+    "provenance": "curated"
+  },
+  "friedkin_johnsen_model": {
+    "id": "friedkin_johnsen_model",
+    "name": "Friedkin-Johnsen Social Influence",
+    "domain": "Social Dynamics",
+    "equation": "x(t+1) = ΛW x(t) + (I − Λ) x(0)",
+    "update_form": "stubbornness_weighted_linear_averaging",
+    "optimization": "not_applicable",
+    "fixed_points": "unique_equilibrium_with_persistent_disagreement",
+    "operators": [
+      "averaging",
+      "convex_combination",
+      "iterate",
+      "matrix_multiply"
+    ],
+    "patterns": [
+      "anchoring_on_initial_opinion",
+      "convergence_to_equilibrium",
+      "linear_response",
+      "network_topology",
+      "opinion_dynamics",
+      "persistent_disagreement"
+    ],
+    "variables": {
+      "opinion": "x",
+      "influence_matrix": "W",
+      "susceptibility": "Lambda",
+      "initial_opinion": "x0"
+    },
+    "conservation": [
+      "row_stochastic_influence_weights"
+    ],
+    "structure": "discrete_dynamical_system",
+    "source": {
+      "title": "Social Influence and Opinions",
+      "url": "https://doi.org/10.1080/0022250X.1990.9990069",
+      "year": 1990
+    },
+    "provenance": "curated"
+  },
+  "merton_structural_credit": {
+    "id": "merton_structural_credit",
+    "name": "Merton Structural Credit Risk",
+    "domain": "Quantitative Finance",
+    "equation": "E = V N(d1) − K e^{−rT} N(d2);  default iff V_T < K;  d1 = [ln(V/K) + (r + σ²/2)T] / (σ√T)",
+    "update_form": "contingent_claim_on_firm_value",
+    "optimization": "arbitrage_free_valuation_of_equity_and_debt",
+    "fixed_points": "default_boundary_at_maturity",
+    "operators": [
+      "discounting",
+      "ito_integration",
+      "normal_cdf",
+      "option_decomposition",
+      "risk_neutral_pricing"
+    ],
+    "patterns": [
+      "brownian_motion",
+      "leverage_effect",
+      "martingale",
+      "risk_neutral_valuation",
+      "tail_risk",
+      "threshold_behavior"
+    ],
+    "variables": {
+      "firm_value": "V",
+      "debt_face_value": "K",
+      "equity": "E",
+      "volatility": "sigma",
+      "rate": "r",
+      "maturity": "T"
+    },
+    "conservation": [
+      "balance_sheet_identity"
+    ],
+    "structure": "martingale_pricing",
+    "source": {
+      "title": "On the Pricing of Corporate Debt: The Risk Structure of Interest Rates",
+      "url": "https://doi.org/10.1111/j.1540-6261.1974.tb03058.x",
+      "year": 1974
+    },
+    "provenance": "curated"
+  },
+  "almgren_chriss_execution": {
+    "id": "almgren_chriss_execution",
+    "name": "Almgren-Chriss Optimal Execution",
+    "domain": "Quantitative Finance",
+    "equation": "minimize E[cost] + λ Var(cost) over liquidation path x_t;  optimal trajectory x_t = X sinh(κ(T−t)) / sinh(κT)",
+    "update_form": "mean_variance_optimization",
+    "optimization": "minimize_expected_cost_plus_risk_penalty",
+    "fixed_points": "optimal_liquidation_trajectory",
+    "operators": [
+      "calculus_of_variations",
+      "discretize_time",
+      "linear_impact_cost",
+      "risk_aversion_weighting",
+      "variance_penalty"
+    ],
+    "patterns": [
+      "exponential_decay",
+      "linear_price_impact",
+      "mean_variance",
+      "optimality_conditions",
+      "risk_return_tradeoff",
+      "transaction_cost_friction"
+    ],
+    "variables": {
+      "holdings": "x_t",
+      "total_shares": "X",
+      "risk_aversion": "lambda",
+      "horizon": "T",
+      "urgency": "kappa"
+    },
+    "conservation": [
+      "total_shares_liquidated"
+    ],
+    "structure": "constrained_optimization",
+    "source": {
+      "title": "Optimal Execution of Portfolio Transactions",
+      "url": "https://doi.org/10.21314/JOR.2001.041",
+      "year": 2001
+    },
+    "provenance": "curated"
+  },
+  "hjm_interest_rate_model": {
+    "id": "hjm_interest_rate_model",
+    "name": "Heath-Jarrow-Morton Framework",
+    "domain": "Quantitative Finance",
+    "equation": "df(t,T) = α(t,T) dt + σ(t,T) dW_t;  no-arbitrage forces α(t,T) = σ(t,T) ∫_t^T σ(t,s) ds",
+    "update_form": "forward_curve_sde",
+    "optimization": "no_arbitrage_consistency_of_term_structure",
+    "fixed_points": "drift_condition_determined_by_volatility",
+    "operators": [
+      "differential",
+      "girsanov_change_of_measure",
+      "integrate",
+      "ito_integration",
+      "risk_neutral_pricing"
+    ],
+    "patterns": [
+      "brownian_motion",
+      "equivalent_martingale_measure",
+      "girsanov_transform",
+      "linear_pricing",
+      "martingale",
+      "term_structure"
+    ],
+    "variables": {
+      "forward_rate": "f(t,T)",
+      "drift": "alpha",
+      "volatility": "sigma",
+      "brownian": "W"
+    },
+    "conservation": [
+      "no_arbitrage_drift_constraint"
+    ],
+    "structure": "stochastic_differential_equation",
+    "source": {
+      "title": "Bond Pricing and the Term Structure of Interest Rates: A New Methodology for Contingent Claims Valuation",
+      "url": "https://doi.org/10.2307/2951677",
+      "year": 1992
+    },
+    "provenance": "curated"
+  },
+  "coherent_risk_measures": {
+    "id": "coherent_risk_measures",
+    "name": "Coherent Measures of Risk",
+    "domain": "Risk Science",
+    "equation": "ρ satisfies monotonicity, translation invariance ρ(X+a)=ρ(X)−a, positive homogeneity ρ(tX)=tρ(X), and subadditivity ρ(X+Y) ≤ ρ(X)+ρ(Y)",
+    "update_form": "axiomatic_functional_on_random_losses",
+    "optimization": "worst_case_expectation_over_generalized_scenarios",
+    "fixed_points": "acceptance_set_boundary",
+    "operators": [
+      "axiom_check",
+      "convex_dual_representation",
+      "expectation",
+      "supremum_over_scenarios"
+    ],
+    "patterns": [
+      "coherence_axioms",
+      "coherent_risk_measure",
+      "diversification",
+      "duality",
+      "positive_homogeneity",
+      "subadditivity",
+      "tail_risk"
+    ],
+    "variables": {
+      "loss": "X",
+      "risk_measure": "rho",
+      "scenario_set": "Q"
+    },
+    "conservation": [
+      "translation_invariance"
+    ],
+    "structure": "risk_measure",
+    "source": {
+      "title": "Coherent Measures of Risk",
+      "url": "https://doi.org/10.1111/1467-9965.00068",
+      "year": 1999
+    },
+    "provenance": "curated"
+  },
+  "eisenberg_noe_clearing": {
+    "id": "eisenberg_noe_clearing",
+    "name": "Eisenberg-Noe Financial Clearing Network",
+    "domain": "Risk Science",
+    "equation": "p = min(p̄, x + Πᵀ p)",
+    "update_form": "fixed_point_iteration_on_payment_vector",
+    "optimization": "maximal_clearing_payments_under_limited_liability",
+    "fixed_points": "unique_clearing_payment_vector",
+    "operators": [
+      "fixed_point",
+      "iterate",
+      "matrix_multiply",
+      "min",
+      "monotone_map"
+    ],
+    "patterns": [
+      "contagion_cascade",
+      "fixed_point_iteration",
+      "fixed_point_stability",
+      "flow_balance",
+      "network_topology",
+      "systematic_risk",
+      "threshold_cascade"
+    ],
+    "variables": {
+      "payments": "p",
+      "obligations": "p_bar",
+      "external_assets": "x",
+      "relative_claims": "Pi"
+    },
+    "conservation": [
+      "value_conservation_in_clearing"
+    ],
+    "structure": "fixed_point_equilibrium",
+    "source": {
+      "title": "Systemic Risk in Financial Systems",
+      "url": "https://doi.org/10.1287/mnsc.47.2.236.9835",
+      "year": 2001
+    },
+    "provenance": "curated"
+  },
+  "levins_metapopulation": {
+    "id": "levins_metapopulation",
+    "name": "Levins Metapopulation Model",
+    "domain": "Ecology",
+    "equation": "dp/dt = c p (1 − p) − e p;  p* = 1 − e/c",
+    "update_form": "colonization_extinction_balance",
+    "optimization": "not_applicable",
+    "fixed_points": "persistence_equilibrium_or_regional_extinction",
+    "operators": [
+      "differential",
+      "logistic_saturation",
+      "multiply",
+      "subtract"
+    ],
+    "patterns": [
+      "balance_of_opposing_rates",
+      "fixed_point_stability",
+      "persistence",
+      "population_dynamics",
+      "s_curve",
+      "spatial_structure",
+      "threshold_behavior"
+    ],
+    "variables": {
+      "occupied_fraction": "p",
+      "colonization_rate": "c",
+      "extinction_rate": "e"
+    },
+    "conservation": [
+      "patch_fraction_normalization"
+    ],
+    "structure": "scalar_ode",
+    "source": {
+      "title": "Some Demographic and Genetic Consequences of Environmental Heterogeneity for Biological Control",
+      "url": "https://campus.lakeforest.edu/menke/PDFs/Bio373/Levins_1969_BulEntSocA.pdf",
+      "year": 1969
+    },
+    "provenance": "curated"
+  },
+  "macarthur_resource_competition": {
+    "id": "macarthur_resource_competition",
+    "name": "MacArthur Consumer-Resource Competition",
+    "domain": "Ecology",
+    "equation": "dN_i/dt = N_i (Σ_a c_ia R_a − m_i);  dR_a/dt = supply_a(R_a) − Σ_i N_i c_ia R_a",
+    "update_form": "coupled_population_dynamics",
+    "optimization": "minimize_effective_competition_free_energy",
+    "fixed_points": "coexistence_equilibrium_limited_by_resource_number",
+    "operators": [
+      "consumption_kernel",
+      "differential",
+      "multiply",
+      "resource_supply",
+      "sum"
+    ],
+    "patterns": [
+      "coexistence_criteria",
+      "competitive_exclusion",
+      "lyapunov_stability",
+      "mean_field",
+      "niche_differentiation",
+      "population_dynamics",
+      "resource_competition"
+    ],
+    "variables": {
+      "consumer": "N_i",
+      "resource": "R_a",
+      "uptake": "c_ia",
+      "mortality": "m_i"
+    },
+    "conservation": [
+      "resource_mass_balance"
+    ],
+    "structure": "coupled_ode",
+    "source": {
+      "title": "Species Packing and Competitive Equilibrium for Many Species",
+      "url": "https://doi.org/10.1016/0040-5809(70)90039-0",
+      "year": 1970
+    },
+    "provenance": "curated"
+  },
+  "may_complexity_stability": {
+    "id": "may_complexity_stability",
+    "name": "May Complexity-Stability Criterion",
+    "domain": "Ecology",
+    "equation": "stability requires σ√(SC) < d, equivalently normalized σ² S C < 1 for a random community matrix",
+    "update_form": "eigenvalue_statistics",
+    "optimization": "not_applicable",
+    "fixed_points": "locally_stable_or_unstable_equilibrium",
+    "operators": [
+      "eigenvalue_bound",
+      "linearize",
+      "random_matrix_ensemble",
+      "spectral_decomposition"
+    ],
+    "patterns": [
+      "critical_phenomena",
+      "lyapunov_stability",
+      "network_topology",
+      "phase_transition",
+      "stability_under_perturbation",
+      "structural_stability",
+      "threshold_behavior"
+    ],
+    "variables": {
+      "species": "S",
+      "connectance": "C",
+      "interaction_strength": "sigma",
+      "self_damping": "d"
+    },
+    "conservation": [
+      "not_applicable"
+    ],
+    "structure": "ensemble_average_over_matrices",
+    "source": {
+      "title": "Will a Large Complex System be Stable?",
+      "url": "https://doi.org/10.1038/238413a0",
+      "year": 1972
+    },
+    "provenance": "curated"
+  },
+  "schaefer_bioeconomic_model": {
+    "id": "schaefer_bioeconomic_model",
+    "name": "Schaefer Surplus-Production Fishery",
+    "domain": "Ecology",
+    "equation": "dX/dt = r X (1 − X/K) − q E X;  MSY = rK/4 at X = K/2",
+    "update_form": "density_dependent_growth",
+    "optimization": "maximize_sustainable_yield",
+    "fixed_points": "bionomic_equilibrium_or_stock_collapse",
+    "operators": [
+      "differential",
+      "harvest_removal",
+      "logistic_saturation",
+      "multiply"
+    ],
+    "patterns": [
+      "balance_of_opposing_rates",
+      "capacity_constraint",
+      "density_dependence",
+      "fixed_point_stability",
+      "overharvest_collapse",
+      "population_dynamics",
+      "s_curve"
+    ],
+    "variables": {
+      "stock": "X",
+      "growth_rate": "r",
+      "carrying_capacity": "K",
+      "catchability": "q",
+      "effort": "E"
+    },
+    "conservation": [
+      "biomass_balance"
+    ],
+    "structure": "scalar_ode",
+    "source": {
+      "title": "Some Aspects of the Dynamics of Populations Important to the Management of the Commercial Marine Fisheries",
+      "url": "https://aquadocs.org/items/fa179416-ed62-4a25-b95b-ba996e2fadc7",
+      "year": 1954
+    },
+    "provenance": "curated"
+  },
+  "petri_nets": {
+    "id": "petri_nets",
+    "name": "Petri Net State Equation",
+    "domain": "Systems Engineering",
+    "equation": "M' = M + C σ, where C is the incidence matrix and σ the firing count vector of enabled transitions",
+    "update_form": "token_firing_state_update",
+    "optimization": "not_applicable",
+    "fixed_points": "reachable_markings_and_deadlocks",
+    "operators": [
+      "add",
+      "enabledness_check",
+      "invariant_computation",
+      "matrix_multiply",
+      "token_transfer"
+    ],
+    "patterns": [
+      "bipartite_structure",
+      "concurrency_and_conflict",
+      "conservation_law",
+      "discrete_dynamics",
+      "flow_balance",
+      "reachability"
+    ],
+    "variables": {
+      "marking": "M",
+      "incidence": "C",
+      "firing_vector": "sigma"
+    },
+    "conservation": [
+      "place_invariants"
+    ],
+    "structure": "discrete_dynamical_system",
+    "source": {
+      "title": "Petri Nets: Properties, Analysis and Applications",
+      "url": "https://doi.org/10.1109/5.24143",
+      "year": 1989
+    },
+    "provenance": "curated"
+  },
+  "fault_tree_analysis": {
+    "id": "fault_tree_analysis",
+    "name": "Fault Tree Analysis",
+    "domain": "Systems Engineering",
+    "equation": "P(top) composed from gates: AND ⇒ Π P(inputs) (independent), OR ⇒ 1 − Π (1 − P(inputs));  minimal cut sets determine failure modes",
+    "update_form": "boolean_gate_probability_composition",
+    "optimization": "minimize_top_event_probability",
+    "fixed_points": "minimal_cut_sets",
+    "operators": [
+      "boolean_function",
+      "complement",
+      "cut_set_enumeration",
+      "multiply",
+      "probability_composition"
+    ],
+    "patterns": [
+      "all_or_nothing",
+      "hierarchical_decomposition",
+      "independence_decomposition",
+      "redundancy",
+      "single_point_of_failure",
+      "tree_structure"
+    ],
+    "variables": {
+      "top_event": "P_top",
+      "basic_event": "P_i",
+      "gates": "and_or"
+    },
+    "conservation": [
+      "total_probability"
+    ],
+    "structure": "graphical_model_structure",
+    "source": {
+      "title": "Fault Tree Handbook with Aerospace Applications",
+      "url": "https://ntrs.nasa.gov/citations/20020005044",
+      "year": 2002
+    },
+    "provenance": "curated"
+  },
+  "littles_law": {
+    "id": "littles_law",
+    "name": "Little's Law",
+    "domain": "Systems Engineering",
+    "equation": "L = λ W",
+    "update_form": "stationary_flow_identity",
+    "optimization": "not_applicable",
+    "fixed_points": "stationary_regime",
+    "operators": [
+      "arrival_rate",
+      "expectation",
+      "multiply",
+      "time_average_convergence"
+    ],
+    "patterns": [
+      "capacity_constraint",
+      "distribution_free_identity",
+      "exact_decomposition",
+      "flow_balance",
+      "queueing",
+      "queueing_stability"
+    ],
+    "variables": {
+      "in_system": "L",
+      "arrival_rate": "lambda",
+      "sojourn_time": "W"
+    },
+    "conservation": [
+      "flow_conservation"
+    ],
+    "structure": "exact_identity",
+    "source": {
+      "title": "A Proof for the Queuing Formula: L = λW",
+      "url": "https://doi.org/10.1287/opre.9.3.383",
+      "year": 1961
+    },
+    "provenance": "curated"
+  },
+  "kramers_escape_rate": {
+    "id": "kramers_escape_rate",
+    "name": "Kramers Escape Rate",
+    "domain": "Statistical Mechanics",
+    "equation": "k ≈ (ω_0 ω_b / 2πγ) exp(−ΔU / k_B T)",
+    "update_form": "barrier_crossing_rate_law",
+    "optimization": "not_applicable",
+    "fixed_points": "metastable_well_and_barrier_top",
+    "operators": [
+      "curvature_at_extrema",
+      "exponential",
+      "flux_over_population",
+      "fokker_planck_operator"
+    ],
+    "patterns": [
+      "basin_of_attraction",
+      "brownian_motion",
+      "energy_landscape_barrier",
+      "exponential_decay",
+      "first_passage",
+      "relaxation",
+      "temperature_controls_sharpness"
+    ],
+    "variables": {
+      "rate": "k",
+      "barrier": "delta_U",
+      "friction": "gamma",
+      "temperature": "T",
+      "well_curvature": "omega_0",
+      "barrier_curvature": "omega_b"
+    },
+    "conservation": [
+      "probability_flux_stationarity"
+    ],
+    "structure": "algebraic_rate_law",
+    "source": {
+      "title": "Brownian Motion in a Field of Force and the Diffusion Model of Chemical Reactions",
+      "url": "https://doi.org/10.1016/S0031-8914(40)90098-2",
+      "year": 1940
+    },
+    "provenance": "curated"
+  },
+  "kpz_universality": {
+    "id": "kpz_universality",
+    "name": "Kardar-Parisi-Zhang Universality",
+    "domain": "Statistical Mechanics",
+    "equation": "∂_t h = ν ∇²h + (λ/2)(∇h)² + η;  exponents α=1/2, β=1/3, z=3/2 in 1+1 dimensions",
+    "update_form": "stochastic_growth_pde",
+    "optimization": "not_applicable",
+    "fixed_points": "scaling_fixed_point_of_renormalization_flow",
+    "operators": [
+      "laplacian",
+      "noise_injection",
+      "nonlinear_gradient_squared",
+      "renormalization_group_flow",
+      "scaling_analysis"
+    ],
+    "patterns": [
+      "critical_phenomena",
+      "power_law_scaling",
+      "renormalization",
+      "scale_invariance",
+      "self_similarity",
+      "symmetry_breaking",
+      "universality"
+    ],
+    "variables": {
+      "height": "h",
+      "surface_tension": "nu",
+      "nonlinearity": "lambda",
+      "noise": "eta"
+    },
+    "conservation": [
+      "not_applicable"
+    ],
+    "structure": "nonlinear_pde_with_noise",
+    "source": {
+      "title": "Dynamic Scaling of Growing Interfaces",
+      "url": "https://doi.org/10.1103/PhysRevLett.56.889",
+      "year": 1986
+    },
+    "provenance": "curated"
+  },
+  "jones_polynomial": {
+    "id": "jones_polynomial",
+    "name": "Jones Polynomial Knot Invariant",
+    "domain": "Topology",
+    "equation": "q^{−1} V(L+) − q V(L−) = (q^{1/2} − q^{−1/2}) V(L0)",
+    "update_form": "skein_relation_recursion",
+    "optimization": "not_applicable",
+    "fixed_points": "unknot_normalization_v_equals_one",
+    "operators": [
+      "crossing_switch",
+      "polynomial_algebra",
+      "skein_recursion",
+      "trace_of_representation"
+    ],
+    "patterns": [
+      "algebraic_structure",
+      "invariance_under_deformation",
+      "one_to_one_mapping",
+      "recursive",
+      "recursive_decomposition",
+      "topological_invariants"
+    ],
+    "variables": {
+      "link": "L",
+      "invariant": "V",
+      "variable": "q"
+    },
+    "conservation": [
+      "invariance_under_reidemeister_moves"
+    ],
+    "structure": "operator_algebra",
+    "source": {
+      "title": "A Polynomial Invariant for Knots via von Neumann Algebras",
+      "url": "https://doi.org/10.1090/S0273-0979-1985-15304-2",
+      "year": 1985
+    },
+    "provenance": "curated"
+  },
+  "koopman_operator_theory": {
+    "id": "koopman_operator_theory",
+    "name": "Koopman Operator Theory",
+    "domain": "Dynamic Systems",
+    "equation": "U^t g(x) = g(F^t(x));  U^t is linear on the space of observables g",
+    "update_form": "semigroup_evolution",
+    "optimization": "not_applicable",
+    "fixed_points": "koopman_eigenfunctions_and_invariant_measures",
+    "operators": [
+      "composition",
+      "linear_operator",
+      "observable_lifting",
+      "semigroup_evolution",
+      "spectral_decomposition"
+    ],
+    "patterns": [
+      "duality",
+      "ergodic",
+      "infinite_dimensional_representation",
+      "invariant_measure",
+      "linearization_in_observable_space",
+      "spectral_decomposition"
+    ],
+    "variables": {
+      "state": "x",
+      "observable": "g",
+      "flow": "F^t",
+      "operator": "U^t"
+    },
+    "conservation": [
+      "composition_semigroup_property"
+    ],
+    "structure": "operator_algebra_on_hilbert_space",
+    "source": {
+      "title": "Hamiltonian Systems and Transformation in Hilbert Space",
+      "url": "https://doi.org/10.1073/pnas.17.5.315",
+      "year": 1931
+    },
+    "provenance": "curated"
+  },
+  "chandy_lamport_distributed_snapshot": {
+    "id": "chandy_lamport_distributed_snapshot",
+    "name": "Chandy-Lamport Distributed Snapshot",
+    "domain": "Distributed Systems",
+    "equation": "a global snapshot is the union of recorded process states and in-transit channel states, forming a consistent cut C where e∈C and f→e implies f∈C",
+    "update_form": "marker_triggered_local_state_recording",
+    "optimization": "not_applicable",
+    "fixed_points": "consistent_global_snapshot",
+    "operators": [
+      "causal_closure",
+      "channel_state_capture",
+      "local_state_record",
+      "marker_propagation",
+      "union_of_local_states"
+    ],
+    "patterns": [
+      "causal_ordering",
+      "consistent_cut",
+      "in_transit_message_accounting",
+      "no_global_clock",
+      "non_blocking_observation"
+    ],
+    "variables": {
+      "process_state": "LS_i",
+      "channel_state": "SC_ij",
+      "marker": "marker_message",
+      "cut": "C",
+      "causal_precedence": "happens_before"
+    },
+    "conservation": [
+      "messages_sent_equal_messages_received_plus_in_transit"
+    ],
+    "structure": "distributed_protocol",
+    "source": {
+      "title": "Distributed Snapshots: Determining Global States of Distributed Systems",
+      "url": "https://doi.org/10.1145/214451.214456",
+      "year": 1985
+    },
+    "provenance": "curated"
+  },
+  "axelrod_cultural_dissemination": {
+    "id": "axelrod_cultural_dissemination",
+    "name": "Axelrod Model of Cultural Dissemination",
+    "domain": "Social Dynamics",
+    "equation": "interaction probability sim(i,j) = F⁻¹ Σ_f 1[x_if = x_jf], then one differing feature is copied",
+    "update_form": "similarity_weighted_trait_copy",
+    "optimization": "not_applicable",
+    "fixed_points": "absorbing_configurations_of_identical_or_incompatible_neighbors",
+    "operators": [
+      "feature_comparison",
+      "random_neighbor_selection",
+      "similarity_computation",
+      "trait_copy"
+    ],
+    "patterns": [
+      "homophily",
+      "local_convergence",
+      "multidimensional_traits",
+      "social_influence",
+      "spatial_structure",
+      "stable_cultural_regions"
+    ],
+    "variables": {
+      "features": "F",
+      "traits_per_feature": "q",
+      "site_trait": "x_if",
+      "similarity": "sim_ij"
+    },
+    "conservation": [
+      "feature_count_per_site"
+    ],
+    "structure": "agent_based_lattice_dynamics",
+    "source": {
+      "title": "The Dissemination of Culture: A Model with Local Convergence and Global Polarization",
+      "url": "https://doi.org/10.1177/0022002797041002001",
+      "year": 1997
+    },
+    "provenance": "curated"
+  },
+  "avellaneda_stoikov_market_making": {
+    "id": "avellaneda_stoikov_market_making",
+    "name": "Avellaneda-Stoikov Market Making",
+    "domain": "Quantitative Finance",
+    "equation": "reservation price r = s − qγσ²(T−t);  optimal spread δ_a + δ_b = γσ²(T−t) + (2/γ)ln(1 + γ/k)",
+    "update_form": "stochastic_optimal_control",
+    "optimization": "maximize_exponential_utility_of_terminal_wealth",
+    "fixed_points": "optimal_quote_spread_and_reservation_price",
+    "operators": [
+      "exponential_utility",
+      "first_order_condition",
+      "hamilton_jacobi_bellman",
+      "inventory_dependent_price_shift",
+      "poisson_intensity_model"
+    ],
+    "patterns": [
+      "finite_horizon_effect",
+      "inventory_risk",
+      "inventory_skew",
+      "risk_return_tradeoff",
+      "spread_liquidity_tradeoff"
+    ],
+    "variables": {
+      "mid_price": "s",
+      "inventory": "q",
+      "risk_aversion": "gamma",
+      "volatility": "sigma",
+      "time_to_horizon": "T_minus_t",
+      "order_book_liquidity": "k"
+    },
+    "conservation": [
+      "cash_and_inventory_accounting"
+    ],
+    "structure": "stochastic_control_problem",
+    "source": {
+      "title": "High-frequency trading in a limit order book",
+      "url": "https://doi.org/10.1080/14697680701381228",
+      "year": 2008
+    },
+    "provenance": "curated"
+  },
+  "kibble_zurek_mechanism": {
+    "id": "kibble_zurek_mechanism",
+    "name": "Kibble-Zurek Mechanism",
+    "domain": "Statistical Mechanics",
+    "equation": "freeze-out correlation length ξ̂ ∝ τ_Q^{ν/(1+zν)};  defect density n_defect ∝ ξ̂^{−d}",
+    "update_form": "quench_rate_scaling_law",
+    "optimization": "not_applicable",
+    "fixed_points": "frozen_out_correlation_length",
+    "operators": [
+      "adiabatic_impulse_matching",
+      "correlation_length_freeze_out",
+      "critical_exponent_combination",
+      "power_law_scaling"
+    ],
+    "patterns": [
+      "critical_slowing_down",
+      "quench_rate_dependence",
+      "scaling_law",
+      "symmetry_breaking",
+      "topological_defect_formation",
+      "universality"
+    ],
+    "variables": {
+      "quench_time": "tau_Q",
+      "freeze_out_length": "xi_hat",
+      "defect_density": "n_defect",
+      "correlation_exponent": "nu",
+      "dynamic_exponent": "z",
+      "dimension": "d"
+    },
+    "conservation": [
+      "topological_charge"
+    ],
+    "structure": "scaling_law",
+    "source": {
+      "title": "Cosmological experiments in superfluid helium?",
+      "url": "https://doi.org/10.1038/317505a0",
+      "year": 1985
+    },
+    "provenance": "curated"
   }
 }

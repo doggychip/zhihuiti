@@ -1241,7 +1241,11 @@ class OracleHandler(BaseHTTPRequestHandler):
     def _handle_scan_status(self):
         with _oracle_scan_meta_lock:
             data = json.loads(json.dumps(_ORACLE_SCAN_META))
-        if data["running"]:
+        enabled = os.environ.get("ZHIHUITI_ORACLE_SCAN", "1").strip().lower() not in {"0", "false", "no", "off", "disabled"}
+        data["enabled"] = enabled
+        if not enabled:
+            status = "disabled"
+        elif data["running"]:
             status = "running"
         elif data["last_completed_at"] and data["errors"]:
             status = "partial"

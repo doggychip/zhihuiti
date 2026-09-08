@@ -219,7 +219,7 @@ zhihuiti dashboard              # Launch web dashboard
 | `ZHIHUITI_EVOLVE_MAX_CYCLES` | Maximum autonomous cycles per process start (default: `2`) |
 | `ZHIHUITI_EVOLVE_MAX_GOALS` | Maximum autonomous goals per process start (default: `10`) |
 | `ZHIHUITI_EVOLVE_MAX_TOKENS` | Maximum autonomous LLM tokens per process start (default: `100000`) |
-| `ZHIHUITI_PREDICTION_HORIZON_SECONDS` | Minimum forward verification horizon (default: `14400`, four hours) |
+| `ZHIHUITI_PREDICTION_HORIZON_SECONDS` | Forward horizon stored with each new prediction (default: `14400`, four hours); observations are accepted only within the following one-hour collection tolerance |
 | `ZHIHUITI_ALERT_COOLDOWN_SECONDS` | Duplicate-alert coalescing window (default: `21600`) |
 | `ZHIHUITI_ALERT_TTL_SECONDS` | Active alert lifetime (default: `86400`) |
 | `ZHIHUITI_MACRO_HTTP_RETRIES` | Bounded macro-source attempts (default: `3`) |
@@ -229,6 +229,19 @@ index set on startup and every 30 minutes. `GET /api/oracle/scan/status`
 reports collection freshness, errors, agent actions, and forward-validation
 progress. Historical-candle backtests are labeled separately from forward
 predictions; they are never presented as live prediction accuracy.
+
+Forward verification uses successful collection timestamps and requires a newer
+source candle than the forecast input. Missing/stale source evidence is skipped.
+The forecast horizon is stored per record, with a one-hour collection tolerance;
+missed windows remain in the ledger as unscored expired predictions, never as
+incorrect predictions. Changing the horizon does not retime existing records.
+Equity/FX market closures can legitimately leave forecasts unscored.
+
+The release bundles the same 352-theory / 401-collision catalog as BigIntel.
+`client/src/data/catalog-manifest.json` records its upstream revision and exact
+SHA256 hashes. The loader checks these hashes and fails closed on missing or
+mismatched release files; it never falls back to the old persistent catalog cache.
+`GET /api/oracle/theories/stats` exposes the manifest for dashboard parity checks.
 
 ## Web Dashboard
 

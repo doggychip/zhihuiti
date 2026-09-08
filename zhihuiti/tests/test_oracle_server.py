@@ -27,6 +27,15 @@ from zhihuiti.env import env_enabled
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
+def test_disabled_scan_is_not_reported_pending(monkeypatch):
+    monkeypatch.setenv("ZHIHUITI_ORACLE_SCAN", "0")
+    captured = {}
+    monkeypatch.setattr(oracle_server, "_json_response", lambda handler, data: captured.update(data))
+    OracleHandler._handle_scan_status(object())
+    assert captured["status"] == "disabled"
+    assert captured["enabled"] is False
+
+
 def _start_server(port: int = 0) -> tuple[HTTPServer, int]:
     """Start the oracle server on a random port. Returns (server, port)."""
     server = HTTPServer(("127.0.0.1", port), OracleHandler)

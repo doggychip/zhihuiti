@@ -39,6 +39,8 @@ class ScanResult:
     top_pattern_strength: float
     collision_count: int
     signal_score: float  # composite score for ranking
+    observed_at: float = 0.0  # successful collection time; zero means unknown
+    source_at: float = 0.0  # latest source candle opening time, in seconds
 
     def to_dict(self) -> dict:
         return {
@@ -52,6 +54,8 @@ class ScanResult:
             "top_pattern_strength": round(self.top_pattern_strength, 3),
             "collision_count": self.collision_count,
             "signal_score": round(self.signal_score, 3),
+            "observed_at": self.observed_at,
+            "source_at": self.source_at,
         }
 
 
@@ -78,6 +82,15 @@ def _compute_signal_score(diagnosis) -> float:
     regime_bonus = 0.1 if diagnosis.regime != "quiet" else 0.0
 
     return min(1.0, avg_strength + multi_bonus + collision_bonus + regime_bonus)
+
+
+def candle_source_time(candles: list[dict]) -> float:
+    """Normalize source timestamps; missing evidence must stay unknown."""
+    try:
+        stamp = float(candles[-1].get("timestamp", 0))
+        return stamp / 1000 if stamp > 100_000_000_000 else stamp
+    except (IndexError, TypeError, ValueError):
+        return 0.0
 
 
 def scan_instruments(
@@ -131,6 +144,8 @@ def scan_instruments(
                 top_pattern_strength=top_pattern.strength if top_pattern else 0.0,
                 collision_count=len(diag.collision_insights),
                 signal_score=signal_score,
+                observed_at=time.time(),
+                source_at=candle_source_time(candles),
             ))
         except Exception as e:
             errors.append(f"{inst}: {e}")
