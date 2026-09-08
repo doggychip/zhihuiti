@@ -1,6 +1,7 @@
 """Release catalog integrity: no silent fallback to an old persistent cache."""
 import json
 import shutil
+from pathlib import Path
 
 import pytest
 import zhihuiti.theory_intelligence as theory_intelligence
@@ -19,6 +20,9 @@ def test_bundled_catalog_matches_manifest_and_references():
         assert pair not in pairs
         pairs.add(pair)
     assert sum(t.get("provenance") == "curated" for t in graph.theories.values()) == 58
+    client_data = Path(__file__).resolve().parents[1] / "client" / "src" / "data"
+    for name in (*theory_intelligence._DATA_FILES, "catalog-manifest.json"):
+        assert (client_data / name).read_bytes() == (theory_intelligence._BUNDLED_DATA_DIR / name).read_bytes()
 
 
 def test_missing_bundle_does_not_reuse_old_cache(tmp_path, monkeypatch):

@@ -11,12 +11,11 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import threading
 from pathlib import Path
 from typing import Any
 
-_BUNDLED_DATA_DIR = Path(__file__).resolve().parent.parent / "client" / "src" / "data"
+_BUNDLED_DATA_DIR = Path(__file__).resolve().parent / "catalog_data"
 _DATA_FILES = {
     "theories.json": dict,
     "collisions.json": list,

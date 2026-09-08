@@ -246,6 +246,9 @@ The release bundles the same 352-theory / 401-collision catalog as BigIntel.
 `client/src/data/catalog-manifest.json` records its upstream revision and exact
 SHA256 hashes. The loader checks these hashes and fails closed on missing or
 mismatched release files; it never falls back to the old persistent catalog cache.
+The Python package embeds the verified catalog in `zhihuiti/catalog_data` so
+Docker recipes that copy only the Python package still ship the release data.
+Tests require that this packaged copy is byte-identical to the client data.
 `GET /api/oracle/theories/stats` exposes the manifest for dashboard parity checks.
 
 ## Web Dashboard

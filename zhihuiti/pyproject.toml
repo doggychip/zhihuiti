@@ -25,5 +25,8 @@ silicon-realms = "silicon_realms.cli:main"
 [tool.setuptools.packages.find]
 include = ["zhihuiti*", "silicon_realms*"]
 
+[tool.setuptools.package-data]
+zhihuiti = ["catalog_data/*.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
