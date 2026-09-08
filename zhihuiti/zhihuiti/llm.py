@@ -301,6 +301,65 @@ class LLM:
         self._last_latency_ms = round((time.monotonic() - started) * 1000)
         return result
 
+    def chat_once(self, system: str, user: str, *, max_tokens: int = 1536) -> str:
+        """One bounded DeepSeek request: no retry, fallback, tools, or recovery probe.
+
+        Kept separate from chat() so legacy retry/failover behavior is unchanged.
+        Never surface provider response bodies or credentials on this path.
+        """
+        if (
+            self._backend != "deepseek" or self._using_fallback
+            or self.model != "deepseek-chat" or not self._api_key
+        ):
+            raise LLMError("bounded_provider_not_supported")
+        if (
+            type(max_tokens) is not int or not 1 <= max_tokens <= 1536
+            or len(system) + len(user) > 16000
+        ):
+            raise LLMError("bounded_request_limit")
+        started = time.monotonic()
+        self._last_call_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        self.total_calls += 1
+        try:
+            response = self.client.post(
+                DEEPSEEK_URL,
+                headers={"Authorization": f"Bearer {self._api_key}"},
+                json={
+                    "model": "deepseek-chat",
+                    "messages": [
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": user},
+                    ],
+                    "temperature": 0,
+                    "max_tokens": max_tokens,
+                },
+                timeout=30,
+            )
+            if response.status_code != 200:
+                raise LLMError(f"deepseek error {response.status_code}")
+            choice = response.json()["choices"][0]
+            output = choice["message"]["content"]
+            if (
+                not isinstance(output, str) or not output.strip()
+                or len(output) > 16000 or choice.get("finish_reason") != "stop"
+            ):
+                raise LLMError("invalid_or_truncated_response")
+        except Exception as exc:
+            self.total_failures += 1
+            self._last_call_succeeded = False
+            self._last_error_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            self._last_error_type = type(exc).__name__
+            self._last_error_category = self._classify_error(exc)
+            raise LLMError(self._last_error_category) from None
+        else:
+            self._last_call_succeeded = True
+            self._last_success_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            self._last_error_type = None
+            self._last_error_category = None
+            return output
+        finally:
+            self._last_latency_ms = round((time.monotonic() - started) * 1000)
+
     def chat_json(
         self,
         system: str,

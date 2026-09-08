@@ -60,6 +60,27 @@ _orch_goals_lock = threading.Lock()
 _population_rotator = None
 _population_rotator_lock = threading.Lock()
 
+
+def _controlled_operations():
+    from zhihuiti.controlled import ControlledError, ControlledOperations
+
+    # Do not lazily construct an Orchestrator: startup can prune/replenish agents.
+    if _orchestrator is None:
+        raise ControlledError("runtime_not_initialized", 503)
+
+    def active_work():
+        with _orch_goals_lock:
+            goals_running = any(
+                goal.get("status") not in {"completed", "failed"}
+                for goal in _orch_goals.values()
+            )
+        return (
+            _self_loop_running or goals_running
+            or (_population_rotator is not None and _population_rotator._lock.locked())
+        )
+
+    return ControlledOperations(_orchestrator, active_work)
+
 DEFAULT_CORS_ORIGIN = "https://zhihuiti.lovable.app"
 DEFAULT_MAX_REQUEST_BODY_BYTES = 1024 * 1024
 
@@ -1009,7 +1030,11 @@ class OracleHandler(BaseHTTPRequestHandler):
         path = parsed.path.rstrip("/")
         qs = parse_qs(parsed.query)
 
-        if path in {"/health", "/healthz"}:
+        if path.startswith("/api/operations/controlled/"):
+            if not _require_operator_auth(self):
+                return
+            self._handle_controlled(request_id=path.removeprefix("/api/operations/controlled/"))
+        elif path in {"/health", "/healthz"}:
             runtime = _runtime_status()
             _json_response(self, {
                 **runtime,
@@ -1164,6 +1189,22 @@ class OracleHandler(BaseHTTPRequestHandler):
         except ValueError as exc:
             _json_response(self, {"error": str(exc)}, 400)
             return
+
+        if path in {"/api/operations/readiness", "/api/tasks/controlled"}:
+            self._handle_controlled(
+                kind="readiness" if path == "/api/operations/readiness" else "task",
+            )
+            return
+
+        # An interrupted controlled request must also block legacy operator work.
+        if _orchestrator is not None:
+            try:
+                if _controlled_operations().busy():
+                    _json_response(self, {"error": "controlled_request_unresolved"}, 409)
+                    return
+            except Exception:
+                _json_response(self, {"error": "controlled_state_unavailable"}, 503)
+                return
 
         if path == "/api/oracle/diagnose":
             self._handle_diagnose()
@@ -2419,6 +2460,25 @@ class OracleHandler(BaseHTTPRequestHandler):
             _json_response(self, {"error": "goal not found"}, 404)
             return
         _json_response(self, goal)
+
+    def _handle_controlled(self, *, kind=None, request_id=None):
+        from zhihuiti.controlled import ControlledError
+
+        try:
+            controller = _controlled_operations()
+            result = (
+                controller.get(request_id) if request_id is not None
+                else controller.run(kind, _read_body(self))
+            )
+            if result is None:
+                _json_response(self, {"error": "request_not_found"}, 404)
+            else:
+                _json_response(self, result, 202 if result["status"] == "running" else 200)
+        except ControlledError as exc:
+            _json_response(self, {"error": str(exc)}, exc.status)
+        except Exception:
+            # Keep ambiguous reservations in place; never retry a paid call.
+            _json_response(self, {"error": "controlled_operation_failed_check_request_id"}, 503)
 
     def _handle_real_single_task(self):
         """POST /api/tasks — execute a single task with a real agent."""
