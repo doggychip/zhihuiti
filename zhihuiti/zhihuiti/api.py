@@ -91,6 +91,7 @@ def _fetch_crypto_candles(instrument: str, timeframe: str) -> list[dict]:
                 "low": c.get("l", c.get("low", 0)),
                 "close": c.get("c", c.get("close", 0)),
                 "volume": c.get("v", c.get("volume", 0)),
+                "timestamp": c.get("t", c.get("timestamp", 0)),
             }
             for c in raw
         ]

@@ -48,7 +48,7 @@ def test_requires_enough_candles_for_honest_validation():
 def _prediction(predicted: str, current: str, actual: str) -> PredictionRecord:
     return PredictionRecord(
         instrument="TEST",
-        timestamp=time.time() - 20_000,
+        timestamp=time.time() - 16_000,
         predicted_regime=predicted,
         current_regime=current,
         confidence=0.8,
@@ -65,6 +65,9 @@ def _prediction(predicted: str, current: str, actual: str) -> PredictionRecord:
         actual_regime=actual,
         actual_price=101.0,
         verified_at=time.time(),
+        observation_at=time.time() - 1,
+        source_at_prediction=time.time() - 17000,
+        outcome_source_at=time.time() - 3600,
         correct=predicted == actual,
         baseline_correct=current == actual,
     )
@@ -149,7 +152,8 @@ def test_auto_record_reports_warmup_instead_of_silently_skipping(monkeypatch):
     monkeypatch.setattr(backtest, "_predictions", [])
 
     result = backtest.auto_record_and_verify([
-        {"instrument": "TEST", "regime": "quiet", "price": 100},
+        {"instrument": "TEST", "regime": "quiet", "price": 100,
+         "observed_at": time.time(), "source_at": time.time() - 3600},
     ], history=EmptyHistory())
 
     assert result["status"] == "collecting"
@@ -168,4 +172,93 @@ def test_prediction_verification_respects_configured_horizon(monkeypatch):
 
     assert backtest.verify_predictions("TEST", "quiet", 100.0) == 0
     prediction.timestamp = time.time() - 14401
-    assert backtest.verify_predictions("TEST", "quiet", 100.0) == 1
+    assert backtest.verify_predictions("TEST", "quiet", 100.0, source_at=time.time()-3600) == 1
+
+
+def test_outage_does_not_score_month_old_predictions(monkeypatch):
+    pred = _prediction("quiet", "quiet", "")
+    pred.timestamp = time.time() - 30 * 86400
+    pred.verified_at = 0
+    monkeypatch.setattr(backtest, "_predictions", [pred])
+    assert backtest.verify_predictions("TEST", "quiet", 100) == 0
+    summary = backtest.get_forward_accuracy_summary()
+    assert summary["expired"] == 1
+    assert summary["pending"] == summary["verified"] == 0
+    assert pred.actual_regime == ""
+
+
+def test_uses_observation_time_and_persisted_horizon(monkeypatch):
+    monkeypatch.setattr(backtest.time, "time", lambda: 100000)
+    pred = _prediction("quiet", "quiet", "")
+    pred.timestamp = 80000
+    pred.verified_at = 0
+    pred.source_at_prediction = 79000
+    monkeypatch.setattr(backtest, "_predictions", [pred])
+    monkeypatch.setattr(backtest, "_rewrite_store", lambda: None)
+    monkeypatch.setenv("ZHIHUITI_PREDICTION_HORIZON_SECONDS", "3600")
+    assert backtest.verify_predictions("TEST", "quiet", 100, 94000, 93000) == 0
+    assert backtest.verify_predictions("TEST", "quiet", 100, 95000, 79000) == 0
+    assert backtest.verify_predictions("TEST", "quiet", 100, 100001, 99000) == 0
+    assert backtest.verify_predictions("TEST", "quiet", float("nan"), 95000, 93000) == 0
+    assert backtest.verify_predictions("TEST", "quiet", 100, 95000, 93000) == 1
+    assert pred.observation_at == 95000
+    assert pred.outcome_source_at == 93000
+
+
+def test_missing_source_observation_is_not_recorded(monkeypatch):
+    monkeypatch.setattr(backtest, "_predictions", [])
+    result = backtest.auto_record_and_verify([
+        {"instrument": "TEST", "regime": "quiet", "price": 100},
+    ])
+    assert result["verified"] == 0
+    assert result["prediction_errors"][0]["error"] == "missing_or_stale_observation"
+    assert backtest._predictions == []
+
+
+def test_record_and_reload_preserves_verification_contract(monkeypatch, tmp_path):
+    monkeypatch.setattr(backtest, "_predictions", [])
+    monkeypatch.setattr(backtest, "_store_path", tmp_path / "predictions.jsonl")
+    monkeypatch.setenv("ZHIHUITI_PREDICTION_HORIZON_SECONDS", "7200")
+    pred = backtest.record_prediction("TEST", "quiet", "quiet", .5, {"quiet": 1}, [], 100, source_at=1000)
+    monkeypatch.setattr(backtest, "_predictions", [])
+    backtest._load_predictions()
+    assert backtest._predictions[0].to_dict() == pred.to_dict()
+    assert pred.horizon_seconds == 7200
+
+
+def test_failed_rewrite_preserves_original_ledger(monkeypatch, tmp_path):
+    import pytest
+    ledger = tmp_path / "predictions.jsonl"
+    ledger.write_text("original\n")
+    monkeypatch.setattr(backtest, "_store_path", ledger)
+    monkeypatch.setattr(backtest, "_predictions", [_prediction("quiet", "quiet", "quiet")])
+    def fail_replace(*args):
+        raise OSError("simulated disk error")
+    monkeypatch.setattr(backtest.os, "replace", fail_replace)
+    with pytest.raises(OSError):
+        backtest._rewrite_store()
+    assert ledger.read_text() == "original\n"
+    assert list(tmp_path.glob(".predictions-*")) == []
+
+
+def test_legacy_late_labels_are_preserved_but_excluded(monkeypatch):
+    pred = _prediction("quiet", "quiet", "quiet")
+    pred.timestamp = time.time() - 30*86400
+    pred.observation_at = 0
+    pred.source_at_prediction = 0
+    monkeypatch.setattr(backtest, "_predictions", [pred])
+    summary = backtest.get_forward_accuracy_summary()
+    assert summary["verified"] == summary["correct"] == summary["pending"] == 0
+    assert summary["expired"] == summary["excluded_outcomes"] == 1
+    assert pred.verified_at > 0  # original evidence is retained, not erased
+
+
+def test_recent_legacy_forecast_without_source_is_unscorable(monkeypatch):
+    pred = _prediction("quiet", "quiet", "")
+    pred.timestamp = time.time()
+    pred.verified_at = 0
+    pred.source_at_prediction = 0
+    monkeypatch.setattr(backtest, "_predictions", [pred])
+    summary = backtest.get_forward_accuracy_summary()
+    assert summary["unscorable"] == 1
+    assert summary["pending"] == summary["verified"] == summary["expired"] == 0

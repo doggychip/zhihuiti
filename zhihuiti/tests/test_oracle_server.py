@@ -27,6 +27,15 @@ from zhihuiti.env import env_enabled
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
+def test_disabled_scan_is_not_reported_pending(monkeypatch):
+    monkeypatch.setenv("ZHIHUITI_ORACLE_SCAN", "0")
+    captured = {}
+    monkeypatch.setattr(oracle_server, "_json_response", lambda handler, data: captured.update(data))
+    OracleHandler._handle_scan_status(object())
+    assert captured["status"] == "disabled"
+    assert captured["enabled"] is False
+
+
 def _start_server(port: int = 0) -> tuple[HTTPServer, int]:
     """Start the oracle server on a random port. Returns (server, port)."""
     server = HTTPServer(("127.0.0.1", port), OracleHandler)
@@ -368,6 +377,22 @@ class TestPublicEvolutionStatus:
 
 
 class TestOracleScanStatus:
+    def test_public_scan_read_never_collects_or_records(self, server, monkeypatch):
+        history = SimpleNamespace(
+            get_all_instruments=lambda: ["TEST"],
+            get_history=lambda instrument, limit: [{"instrument": instrument, "timestamp": 123, "regime": "quiet"}],
+        )
+        monkeypatch.setattr(oracle_server, "_get_history", lambda: history)
+        def forbidden(*args, **kwargs):
+            raise AssertionError("Public GET must not collect, record or verify")
+        monkeypatch.setattr("zhihuiti.scanner.scan_instruments", forbidden)
+        monkeypatch.setattr("zhihuiti.backtest.auto_record_and_verify", forbidden)
+        for _ in range(2):
+            status, body = _get(server, "/api/oracle/scan")
+            assert status == 200
+            assert body["read_only"] is True
+            assert body["results"][0]["timestamp"] == 123
+
     def test_exposes_collection_state_without_triggering_a_scan(self, server, monkeypatch):
         monkeypatch.setattr(oracle_server, "_ORACLE_SCAN_META", {
             "running": False,

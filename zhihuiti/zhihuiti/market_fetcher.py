@@ -6,6 +6,8 @@ Returns OHLCV candles in the same format as crypto fetcher.
 
 from __future__ import annotations
 
+import time
+
 DEFAULT_EQUITIES = [
     "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA",
     "META", "TSLA", "JPM", "V", "WMT",
@@ -112,7 +114,7 @@ def scan_equities(
 
     Returns list of ScanResult-compatible dicts.
     """
-    from zhihuiti.scanner import ScanResult, _compute_signal_score
+    from zhihuiti.scanner import ScanResult, _compute_signal_score, candle_source_time
     from zhihuiti.crypto_oracle import diagnose_market
 
     if symbols is None:
@@ -140,6 +142,8 @@ def scan_equities(
                 top_pattern_strength=top_pattern.strength if top_pattern else 0.0,
                 collision_count=len(diag.collision_insights),
                 signal_score=signal_score,
+                observed_at=time.time(),
+                source_at=candle_source_time(candles),
             ))
         except Exception:
             continue
