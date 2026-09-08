@@ -41,6 +41,189 @@ def main():
     """智慧体 (zhihuiti) — Autonomous multi-agent orchestration system."""
 
 
+@main.group("video")
+def video_commands():
+    """Manage human-approved video production episodes."""
+
+
+@video_commands.command("create")
+@click.argument("slug")
+@click.argument("title")
+@click.option("--root", default="episodes", show_default=True)
+def video_create(slug: str, title: str, root: str):
+    """Create a new auditable video episode."""
+    from zhihuiti.video_factory import VideoFactory, WorkflowError
+
+    try:
+        console.print_json(data=VideoFactory(root).create(slug, title).to_dict())
+    except WorkflowError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+
+@video_commands.command("status")
+@click.argument("episode_id")
+@click.option("--root", default="episodes", show_default=True)
+def video_status(episode_id: str, root: str):
+    """Show episode state, release issues, and approval validity."""
+    from zhihuiti.video_factory import VideoFactory, WorkflowError
+
+    factory = VideoFactory(root)
+    try:
+        episode = factory.load(episode_id)
+        result = episode.to_dict()
+        result["release_issues"] = factory.release_issues(episode_id)
+        result["approval_is_current"] = factory.approval_is_current(episode_id)
+        console.print_json(data=result)
+    except WorkflowError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+
+@video_commands.command("advance")
+@click.argument("episode_id")
+@click.argument("target")
+@click.option("--actor", required=True, help="Agent or operator identity")
+@click.option("--human", is_flag=True, help="Confirm the actor is a human reviewer")
+@click.option("--root", default="episodes", show_default=True)
+def video_advance(episode_id: str, target: str, actor: str, human: bool, root: str):
+    """Advance an episode by exactly one production state."""
+    from zhihuiti.video_factory import EpisodeState, VideoFactory, WorkflowError
+
+    try:
+        state = EpisodeState(target)
+        episode = VideoFactory(root).transition(episode_id, state, actor=actor, human=human)
+        console.print_json(data=episode.to_dict())
+    except (ValueError, WorkflowError) as exc:
+        raise click.ClickException(str(exc)) from exc
+
+
+@video_commands.command("approve-release")
+@click.argument("episode_id")
+@click.option("--reviewer", required=True, help="Human reviewer identity")
+@click.option("--root", default="episodes", show_default=True)
+def video_approve_release(episode_id: str, reviewer: str, root: str):
+    """Approve the exact QC-passed release artifacts by SHA-256 hash."""
+    from zhihuiti.video_factory import VideoFactory, WorkflowError
+
+    try:
+        episode = VideoFactory(root).approve_release(episode_id, reviewer=reviewer)
+        console.print_json(data=episode.to_dict())
+    except WorkflowError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+
+@video_commands.command("images")
+@click.argument("shots", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option("--output", required=True, type=click.Path(file_okay=False, path_type=Path))
+@click.option("--execute", is_flag=True, help="Spend API credits and write images; otherwise only plan")
+@click.option("--limit", type=click.IntRange(min=1), help="Generate only the first N shots for style approval")
+@click.option("--overwrite", is_flag=True, help="Regenerate images that already exist")
+@click.option("--model", default="gpt-image-1", show_default=True)
+@click.option("--quality", type=click.Choice(["low", "medium", "high"]), default="medium", show_default=True)
+@click.option("--base-url", default=None, help="Images API base URL")
+def video_images(shots: Path, output: Path, execute: bool, limit: int | None,
+                 overwrite: bool, model: str, quality: str, base_url: str | None):
+    """Plan or generate a resumable batch from SHOTS JSON."""
+    from dataclasses import asdict
+    from zhihuiti.video_factory import WorkflowError
+    from zhihuiti.video_images import ImageBatch, build_openai_batch, load_shots
+
+    try:
+        batch = build_openai_batch(model=model, base_url=base_url) if execute else ImageBatch()
+        results = batch.run(
+            load_shots(shots), output, execute=execute, limit=limit,
+            overwrite=overwrite, quality=quality,
+        )
+        summary = {status: sum(item.status == status for item in results)
+                   for status in ("planned", "generated", "skipped", "failed")}
+        console.print_json(data={"summary": summary, "images": [asdict(item) for item in results]})
+        if summary["failed"]:
+            raise click.ClickException(f"{summary['failed']} image(s) failed")
+    except WorkflowError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+
+@video_commands.command("doctor")
+@click.argument("episode_dir", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--image-dir", default="images", show_default=True)
+def video_doctor(episode_dir: Path, image_dir: str):
+    """Inspect one existing episode and report render blockers."""
+    from zhihuiti.video_daily import inspect_episode
+
+    health = inspect_episode(episode_dir, image_dir=image_dir)
+    console.print_json(data=health.to_dict())
+    if health.blockers and health.status not in {"retired", "archived", "cancelled", "canceled"}:
+        raise click.ClickException(f"episode has {len(health.blockers)} blocker(s)")
+
+
+@video_commands.command("daily")
+@click.argument("root", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--execute-images", is_flag=True, help="Generate missing images; otherwise only plan")
+@click.option("--image-dir", default="images", show_default=True)
+@click.option("--model", default="gpt-image-1", show_default=True)
+@click.option("--quality", type=click.Choice(["low", "medium", "high"]), default="medium", show_default=True)
+def video_daily(root: Path, execute_images: bool, image_dir: str, model: str, quality: str):
+    """Run one scheduler-friendly pass over all live episode folders."""
+    from zhihuiti.video_daily import DailyVideoRun
+    from zhihuiti.video_factory import WorkflowError
+
+    try:
+        result = DailyVideoRun(root, image_dir=image_dir).run(
+            execute_images=execute_images, model=model, quality=quality,
+        )
+        console.print_json(data=result)
+    except WorkflowError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+
+@video_commands.command("architect")
+@click.argument("episode_dir", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--output", type=click.Path(dir_okay=False, path_type=Path), default=None)
+@click.option("--write/--no-write", default=True, show_default=True)
+def video_architect(episode_dir: Path, output: Path | None, write: bool):
+    """Build the canonical multi-agent plan for an episode."""
+    from zhihuiti.video_architect import VideoAgentArchitect
+    from zhihuiti.video_factory import WorkflowError
+
+    architect = VideoAgentArchitect()
+    try:
+        plan = architect.build(episode_dir)
+        if write:
+            path = architect.write(episode_dir, output, plan=plan)
+            plan["plan_path"] = str(path)
+        console.print_json(data=plan)
+    except WorkflowError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+
+@video_commands.command("run-plan")
+@click.argument("plan", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option("--execute", is_flag=True, help="Run registered workers; otherwise report readiness")
+@click.option("--multi-model-team", is_flag=True, help="Register configured Claude, Gemini, and image handlers")
+@click.option("--approve", multiple=True, help="Human gate ID explicitly approved for this run")
+@click.option("--paid-budget", type=click.IntRange(min=0), default=0, show_default=True)
+@click.option("--workers", type=click.IntRange(min=1), default=4, show_default=True)
+def video_run_plan(plan: Path, execute: bool, multi_model_team: bool,
+                   approve: tuple[str, ...], paid_budget: int, workers: int):
+    """Evaluate or execute ready waves from an agent plan."""
+    from zhihuiti.video_executor import PlanExecutor
+    from zhihuiti.video_factory import WorkflowError
+
+    try:
+        handlers = None
+        if multi_model_team:
+            from zhihuiti.llm import LLM
+            from zhihuiti.video_team import MultiModelVideoTeam
+            handlers = MultiModelVideoTeam.from_environment(LLM()).handlers()
+        result = PlanExecutor(handlers=handlers, max_workers=workers).run(
+            plan, execute=execute, approved_gates=set(approve), paid_budget=paid_budget,
+        )
+        console.print_json(data=result)
+        if execute and (result["summary"]["failed"] or result["summary"]["handler_required"]):
+            raise click.ClickException("plan execution has failed or unconfigured tasks")
+    except WorkflowError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+
 @main.group("harness")
 def harness_commands():
     """Guarded, operator-triggered self-improvement workflows."""

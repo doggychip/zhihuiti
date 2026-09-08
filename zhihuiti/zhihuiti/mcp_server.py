@@ -46,6 +46,66 @@ def _get_orchestrator():
 # Tool definitions exposed via MCP
 TOOLS = [
     {
+        "name": "zhihuiti_video_architect",
+        "description": (
+            "Create or preview the canonical multi-agent video production plan for an "
+            "existing episode folder. This is safe planning: it does not run agents, "
+            "spend API credits, approve gates, upload, or publish."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "episode_dir": {"type": "string", "description": "Absolute path to the episode folder"},
+                "write": {"type": "boolean", "default": True, "description": "Write agent-plan.json in the episode folder"},
+            },
+            "required": ["episode_dir"],
+        },
+    },
+    {
+        "name": "zhihuiti_video_doctor",
+        "description": (
+            "Inspect an existing video episode for missing scripts or images, invalid "
+            "cloud placeholders, conflict copies, and render readiness. Read-only."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "episode_dir": {"type": "string", "description": "Absolute path to the episode folder"},
+                "image_dir": {"type": "string", "default": "images"},
+            },
+            "required": ["episode_dir"],
+        },
+    },
+    {
+        "name": "zhihuiti_video_daily_plan",
+        "description": (
+            "Run a cost-free, non-writing readiness pass across all episode folders. "
+            "It never generates images or performs paid work."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "root": {"type": "string", "description": "Absolute path containing episode folders"},
+                "image_dir": {"type": "string", "default": "images"},
+            },
+            "required": ["root"],
+        },
+    },
+    {
+        "name": "zhihuiti_video_plan_status",
+        "description": (
+            "Evaluate agent-plan.json and return ready, blocked, human-gated, and "
+            "budget-gated tasks. Readiness only: no handlers execute and no approval is granted."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "plan": {"type": "string", "description": "Absolute path to agent-plan.json"},
+            },
+            "required": ["plan"],
+        },
+    },
+    {
         "name": "zhihuiti_execute_goal",
         "description": (
             "Execute a complex goal using zhihuiti's autonomous multi-agent system. "
@@ -344,8 +404,40 @@ def _fetch_book(instrument: str) -> dict | None:
         return None
 
 
+def _text_json(value: Any) -> dict:
+    return {"content": [{"type": "text", "text": json.dumps(value, indent=2, ensure_ascii=False)}]}
+
+
 def _handle_tool_call(name: str, arguments: dict) -> dict:
     """Execute a tool and return the result."""
+    # Video tools are intentionally handled before orchestrator creation. They
+    # are local planning/inspection operations and must not require an LLM key.
+    if name == "zhihuiti_video_architect":
+        from zhihuiti.video_architect import VideoAgentArchitect
+
+        architect = VideoAgentArchitect()
+        plan = architect.build(arguments["episode_dir"])
+        if arguments.get("write", True):
+            plan["plan_path"] = str(architect.write(arguments["episode_dir"], plan=plan))
+        return _text_json(plan)
+
+    if name == "zhihuiti_video_doctor":
+        from zhihuiti.video_daily import inspect_episode
+
+        health = inspect_episode(arguments["episode_dir"], image_dir=arguments.get("image_dir", "images"))
+        return _text_json(health.to_dict())
+
+    if name == "zhihuiti_video_daily_plan":
+        from zhihuiti.video_daily import DailyVideoRun
+
+        result = DailyVideoRun(arguments["root"], image_dir=arguments.get("image_dir", "images")).run()
+        return _text_json(result)
+
+    if name == "zhihuiti_video_plan_status":
+        from zhihuiti.video_executor import PlanExecutor
+
+        return _text_json(PlanExecutor().run(arguments["plan"], execute=False))
+
     orch = _get_orchestrator()
 
     if name == "zhihuiti_execute_goal":

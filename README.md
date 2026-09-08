@@ -101,6 +101,174 @@ Agents broadcast findings after completing tasks. Subsequent agents in the same 
 
 Completed goals are saved to history. When a similar goal is run later, prior results are injected as context for decomposition, helping the system learn from experience.
 
+## Human-approved video workflows
+
+`zhihuiti.video_factory.VideoFactory` provides a durable state machine for agent-assisted video production. It enforces sequential production stages, explicit human gates, claim/asset/compliance/QC artifacts, and SHA-256 approval binding so a changed render or script cannot reuse an old approval. See the [Macro Alpha–style blueprint](docs/macro-alpha-agent-video-blueprint.md) for the full operating model.
+
+```bash
+zhihuiti video create rates-explained "Why rates stayed higher"
+zhihuiti video advance 2026-08-15-rates-explained pitched --actor scout-1
+zhihuiti video status 2026-08-15-rates-explained
+# After verified artifacts and QC exist:
+zhihuiti video approve-release 2026-08-15-rates-explained --reviewer ryan
+```
+
+Image batches are resumable and cost-free by default. First plan the batch,
+then generate a small approval set before authorizing the full manifest:
+
+```bash
+zhihuiti video images episodes/ep001_v4/shots.json --output episodes/ep001_v4/images
+export OPENAI_API_KEY=sk-...
+zhihuiti video images episodes/ep001_v4/shots.json --output episodes/ep001_v4/images --limit 3 --execute
+# After visual approval, rerun without --limit; the first three files are skipped.
+zhihuiti video images episodes/ep001_v4/shots.json --output episodes/ep001_v4/images --execute
+```
+
+The generator fails closed when another process holds the output lock, when it
+finds an iCloud/Finder conflict copy such as `shot_001 2.png`, or when an
+existing file is an unreadable cloud placeholder rather than valid image
+bytes. Resolve those files manually or choose a new authoritative output
+directory; the command never guesses which agent's image should win.
+
+Inspect one existing folder or run a non-billing pass across the whole episode
+root:
+
+```bash
+zhihuiti video doctor /path/to/episodes/ep001_v4
+zhihuiti video daily /path/to/episodes
+# Only after the report is correct and OPENAI_API_KEY is available:
+zhihuiti video daily /path/to/episodes --execute-images
+```
+
+### Daily automation on macOS
+
+Use the operating-system scheduler rather than leaving a chat session open.
+First run the exact command manually. Then save the following as
+`~/Library/LaunchAgents/com.zhihuiti.video-daily.plist`, replacing the three
+absolute paths. Keep the API key in the working directory's `.env` file with
+owner-only permissions (`chmod 600 .env`); do not put it in the plist.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.zhihuiti.video-daily</string>
+  <key>ProgramArguments</key><array>
+    <string>/ABSOLUTE/PATH/TO/zhihuiti</string>
+    <string>video</string><string>daily</string>
+    <string>/ABSOLUTE/PATH/TO/episodes</string>
+    <string>--execute-images</string>
+  </array>
+  <key>WorkingDirectory</key><string>/ABSOLUTE/PATH/TO/project</string>
+  <key>StartCalendarInterval</key><dict>
+    <key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer>
+  </dict>
+  <key>StandardOutPath</key><string>/tmp/zhihuiti-video.log</string>
+  <key>StandardErrorPath</key><string>/tmp/zhihuiti-video-error.log</string>
+</dict></plist>
+```
+
+```bash
+plutil -lint ~/Library/LaunchAgents/com.zhihuiti.video-daily.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.zhihuiti.video-daily.plist
+launchctl kickstart -k gui/$(id -u)/com.zhihuiti.video-daily
+tail -f /tmp/zhihuiti-video.log /tmp/zhihuiti-video-error.log
+```
+
+The daily command currently automates episode discovery, retirement filtering,
+image planning/generation, resumption, collision protection, and render-readiness
+reporting. Narration and final rendering remain external commands until their
+contracts are added to this repository; release approval and publication remain
+intentional human gates.
+
+The prioritized implementation sequence for closing that gap is documented in
+[Video factory: next build plan](docs/video-factory-next-build.md). The next
+vertical slice is an idempotent `video assemble` command built around the real
+narration, exposure, caption, and render contracts—not another speculative
+episode schema.
+
+Create the canonical multi-agent ownership and dependency plan for an existing
+episode with:
+
+```bash
+zhihuiti video architect /path/to/episodes/ep001_v4
+```
+
+This writes `agent-plan.json` with specialized creative agents, deterministic
+production workers, two explicit human gates, parallel execution waves, paid
+task markers, and single-writer artifact contracts. It is an auditable plan;
+it does not claim an artifact is complete merely because an agent returned
+text, and it never grants publishing authority to a research or writing agent.
+
+Evaluate the ready execution wave without making changes:
+
+```bash
+zhihuiti video run-plan /path/to/episodes/ep001_v4/agent-plan.json
+```
+
+The resumable executor validates existing outputs, hashes completed artifacts,
+enforces dependencies, paid-task budgets, and explicit human gates, and writes
+`agent-run.json`. `--execute` only runs task handlers that have been registered;
+unimplemented narration/render integrations fail as `handler_required` rather
+than being reported as successful.
+
+Run the configured multi-model team with explicit model IDs:
+
+```bash
+export OPENROUTER_API_KEY=...
+export VIDEO_CLAUDE_MODEL=anthropic/your-approved-claude-model
+export VIDEO_GEMINI_MODEL=google/your-approved-gemini-model
+export OPENAI_API_KEY=...                  # needed only for the image worker
+export VIDEO_IMAGE_MODEL=your-approved-openai-image-model
+
+zhihuiti video run-plan /path/to/episode/agent-plan.json \
+  --execute --multi-model-team --workers 4 --paid-budget 1
+```
+
+The router assigns primary-source discovery and analysis to Gemini, editorial
+architecture/counter-thesis/script/verification/scene planning to Claude, and
+manifest image generation to the OpenAI-compatible image worker. Exposure,
+captions, FFmpeg rendering, and QC remain deterministic handler slots and stop
+as `handler_required` until the real local commands are registered. Model IDs
+are configuration, not hard-coded aliases, so an upstream model change cannot
+silently alter production behavior.
+
+### Use the video factory from Claude
+
+Claude Desktop can use the safe planning and inspection surface through the
+existing local MCP server. Add a local server entry to Claude Desktop's MCP
+configuration, replacing both absolute paths:
+
+```json
+{
+  "mcpServers": {
+    "zhihuiti-video": {
+      "command": "/ABSOLUTE/PATH/TO/python",
+      "args": ["-m", "zhihuiti.mcp_server"],
+      "env": {
+        "PYTHONPATH": "/ABSOLUTE/PATH/TO/zhihuiti/zhihuiti"
+      }
+    }
+  }
+}
+```
+
+Restart Claude Desktop after saving the configuration. Claude will see four
+video tools: architect an episode, inspect one episode, plan the daily sweep,
+and inspect plan readiness. These MCP tools deliberately cannot spend image
+credits, approve a human gate, execute production handlers, upload, or publish.
+Keep paid execution and approval in the CLI until a narrower authenticated MCP
+permission layer is implemented.
+
+Example requests to Claude:
+
+```text
+Inspect /Users/rcheung/.../王利杰/ep001_v4 and list every render blocker.
+Create the multi-agent plan for /Users/rcheung/.../王利杰/ep002.
+Run a cost-free daily readiness plan across /Users/rcheung/.../王利杰.
+Show which tasks are ready or human-gated in ep001_v4/agent-plan.json.
+```
+
 ## CLI
 
 ```bash
