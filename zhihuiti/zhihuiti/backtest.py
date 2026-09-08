@@ -157,8 +157,8 @@ def record_prediction(
         source_at_prediction=source_at,
     )
     with _predictions_lock:
-        _predictions.append(pred)
         _save_prediction(pred)
+        _predictions.append(pred)
     return pred
 
 
@@ -184,9 +184,8 @@ def verify_predictions(instrument: str, actual_regime: str, actual_price: float,
                 due = pred.timestamp + pred.horizon_seconds
                 if not due <= observed_at <= due + pred.verification_tolerance_seconds:
                     continue
-                if pred.source_at_prediction and not (
-                    math.isfinite(source_at) and pred.source_at_prediction < source_at <= observed_at
-                ):
+                if not (pred.source_at_prediction > 0 and math.isfinite(source_at)
+                        and pred.source_at_prediction < source_at <= observed_at):
                     continue
                 pred.actual_regime = actual_regime
                 pred.actual_price = actual_price
@@ -208,6 +207,15 @@ def verify_predictions(instrument: str, actual_regime: str, actual_price: float,
     return verified
 
 
+def _valid_outcome(pred: PredictionRecord) -> bool:
+    """Quarantine old out-of-window labels without deleting audit evidence."""
+    due = pred.timestamp + pred.horizon_seconds
+    return bool(pred.verified_at > 0 and pred.observation_at > 0
+                and due <= pred.observation_at <= due + pred.verification_tolerance_seconds
+                and pred.observation_at <= pred.verified_at
+                and 0 < pred.source_at_prediction < pred.outcome_source_at <= pred.observation_at)
+
+
 def get_forward_accuracy_summary(
     minimum_verified: int = 30,
     model_version: str = "incumbent-v1",
@@ -221,12 +229,15 @@ def get_forward_accuracy_summary(
         prediction for prediction in predictions
         if prediction.model_version == model_version
     ]
-    verified = [prediction for prediction in predictions if prediction.verified_at > 0]
+    verified = [prediction for prediction in predictions if _valid_outcome(prediction)]
     total = len(verified)
     now = time.time()
-    expired = sum(1 for prediction in predictions if not prediction.verified_at
+    expired = sum(1 for prediction in predictions if not _valid_outcome(prediction)
                   and now > prediction.timestamp + prediction.horizon_seconds
                   + prediction.verification_tolerance_seconds)
+    unscorable = sum(1 for p in predictions if not _valid_outcome(p)
+                    and p.source_at_prediction <= 0
+                    and now <= p.timestamp + p.horizon_seconds + p.verification_tolerance_seconds)
     correct = sum(1 for prediction in verified if prediction.correct)
     baseline_correct = sum(
         1 for prediction in verified
@@ -334,7 +345,7 @@ def get_forward_accuracy_summary(
         status = "validated"
 
     recent = [
-        prediction.to_dict()
+        {**prediction.to_dict(), "outcome_eligible": _valid_outcome(prediction)}
         for prediction in sorted(predictions, key=lambda item: item.timestamp, reverse=True)[:20]
     ]
     return {
@@ -376,7 +387,9 @@ def get_forward_accuracy_summary(
         "transition_base_rate": len(transition_predictions) / total if total else None,
         "unverified": len(predictions) - total,
         "expired": expired,
-        "pending": len(predictions) - total - expired,
+        "pending": len(predictions) - total - expired - unscorable,
+        "unscorable": unscorable,
+        "excluded_outcomes": sum(1 for p in predictions if p.verified_at and not _valid_outcome(p)),
         "verification_tolerance_seconds": 3600,
         "verification_method": "bounded_forward_observation_v1",
         "regime_accuracy": regime_stats,
@@ -762,7 +775,7 @@ def auto_record_and_verify(scan_results: list, history=None) -> dict:
                     verified_history = [
                         item.to_dict()
                         for item in _predictions
-                        if item.verified_at > 0
+                        if _valid_outcome(item)
                         and item.model_version == "incumbent-v1"
                     ]
                 shadow = predict_transition_calibrated(

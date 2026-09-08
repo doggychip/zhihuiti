@@ -48,7 +48,7 @@ def test_requires_enough_candles_for_honest_validation():
 def _prediction(predicted: str, current: str, actual: str) -> PredictionRecord:
     return PredictionRecord(
         instrument="TEST",
-        timestamp=time.time() - 20_000,
+        timestamp=time.time() - 16_000,
         predicted_regime=predicted,
         current_regime=current,
         confidence=0.8,
@@ -65,6 +65,9 @@ def _prediction(predicted: str, current: str, actual: str) -> PredictionRecord:
         actual_regime=actual,
         actual_price=101.0,
         verified_at=time.time(),
+        observation_at=time.time() - 1,
+        source_at_prediction=time.time() - 17000,
+        outcome_source_at=time.time() - 3600,
         correct=predicted == actual,
         baseline_correct=current == actual,
     )
@@ -169,7 +172,7 @@ def test_prediction_verification_respects_configured_horizon(monkeypatch):
 
     assert backtest.verify_predictions("TEST", "quiet", 100.0) == 0
     prediction.timestamp = time.time() - 14401
-    assert backtest.verify_predictions("TEST", "quiet", 100.0) == 1
+    assert backtest.verify_predictions("TEST", "quiet", 100.0, source_at=time.time()-3600) == 1
 
 
 def test_outage_does_not_score_month_old_predictions(monkeypatch):
@@ -236,3 +239,26 @@ def test_failed_rewrite_preserves_original_ledger(monkeypatch, tmp_path):
         backtest._rewrite_store()
     assert ledger.read_text() == "original\n"
     assert list(tmp_path.glob(".predictions-*")) == []
+
+
+def test_legacy_late_labels_are_preserved_but_excluded(monkeypatch):
+    pred = _prediction("quiet", "quiet", "quiet")
+    pred.timestamp = time.time() - 30*86400
+    pred.observation_at = 0
+    pred.source_at_prediction = 0
+    monkeypatch.setattr(backtest, "_predictions", [pred])
+    summary = backtest.get_forward_accuracy_summary()
+    assert summary["verified"] == summary["correct"] == summary["pending"] == 0
+    assert summary["expired"] == summary["excluded_outcomes"] == 1
+    assert pred.verified_at > 0  # original evidence is retained, not erased
+
+
+def test_recent_legacy_forecast_without_source_is_unscorable(monkeypatch):
+    pred = _prediction("quiet", "quiet", "")
+    pred.timestamp = time.time()
+    pred.verified_at = 0
+    pred.source_at_prediction = 0
+    monkeypatch.setattr(backtest, "_predictions", [pred])
+    summary = backtest.get_forward_accuracy_summary()
+    assert summary["unscorable"] == 1
+    assert summary["pending"] == summary["verified"] == summary["expired"] == 0

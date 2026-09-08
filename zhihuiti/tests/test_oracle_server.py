@@ -377,6 +377,22 @@ class TestPublicEvolutionStatus:
 
 
 class TestOracleScanStatus:
+    def test_public_scan_read_never_collects_or_records(self, server, monkeypatch):
+        history = SimpleNamespace(
+            get_all_instruments=lambda: ["TEST"],
+            get_history=lambda instrument, limit: [{"instrument": instrument, "timestamp": 123, "regime": "quiet"}],
+        )
+        monkeypatch.setattr(oracle_server, "_get_history", lambda: history)
+        def forbidden(*args, **kwargs):
+            raise AssertionError("Public GET must not collect, record or verify")
+        monkeypatch.setattr("zhihuiti.scanner.scan_instruments", forbidden)
+        monkeypatch.setattr("zhihuiti.backtest.auto_record_and_verify", forbidden)
+        for _ in range(2):
+            status, body = _get(server, "/api/oracle/scan")
+            assert status == 200
+            assert body["read_only"] is True
+            assert body["results"][0]["timestamp"] == 123
+
     def test_exposes_collection_state_without_triggering_a_scan(self, server, monkeypatch):
         monkeypatch.setattr(oracle_server, "_ORACLE_SCAN_META", {
             "running": False,

@@ -1206,34 +1206,22 @@ class OracleHandler(BaseHTTPRequestHandler):
     # ── Handlers ───────────────────────────────────────────────
 
     def _handle_scan(self, qs):
+        """Public GET returns persisted observations only; collection is scheduled."""
         try:
-            from zhihuiti.scanner import scan_instruments
-            timeframe = qs.get("timeframe", ["4h"])[0]
-            pairs = qs.get("pairs", [None])[0]
-            instruments = pairs.split(",") if pairs else None
-
-            results = scan_instruments(
-                instruments=instruments,
-                timeframe=timeframe,
-                fetch_fn=_fetch_crypto_candles,
-            )
-
             history = _get_history()
-            transitions = history.record_scan(results)
-
-            # Auto-record predictions and verify old ones
-            backtest_info = {}
-            try:
-                from zhihuiti.backtest import auto_record_and_verify
-                backtest_info = auto_record_and_verify(results)
-            except Exception:
-                pass
-
+            requested = {p.strip() for p in qs.get("pairs", [""])[0].split(",") if p.strip()}
+            results = []
+            for instrument in history.get_all_instruments():
+                if requested and instrument not in requested:
+                    continue
+                snapshots = history.get_history(instrument, limit=1)
+                if snapshots:
+                    results.append(snapshots[-1])
             _json_response(self, {
-                "results": [r.to_dict() for r in results],
+                "results": results,
                 "count": len(results),
-                "transitions": [t.to_dict() for t in transitions],
-                "backtest": backtest_info,
+                "source": "persisted_observations",
+                "read_only": True,
             })
         except Exception as e:
             _json_response(self, {"error": str(e)}, 500)

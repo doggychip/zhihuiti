@@ -236,6 +236,11 @@ The forecast horizon is stored per record, with a one-hour collection tolerance;
 missed windows remain in the ledger as unscored expired predictions, never as
 incorrect predictions. Changing the horizon does not retime existing records.
 Equity/FX market closures can legitimately leave forecasts unscored.
+Legacy labels lacking valid timing/source evidence are excluded from accuracy
+and model calibration without deleting the audit records. Recent legacy forecasts
+without source timestamps are separately reported as unscorable.
+Public `GET /api/oracle/scan` returns persisted observations only: refreshing a
+dashboard never performs a collection, records a prediction, or verifies an outcome.
 
 The release bundles the same 352-theory / 401-collision catalog as BigIntel.
 `client/src/data/catalog-manifest.json` records its upstream revision and exact
